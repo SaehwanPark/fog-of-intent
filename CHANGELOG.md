@@ -30,6 +30,21 @@ not increment the package version.
 - M0 is promoted to complete after the hosted clean-checkout CI run passed; the
   first bounded M1 deterministic-kernel fixture is now the active project-state
   slice.
+
+## 0.1.2 — 2026-08-04
+
+### Added
+
+- Initial M1 `fog_of_intent::kernel` fixture with typed state, command
+  validation, explicit resolved-input categories, deterministic transitions,
+  attributed effects, authoritative hashes, append-only in-memory history, and
+  replay verification.
+
+### Changed
+
+- The first M1 transition fixture is implemented and verified as an internal
+  library surface; serialization, scenario mechanics, and user-facing adapters
+  remain deferred.
 - README now presents the project thesis, current pre-implementation status,
   initial vertical slice, canonical documents, and contributor workflow.
 - The original proposal roadmap is labeled as a design source; `ROADMAP.md` is

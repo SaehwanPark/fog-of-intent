@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs` | Placeholder `Hello, world!` binary |
-| Package | `Cargo.toml` | Version `0.1.1`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.2`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -209,28 +209,29 @@ async, terminal, database, or model-provider dependencies in the core.
 
 ### Scope
 
-- [ ] Define stable identifiers, bounded numeric types, and normalized values
+- [x] Define stable identifiers, bounded numeric types, and normalized values
   for equality-sensitive state.
-- [ ] Define immutable `WorldState` and the minimum actor state required by the
+- [x] Define immutable `WorldState` and the minimum actor state required by the
   first fixture.
-- [ ] Define `Command`, `ValidatedCommand`, `ResolvedInputs`, `Event`, `Effect`,
+- [x] Define `Command`, `ValidatedCommand`, `ResolvedInputs`, `Event`, `Effect`,
   `TransitionResult`, and typed errors.
-- [ ] Define the ruleset identifier and version contract.
-- [ ] Implement command validation separately from modeled unfavorable outcomes.
-- [ ] Implement the pure or functionally pure transition boundary.
-- [ ] Define stable random-stream and draw identities without generating random
+- [x] Define the ruleset identifier and version contract.
+- [x] Implement command validation separately from modeled unfavorable outcomes.
+- [x] Implement the pure or functionally pure transition boundary.
+- [x] Define stable random-stream and draw identities without generating random
   values inside the transition.
-- [ ] Separate environment, observation, policy, coordination, and execution
+- [x] Separate environment, observation, policy, coordination, and execution
   input categories even if the first fixture uses only a subset.
-- [ ] Implement append-only committed history records.
-- [ ] Implement deterministic state hashing over declared authoritative fields.
+- [x] Implement append-only committed history records.
+- [x] Implement deterministic state hashing over declared authoritative fields.
 - [ ] Implement snapshot and history serialization with versioned fixtures.
-- [ ] Implement replay verification from the initial state and committed inputs.
-- [ ] Add example-based transition tests.
-- [ ] Add invariant and property tests for bounds and conservation rules.
-- [ ] Add malformed-command, duplicate-command, ordering, and version-mismatch
+- [x] Implement replay verification from the initial state and committed inputs.
+- [x] Add example-based transition tests.
+- [x] Add invariant tests for bounds and conservation rules; property tests remain
+  a follow-up within M1.
+- [x] Add malformed-command, duplicate-command, ordering, and version-mismatch
   tests.
-- [ ] Add repeated-run and random-stream-isolation tests.
+- [x] Add repeated-run and random-stream-isolation tests.
 
 ### Deliverables
 
@@ -249,6 +250,15 @@ async, terminal, database, or model-provider dependencies in the core.
 - Core dependency review confirms no I/O, async runtime, wall clock, terminal,
   database, MCP, model-provider, or hidden RNG dependency.
 - Tests cover at least one invalid command and one legal but unfavorable outcome.
+
+### Current slice evidence
+
+- The internal `fog_of_intent::kernel` library fixture implements the checked
+  items above without adding a dependency or changing binary behavior.
+- Twelve focused Rust tests pass for validation, transitions, bounds,
+  conservation, replay, ordering, repeated runs, and stream isolation.
+- Snapshot/history serialization and property-style tests are intentionally not
+  claimed complete by this slice.
 
 ### Explicit deferrals
 
