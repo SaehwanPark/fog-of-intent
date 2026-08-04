@@ -36,6 +36,8 @@ Cargo.toml
 src/main.rs
 src/lib.rs
 src/kernel.rs
+src/serialization.rs
+tests/fixtures/
 README.md
 ROADMAP.md
 SPEC.md
@@ -46,9 +48,9 @@ docs/
 _workspace/
 ```
 
-`src/lib.rs` and `src/kernel.rs` are the current internal kernel surface;
-`src/main.rs` remains a placeholder executable. The other paths are
-project-state, design-source, and agent-workflow artifacts.
+`src/lib.rs`, `src/kernel.rs`, and `src/serialization.rs` are the current
+internal kernel/fixture surface; `src/main.rs` remains a placeholder executable.
+The other paths are project-state, design-source, and agent-workflow artifacts.
 
 ## Target Components
 
@@ -215,10 +217,11 @@ and an architecture update or ADR when it changes a consequential boundary.
 
 ## Known Gaps
 
-- The first M1 kernel fixture is implemented in `src/kernel.rs`, but it is not a
-  playable scenario, external API, serializer, or persistence layer.
-- Property-style tests, versioned snapshot/history fixtures, and external replay
-  bundles remain open M1 work.
+- The first M1 kernel and strict `1.0.0` text fixture codec are implemented, but
+  they are not a playable scenario, public API, migration framework, or
+  persistence service.
+- Richer external replay bundles and scenario-specific schema fields remain
+  open work.
 - `.github/workflows/ci.yml` and `scripts/check_repository.py` now define the
   formatting, lint, test, metadata, link, currentness, and dependency-free
   package guard; PR #4's hosted run passed and supports M0 promotion. Future

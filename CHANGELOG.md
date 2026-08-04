@@ -31,6 +31,16 @@ not increment the package version.
   first bounded M1 deterministic-kernel fixture is now the active project-state
   slice.
 
+## 0.1.3 — 2026-08-04
+
+### Added
+
+- Strict dependency-free `1.0.0` snapshot/history text codecs with explicit
+  hash-representation versioning, checked-in M1 fixtures, replay-backed
+  deserialization, and fail-closed malformed/tampered-input tests.
+- Exhaustive bounded spend/yield tests for energy bounds, conservation, and
+  score/yield invariants.
+
 ## 0.1.2 — 2026-08-04
 
 ### Added

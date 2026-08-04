@@ -76,9 +76,9 @@ players?
 | --- | --- |
 | Current roadmap milestone | M1 — Deterministic Simulation Kernel (Active) |
 | Repository governance and canonical docs | Complete — M0 |
-| Rust package | `0.1.2`, edition 2024, Rust `1.96`, no dependencies, single package |
+| Rust package | `0.1.3`, edition 2024, Rust `1.96`, no dependencies, single package |
 | Executable behavior | Prints `Hello, world!` |
-| Deterministic kernel | Internal bounded fixture implemented — M1; not playable |
+| Deterministic kernel | Internal bounded/replay fixture implemented — M1; not playable |
 | One-lane scenario | Not implemented — M2 |
 | CLI reference experience | Not implemented — M3 |
 | Agent ecology and MCP | Not implemented — M4/M5 |
