@@ -4,92 +4,75 @@
 
 `pass`
 
-This QA covers the M0 packaging, compatibility, and dependency-policy slice. It
-does not validate a simulation kernel, schema serializer, replay engine, CI
-workflow, legal clearance, or human experience.
+This QA covers the M0 promotion and bounded M1 bookkeeping slice. It does not
+validate a simulation kernel, gameplay, replay implementation, legal clearance,
+or human experience.
 
 ## Reviewed Inputs
 
 - `_workspace/00_input/request-summary.md`
-- `ROADMAP.md` M0 checklist and exit evidence
-- `SPEC.md`, `ARCHITECTURE.md`, `README.md`, and `CHANGELOG.md`
-- `Cargo.toml`, `Cargo.lock`, and `rust-toolchain.toml`
-- `docs/adr/0002-single-package-m1.md`, `docs/COMPATIBILITY.md`, and
-  `docs/DEPENDENCY_POLICY.md`
-- Local Markdown-link check, `git diff --check`, pinned `cargo metadata`,
-  `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`,
-  and `cargo test`
-- One code-reviewer report covering three independent review passes and its
-  follow-up findings.
+- Hosted PR #4 GitHub Actions `verify` result
+- `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `README.md`, and `CHANGELOG.md`
+- `rust-toolchain.toml`, `Cargo.toml`, `Cargo.lock`, CI, checker, and focused
+  checker tests
+- One code-reviewer report and its follow-up passes for the CI slice
+- Local currentness/link/package checks, seven Python tests, locked metadata,
+  `cargo fmt --check`, clippy, Rust tests, and `git diff --check`
 
 ## Scope and Roadmap Findings
 
-The changed files implement only the selected M0 package/toolchain,
-compatibility, and dependency-policy items. The single-package decision is
-explicit and reversible, while CI automation remains visible as incomplete.
-No M1 mechanics, runtime dependency, adapter, or schema implementation was
-introduced.
+M0 is promoted to `Complete` only after hosted clean-checkout verification
+passed. `SPEC.md` moves M0 to Past and identifies exactly one active M1 bounded
+fixture. No later milestone checklist was marked complete and no implementation
+capability was inferred from the bookkeeping change.
 
 ## Authority and Information-Boundary Findings
 
-ADR-0002 preserves the one-package decision without changing ADR-0001's
-host-owned simulation authority. The compatibility policy keeps internal
-artifact identity separate from future public DTO, prompt, profile, and
-extractor versions; no adapter or package boundary is presented as a second
-simulation engine.
+The selected M1 contract preserves ADR-0001: the host remains the sole
+simulation authority, while the future kernel is an evaluator invoked by the
+host. The bounded slice names commands, resolved inputs, events, effects,
+history, hashes, and replay without assigning authority to an adapter or a
+future package split.
 
 ## Determinism, Replay, and Reproducibility Findings
 
-`rust-toolchain.toml` pins a complete locally installed Rust `1.96.0` toolchain
-with `rustfmt` and `clippy`; `Cargo.lock` records the dependency-free package.
-`docs/COMPATIBILITY.md` requires explicit ruleset/scenario/schema identity,
-immutable semantic binding, closed handling of authoritative unknown fields,
-deterministic migrations, and per-transition replay hash comparison. These are
-future implementation contracts, not shipped replay evidence. Missing advisory
-tooling or data is a default block, with only an explicit owner/rationale/expiry
-defer permitted.
+The hosted workflow verified the pinned Rust/package repository checks from a
+clean Ubuntu checkout. The M1 acceptance contract requires explicit inputs,
+per-transition hashes, invalid-command behavior, and replay verification; these
+are selected criteria, not shipped replay evidence.
 
 ## Behavior and Playtest Findings
 
-No agents, policies, playtests, or behavioral claims were added. Dependency
-policy keeps provider, async, transport, and analytical concerns outside the
-deterministic core unless a later ADR demonstrates a narrow edge need.
+No actors, policies, playtests, or behavioral claims were added. M1 remains a
+small kernel fixture and does not authorize agent ecology or scenario behavior.
 
 ## Gameplay and Debrief Findings
 
-No gameplay or debrief surface was added. Compatibility rules preserve the
-future requirement that replay fixtures retain enough committed input and hash
-identity for causal inspection.
+No gameplay or debrief surface was added. Lane mechanics, CLI, MCP, and the
+one-lane vertical slice remain future work under the roadmap dependencies.
 
 ## Evidence and Claim Limits
 
-The package metadata and lockfile support local reproducibility only. Hosted CI,
-automated advisory/license scans, schema migration behavior, cross-platform
-validation, and release readiness remain unverified. The dependency policy
-requires an advisory result or an explicit security defer for future dependency
-changes and reports that hosted enforcement automation is deferred.
+M0 completion is supported by repository documentation and hosted software
+checks. It does not establish human enjoyment, accessibility, trust, legal
+clearance, public-release readiness, or research validity. M1 is selected but
+not implemented.
 
 ## Required Fixes
 
-None for this bounded slice. The reviewer-identified compatibility,
-security-policy, environment-rationale, and QA-disposition issues were
-corrected and the focused checks were rerun.
+None for this bounded slice.
 
 ## Residual Risks
 
-- The pinned `1.96.0` toolchain is verified on the current host only.
-- The separate `stable` alias currently reports `1.97.1`, but is intentionally
-  not used by the repository pin because its explicit versioned resolution was
-  not reliable in this environment.
-- M0 remains active pending CI formatting/lint/test/link/currentness checks and
-  hosted evidence.
+- The M1 transition contract still needs implementation-backed types and tests.
+- The first future dependency still requires approved advisory/license tooling
+  or an exact machine-readable defer record.
+- No human or external behavioral evidence exists.
 
 ## Verification Evidence
 
-- Pinned `rustc --version`: `1.96.0`.
-- Pinned `cargo metadata --locked --no-deps --format-version 1`: pass.
-- Local Markdown links: pass.
-- `git diff --check`: pass.
-- `cargo fmt --check`: pass.
-- `cargo clippy --all-targets --all-features -- -D warnings`: pass.
-- `cargo test`: pass; placeholder has zero tests.
+- Hosted PR #4 `verify`: pass from clean Ubuntu checkout.
+- `python3 scripts/check_repository.py`: pass against the M1 state.
+- Seven focused checker tests: pass.
+- Locked Cargo metadata, `cargo fmt --check`, clippy, Rust tests, and
+  `git diff --check`: pass.

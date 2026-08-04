@@ -74,8 +74,9 @@ players?
 
 | Area | State |
 | --- | --- |
-| Repository governance and canonical docs | Active — M0 |
-| Rust package | `0.1.0`, edition 2024, Rust `1.96`, no dependencies, single package |
+| Current roadmap milestone | M1 — Deterministic Simulation Kernel (Active) |
+| Repository governance and canonical docs | Complete — M0 |
+| Rust package | `0.1.1`, edition 2024, Rust `1.96`, no dependencies, single package |
 | Executable behavior | Prints `Hello, world!` |
 | Deterministic kernel | Not implemented — M1 |
 | One-lane scenario | Not implemented — M2 |
@@ -108,6 +109,8 @@ Repository checks:
 cargo fmt --check
 cargo clippy --all-targets --all-features -- -D warnings
 cargo test
+python3 scripts/check_repository.py
+python3 -m unittest discover -s scripts -p 'test_*.py'
 ```
 
 These commands validate only the current placeholder until later milestones add
@@ -160,6 +163,7 @@ git practices remain reusable global concerns.
 ```text
 src/                         Current Rust placeholder
 docs/                        Proposal, stack analysis, ADRs, terminology, and harness contract
+scripts/                     Dependency-free repository currentness checks
 .agents/skills/              Repo-local domain skills
 _workspace/                  On-demand inspectable handoff artifacts
 ROADMAP.md                   Canonical execution plan

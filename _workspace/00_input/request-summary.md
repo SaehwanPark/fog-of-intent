@@ -2,90 +2,70 @@
 
 ## Requested Outcome
 
-Advance the next dependency-complete slice of the governed repository baseline
-so M1 can begin from a pinned, single-package Rust base with explicit minimum
-compatibility and dependency-policy conventions.
+Use the passing hosted CI run to complete M0 bookkeeping, then select the first
+bounded M1 deterministic-kernel fixture so implementation can continue without
+silently broadening scope.
 
 ## Roadmap Milestone
 
-M0 — Governed repository baseline (active).
+M0 — Governed repository baseline promoted to `Complete`; M1 — Deterministic
+Simulation Kernel is now the active milestone.
 
 ## Current Evidence
 
-- `origin/main` contains the merged M0 policy, notice, terminology, and
-  host-authority documentation.
-- The executable remains the Rust 2024 placeholder binary with no third-party
-  dependencies.
-- M0 package/toolchain, lockfile, dependency-policy, and compatibility items
-  remain incomplete; hosted CI remains a later slice.
-- The available complete exact baseline is Rust `1.96.0` with `rustfmt` and
-  `clippy`; the repository intentionally does not rely on the separately
-  resolved `stable` alias that currently reports Rust `1.97.1`.
+- PR #4 hosted GitHub Actions `verify` passed from a clean Ubuntu checkout.
+- The repository checker, seven Python tests, locked Rust metadata, formatting,
+  clippy, and Rust tests passed locally and in the hosted workflow.
+- M0 policy, package, compatibility, dependency-policy, and CI slices are
+  merged or ready to merge as one reviewed PR.
 
 ## In Scope
 
-- Pin Rust `1.96.0` with the required formatting and lint components.
-- Generate and commit the binary package `Cargo.lock`.
-- Decide to keep one Cargo package for M1 and defer a workspace until a second
-  independently built crate or executable is justified.
-- Define minimum version and compatibility conventions for manifests, schemas,
-  rulesets, scenarios, snapshots, history, replay hashes, and fixtures.
-- Document dependency addition, source, license, security-advisory, lockfile,
-  and review policy.
-- Reconcile affected roadmap, specification, architecture, and changelog state.
+- Mark M0 complete in `ROADMAP.md` and move its verified work to `SPEC.md` Past.
+- Set the current milestone to M1 and make exactly one bounded M1 slice active.
+- Define the smallest typed transition/history/hash/replay fixture contract:
+  stable ID, bounded resource, immutable world state, command validation,
+  explicit resolved inputs, event/effect output, and per-transition replay hash.
+- Reconcile README, architecture, changelog, and current handoff state.
 
 ## Non-Goals
 
-- No simulation mechanics, new runtime dependency, CLI, MCP, persistence,
-  database, or hosted CI workflow.
-- No automated advisory/license scanner is claimed until the CI slice exists.
-- No migrations or backward-compatibility implementation beyond the minimum
-  policy needed to constrain M1 fixtures.
+- No M1 implementation code in this bookkeeping handoff.
+- No lane mechanics, CLI, MCP, serializer, database, agent ecology, or GUI.
+- No human, legal, accessibility, enjoyment, or research-validity claim.
 
 ## Project Boundaries Touched
 
-- Rust toolchain and Cargo package reproducibility.
-- Future artifact/schema/replay compatibility contracts.
-- Dependency provenance, security, and license review policy.
+- Evidence-gated milestone promotion.
+- Active spec contract for the first deterministic kernel slice.
+- Currentness checker invariants: exactly one active roadmap phase/spec entry and
+  matching README current-milestone state.
 
 ## Source Files
 
-- `Cargo.toml`
-- `README.md`
-- `ROADMAP.md`
-- `SPEC.md`
-- `ARCHITECTURE.md`
-- `CHANGELOG.md`
-- `docs/tech-stack-consideration.md`
-- Existing M0 policy and authority documents.
+- `ROADMAP.md`, `SPEC.md`, `README.md`, `ARCHITECTURE.md`, `CHANGELOG.md`
+- `_workspace/03_domain-qa.md`
+- Existing CI and checker files.
 
 ## Expected Outputs
 
-- `rust-toolchain.toml`
-- `Cargo.lock`
-- `docs/adr/0002-single-package-m1.md`
-- `docs/COMPATIBILITY.md`
-- `docs/DEPENDENCY_POLICY.md`
-- Updated canonical project-state documents.
+- M0 `Complete` state with hosted verification recorded.
+- M1 active bounded-slice specification and roadmap framing.
+- Consistent currentness-checker state across canonical documents.
 
 ## Verification
 
-- `rustup show active-toolchain` and pinned `cargo +1.96.0` checks agree.
-- `cargo metadata --locked --format-version 1` succeeds from a clean checkout.
-- `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`,
-  and `cargo test` pass with the pinned toolchain.
-- Policy documents and local Markdown links resolve; `git diff --check` passes.
-- The package/layout decision and compatibility rules do not claim unimplemented
-  migrations, schema serializers, or dependency scanners.
+- `python3 scripts/check_repository.py` passes against the promoted M1 state.
+- Local Markdown links, seven checker tests, locked metadata, format, clippy,
+  Rust tests, and `git diff --check` pass.
+- The existing hosted PR workflow reruns successfully after the promotion
+  commit.
 
 ## Evidence Limits and Open Questions
 
-- Pinning the complete `1.96.0` baseline is reproducibility evidence for this
-  repository, not a claim that every host platform has been tested. The
-  separately resolved `stable` alias at `1.97.1` is intentionally not used as a
-  repository pin because its explicit versioned resolution was not reliable in
-  this environment.
-- Compatibility documents are contracts for M1 design; they are not evidence
-  that schemas, replay artifacts, or migrations exist yet.
-- Dependency and security policy is documented here; enforcement automation is
-  deferred to the next M0 CI slice.
+- M0 completion establishes repository governance and CI evidence only; it does
+  not establish simulation behavior or release readiness.
+- M1 is selected, not implemented. Its transition and replay claims remain
+  acceptance criteria until code and tests exist.
+- The first M1 implementation must preserve the host-owned authority ADR and
+  package/compatibility policies already merged to `main`.

@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.96.0 --profile minimal --component rustfmt --component clippy --no-self-update
+
+      - name: Verify pinned toolchain
+        run: rustup run 1.96.0 rustc --version | grep --fixed-strings "rustc 1.96.0"
+
+      - name: Check package metadata and repository currentness
+        run: python3 scripts/check_repository.py
+
+      - name: Test repository checker
+        run: python3 -m unittest discover -s scripts -p 'test_*.py'
+
+      - name: Check formatting
+        run: cargo +1.96.0 fmt --check
+
+      - name: Check lint
+        run: cargo +1.96.0 clippy --locked --all-targets --all-features -- -D warnings
+
+      - name: Run tests
+        run: cargo +1.96.0 test --locked
