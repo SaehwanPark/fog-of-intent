@@ -209,9 +209,13 @@ and an architecture update or ADR when it changes a consequential boundary.
 
 - No crate/module ownership, public API, schema, hash, or compatibility contract
   exists in code.
-- No CI automation, automated advisory/license check, or release workflow is
-  present; the dependency and compatibility policies are documented but not yet
-  enforced by hosted checks.
+- `.github/workflows/ci.yml` and `scripts/check_repository.py` now define the
+  formatting, lint, test, metadata, link, currentness, and dependency-free
+  package guard; a successful hosted run is still required for M0 promotion.
+- No automated advisory/license scanner is configured for a future non-empty
+  dependency graph; the current guard blocks dependency additions until the
+  approved scanner and its policy are added or a complete machine-readable defer
+  record is bound to the exact dependency identity.
 - Implementation-backed package, schema, compatibility, accessibility, and
   research governance remain incomplete and are tracked in M0 and later
   roadmap gates. Repository policy and the initial authority ADR now exist, but

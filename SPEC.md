@@ -69,10 +69,14 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - ADR-0002 keeps M1 in one Cargo package; `docs/COMPATIBILITY.md` and
   `docs/DEPENDENCY_POLICY.md` define minimum artifact/version and dependency
   review contracts without claiming migrations or automation.
+- `.github/workflows/ci.yml` and `scripts/check_repository.py` establish
+  pinned format, lint, test, metadata, Markdown-link, currentness, and
+  dependency-free package checks; hosted pass evidence is still pending.
 
 #### Not Yet Done
 
-- Add formatting, lint, test, link, and currentness checks to CI.
+- Verify one clean-checkout hosted CI run, then promote M0 to `Past` and record
+  the bounded M1 transition/replay fixture slice.
 
 #### Verification
 

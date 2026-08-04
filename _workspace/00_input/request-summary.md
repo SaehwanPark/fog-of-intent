@@ -2,90 +2,81 @@
 
 ## Requested Outcome
 
-Advance the next dependency-complete slice of the governed repository baseline
-so M1 can begin from a pinned, single-package Rust base with explicit minimum
-compatibility and dependency-policy conventions.
+Complete the remaining implementation portion of M0 by adding clean-checkout
+CI and dependency-free repository currentness checks, then use the hosted run as
+the evidence gate before promoting M0 and selecting the first bounded M1 slice.
 
 ## Roadmap Milestone
 
-M0 — Governed repository baseline (active).
+M0 — Governed repository baseline (active until hosted evidence passes).
 
 ## Current Evidence
 
-- `origin/main` contains the merged M0 policy, notice, terminology, and
-  host-authority documentation.
-- The executable remains the Rust 2024 placeholder binary with no third-party
-  dependencies.
-- M0 package/toolchain, lockfile, dependency-policy, and compatibility items
-  remain incomplete; hosted CI remains a later slice.
-- The available complete exact baseline is Rust `1.96.0` with `rustfmt` and
-  `clippy`; the repository intentionally does not rely on the separately
-  resolved `stable` alias that currently reports Rust `1.97.1`.
+- Policy, authority, terminology, package, toolchain, lockfile, compatibility,
+  and dependency-policy slices are merged to `main`.
+- The Rust placeholder is pinned to exact `1.96.0`; the package is now version
+  `0.1.1` because this slice adds executable repository tooling, and it has no
+  third-party dependencies.
+- M0's remaining checklist item is CI formatting, lint, test, documentation-link,
+  and currentness checks.
 
 ## In Scope
 
-- Pin Rust `1.96.0` with the required formatting and lint components.
-- Generate and commit the binary package `Cargo.lock`.
-- Decide to keep one Cargo package for M1 and defer a workspace until a second
-  independently built crate or executable is justified.
-- Define minimum version and compatibility conventions for manifests, schemas,
-  rulesets, scenarios, snapshots, history, replay hashes, and fixtures.
-- Document dependency addition, source, license, security-advisory, lockfile,
-  and review policy.
-- Reconcile affected roadmap, specification, architecture, and changelog state.
+- Add a pinned GitHub Actions workflow for clean-checkout Rust verification.
+- Add a dependency-free Python checker for local Markdown links, canonical
+  milestone/spec currentness, pinned package metadata, lockfile identity,
+  images/reference links/outside-root paths, and the current no-dependency
+  policy guard.
+- Add focused standard-library tests for link parsing and stale milestone state.
+- Expose the new local check in README and reconcile affected architecture,
+  specification, dependency-policy, and changelog state.
+- After hosted checks pass, promote M0 to `Complete` and move M0 to `SPEC.md`
+  `Past`, identifying one bounded M1 transition/replay fixture slice.
 
 ## Non-Goals
 
-- No simulation mechanics, new runtime dependency, CLI, MCP, persistence,
-  database, or hosted CI workflow.
-- No automated advisory/license scanner is claimed until the CI slice exists.
-- No migrations or backward-compatibility implementation beyond the minimum
-  policy needed to constrain M1 fixtures.
+- No simulation mechanics, schema serializer, replay engine, CLI, MCP, database,
+  or model-provider dependency.
+- No full advisory/license scanner is claimed while the dependency graph is
+  empty; the CI guard blocks future dependencies until that scanner is adopted
+  or a machine-readable defer record is recorded.
+- No human, legal, accessibility, enjoyment, or research-validity claim.
 
 ## Project Boundaries Touched
 
-- Rust toolchain and Cargo package reproducibility.
-- Future artifact/schema/replay compatibility contracts.
-- Dependency provenance, security, and license review policy.
+- Clean-checkout reproducibility and repository currentness.
+- CI/adaptor edge only; the deterministic core remains unchanged.
+- M0 promotion bookkeeping and the selected M1 entry contract.
 
 ## Source Files
 
-- `Cargo.toml`
-- `README.md`
-- `ROADMAP.md`
-- `SPEC.md`
-- `ARCHITECTURE.md`
-- `CHANGELOG.md`
-- `docs/tech-stack-consideration.md`
-- Existing M0 policy and authority documents.
+- `.github/workflows/ci.yml`
+- `scripts/check_repository.py`
+- `README.md`, `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md`
+- `docs/DEPENDENCY_POLICY.md`
 
 ## Expected Outputs
 
-- `rust-toolchain.toml`
-- `Cargo.lock`
-- `docs/adr/0002-single-package-m1.md`
-- `docs/COMPATIBILITY.md`
-- `docs/DEPENDENCY_POLICY.md`
-- Updated canonical project-state documents.
+- Pinned CI workflow with contents-read permissions.
+- Local currentness/link/package-policy checker.
+- Focused checker parser/currentness tests.
+- Updated M0 verification and, after hosted evidence, M0 completion state plus
+  one bounded M1 slice in `SPEC.md`.
 
 ## Verification
 
-- `rustup show active-toolchain` and pinned `cargo +1.96.0` checks agree.
-- `cargo metadata --locked --format-version 1` succeeds from a clean checkout.
-- `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`,
-  and `cargo test` pass with the pinned toolchain.
-- Policy documents and local Markdown links resolve; `git diff --check` passes.
-- The package/layout decision and compatibility rules do not claim unimplemented
-  migrations, schema serializers, or dependency scanners.
+- `python3 scripts/check_repository.py` passes.
+- `python3 -m unittest discover -s scripts -p 'test_*.py'` passes.
+- Exact pinned `cargo +1.96.0` metadata, format, lint, and test commands pass.
+- Local Markdown links and `git diff --check` pass.
+- GitHub Actions runs the same checks from a clean Ubuntu checkout before merge.
 
 ## Evidence Limits and Open Questions
 
-- Pinning the complete `1.96.0` baseline is reproducibility evidence for this
-  repository, not a claim that every host platform has been tested. The
-  separately resolved `stable` alias at `1.97.1` is intentionally not used as a
-  repository pin because its explicit versioned resolution was not reliable in
-  this environment.
-- Compatibility documents are contracts for M1 design; they are not evidence
-  that schemas, replay artifacts, or migrations exist yet.
-- Dependency and security policy is documented here; enforcement automation is
-  deferred to the next M0 CI slice.
+- The checker validates repository contracts and current package state; it does
+  not validate future simulation behavior or human experience.
+- The no-dependency guard is not an advisory/license scanner. The first future
+  dependency requires an approved scanner or a complete machine-readable defer
+  record with owner, rationale, security/license status, and future expiry.
+- M1 implementation begins only after M0 hosted evidence and promotion are
+  recorded.

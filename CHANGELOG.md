@@ -32,6 +32,13 @@ not increment the package version.
 - The original proposal roadmap is labeled as a design source; `ROADMAP.md` is
   the canonical execution plan.
 
+## 0.1.1 — 2026-08-04
+
+### Added
+
+- Dependency-free repository currentness/link checker, focused parser tests,
+  and a pinned GitHub Actions workflow for clean-checkout verification.
+
 ## 0.1.0 — 2026-08-04
 
 ### Added

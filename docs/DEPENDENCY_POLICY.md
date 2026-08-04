@@ -49,8 +49,24 @@ review.
 ## Enforcement status
 
 The current package has no third-party dependencies, so the policy has no
-dependency exceptions to record. Hosted formatting, lint, test, link,
-advisory, and license checks are the next M0 implementation slice; until then,
-this policy and the local commands in `README.md` are the evidence boundary,
-and any future dependency change requires an advisory result or an explicit
-security defer before merge.
+dependency exceptions to record. `.github/workflows/ci.yml` runs the pinned
+format, lint, test, metadata, link, currentness, and dependency-free package
+guard. A future dependency change remains blocked until an approved advisory
+and license scanner is added or a machine-readable
+`docs/dependency-exceptions.toml` defer record is added with owner, rationale,
+security/license status, and a future expiry date. The guard treats registry,
+Git, and path dependencies identically.
+
+The defer record uses this shape and must be committed with the dependency
+change:
+
+```toml
+[dependencies.example-package]
+owner = "maintainer-or-team"
+rationale = "temporary, documented reason"
+expires = "2026-12-31"
+security_status = "deferred"
+license_status = "deferred"
+requirement = "^1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+```
