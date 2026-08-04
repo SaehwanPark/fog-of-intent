@@ -8,6 +8,11 @@ not increment the package version.
 
 ### Added
 
+- Explicit MIT source license, contributor policy, code of conduct, and
+  unofficial/noncommercial project notice with an original-setting fallback and
+  conservative distribution boundary.
+- Concise design principles, authoritative terminology, and ADR-0001 for the
+  host-owned deterministic transition boundary.
 - Canonical evidence-gated project roadmap with milestone dependencies, exit
   evidence, explicit deferrals, and maintenance rules.
 - Lightweight specification and architecture state documents that distinguish
