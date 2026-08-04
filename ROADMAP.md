@@ -255,7 +255,7 @@ async, terminal, database, or model-provider dependencies in the core.
 
 - The internal `fog_of_intent::kernel` library fixture implements the checked
   items above without adding a dependency or changing binary behavior.
-- Eleven focused Rust tests pass for validation, transitions, bounds,
+- Twelve focused Rust tests pass for validation, transitions, bounds,
   conservation, replay, ordering, repeated runs, and stream isolation.
 - Snapshot/history serialization and property-style tests are intentionally not
   claimed complete by this slice.

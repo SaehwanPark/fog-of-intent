@@ -78,7 +78,7 @@ None for the bounded M1 slice after the reviewer corrections.
 
 ## Verification Evidence
 
-- Eleven focused Rust kernel tests pass, including exact-state validation,
+- Twelve focused Rust kernel tests pass, including exact-state validation,
   malformed/illegal commands, legal unfavorable outcomes, bounds,
   conservation, ordering, repeated runs, stream isolation, and replay.
 - `cargo +1.96.0 test --locked` passes.
