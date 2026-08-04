@@ -119,7 +119,9 @@ to reduce type count.
 - Floating-point values that affect authoritative equality or hashes require a
   declared normalization, ordering, or fixed-point representation.
 - Collections that affect event ordering or hashes require stable ordering.
-- State hashes cover a documented authoritative representation and version.
+- The current fixture hashes ruleset, turn, actor ID, energy, and score with
+  64-bit FNV-1a over little-endian integer bytes in that field order. A later
+  hash-representation change requires a versioned compatibility decision.
 - Replay verifies both transitions and hashes; it does not trust the terminal
   snapshot alone.
 - Counterfactual branches record which exogenous inputs are reused, remapped, or
@@ -186,7 +188,7 @@ Verified today:
 Proposed but not adopted:
 
 - additional Cargo workspace boundaries; ADR-0002 keeps M1 in one package;
-- Serde/JSON, typed errors, deterministic hashing, explicit seeded RNG at edges;
+- Serde/JSON and explicit seeded RNG at edges;
 - Clap or a small interactive shell;
 - Tokio and the official Rust MCP SDK at adapter boundaries;
 - artifact-first JSON/JSONL persistence;

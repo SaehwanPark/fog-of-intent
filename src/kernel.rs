@@ -307,7 +307,7 @@ impl Command {
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct ValidatedCommand {
     command: Command,
-    validated_against: StateHash,
+    validated_state: WorldState,
 }
 
 impl ValidatedCommand {
@@ -316,7 +316,7 @@ impl ValidatedCommand {
     }
 
     pub fn validated_against(self) -> StateHash {
-        self.validated_against
+        self.validated_state.hash()
     }
 }
 
@@ -388,7 +388,7 @@ pub fn validate_command(
     }
     Ok(ValidatedCommand {
         command: *command,
-        validated_against: actual_hash,
+        validated_state: *state,
     })
 }
 
@@ -516,6 +516,7 @@ impl ResolvedInputs {
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum EffectCause {
+    Command,
     Execution(InputTrace),
 }
 
@@ -555,6 +556,10 @@ pub enum TransitionError {
         requested: Units,
         yielded: Units,
     },
+    InsufficientEnergy {
+        available: Units,
+        requested: Units,
+    },
     ScoreOverflow,
     TurnOverflow,
 }
@@ -591,9 +596,9 @@ pub fn transition(
     inputs: &ResolvedInputs,
 ) -> Result<TransitionResult, TransitionError> {
     let actual_hash = state.hash();
-    if command.validated_against != actual_hash {
+    if command.validated_state != *state {
         return Err(TransitionError::StaleValidation {
-            expected: command.validated_against,
+            expected: command.validated_state.hash(),
             actual: actual_hash,
         });
     }
@@ -614,15 +619,19 @@ pub fn transition(
                     yielded,
                 });
             }
-            let energy = actor
-                .energy()
-                .subtract(spend)
-                .expect("validated gather spend must fit available energy");
+            let energy =
+                actor
+                    .energy()
+                    .subtract(spend)
+                    .ok_or(TransitionError::InsufficientEnergy {
+                        available: actor.energy(),
+                        requested: spend,
+                    })?;
             let score = actor
                 .score()
                 .checked_add(u16::from(yielded.value()))
                 .ok_or(TransitionError::ScoreOverflow)?;
-            let cause = EffectCause::Execution(inputs.execution.trace());
+            let execution_cause = EffectCause::Execution(inputs.execution.trace());
             events.push(Event::Gathered {
                 actor: actor.id(),
                 requested: spend,
@@ -631,13 +640,13 @@ pub fn transition(
             effects.push(Effect::EnergySpent {
                 actor: actor.id(),
                 amount: spend,
-                cause,
+                cause: EffectCause::Command,
             });
             if yielded != Units::zero() {
                 effects.push(Effect::ScoreAwarded {
                     actor: actor.id(),
                     amount: yielded,
-                    cause,
+                    cause: execution_cause,
                 });
             }
             state
@@ -916,6 +925,14 @@ mod tests {
             }]
         );
         assert_eq!(result.effects().len(), 1);
+        assert_eq!(
+            result.effects()[0],
+            Effect::EnergySpent {
+                actor: actor(),
+                amount: units(4),
+                cause: EffectCause::Command,
+            }
+        );
         assert_eq!(result.state_hash(), result.next_state().hash());
     }
 
@@ -933,6 +950,13 @@ mod tests {
             result.next_state().actor().energy().value() + 10
         );
         assert_eq!(result.effects().len(), 2);
+        assert!(matches!(
+            result.effects()[1],
+            Effect::ScoreAwarded {
+                cause: EffectCause::Execution(_),
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -949,6 +973,23 @@ mod tests {
                 yielded: units(4),
             })
         );
+    }
+
+    #[test]
+    fn validation_is_bound_to_the_exact_prior_state() {
+        let prior = state();
+        let command = gather_command(prior, 4);
+        let validated = validate_command(&prior, &command).expect("gather is valid");
+        let changed = WorldState::new(
+            CURRENT_RULESET,
+            prior.turn(),
+            ActorState::new(actor(), units(2), prior.actor().score()),
+        );
+
+        assert!(matches!(
+            transition(&changed, &validated, &execution_inputs(0)),
+            Err(TransitionError::StaleValidation { .. })
+        ));
     }
 
     #[test]

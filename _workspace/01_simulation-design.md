@@ -63,7 +63,7 @@ score is awarded.
 coordination, and execution. Each category carries a stable `StreamId` and
 `DrawId`; execution additionally carries a bounded resolved yield. The kernel
 never creates random values or selects draws. The first fixture uses only the
-execution yield and attributes gather effects to its execution stream/draw.
+execution yield and attributes the score award to its execution stream/draw.
 Changing unrelated category identities leaves the transition result unchanged,
 which makes stream isolation explicit.
 
@@ -78,8 +78,9 @@ WorldState + ValidatedCommand + ResolvedInputs
 
 `TransitionResult` returns the next state, ordered events, ordered attributed
 effects, and its authoritative next-state hash. `Gathered` records requested and
-resolved yield. `EnergySpent` and positive `ScoreAwarded` effects name the
-execution stream and draw that caused them. State updates conserve energy by
+resolved yield. `EnergySpent` is attributed to the command, while positive
+`ScoreAwarded` effects name the execution stream and draw that caused the
+resolved award. State updates conserve energy by
 subtracting exactly the requested bounded spend and increase score by exactly
 the resolved bounded yield.
 

@@ -24,6 +24,17 @@ not increment the package version.
 - Repo-wide `AGENTS.md` guidance and a portable Fog of Intent agent harness for
   simulation design, agent-ecology design, synthesis, and domain QA.
 - Deterministic `_workspace/` handoff conventions for substantial work.
+
+### Changed
+
+- M0 is promoted to complete after the hosted clean-checkout CI run passed; the
+  first bounded M1 deterministic-kernel fixture is now the active project-state
+  slice.
+
+## 0.1.2 — 2026-08-04
+
+### Added
+
 - Initial M1 `fog_of_intent::kernel` fixture with typed state, command
   validation, explicit resolved-input categories, deterministic transitions,
   attributed effects, authoritative hashes, append-only in-memory history, and
@@ -31,9 +42,6 @@ not increment the package version.
 
 ### Changed
 
-- M0 is promoted to complete after the hosted clean-checkout CI run passed; the
-  first bounded M1 deterministic-kernel fixture is now the active project-state
-  slice.
 - The first M1 transition fixture is implemented and verified as an internal
   library surface; serialization, scenario mechanics, and user-facing adapters
   remain deferred.

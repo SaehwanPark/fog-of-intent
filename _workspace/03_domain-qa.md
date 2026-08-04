@@ -4,75 +4,86 @@
 
 `pass`
 
-This QA covers the M0 promotion and bounded M1 bookkeeping slice. It does not
-validate a simulation kernel, gameplay, replay implementation, legal clearance,
-or human experience.
+This QA covers the first M1 bounded deterministic-kernel fixture. It does not
+validate a playable scenario, human experience, legal clearance, or research
+validity.
 
 ## Reviewed Inputs
 
 - `_workspace/00_input/request-summary.md`
-- Hosted PR #4 GitHub Actions `verify` result
+- `_workspace/01_simulation-design.md`
 - `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `README.md`, and `CHANGELOG.md`
-- `rust-toolchain.toml`, `Cargo.toml`, `Cargo.lock`, CI, checker, and focused
-  checker tests
-- One code-reviewer report and its follow-up passes for the CI slice
-- Local currentness/link/package checks, seven Python tests, locked metadata,
-  `cargo fmt --check`, clippy, Rust tests, and `git diff --check`
+- `docs/TERMINOLOGY.md`, `docs/COMPATIBILITY.md`, and ADR-0001
+- `src/lib.rs` and `src/kernel.rs`
+- Local Rust 1.96.0 locked metadata, formatting, clippy, tests, repository
+  currentness/link checks, focused checker tests, and diff checks
+- One code-reviewer’s three-pass report; the identified state-binding,
+  provenance, version, and stale-handoff issues were corrected before PR
+  handoff
 
 ## Scope and Roadmap Findings
 
-M0 is promoted to `Complete` only after hosted clean-checkout verification
-passed. `SPEC.md` moves M0 to Past and identifies exactly one active M1 bounded
-fixture. No later milestone checklist was marked complete and no implementation
-capability was inferred from the bookkeeping change.
+The implementation is limited to the active M1 fixture: one actor, one bounded
+energy resource, score, `Hold`/`Gather`, explicit resolved-input categories,
+events/effects, state hashes, and in-memory replay. M1 serialization and
+property-style tests remain unchecked and are not claimed complete. No M2 lane
+mechanics or adapter surface was added.
 
 ## Authority and Information-Boundary Findings
 
-The selected M1 contract preserves ADR-0001: the host remains the sole
-simulation authority, while the future kernel is an evaluator invoked by the
-host. The bounded slice names commands, resolved inputs, events, effects,
-history, hashes, and replay without assigning authority to an adapter or a
-future package split.
+`WorldState` remains host-owned true state. `validate_command` is separate from
+`transition`, and `ValidatedCommand` is bound to the exact prior state rather
+than only its hash. The kernel accepts resolved inputs but does not generate
+randomness, infer observations, or expose a player-facing projection.
 
 ## Determinism, Replay, and Reproducibility Findings
 
-The hosted workflow verified the pinned Rust/package repository checks from a
-clean Ubuntu checkout. The M1 acceptance contract requires explicit inputs,
-per-transition hashes, invalid-command behavior, and replay verification; these
-are selected criteria, not shipped replay evidence.
+The transition is synchronous and I/O-free. Stable IDs and five named input
+categories are explicit. The state hash uses a documented FNV-1a calculation
+over ruleset, turn, actor ID, bounded energy, and score in declared byte order.
+History stores prior hashes, commands, resolved inputs, events, effects, next
+state, and next hash; replay revalidates and compares every stored result.
+Unrelated input-stream identity changes do not affect the evaluated result.
 
 ## Behavior and Playtest Findings
 
-No actors, policies, playtests, or behavioral claims were added. M1 remains a
-small kernel fixture and does not authorize agent ecology or scenario behavior.
+No actor policy, playtest, or behavioral claim was added. A zero-yield gather is
+tested as a legal but unfavorable execution result, distinct from malformed or
+illegal command rejection.
 
 ## Gameplay and Debrief Findings
 
-No gameplay or debrief surface was added. Lane mechanics, CLI, MCP, and the
-one-lane vertical slice remain future work under the roadmap dependencies.
+No gameplay or debrief surface was added. Command and execution provenance in
+the effects provide a causal seam for later debrief work without claiming that a
+player-facing explanation exists.
 
 ## Evidence and Claim Limits
 
-M0 completion is supported by repository documentation and hosted software
-checks. It does not establish human enjoyment, accessibility, trust, legal
-clearance, public-release readiness, or research validity. M1 is selected but
-not implemented.
+The fixture establishes software properties only: typed validation, exact-state
+binding, boundedness, energy conservation, deterministic output, provenance,
+and replay verification. It does not establish human enjoyment, accessibility,
+trust, legal clearance, public-release readiness, or scientific validity.
 
 ## Required Fixes
 
-None for this bounded slice.
+None for the bounded M1 slice after the reviewer corrections.
 
 ## Residual Risks
 
-- The M1 transition contract still needs implementation-backed types and tests.
-- The first future dependency still requires approved advisory/license tooling
-  or an exact machine-readable defer record.
-- No human or external behavioral evidence exists.
+- Snapshot/history serialization and property-style tests remain open M1 work.
+- The binary remains a placeholder; no user-facing host or playable simulation
+  exists.
+- A future non-empty dependency graph still requires the approved advisory and
+  license policy tooling or an exact machine-readable defer record.
 
 ## Verification Evidence
 
-- Hosted PR #4 `verify`: pass from clean Ubuntu checkout.
-- `python3 scripts/check_repository.py`: pass against the M1 state.
-- Seven focused checker tests: pass.
-- Locked Cargo metadata, `cargo fmt --check`, clippy, Rust tests, and
-  `git diff --check`: pass.
+- Eleven focused Rust kernel tests pass, including exact-state validation,
+  malformed/illegal commands, legal unfavorable outcomes, bounds,
+  conservation, ordering, repeated runs, stream isolation, and replay.
+- `cargo +1.96.0 test --locked` passes.
+- `cargo +1.96.0 fmt --check` passes.
+- `cargo +1.96.0 clippy --all-targets --all-features -- -D warnings` passes.
+- `python3 scripts/check_repository.py` passes.
+- Seven focused repository-checker tests pass.
+- `git diff --check` passes.

@@ -108,8 +108,8 @@ exists. Planned proposal or roadmap text is never implementation evidence.
   `Hold`/`Gather` transition boundary.
 - Resolved inputs carry distinct environment, observation, policy,
   coordination, and execution categories with stable stream/draw identities.
-- Events, execution-attributed effects, authoritative FNV-1a state hashes, and
-  append-only in-memory transition records are implemented.
+- Events, command- and execution-attributed effects, authoritative FNV-1a state
+  hashes, and append-only in-memory transition records are implemented.
 - Replay revalidates and reevaluates every committed transition and compares
   each stored result and hash.
 - Eleven focused Rust tests cover invalid and unfavorable outcomes, bounds,
