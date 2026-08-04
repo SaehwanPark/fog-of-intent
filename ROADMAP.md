@@ -2,7 +2,7 @@
 
 **Document role:** Canonical milestone order, scope, and promotion gates
 **Status:** Active
-**Current milestone:** M0 — Governed repository baseline
+**Current milestone:** M1 — Deterministic Simulation Kernel
 **Last reviewed:** 2026-08-04
 
 This document is the authoritative execution roadmap. The project proposal
@@ -42,8 +42,8 @@ sequencing or checklist differs from this file, this file governs current work.
 
 | Milestone | Outcome | Status | Required predecessor |
 | --- | --- | --- | --- |
-| M0 | Governed repository baseline | Active | Repository inception |
-| M1 | Replayable deterministic kernel | Planned | M0 |
+| M0 | Governed repository baseline | Complete | Repository inception |
+| M1 | Replayable deterministic kernel | Active | M0 |
 | M2 | First complete one-lane scenario | Planned | M1 |
 | M3 | CLI reference experience | Planned | M2 |
 | M4 | Interpretable bounded-agent population | Planned | M2; preferably M3 |
@@ -124,7 +124,7 @@ evidence.
 ## Phase 0 — Governed Repository Baseline
 
 **Milestone:** M0
-**Status:** Active
+**Status:** Complete
 **Depends on:** Repository inception
 
 ### Outcome
@@ -158,7 +158,7 @@ and enough governance to begin the deterministic kernel without ambiguity.
   intent, command, event, effect, and execution.
 - [x] Decide whether to keep a single package or adopt a Cargo workspace for M1.
 - [x] Pin the Rust toolchain and commit the binary package lockfile.
-- [ ] Establish formatting, lint, test, documentation-link, and currentness
+- [x] Establish formatting, lint, test, documentation-link, and currentness
   checks in CI.
 - [x] Document dependency, security-advisory, and license-policy checks.
 - [x] Define scenario, ruleset, schema, and replay compatibility conventions at
@@ -190,8 +190,16 @@ and enough governance to begin the deterministic kernel without ambiguity.
 ## Phase 1 — Deterministic Simulation Kernel
 
 **Milestone:** M1
-**Status:** Planned
+**Status:** Active
 **Depends on:** M0
+
+### Initial bounded slice
+
+Begin M1 with one internal kernel fixture: a typed world state with one bounded
+resource, one host-validated command, explicit resolved inputs, one deterministic
+transition, attributed event/effect output, an authoritative state hash, and an
+append-only replay verification path. Keep the fixture small enough to prove the
+boundary before adding lane mechanics, serialization formats, or adapters.
 
 ### Outcome
 

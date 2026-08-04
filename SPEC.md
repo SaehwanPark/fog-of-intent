@@ -37,73 +37,92 @@ exists. Planned proposal or roadmap text is never implementation evidence.
   optional later GUI. Those recommendations remain unadopted until implemented
   or recorded as architecture decisions.
 
-## Present
+### M0 — Governed repository baseline — 2026-08-04
 
-### M0 — Governed repository baseline
+**Status:** Complete
 
-**Status:** Active
-**Started:** 2026-08-04
-**Branch at initialization:** `codex/domain-harness-roadmap`
+#### Delivered
 
-#### Done
-
-- Canonical roadmap created at `ROADMAP.md` with milestone dependencies, scope,
-  evidence gates, claim limits, and maintenance rules.
-- Lightweight `SPEC.md`, `ARCHITECTURE.md`, and `CHANGELOG.md` state documents
-  initialized.
-- Short repo-wide guidance created in `AGENTS.md`.
-- A portable domain harness created under `.agents/skills/` and
-  `docs/harness/fog-of-intent/` for simulation design, agent ecology, synthesis,
-  and project-specific QA.
-- `_workspace/` handoff names and lifecycle documented.
-- README revised to distinguish the current placeholder from the planned game
-  and to point contributors at canonical documents.
-- Repository policy added through `LICENSE`, `CONTRIBUTING.md`,
-  `CODE_OF_CONDUCT.md`, and `NOTICE.md`, including the original-setting fallback
-  and conservative distribution boundary.
-- `DESIGN_PRINCIPLES.md`, `docs/TERMINOLOGY.md`, and
-  `docs/adr/0001-authoritative-transition-boundary.md` establish the first
-  authoritative vocabulary and host-owned transition contract.
-- Rust `1.96.0` is pinned with `rustfmt` and `clippy`, `Cargo.lock` is committed,
-  and `Cargo.toml` records the MIT license and minimum Rust version.
-- ADR-0002 keeps M1 in one Cargo package; `docs/COMPATIBILITY.md` and
-  `docs/DEPENDENCY_POLICY.md` define minimum artifact/version and dependency
-  review contracts without claiming migrations or automation.
-- `.github/workflows/ci.yml` and `scripts/check_repository.py` establish
-  pinned format, lint, test, metadata, Markdown-link, currentness, and
-  dependency-free package checks; hosted pass evidence is still pending.
-
-#### Not Yet Done
-
-- Verify one clean-checkout hosted CI run, then promote M0 to `Past` and record
-  the bounded M1 transition/replay fixture slice.
+- Canonical roadmap, specification, architecture, changelog, repo guidance, and
+  domain harness were established.
+- MIT source licensing, contribution/conduct policy, unofficial project notice,
+  original-setting fallback, and distribution boundaries were documented without
+  claiming legal clearance.
+- Authoritative terminology and ADR-0001 established host-owned simulation
+  authority, explicit resolved inputs, and adapter boundaries.
+- ADR-0002 kept M1 in one Cargo package; Rust `1.96.0`, `rustfmt`, `clippy`,
+  `Cargo.lock`, MIT package metadata, artifact/replay compatibility policy, and
+  dependency/security/license policy were recorded.
+- `.github/workflows/ci.yml` and `scripts/check_repository.py` established
+  clean-checkout format, lint, test, metadata, link, currentness, and
+  dependency-free package checks with focused checker tests.
 
 #### Verification
 
-- All generated repo-local `SKILL.md` files have YAML frontmatter with distinct
-  selection boundaries.
-- Harness handoff names agree between specialist skills and the team spec.
-- All local Markdown links resolve.
-- `git diff --check` passes.
-- The existing Rust placeholder remains formatting- and test-clean.
-- Policy files state that they are project boundaries, not legal clearance or
-  evidence of third-party permission.
-- The ADR identifies one host-owned transition authority and forbids adapters
-  from owning simulation truth.
+- PR #4 hosted GitHub Actions `verify` passed from a clean Ubuntu checkout.
+- The exact Rust `1.96.0` toolchain, locked metadata, formatting, clippy, and
+  Rust tests passed.
+- Seven focused repository-checker tests passed, including stale milestone,
+  M1/M10, collapsed-reference, image/outside-root, and dependency-defer cases.
+- The initial authority ADR identifies one host-owned transition authority and
+  forbids adapters from owning simulation truth.
+- License and fan-project notices state contributor and user boundaries while
+  preserving the evidence limit that they are not legal clearance.
 
 #### Deferred / Non-Goals
 
 - No simulation mechanic, playable decision window, CLI command loop, MCP
-  server, replay engine, research package, or GUI is part of M0.
+  server, replay engine, research package, or GUI shipped in M0.
+- A future non-empty dependency graph still requires an approved advisory/license
+  scanner or a complete machine-readable defer record.
 - M0 does not establish intellectual-property clearance, public-release
   readiness, accessibility, enjoyment, or research validity.
+
+## Present
+
+### M1 — Bounded deterministic transition fixture
+
+**Status:** Active
+**Started:** 2026-08-04
+**Selected after:** M0 hosted CI promotion
+
+#### Target slice
+
+- Keep the existing single Cargo package and add internal kernel modules only
+  where the first fixture needs them.
+- Define one stable identifier, one bounded numeric/resource value, immutable
+  `WorldState`, and the minimum actor state for a tiny scripted fixture.
+- Define `Command`, `ValidatedCommand`, `ResolvedInputs`, `Event`, `Effect`,
+  `TransitionResult`, and typed validation errors.
+- Implement one pure deterministic transition from explicit resolved inputs,
+  including one invalid command and one legal but unfavorable outcome.
+- Record an append-only transition history entry, a deterministic authoritative
+  state hash, and replay verification of every transition hash.
+- Keep environment, observation, policy, coordination, and execution input
+  categories explicit even if the first fixture uses only a subset.
+
+#### Verification
+
+- Repeated runs with identical prior state, validated commands, resolved inputs,
+  and ruleset produce equivalent events, effects, next state, and hash.
+- Replay reconstructs the terminal state and verifies every committed transition
+  hash from the initial state.
+- Tests cover malformed/illegal commands, legal unfavorable outcomes, bounds,
+  conservation, ordering, and unrelated input-stream isolation as implemented.
+- Core dependency inspection confirms no I/O, async runtime, wall clock,
+  terminal, database, MCP, model-provider, or hidden RNG dependency.
+
+#### Not Yet Done
+
+- No lane model, full scenario, serialization format, interactive CLI, MCP
+  transport, general entity-component system, or arbitrary scenario scripting.
+- Schema fixtures and replay bundles remain constrained to the smallest contract
+  demonstrated by this slice.
 
 ## Future
 
 The detailed and canonical order is in `ROADMAP.md`.
 
-- **M1:** typed deterministic kernel, explicit resolved inputs, append-only
-  history, state hashes, and replay identity.
 - **M2:** one complete lane scenario with actor-specific uncertainty, intent,
   delegated execution, branching, and causal debrief.
 - **M3:** keyboard-first CLI reference experience.

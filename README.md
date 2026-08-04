@@ -74,8 +74,8 @@ players?
 
 | Area | State |
 | --- | --- |
-| Current roadmap milestone | M0 — Governed repository baseline (Active) |
-| Repository governance and canonical docs | Active — M0 |
+| Current roadmap milestone | M1 — Deterministic Simulation Kernel (Active) |
+| Repository governance and canonical docs | Complete — M0 |
 | Rust package | `0.1.1`, edition 2024, Rust `1.96`, no dependencies, single package |
 | Executable behavior | Prints `Hello, world!` |
 | Deterministic kernel | Not implemented — M1 |

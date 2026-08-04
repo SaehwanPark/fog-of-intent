@@ -27,6 +27,9 @@ not increment the package version.
 
 ### Changed
 
+- M0 is promoted to complete after the hosted clean-checkout CI run passed; the
+  first bounded M1 deterministic-kernel fixture is now the active project-state
+  slice.
 - README now presents the project thesis, current pre-implementation status,
   initial vertical slice, canonical documents, and contributor workflow.
 - The original proposal roadmap is labeled as a design source; `ROADMAP.md` is

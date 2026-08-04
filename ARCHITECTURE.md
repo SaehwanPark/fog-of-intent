@@ -207,16 +207,18 @@ and an architecture update or ADR when it changes a consequential boundary.
 
 ## Known Gaps
 
-- No crate/module ownership, public API, schema, hash, or compatibility contract
-  exists in code.
+- No M1 crate/module ownership, public API, schema, hash, or compatibility
+  implementation exists in code; the first bounded kernel fixture is selected in
+  `ROADMAP.md` and `SPEC.md`.
 - `.github/workflows/ci.yml` and `scripts/check_repository.py` now define the
   formatting, lint, test, metadata, link, currentness, and dependency-free
-  package guard; a successful hosted run is still required for M0 promotion.
+  package guard; PR #4's hosted run passed and supports M0 promotion. Future
+  changes still require the workflow to pass again.
 - No automated advisory/license scanner is configured for a future non-empty
   dependency graph; the current guard blocks dependency additions until the
   approved scanner and its policy are added or a complete machine-readable defer
   record is bound to the exact dependency identity.
-- Implementation-backed package, schema, compatibility, accessibility, and
-  research governance remain incomplete and are tracked in M0 and later
-  roadmap gates. Repository policy and the initial authority ADR now exist, but
-  they do not establish legal clearance or shipped simulation capability.
+- Implementation-backed schema, accessibility, and research governance remain
+  incomplete and are tracked in M1 and later roadmap gates. Repository policy
+  and the initial authority ADR now exist, but they do not establish legal
+  clearance or shipped simulation capability.
