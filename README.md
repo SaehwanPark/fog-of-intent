@@ -1,56 +1,176 @@
 # Fog of Intent
 
-AI-Native Team Strategy Simulation Inspired by League of Legends
+A turn-based, AI-native team-strategy simulation about making plans under
+uncertainty and living with how teammates interpret and execute them.
 
-## Initial Documents
+> **Project status:** Pre-implementation foundation. The repository currently
+> contains a Rust 2024 placeholder binary, the product proposal, canonical
+> planning and spec documents. No playable
+> simulation, command loop, MCP server, replay engine, or GUI exists yet.
 
-- [Project proposal](docs/project-proposal.md)
-- [Tech stack discussion](docs/tech-stack-consideration.md)
+## The Idea
 
-## Programming Consideration
+Fog of Intent asks whether the strategic depth of a multiplayer online battle
+arena can survive when real-time mechanics are delegated. Instead of aiming,
+kiting, or reacting within milliseconds, the player expresses:
 
-- Use tabsize of 2 spaces throughout
-- Functional programming paradigm preferred
-- Spec-driven developments
-- Test-driven developments
-- Domain-first and type-safe developments
-- AI-first and AI-native testplays (as much as possible) preferred
-- Careful and useful code comments and docstrings
+- intent and commitment;
+- lane posture, risk, recall timing, and resource priorities;
+- messages, proposals, and conditional commitments;
+- abort conditions and fallback behavior;
+- trust, leadership, and responses to imperfect information.
 
-## Versioning Rules
+Simulated actors perform the execution. Their results depend on what they know,
+what they believe, how they coordinate, and how well they execute under explicit
+uncertainty. The debrief then explains what happened without treating a lucky
+outcome as proof of a good decision.
 
-Here is a refined, unambiguous version of your versioning specification.
+The initial design is inspired by the strategic structure of *League of
+Legends*, but the project is not affiliated with or endorsed by Riot Games. It
+is currently a noncommercial design and engineering prototype with an
+original-setting fallback; formal license, content, and distribution policy are
+still Phase M0 work.
 
-Key improvements included below:
+## Design Commitments
 
-* **Explicit Reset Behavior:** Clarified that incrementing `a` resets both `b` and `c` to `0` (e.g., moving to `1.0.0`).
-* **Clear Hierarchy:** Defined exact rules for each segment (`a`, `b`, `c`) with explicit exclusions.
-* **Terminology Precision:** Standardized terms so edge cases (like non-code repo changes) are explicitly defined.
+- **Intent is not execution.** A sound plan may fail, and a weak plan may
+  succeed.
+- **Actors are not omniscient.** True state, belief, observation, report, and
+  research inspection stay separate.
+- **Behavior is bounded, not merely random.** Candidate generation, evaluation,
+  selection, coordination, and execution remain distinct.
+- **The core is reproducible.** Given the same state, validated commands,
+  resolved inputs, and ruleset, the transition must produce the same events,
+  effects, next state, and hash.
+- **History is inspectable.** Committed transitions are append-only and support
+  replay, branching, and causal debriefing.
+- **Interfaces share one authority.** CLI, MCP, research, and any future GUI use
+  host-owned commands and actor-visible projections.
+- **Evidence has limits.** AI playtests can test software and modeled behavior;
+  they do not establish human enjoyment, accessibility, trust, or behavioral
+  validity.
+- **Vertical slices come first.** The project earns broader frameworks and
+  surfaces through demonstrated needs.
 
----
+## First Playable Target
 
-## Versioning Rules
+The first vertical slice is one short lane scenario with:
 
-Let the project version be expressed as `a.b.c`, where `a`, `b`, and `c` are non-negative integers.
+- one human-controlled laner;
+- one opposing laner;
+- one allied autonomous actor;
+- one abstract opposing jungle threat;
+- wave pressure, vision, resources, trading, recall, and gank response;
+- variable-duration decision windows;
+- intent, commitment, messages, contingencies, and delegated execution;
+- a terminal objective, deterministic replay, one bounded branch, and a causal
+  debrief.
 
-### 1. Initial State
+The target question is simple: is it understandable and enjoyable to make
+strategic team-game decisions when mechanical execution belongs to modeled
+players?
 
-* The initial codebase starts at **`0.1.0`**.
+## Current State
 
----
+| Area | State |
+| --- | --- |
+| Repository governance and canonical docs | Active — M0 |
+| Rust package | `0.1.0`, edition 2024, no dependencies |
+| Executable behavior | Prints `Hello, world!` |
+| Deterministic kernel | Not implemented — M1 |
+| One-lane scenario | Not implemented — M2 |
+| CLI reference experience | Not implemented — M3 |
+| Agent ecology and MCP | Not implemented — M4/M5 |
+| Behavioral experiments and calibration | Not implemented — M6/M7 |
+| Team play, full match, human alpha, optional GUI | Not implemented — M8-M11 |
+| Public alpha | Not release-ready — M12 |
 
-### 2. Increment Rules
+See the [canonical roadmap](ROADMAP.md) for dependencies, scope, promotion
+evidence, and explicit deferrals.
 
-| Segment | Meaning | When to Increment | Reset Behavior |
-| --- | --- | --- | --- |
-| **`c`** | **Patch / PR** | Merging a PR that includes codebase changes. | Resets to `0` when **`b`** or **`a`** is incremented. |
-| **`b`** | **Minor / Feature** | The project significantly evolves relative to version `a.b.0`. | Resets **`c`** to `0`. Resets to `0` when **`a`** is incremented. |
-| **`a`** | **Major / Stage** | The project enters a major new lifecycle stage (e.g., `1.0.0` for initial production release). | Resets both **`b`** and **`c`** to `0`. |
+## Run the Current Placeholder
 
----
+Install a Rust toolchain with Rust 2024 edition support, then run:
 
-### 3. Conventions & Edge Cases
+```sh
+cargo run
+```
 
-* **Exclusions for `c`:** Do **not** increment `c` for changes restricted strictly to documentation, comments, or non-code repository metadata.
-* **Unbounded Segments:** Version numbers do not overflow at 10. Segments increment indefinitely (e.g., `0.1.9` $\rightarrow$ `0.1.10` $\rightarrow$ `0.1.11`).
-* **Precedence:** When a release meets the criteria for a higher-level segment (`a` or `b`), increment only the higher segment and reset the lower segments.
+Expected output today:
+
+```text
+Hello, world!
+```
+
+Repository checks:
+
+```sh
+cargo fmt --check
+cargo clippy --all-targets --all-features -- -D warnings
+cargo test
+```
+
+These commands validate only the current placeholder until later milestones add
+domain behavior and tests.
+
+## Canonical Documents
+
+- [Roadmap](ROADMAP.md) — milestone order, scope, dependencies, and exit evidence.
+- [Specification](SPEC.md) — verified past, active work, and deferred future.
+- [Architecture](ARCHITECTURE.md) — current structure and explicitly labeled
+  target boundaries.
+- [Changelog](CHANGELOG.md) — meaningful contributor- and user-visible history.
+- [Project proposal](docs/project-proposal.md) — detailed product, simulation,
+  research, risk, and validation vision.
+- [Technology considerations](docs/tech-stack-consideration.md) — proposed stack;
+  recommendations are not adopted architecture until implementation evidence or
+  an ADR says so.
+
+## Contributing Workflow
+
+1. Read `SPEC.md` and the active milestone in `ROADMAP.md`.
+2. Select the smallest complete slice and state its observable verification and
+   non-goals.
+3. Preserve the domain and authority boundaries documented in the canonical
+   project files.
+4. Keep I/O, async work, persistence, rendering, model providers, and randomness
+   outside the deterministic transition boundary.
+5. Add focused tests or inspection evidence and reconcile affected project-state
+   documents.
+6. Run the repository checks and review the final diff for contradictions or
+   unsupported capability claims.
+
+## Repository Map
+
+```text
+src/                         Current Rust placeholder
+docs/                        Proposal and stack analysis
+ROADMAP.md                   Canonical execution plan
+SPEC.md                      Current project state
+ARCHITECTURE.md              Current and target system boundaries
+CHANGELOG.md                 Meaningful history
+```
+
+Future source, scenario, schema, profile, experiment, research, or GUI
+directories appear only when their roadmap slice demonstrates a need.
+
+## Versioning
+
+Versions use `a.b.c`, starting at `0.1.0`:
+
+- increment `c` for a merged PR or PR-equivalent that changes the codebase;
+- do not increment `c` for documentation-, comment-, or repository-metadata-only
+  changes;
+- increment `b` for a significant feature release or accumulated evolution;
+- increment `a` for a new lifecycle stage, such as an initial production
+  release;
+- when `a` or `b` increments, reset lower segments to zero;
+- segments do not carry automatically at 10 (`0.1.9` becomes `0.1.10`).
+
+If a change qualifies for more than one increment, apply only the highest one.
+
+## Project Principle
+
+> Build a text-first strategic simulation in which players and agents act under
+> incomplete information, express plans rather than reflexes, coordinate
+> imperfectly, and learn through reproducible causal debriefs.
