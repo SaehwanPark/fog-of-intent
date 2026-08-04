@@ -1509,6 +1509,11 @@ CLI, MCP, and later GUI surfaces must consume host-owned projections and command
 
 ## 23. Phase-Based Roadmap
 
+> **Canonical roadmap note:** This section preserves the roadmap as proposed on
+> 2026-08-04. The actively maintained milestone order, status, scope, and exit
+> gates live in [`../ROADMAP.md`](../ROADMAP.md). When the two differ,
+> `ROADMAP.md` governs current project execution.
+
 The roadmap is evidence-gated. Completion of a checklist does not automatically justify expansion. Each phase must produce a bounded playable or analytical capability and an evidence packet.
 
 ---
