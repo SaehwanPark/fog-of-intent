@@ -255,9 +255,10 @@ async, terminal, database, or model-provider dependencies in the core.
 
 - The internal `fog_of_intent::kernel` library fixture implements the checked
   items above without adding a dependency or changing binary behavior.
-- Eighteen focused Rust tests pass: thirteen kernel tests cover validation,
+- Nineteen focused Rust tests pass: thirteen kernel tests cover validation,
   transitions, bounds, conservation, replay, ordering, repeated runs, and
-  stream isolation; five codec tests cover fixtures, round trips, and rejection.
+  stream isolation; six codec tests cover fixtures, round trips, unsupported
+  rulesets, and rejection.
 - The checked-in `m1_snapshot_v1.txt` and `m1_history_v1.txt` fixtures use the
   explicit `1.0.0` schema and `fnv1a64-le-v1` hash representation.
 

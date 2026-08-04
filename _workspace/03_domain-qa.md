@@ -76,9 +76,9 @@ None for the bounded M1 slice.
 
 ## Verification Evidence
 
-- Eighteen focused Rust tests pass: thirteen kernel tests and five serialization
+- Nineteen focused Rust tests pass: thirteen kernel tests and six serialization
   tests, including exhaustive bounds/conservation, fixture round trips,
-  malformed/version/tamper rejection, and replay.
+  unsupported-ruleset, malformed/version/tamper rejection, and replay.
 - cargo +1.96.0 test --locked passes.
 - cargo +1.96.0 fmt --check passes.
 - cargo +1.96.0 clippy --all-targets --all-features -- -D warnings passes.

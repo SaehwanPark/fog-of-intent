@@ -54,6 +54,10 @@ pub enum SerializationError {
         expected: RulesetId,
         actual: RulesetId,
     },
+    UnsupportedRulesetForSerialization {
+        expected: RulesetId,
+        actual: RulesetId,
+    },
     HashMismatch {
         line: usize,
         expected: StateHash,
@@ -72,8 +76,9 @@ pub enum SerializationError {
     },
 }
 
-pub fn serialize_snapshot(state: &WorldState) -> String {
-    format!(
+pub fn serialize_snapshot(state: &WorldState) -> Result<String, SerializationError> {
+    ensure_serializable_ruleset(state.ruleset())?;
+    Ok(format!(
         "snapshot schema={} hash_representation={} ruleset={} turn={} actor={} energy={} score={} hash={}",
         SNAPSHOT_SCHEMA_VERSION,
         HASH_REPRESENTATION,
@@ -83,7 +88,7 @@ pub fn serialize_snapshot(state: &WorldState) -> String {
         state.actor().energy().value(),
         state.actor().score(),
         state.hash().value()
-    )
+    ))
 }
 
 pub fn deserialize_snapshot(input: &str) -> Result<WorldState, SerializationError> {
@@ -124,9 +129,10 @@ pub fn deserialize_snapshot(input: &str) -> Result<WorldState, SerializationErro
     Ok(state)
 }
 
-pub fn serialize_history(history: &History) -> String {
+pub fn serialize_history(history: &History) -> Result<String, SerializationError> {
     let mut lines = Vec::with_capacity(2 + history.records().len() * 3);
     let initial = history.initial_state();
+    ensure_serializable_ruleset(initial.ruleset())?;
     lines.push(format!(
         "history schema={} hash_representation={} ruleset={} records={}",
         HISTORY_SCHEMA_VERSION,
@@ -150,7 +156,7 @@ pub fn serialize_history(history: &History) -> String {
         lines.push(serialize_inputs(&record.inputs()));
         lines.push(serialize_result(record.result()));
     }
-    lines.join("\n")
+    Ok(lines.join("\n"))
 }
 
 pub fn deserialize_history(input: &str) -> Result<History, SerializationError> {
@@ -832,6 +838,17 @@ fn parse_ruleset(
     Ok(ruleset)
 }
 
+fn ensure_serializable_ruleset(ruleset: RulesetId) -> Result<(), SerializationError> {
+    if ruleset == CURRENT_RULESET {
+        Ok(())
+    } else {
+        Err(SerializationError::UnsupportedRulesetForSerialization {
+            expected: CURRENT_RULESET,
+            actual: ruleset,
+        })
+    }
+}
+
 fn parse_stream(
     line_number: usize,
     field_name: &'static str,
@@ -878,14 +895,20 @@ mod tests {
     fn snapshot_fixture_round_trips_canonically() {
         let fixture = include_str!("../tests/fixtures/m1_snapshot_v1.txt").trim_end();
         let state = deserialize_snapshot(fixture).expect("fixture parses");
-        assert_eq!(serialize_snapshot(&state), fixture);
+        assert_eq!(
+            serialize_snapshot(&state).expect("snapshot serializes"),
+            fixture
+        );
     }
 
     #[test]
     fn history_fixture_round_trips_and_replays() {
         let fixture = include_str!("../tests/fixtures/m1_history_v1.txt").trim_end();
         let history = deserialize_history(fixture).expect("fixture parses");
-        assert_eq!(serialize_history(&history), fixture);
+        assert_eq!(
+            serialize_history(&history).expect("history serializes"),
+            fixture
+        );
         assert_eq!(history.verify_replay(), Ok(history.current_state()));
     }
 
@@ -946,7 +969,7 @@ mod tests {
             ),
         );
         history.append(command, inputs).expect("hold append");
-        let encoded = serialize_history(&history);
+        let encoded = serialize_history(&history).expect("history serializes");
         assert!(encoded.contains("env_stream=1"));
         assert!(encoded.contains("obs_stream=3"));
         assert!(encoded.contains("policy_stream=5"));
@@ -956,6 +979,20 @@ mod tests {
             deserialize_history(&encoded).unwrap().current_state(),
             history.current_state()
         );
+    }
+
+    #[test]
+    fn serializers_reject_unsupported_rulesets() {
+        let unsupported = WorldState::new(
+            RulesetId::new(2),
+            Turn::new(0),
+            ActorState::new(ActorId::new(7), Units::new(10).unwrap(), 0),
+        );
+
+        assert!(matches!(
+            serialize_snapshot(&unsupported),
+            Err(SerializationError::UnsupportedRulesetForSerialization { .. })
+        ));
     }
 
     #[test]

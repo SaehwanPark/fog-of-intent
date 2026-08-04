@@ -112,7 +112,7 @@ exists. Planned proposal or roadmap text is never implementation evidence.
   hashes, and append-only in-memory transition records are implemented.
 - Replay revalidates and reevaluates every committed transition and compares
   each stored result and hash.
-- Eighteen focused Rust tests cover invalid and unfavorable outcomes, bounds,
+- Nineteen focused Rust tests cover invalid and unfavorable outcomes, bounds,
   conservation, repeated runs, input-stream isolation, ordering, replay,
   versioned fixtures, round trips, and fail-closed codec rejection.
 - `src/serialization.rs` and two checked-in `1.0.0` text fixtures serialize and
