@@ -81,6 +81,10 @@ impl DrawId {
 pub struct StateHash(u64);
 
 impl StateHash {
+    pub(crate) fn from_raw(value: u64) -> Self {
+        Self(value)
+    }
+
     pub fn value(self) -> u64 {
         self.0
     }
@@ -900,7 +904,12 @@ mod tests {
             Err(ValidationError::WrongRuleset { .. })
         ));
 
-        let stale_hash = Command::hold(actor(), prior.turn(), prior.ruleset(), StateHash(0));
+        let stale_hash = Command::hold(
+            actor(),
+            prior.turn(),
+            prior.ruleset(),
+            StateHash::from_raw(0),
+        );
         assert!(matches!(
             validate_command(&prior, &stale_hash),
             Err(ValidationError::StateHashMismatch { .. })
@@ -1082,5 +1091,26 @@ mod tests {
                 maximum: MAX_UNITS,
             })
         );
+    }
+
+    #[test]
+    fn exhaustive_bounded_gathers_preserve_energy_and_yield_invariants() {
+        for spend in 1..=MAX_UNITS {
+            for yielded in 0..=spend {
+                let prior = state();
+                let command = gather_command(prior, spend);
+                let validated = validate_command(&prior, &command).expect("gather is valid");
+                let result = transition(&prior, &validated, &execution_inputs(yielded))
+                    .expect("bounded gather is valid");
+                let next_actor = result.next_state().actor();
+
+                assert!(next_actor.energy().value() <= MAX_UNITS);
+                assert_eq!(
+                    prior.actor().energy().value(),
+                    next_actor.energy().value() + spend
+                );
+                assert_eq!(next_actor.score(), u16::from(yielded));
+            }
+        }
     }
 }

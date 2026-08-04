@@ -2,84 +2,85 @@
 
 ## Requested Outcome
 
-Implement the first bounded M1 deterministic-kernel fixture, verify it locally,
-review it with one code reviewer, and hand it off through a branch, pull
-request, and merge before selecting the next slice.
+Implement the next bounded M1 slice after the deterministic kernel merge:
+versioned snapshot/history serialization with fixtures and exhaustive
+bounds/conservation property-style checks. Review and merge it independently
+before selecting another slice.
 
 ## Roadmap Milestone
 
-M1 — Deterministic Simulation Kernel, first bounded transition/history fixture.
+M1 — Deterministic Simulation Kernel, serialization and property-check follow-up.
 
 ## Current Evidence
 
-- M0 is complete in `ROADMAP.md` and `SPEC.md` after hosted PR #4 verification.
-- The repository is a single Rust package pinned to Rust `1.96.0` with no
-  dependencies.
-- ADR-0001 assigns simulation truth, validation, transition, history, replay,
-  and state hashing to the host-owned deterministic boundary.
+- PR #5 merged the typed kernel fixture to `main` as `4424ea4` after hosted CI
+  run `30959271361` passed.
+- The package is version `0.1.2` at slice start and will become `0.1.3` for this
+  code-bearing change; it remains pinned to Rust `1.96.0` with no dependencies.
+- The remaining active M1 checklist items are versioned snapshot/history
+  serialization and property-style bounds/conservation tests.
 
 ## In Scope
 
-- Add a library kernel with stable actor, turn, ruleset, stream, draw, unit, and
-  state-hash types.
-- Model one immutable world state with one bounded energy resource and score.
-- Model `Command`, `ValidatedCommand`, five explicit resolved-input categories,
-  events, attributed effects, transition results, and typed errors.
-- Validate commands separately from transition evaluation.
-- Evaluate `Hold` and `Gather` from resolved execution inputs, including a legal
-  zero-yield but unfavorable gather.
-- Record append-only in-memory transition history and verify it by replay.
-- Add deterministic, bounds, conservation, malformed-command, ordering,
-  version-mismatch, repeated-run, and unrelated-stream-isolation tests.
-- Update only the affected M1 roadmap, specification, architecture, changelog,
-  and handoff artifacts after evidence exists.
+- Add version constants for snapshot schema, history schema, and the current
+  state-hash representation.
+- Add a strict, dependency-free canonical text codec for `WorldState` snapshots
+  and append-only `History` records.
+- Include ruleset identity, schema/hash versions, commands, resolved input
+  category identities, prior hashes, events, effects, next state, and next hash.
+- Reject unsupported versions, unknown/duplicate/missing fields, malformed
+  values, tampered hashes/results, and invalid history ordering through typed
+  serialization errors.
+- Add checked-in versioned snapshot/history fixtures and round-trip/tamper tests.
+- Add exhaustive finite checks over every bounded spend/yield pair for energy
+  bounds, conservation, and score/yield invariants.
+- Synchronize the M1 design, roadmap, SPEC, architecture, changelog, and domain
+  QA evidence after verification.
 
 ## Non-Goals
 
-- No lane, scenario, actor ecology, belief, observation projection, CLI, MCP,
-  persistence, serialization format, database, async runtime, model provider,
-  GUI, or general entity-component framework.
-- No random-value generation, wall-clock access, I/O, or hidden mutable state in
-  the kernel.
-- No claims about playability, enjoyment, accessibility, trust, or research
-  validity.
+- No JSON/Serde dependency, migration framework, external persistence service,
+  scenario/lane mechanics, CLI, MCP, GUI, or arbitrary scripting format.
+- No compatibility promise beyond the explicit `1.0.0` fixture format.
+- No change to the placeholder binary or claim of a playable simulation.
 
 ## Project Boundaries Touched
 
-- Host-owned authoritative transition boundary from ADR-0001.
-- Explicit distinctions among command, execution input, event, effect, state,
-  and committed history from `docs/TERMINOLOGY.md`.
-- Functional core requirements: explicit state flow, typed failures, injected
-  inputs, and tightly scoped history mutation.
+- Compatibility rules in `docs/COMPATIBILITY.md`.
+- Host-owned history/replay authority from ADR-0001.
+- Functional core boundary: serialization is a typed edge codec; replay and
+  transition semantics remain owned by the kernel.
 
 ## Source Files
 
+- `src/kernel.rs`, `src/lib.rs`, and new `src/serialization.rs`
+- `tests/fixtures/` versioned text fixtures
 - `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md`
-- `docs/TERMINOLOGY.md`, `docs/adr/0001-authoritative-transition-boundary.md`
-- `docs/COMPATIBILITY.md`, `AGENTS.md`, and the simulation-design skill
+- `_workspace/01_simulation-design.md`, `_workspace/03_domain-qa.md`
 
 ## Expected Outputs
 
-- `_workspace/01_simulation-design.md` with the bounded contract.
-- `src/lib.rs` and `src/kernel.rs` with focused unit tests.
-- Updated canonical state documents and `_workspace/03_domain-qa.md`.
-- Passing local checks, one code-reviewer disposition, and a merged PR.
+- Canonical snapshot/history serializer and parser with typed errors.
+- Versioned checked-in fixtures and focused tests.
+- Updated M1 checklist and SDD/domain handoff artifacts.
+- Passing local checks, one code-reviewer’s three-pass review, hosted CI, and a
+  merged PR.
 
 ## Verification
 
 - `cargo +1.96.0 fmt --check`
 - `cargo +1.96.0 clippy --all-targets --all-features -- -D warnings`
-- `cargo +1.96.0 test`
+- `cargo +1.96.0 test --locked`
 - `python3 scripts/check_repository.py`
 - `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'`
 - `git diff --check`
-- Code-reviewer three-pass report and targeted follow-up fixes, if any.
+- Round-trip and rejection tests for both fixture formats.
 
 ## Evidence Limits and Open Questions
 
-- This slice can establish software determinism, validation, boundedness,
-  conservation, and replay properties only.
-- In-memory history is not a serialized replay artifact; versioned snapshot and
-  history fixtures remain a later M1 slice.
-- The kernel is an internal library surface; the binary remains a placeholder
-  and no user-facing gameplay exists.
+- The codec establishes a local versioned fixture contract, not external
+  backward compatibility or a migration policy.
+- A future scenario may add scenario identifiers and richer event/effect forms;
+  this format must not be generalized ahead of demonstrated need.
+- Property-style checks are finite exhaustive tests over the current bounded
+  domain, not a claim of formal verification.

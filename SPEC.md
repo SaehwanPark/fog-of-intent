@@ -112,8 +112,11 @@ exists. Planned proposal or roadmap text is never implementation evidence.
   hashes, and append-only in-memory transition records are implemented.
 - Replay revalidates and reevaluates every committed transition and compares
   each stored result and hash.
-- Twelve focused Rust tests cover invalid and unfavorable outcomes, bounds,
-  conservation, repeated runs, input-stream isolation, ordering, and replay.
+- Nineteen focused Rust tests cover invalid and unfavorable outcomes, bounds,
+  conservation, repeated runs, input-stream isolation, ordering, replay,
+  versioned fixtures, round trips, and fail-closed codec rejection.
+- `src/serialization.rs` and two checked-in `1.0.0` text fixtures serialize and
+  deserialize snapshots and histories through the kernel replay contract.
 
 #### Verification
 
@@ -128,10 +131,10 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 
 #### Not Yet Done
 
-- No lane model, full scenario, serialization format, interactive CLI, MCP
+- No lane model, full scenario, interactive CLI, MCP
   transport, general entity-component system, or arbitrary scenario scripting.
-- Snapshot/history serialization, schema fixtures, and external replay bundles
-  remain deferred; the current history contract is in-memory only.
+- Migration support, richer external replay bundles, and scenario-specific
+  schema fields remain deferred beyond this local `1.0.0` fixture contract.
 
 ## Future
 

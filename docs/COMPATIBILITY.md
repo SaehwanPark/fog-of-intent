@@ -1,9 +1,9 @@
 # Artifact and Replay Compatibility
 
-This document defines the minimum compatibility contract that M1 fixtures must
-follow before schemas or replay bundles become external artifacts. It is a
-policy for future implementation, not evidence that serializers or migrations
-exist today.
+This document defines the minimum compatibility contract for the local M1
+snapshot/history fixtures before any schema or replay bundle becomes an
+external artifact. The repository has a strict dependency-free `1.0.0` text
+codec; it does not provide migrations or external backward-compatibility support.
 
 ## Versioned identity
 

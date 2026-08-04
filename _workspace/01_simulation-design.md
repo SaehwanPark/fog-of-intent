@@ -5,8 +5,9 @@
 Prove the smallest host-owned deterministic transition boundary for M1. The
 fixture has one actor, one bounded energy resource, one score counter, and two
 commands. It establishes typed validation, explicit resolved inputs, attributed
-events/effects, stable state hashing, and append-only in-memory replay before
-lane mechanics or persistence are introduced.
+events/effects, stable state hashing, append-only in-memory replay, and a strict
+versioned text fixture codec before lane mechanics or persistence are
+introduced.
 
 ## Slice Boundary and Non-Goals
 
@@ -24,8 +25,8 @@ In scope:
   and replay verification.
 
 Out of scope: actor beliefs or reports, lane/scenario rules, multiple actors,
-communication, branching APIs, serialization, persistence, CLI/MCP adapters,
-random generation, async execution, and debrief presentation.
+communication, branching APIs, external persistence, CLI/MCP adapters, random
+generation, async execution, migrations, and debrief presentation.
 
 ## Actors and Authority
 
@@ -91,8 +92,15 @@ the resolved bounded yield.
 stores the raw command, resolved inputs, prior hash, and complete transition
 result. Replay starts at the initial state, checks each prior hash, revalidates
 and reevaluates each record, compares the stored result, and returns the
-terminal state or a typed divergence error. Branching and serialization are
-deferred; no record-removal or mutation API is provided.
+terminal state or a typed divergence error. Branching and record removal remain
+deferred; no mutation API removes committed records.
+
+The M1 codec serializes snapshots and histories as canonical line-oriented text
+with schema version `1.0.0` and hash representation `fnv1a64-le-v1`. It records
+the initial state, exact commands, all five input-category identities, prior
+hashes, ordered events/effects, next state, and next hash. Deserialization
+reconstructs history through the kernel and fails closed on unsupported versions,
+unknown fields, malformed values, or mismatched replay results.
 
 ## Debrief and Causal Explanation
 
@@ -111,14 +119,18 @@ Tests must establish:
 - zero-yield gather is legal, spends energy, and leaves score unchanged;
 - energy and score bounds/conservation hold for valid gathers;
 - history replay verifies every transition and reaches the terminal state;
+- versioned snapshot/history fixtures round-trip and reject tampered or
+  unsupported records;
 - duplicate/out-of-order commands are rejected by exact turn validation;
 - changing unrelated input streams does not change the result;
+- exhaustive bounded spend/yield checks preserve energy bounds, conservation,
+  and score/yield invariants;
 - no kernel path reads I/O, wall clock, environment, async services, or RNG.
 
 ## Open Questions
 
-- Versioned serialized snapshot/history fixtures need a later M1 design once
-  the in-memory record shape proves stable.
+- Migration support and externally supported replay bundles need a later M1
+  design once this local 1.0.0 fixture shape proves stable.
 - A future scenario will decide whether energy and score remain generic units or
   become scenario-specific resources.
 - Actor-visible observations and reports begin with the first information-

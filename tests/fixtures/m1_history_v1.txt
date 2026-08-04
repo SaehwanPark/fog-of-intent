@@ -1,0 +1,8 @@
+history schema=1.0.0 hash_representation=fnv1a64-le-v1 ruleset=1 records=2
+initial ruleset=1 turn=0 actor=7 energy=10 score=0 hash=9023622385751890097
+record index=0 prior=9023622385751890097 actor=7 turn=0 ruleset=1 expected=9023622385751890097 action=hold
+inputs env_stream=0 env_draw=0 obs_stream=0 obs_draw=0 policy_stream=0 policy_draw=0 coord_stream=0 coord_draw=0 exec_stream=3 exec_draw=11 yielded=0
+result ruleset=1 turn=1 actor=7 energy=10 score=0 hash=14137234330961107380 events=held:7 effects=none
+record index=1 prior=14137234330961107380 actor=7 turn=1 ruleset=1 expected=14137234330961107380 action=gather:3
+inputs env_stream=0 env_draw=0 obs_stream=0 obs_draw=0 policy_stream=0 policy_draw=0 coord_stream=0 coord_draw=0 exec_stream=3 exec_draw=11 yielded=2
+result ruleset=1 turn=2 actor=7 energy=7 score=2 hash=8641949948942120878 events=gathered:7:3:2 effects=energy_spent:7:3:command,score_awarded:7:2:execution:3:11

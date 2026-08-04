@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs` | Placeholder `Hello, world!` binary |
-| Package | `Cargo.toml` | Version `0.1.2`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.3`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -224,11 +224,11 @@ async, terminal, database, or model-provider dependencies in the core.
   input categories even if the first fixture uses only a subset.
 - [x] Implement append-only committed history records.
 - [x] Implement deterministic state hashing over declared authoritative fields.
-- [ ] Implement snapshot and history serialization with versioned fixtures.
+- [x] Implement snapshot and history serialization with versioned fixtures.
 - [x] Implement replay verification from the initial state and committed inputs.
 - [x] Add example-based transition tests.
-- [x] Add invariant tests for bounds and conservation rules; property tests remain
-  a follow-up within M1.
+- [x] Add invariant and exhaustive property-style tests for bounds and
+  conservation rules.
 - [x] Add malformed-command, duplicate-command, ordering, and version-mismatch
   tests.
 - [x] Add repeated-run and random-stream-isolation tests.
@@ -255,10 +255,12 @@ async, terminal, database, or model-provider dependencies in the core.
 
 - The internal `fog_of_intent::kernel` library fixture implements the checked
   items above without adding a dependency or changing binary behavior.
-- Twelve focused Rust tests pass for validation, transitions, bounds,
-  conservation, replay, ordering, repeated runs, and stream isolation.
-- Snapshot/history serialization and property-style tests are intentionally not
-  claimed complete by this slice.
+- Nineteen focused Rust tests pass: thirteen kernel tests cover validation,
+  transitions, bounds, conservation, replay, ordering, repeated runs, and
+  stream isolation; six codec tests cover fixtures, round trips, unsupported
+  rulesets, and rejection.
+- The checked-in `m1_snapshot_v1.txt` and `m1_history_v1.txt` fixtures use the
+  explicit `1.0.0` schema and `fnv1a64-le-v1` hash representation.
 
 ### Explicit deferrals
 

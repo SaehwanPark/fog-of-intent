@@ -1,0 +1,1 @@
+snapshot schema=1.0.0 hash_representation=fnv1a64-le-v1 ruleset=1 turn=0 actor=7 energy=10 score=0 hash=9023622385751890097
