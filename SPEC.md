@@ -51,6 +51,11 @@ exists. Planned proposal or roadmap text is never implementation evidence.
   evidence gates, claim limits, and maintenance rules.
 - Lightweight `SPEC.md`, `ARCHITECTURE.md`, and `CHANGELOG.md` state documents
   initialized.
+- Short repo-wide guidance created in `AGENTS.md`.
+- A portable domain harness created under `.agents/skills/` and
+  `docs/harness/fog-of-intent/` for simulation design, agent ecology, synthesis,
+  and project-specific QA.
+- `_workspace/` handoff names and lifecycle documented.
 - README revised to distinguish the current placeholder from the planned game
   and to point contributors at canonical documents.
 
@@ -66,6 +71,9 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 
 #### Verification
 
+- All generated repo-local `SKILL.md` files have YAML frontmatter with distinct
+  selection boundaries.
+- Harness handoff names agree between specialist skills and the team spec.
 - All local Markdown links resolve.
 - `git diff --check` passes.
 - The existing Rust placeholder remains formatting- and test-clean.

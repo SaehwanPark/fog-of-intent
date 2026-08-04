@@ -12,6 +12,9 @@ not increment the package version.
   evidence, explicit deferrals, and maintenance rules.
 - Lightweight specification and architecture state documents that distinguish
   the current placeholder from planned capabilities.
+- Repo-wide `AGENTS.md` guidance and a portable Fog of Intent agent harness for
+  simulation design, agent-ecology design, synthesis, and domain QA.
+- Deterministic `_workspace/` handoff conventions for substantial work.
 
 ### Changed
 

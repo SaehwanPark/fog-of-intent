@@ -35,6 +35,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Package | `Cargo.toml` | Version `0.1.0`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
+| Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
 | Simulation, CLI, MCP, replay, research, GUI | No implementation evidence | Not implemented |
 
 ## Milestone Map
@@ -139,6 +140,7 @@ and enough governance to begin the deterministic kernel without ambiguity.
 - [x] Record a Rust-first technology analysis.
 - [x] Establish this canonical roadmap.
 - [x] Initialize `SPEC.md`, `ARCHITECTURE.md`, and `CHANGELOG.md`.
+- [x] Define repo-wide agent guidance and a domain-oriented harness.
 - [x] Define documentation-only version exclusions.
 
 ### Remaining scope

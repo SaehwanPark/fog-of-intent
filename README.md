@@ -5,7 +5,7 @@ uncertainty and living with how teammates interpret and execute them.
 
 > **Project status:** Pre-implementation foundation. The repository currently
 > contains a Rust 2024 placeholder binary, the product proposal, canonical
-> planning and spec documents. No playable
+> planning/spec documents, and a domain-oriented agent harness. No playable
 > simulation, command loop, MCP server, replay engine, or GUI exists yet.
 
 ## The Idea
@@ -125,14 +125,16 @@ domain behavior and tests.
 - [Technology considerations](docs/tech-stack-consideration.md) — proposed stack;
   recommendations are not adopted architecture until implementation evidence or
   an ADR says so.
+- [Agent harness team spec](docs/harness/fog-of-intent/team-spec.md) — reusable
+  domain roles, routing, handoffs, review, and failure policy.
 
 ## Contributing Workflow
 
 1. Read `SPEC.md` and the active milestone in `ROADMAP.md`.
 2. Select the smallest complete slice and state its observable verification and
    non-goals.
-3. Preserve the domain and authority boundaries documented in the canonical
-   project files.
+3. Read `AGENTS.md`; for substantial domain work, use the `fog-intent-*`
+   repo-local skills and the harness team spec.
 4. Keep I/O, async work, persistence, rendering, model providers, and randomness
    outside the deterministic transition boundary.
 5. Add focused tests or inspection evidence and reconcile affected project-state
@@ -140,11 +142,17 @@ domain behavior and tests.
 6. Run the repository checks and review the final diff for contradictions or
    unsupported capability claims.
 
+The repo-local harness owns only Fog of Intent domain judgment. Generic Rust,
+functional design, UX, accessibility, code review, documentation, release, and
+git practices remain reusable global concerns.
+
 ## Repository Map
 
 ```text
 src/                         Current Rust placeholder
-docs/                        Proposal and stack analysis
+docs/                        Proposal, stack analysis, and harness contract
+.agents/skills/              Repo-local domain skills
+_workspace/                  On-demand inspectable handoff artifacts
 ROADMAP.md                   Canonical execution plan
 SPEC.md                      Current project state
 ARCHITECTURE.md              Current and target system boundaries

@@ -33,10 +33,12 @@ SPEC.md
 ARCHITECTURE.md
 CHANGELOG.md
 docs/
+.agents/
+_workspace/
 ```
 
 Only `Cargo.toml` and `src/main.rs` are executable product surfaces. The other
-paths are project-state and design-source artifacts.
+paths are project-state, design-source, and agent-workflow artifacts.
 
 ## Target Components
 
