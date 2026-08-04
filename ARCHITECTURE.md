@@ -22,6 +22,11 @@ The transition must remain synchronous and deterministic. Anything that reads
 the wall clock, performs I/O, generates randomness, waits for agents, persists
 artifacts, renders a UI, or speaks an external protocol belongs outside it.
 
+The first recorded boundary decision is
+[`docs/adr/0001-authoritative-transition-boundary.md`](docs/adr/0001-authoritative-transition-boundary.md).
+The controlled vocabulary for that boundary is
+[`docs/TERMINOLOGY.md`](docs/TERMINOLOGY.md).
+
 ## Current Repository Structure
 
 ```text
@@ -47,13 +52,13 @@ These are ownership boundaries for future milestones, not current modules.
 | Component | Owns | Must not own |
 | --- | --- | --- |
 | Domain model | Typed identifiers, units, state, beliefs, plans, commands, events, effects, ruleset identities | I/O, transport, rendering, provider SDKs |
-| Transition kernel | Validation inputs, deterministic coordination/execution resolution from explicit inputs, next state, attributed effects | Random generation, wall time, persistence, async tasks |
+| Transition kernel | Pure deterministic evaluation invoked by the host: validation checks, coordination/execution resolution from explicit inputs, next-state result, attributed effects | Simulation authority, random generation, wall time, persistence, async tasks |
 | Observation/projection | Actor-valid observations, reported uncertainty, legal-action references, debrief projections | Hidden-state leakage, new domain rules |
 | Input resolution | Versioned environment, observation, policy, coordination, and execution draws | Mutation of prior state or replay history |
-| History/replay | Append-only committed records, snapshots, state hashes, verification, branching policy | Reconstructing authority from runtime logs |
+| History/replay | Host-controlled append-only record operations, snapshots, state hashes, verification, and branching policy | Simulation authority or reconstructing authority from runtime logs |
 | Scenario/content | Validated compositions of known mechanics and actors | Executable scripts that become a second engine |
 | Agent policies | Scripted, heuristic, parametric, LLM-adapter, and adversarial choices from actor-visible inputs | Legality, state transition, privileged truth in ordinary play |
-| Application host | Session lifecycle, decision-window collection, ordering, authorization, and adapter coordination | Provider-specific rules in the core |
+| Application host | Sole simulation authority: true-state lifecycle, legality, window closure, ordering, transition invocation, history/replay commit, debrief generation, and adapter coordination | Provider-specific rules in the core |
 | CLI adapter | Keyboard-first commands and actor-visible text | Duplicated legality, transition, or hidden-state inference |
 | MCP adapter | Versioned DTOs and model-agnostic actor/controller tools | Internal domain-type compatibility or simulation resolution |
 | Persistence | Portable manifests, snapshots, JSONL history, replay bundles, and later indexes | Exclusive opaque storage of authoritative history |
@@ -70,8 +75,8 @@ ruleset + prior snapshot
   -> human/CLI/MCP/agent policies submit messages, plans, and contingencies
   -> host closes the window and validates the submission set
   -> edge resolver supplies explicit stochastic inputs
-  -> deterministic kernel emits events, effects, next state, and hash
-  -> history commits the full transition record
+  -> host invokes the deterministic kernel, which returns events, effects, next state, and hash
+  -> host commits the full transition record through history/replay
   -> actor-visible review and debrief projections are derived
   -> persistence and research adapters consume committed artifacts
 ```
@@ -200,9 +205,10 @@ and an architecture update or ADR when it changes a consequential boundary.
 
 ## Known Gaps
 
-- No ADR exists yet for the target transition and adapter boundaries.
 - No crate/module ownership, public API, schema, hash, or compatibility contract
   exists in code.
 - No toolchain, lockfile, CI, dependency policy, or release workflow is present.
-- Intellectual-property, licensing, contribution, accessibility, and research
-  governance are incomplete and tracked in M0 and later roadmap gates.
+- Implementation-backed package, schema, compatibility, accessibility, and
+  research governance remain incomplete and are tracked in M0 and later
+  roadmap gates. Repository policy and the initial authority ADR now exist, but
+  they do not establish legal clearance or shipped simulation capability.

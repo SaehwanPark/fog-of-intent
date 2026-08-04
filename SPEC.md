@@ -58,13 +58,15 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - `_workspace/` handoff names and lifecycle documented.
 - README revised to distinguish the current placeholder from the planned game
   and to point contributors at canonical documents.
+- Repository policy added through `LICENSE`, `CONTRIBUTING.md`,
+  `CODE_OF_CONDUCT.md`, and `NOTICE.md`, including the original-setting fallback
+  and conservative distribution boundary.
+- `DESIGN_PRINCIPLES.md`, `docs/TERMINOLOGY.md`, and
+  `docs/adr/0001-authoritative-transition-boundary.md` establish the first
+  authoritative vocabulary and host-owned transition contract.
 
 #### Not Yet Done
 
-- Choose and add a license, contribution policy, and appropriate conduct policy.
-- Add unofficial/noncommercial fan-project notice and original-setting fallback
-  policy suitable for distribution.
-- Create the first ADR and stable terminology reference.
 - Pin the Rust toolchain and package lockfile.
 - Add formatting, lint, test, link, and currentness checks to CI.
 - Decide the M1 crate/workspace layout and minimal dependency set.
@@ -77,6 +79,10 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - All local Markdown links resolve.
 - `git diff --check` passes.
 - The existing Rust placeholder remains formatting- and test-clean.
+- Policy files state that they are project boundaries, not legal clearance or
+  evidence of third-party permission.
+- The ADR identifies one host-owned transition authority and forbids adapters
+  from owning simulation truth.
 
 #### Deferred / Non-Goals
 

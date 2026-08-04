@@ -28,8 +28,8 @@ outcome as proof of a good decision.
 The initial design is inspired by the strategic structure of *League of
 Legends*, but the project is not affiliated with or endorsed by Riot Games. It
 is currently a noncommercial design and engineering prototype with an
-original-setting fallback; formal license, content, and distribution policy are
-still Phase M0 work.
+original-setting fallback. Initial license, content, and distribution policies
+now exist; release-specific review and legal clearance remain pending.
 
 ## Design Commitments
 
@@ -120,6 +120,11 @@ domain behavior and tests.
 - [Architecture](ARCHITECTURE.md) — current structure and explicitly labeled
   target boundaries.
 - [Changelog](CHANGELOG.md) — meaningful contributor- and user-visible history.
+- [Design principles](DESIGN_PRINCIPLES.md) — concise implementation invariants.
+- [Terminology](docs/TERMINOLOGY.md) — authoritative domain vocabulary.
+- [Architecture decision records](docs/adr/) — consequential boundary decisions.
+- [Project notice](NOTICE.md) — unofficial, noncommercial, and distribution
+  boundaries.
 - [Project proposal](docs/project-proposal.md) — detailed product, simulation,
   research, risk, and validation vision.
 - [Technology considerations](docs/tech-stack-consideration.md) — proposed stack;
@@ -130,7 +135,7 @@ domain behavior and tests.
 
 ## Contributing Workflow
 
-1. Read `SPEC.md` and the active milestone in `ROADMAP.md`.
+1. Read `CONTRIBUTING.md`, `SPEC.md`, and the active milestone in `ROADMAP.md`.
 2. Select the smallest complete slice and state its observable verification and
    non-goals.
 3. Read `AGENTS.md`; for substantial domain work, use the `fog-intent-*`
@@ -150,13 +155,14 @@ git practices remain reusable global concerns.
 
 ```text
 src/                         Current Rust placeholder
-docs/                        Proposal, stack analysis, and harness contract
+docs/                        Proposal, stack analysis, ADRs, terminology, and harness contract
 .agents/skills/              Repo-local domain skills
 _workspace/                  On-demand inspectable handoff artifacts
 ROADMAP.md                   Canonical execution plan
 SPEC.md                      Current project state
 ARCHITECTURE.md              Current and target system boundaries
 CHANGELOG.md                 Meaningful history
+LICENSE / NOTICE.md          Source license and distribution boundaries
 ```
 
 Future source, scenario, schema, profile, experiment, research, or GUI

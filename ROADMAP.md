@@ -145,16 +145,16 @@ and enough governance to begin the deterministic kernel without ambiguity.
 
 ### Remaining scope
 
-- [ ] Select and add an explicit source license.
-- [ ] Add a contribution policy and code of conduct appropriate to the project.
-- [ ] Add a clear unofficial/noncommercial fan-project notice.
-- [ ] Document the original-setting fallback and content-isolation strategy.
-- [ ] Define the distribution boundary before publishing game content or assets.
-- [ ] Create a concise `DESIGN_PRINCIPLES.md` if the implementation needs a
+- [x] Select and add an explicit source license.
+- [x] Add a contribution policy and code of conduct appropriate to the project.
+- [x] Add a clear unofficial/noncommercial fan-project notice.
+- [x] Document the original-setting fallback and content-isolation strategy.
+- [x] Define the distribution boundary before publishing game content or assets.
+- [x] Create a concise `DESIGN_PRINCIPLES.md` if the implementation needs a
   stable index separate from the proposal.
-- [ ] Create the first architecture decision record for deterministic authority,
+- [x] Create the first architecture decision record for deterministic authority,
   resolved inputs, and adapter boundaries.
-- [ ] Define authoritative terminology for state, belief, observation, report,
+- [x] Define authoritative terminology for state, belief, observation, report,
   intent, command, event, effect, and execution.
 - [ ] Decide whether to keep a single package or adopt a Cargo workspace for M1.
 - [ ] Pin the Rust toolchain and commit the binary package lockfile.
