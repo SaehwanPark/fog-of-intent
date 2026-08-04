@@ -5,8 +5,8 @@
 //! transition semantics, history commitment, and replay verification.
 
 use crate::kernel::{
-    Action, ActorId, BoundsError, Command, CoordinationInputs, DrawId, Effect, EffectCause,
-    EnvironmentInputs, Event, ExecutionInputs, History, HistoryError, InputTrace,
+    Action, ActorId, BoundsError, CURRENT_RULESET, Command, CoordinationInputs, DrawId, Effect,
+    EffectCause, EnvironmentInputs, Event, ExecutionInputs, History, HistoryError, InputTrace,
     ObservationInputs, PolicyInputs, ReplayError, ResolvedInputs, RulesetId, StateHash, StreamId,
     TransitionResult, Turn, Units, WorldState,
 };
@@ -48,6 +48,11 @@ pub enum SerializationError {
     UnsupportedHashRepresentation {
         expected: &'static str,
         actual: String,
+    },
+    UnsupportedRuleset {
+        line: usize,
+        expected: RulesetId,
+        actual: RulesetId,
     },
     HashMismatch {
         line: usize,
@@ -816,7 +821,15 @@ fn parse_ruleset(
     field_name: &'static str,
     value: &str,
 ) -> Result<RulesetId, SerializationError> {
-    Ok(RulesetId::new(parse_u16(line_number, field_name, value)?))
+    let ruleset = RulesetId::new(parse_u16(line_number, field_name, value)?);
+    if ruleset != CURRENT_RULESET {
+        return Err(SerializationError::UnsupportedRuleset {
+            line: line_number,
+            expected: CURRENT_RULESET,
+            actual: ruleset,
+        });
+    }
+    Ok(ruleset)
 }
 
 fn parse_stream(
@@ -882,6 +895,10 @@ mod tests {
         assert!(matches!(
             deserialize_snapshot(&snapshot.replace("schema=1.0.0", "schema=2.0.0")),
             Err(SerializationError::UnsupportedVersion { .. })
+        ));
+        assert!(matches!(
+            deserialize_snapshot(&snapshot.replace("ruleset=1", "ruleset=2")),
+            Err(SerializationError::UnsupportedRuleset { .. })
         ));
         assert!(matches!(
             deserialize_snapshot(&format!("{} extra=1", snapshot)),
