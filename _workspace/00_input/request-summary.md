@@ -2,70 +2,84 @@
 
 ## Requested Outcome
 
-Use the passing hosted CI run to complete M0 bookkeeping, then select the first
-bounded M1 deterministic-kernel fixture so implementation can continue without
-silently broadening scope.
+Implement the first bounded M1 deterministic-kernel fixture, verify it locally,
+review it with one code reviewer, and hand it off through a branch, pull
+request, and merge before selecting the next slice.
 
 ## Roadmap Milestone
 
-M0 — Governed repository baseline promoted to `Complete`; M1 — Deterministic
-Simulation Kernel is now the active milestone.
+M1 — Deterministic Simulation Kernel, first bounded transition/history fixture.
 
 ## Current Evidence
 
-- PR #4 hosted GitHub Actions `verify` passed from a clean Ubuntu checkout.
-- The repository checker, seven Python tests, locked Rust metadata, formatting,
-  clippy, and Rust tests passed locally and in the hosted workflow.
-- M0 policy, package, compatibility, dependency-policy, and CI slices are
-  merged or ready to merge as one reviewed PR.
+- M0 is complete in `ROADMAP.md` and `SPEC.md` after hosted PR #4 verification.
+- The repository is a single Rust package pinned to Rust `1.96.0` with no
+  dependencies.
+- ADR-0001 assigns simulation truth, validation, transition, history, replay,
+  and state hashing to the host-owned deterministic boundary.
 
 ## In Scope
 
-- Mark M0 complete in `ROADMAP.md` and move its verified work to `SPEC.md` Past.
-- Set the current milestone to M1 and make exactly one bounded M1 slice active.
-- Define the smallest typed transition/history/hash/replay fixture contract:
-  stable ID, bounded resource, immutable world state, command validation,
-  explicit resolved inputs, event/effect output, and per-transition replay hash.
-- Reconcile README, architecture, changelog, and current handoff state.
+- Add a library kernel with stable actor, turn, ruleset, stream, draw, unit, and
+  state-hash types.
+- Model one immutable world state with one bounded energy resource and score.
+- Model `Command`, `ValidatedCommand`, five explicit resolved-input categories,
+  events, attributed effects, transition results, and typed errors.
+- Validate commands separately from transition evaluation.
+- Evaluate `Hold` and `Gather` from resolved execution inputs, including a legal
+  zero-yield but unfavorable gather.
+- Record append-only in-memory transition history and verify it by replay.
+- Add deterministic, bounds, conservation, malformed-command, ordering,
+  version-mismatch, repeated-run, and unrelated-stream-isolation tests.
+- Update only the affected M1 roadmap, specification, architecture, changelog,
+  and handoff artifacts after evidence exists.
 
 ## Non-Goals
 
-- No M1 implementation code in this bookkeeping handoff.
-- No lane mechanics, CLI, MCP, serializer, database, agent ecology, or GUI.
-- No human, legal, accessibility, enjoyment, or research-validity claim.
+- No lane, scenario, actor ecology, belief, observation projection, CLI, MCP,
+  persistence, serialization format, database, async runtime, model provider,
+  GUI, or general entity-component framework.
+- No random-value generation, wall-clock access, I/O, or hidden mutable state in
+  the kernel.
+- No claims about playability, enjoyment, accessibility, trust, or research
+  validity.
 
 ## Project Boundaries Touched
 
-- Evidence-gated milestone promotion.
-- Active spec contract for the first deterministic kernel slice.
-- Currentness checker invariants: exactly one active roadmap phase/spec entry and
-  matching README current-milestone state.
+- Host-owned authoritative transition boundary from ADR-0001.
+- Explicit distinctions among command, execution input, event, effect, state,
+  and committed history from `docs/TERMINOLOGY.md`.
+- Functional core requirements: explicit state flow, typed failures, injected
+  inputs, and tightly scoped history mutation.
 
 ## Source Files
 
-- `ROADMAP.md`, `SPEC.md`, `README.md`, `ARCHITECTURE.md`, `CHANGELOG.md`
-- `_workspace/03_domain-qa.md`
-- Existing CI and checker files.
+- `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md`
+- `docs/TERMINOLOGY.md`, `docs/adr/0001-authoritative-transition-boundary.md`
+- `docs/COMPATIBILITY.md`, `AGENTS.md`, and the simulation-design skill
 
 ## Expected Outputs
 
-- M0 `Complete` state with hosted verification recorded.
-- M1 active bounded-slice specification and roadmap framing.
-- Consistent currentness-checker state across canonical documents.
+- `_workspace/01_simulation-design.md` with the bounded contract.
+- `src/lib.rs` and `src/kernel.rs` with focused unit tests.
+- Updated canonical state documents and `_workspace/03_domain-qa.md`.
+- Passing local checks, one code-reviewer disposition, and a merged PR.
 
 ## Verification
 
-- `python3 scripts/check_repository.py` passes against the promoted M1 state.
-- Local Markdown links, seven checker tests, locked metadata, format, clippy,
-  Rust tests, and `git diff --check` pass.
-- The existing hosted PR workflow reruns successfully after the promotion
-  commit.
+- `cargo +1.96.0 fmt --check`
+- `cargo +1.96.0 clippy --all-targets --all-features -- -D warnings`
+- `cargo +1.96.0 test`
+- `python3 scripts/check_repository.py`
+- `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'`
+- `git diff --check`
+- Code-reviewer three-pass report and targeted follow-up fixes, if any.
 
 ## Evidence Limits and Open Questions
 
-- M0 completion establishes repository governance and CI evidence only; it does
-  not establish simulation behavior or release readiness.
-- M1 is selected, not implemented. Its transition and replay claims remain
-  acceptance criteria until code and tests exist.
-- The first M1 implementation must preserve the host-owned authority ADR and
-  package/compatibility policies already merged to `main`.
+- This slice can establish software determinism, validation, boundedness,
+  conservation, and replay properties only.
+- In-memory history is not a serialized replay artifact; versioned snapshot and
+  history fixtures remain a later M1 slice.
+- The kernel is an internal library surface; the binary remains a placeholder
+  and no user-facing gameplay exists.

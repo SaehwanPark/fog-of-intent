@@ -101,6 +101,20 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Keep environment, observation, policy, coordination, and execution input
   categories explicit even if the first fixture uses only a subset.
 
+#### Delivered in the first implementation slice
+
+- `src/kernel.rs` provides stable identifiers, bounded `Units`, immutable
+  `WorldState`, a versioned ruleset identifier, host validation, and the pure
+  `Hold`/`Gather` transition boundary.
+- Resolved inputs carry distinct environment, observation, policy,
+  coordination, and execution categories with stable stream/draw identities.
+- Events, execution-attributed effects, authoritative FNV-1a state hashes, and
+  append-only in-memory transition records are implemented.
+- Replay revalidates and reevaluates every committed transition and compares
+  each stored result and hash.
+- Eleven focused Rust tests cover invalid and unfavorable outcomes, bounds,
+  conservation, repeated runs, input-stream isolation, ordering, and replay.
+
 #### Verification
 
 - Repeated runs with identical prior state, validated commands, resolved inputs,
@@ -116,8 +130,8 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 
 - No lane model, full scenario, serialization format, interactive CLI, MCP
   transport, general entity-component system, or arbitrary scenario scripting.
-- Schema fixtures and replay bundles remain constrained to the smallest contract
-  demonstrated by this slice.
+- Snapshot/history serialization, schema fixtures, and external replay bundles
+  remain deferred; the current history contract is in-memory only.
 
 ## Future
 

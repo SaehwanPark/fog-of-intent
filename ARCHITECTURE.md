@@ -6,9 +6,11 @@ architecture is a target contract, not an implementation claim
 
 ## Overview
 
-Fog of Intent is currently a single Rust 2024 binary package with no
-dependencies. The binary prints `Hello, world!`; no simulation, CLI command
-host, replay, MCP, persistence, research, or GUI component exists yet.
+Fog of Intent is currently a single Rust 2024 package with no dependencies. The
+binary still prints `Hello, world!`; an internal `kernel` library now provides
+the first bounded deterministic transition and in-memory replay fixture. No
+playable scenario, CLI command host, persistence, MCP, research, or GUI
+component exists yet.
 
 The target architecture is one authoritative Rust simulation product with thin
 human, agent, and research adapters. The strongest boundary is:
@@ -32,6 +34,8 @@ The controlled vocabulary for that boundary is
 ```text
 Cargo.toml
 src/main.rs
+src/lib.rs
+src/kernel.rs
 README.md
 ROADMAP.md
 SPEC.md
@@ -42,12 +46,14 @@ docs/
 _workspace/
 ```
 
-Only `Cargo.toml` and `src/main.rs` are executable product surfaces. The other
-paths are project-state, design-source, and agent-workflow artifacts.
+`src/lib.rs` and `src/kernel.rs` are the current internal kernel surface;
+`src/main.rs` remains a placeholder executable. The other paths are
+project-state, design-source, and agent-workflow artifacts.
 
 ## Target Components
 
-These are ownership boundaries for future milestones, not current modules.
+These are ownership boundaries; only the bounded kernel row is currently
+implemented.
 
 | Component | Owns | Must not own |
 | --- | --- | --- |
@@ -207,9 +213,10 @@ and an architecture update or ADR when it changes a consequential boundary.
 
 ## Known Gaps
 
-- No M1 crate/module ownership, public API, schema, hash, or compatibility
-  implementation exists in code; the first bounded kernel fixture is selected in
-  `ROADMAP.md` and `SPEC.md`.
+- The first M1 kernel fixture is implemented in `src/kernel.rs`, but it is not a
+  playable scenario, external API, serializer, or persistence layer.
+- Property-style tests, versioned snapshot/history fixtures, and external replay
+  bundles remain open M1 work.
 - `.github/workflows/ci.yml` and `scripts/check_repository.py` now define the
   formatting, lint, test, metadata, link, currentness, and dependency-free
   package guard; PR #4's hosted run passed and supports M0 promotion. Future

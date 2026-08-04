@@ -78,7 +78,7 @@ players?
 | Repository governance and canonical docs | Complete — M0 |
 | Rust package | `0.1.1`, edition 2024, Rust `1.96`, no dependencies, single package |
 | Executable behavior | Prints `Hello, world!` |
-| Deterministic kernel | Not implemented — M1 |
+| Deterministic kernel | Internal bounded fixture implemented — M1; not playable |
 | One-lane scenario | Not implemented — M2 |
 | CLI reference experience | Not implemented — M3 |
 | Agent ecology and MCP | Not implemented — M4/M5 |
@@ -113,8 +113,9 @@ python3 scripts/check_repository.py
 python3 -m unittest discover -s scripts -p 'test_*.py'
 ```
 
-These commands validate only the current placeholder until later milestones add
-domain behavior and tests.
+These commands validate the internal M1 kernel fixture and repository policy;
+the binary itself remains a placeholder until a later milestone adds a
+user-facing host.
 
 ## Canonical Documents
 
