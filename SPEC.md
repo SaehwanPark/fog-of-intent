@@ -64,12 +64,15 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - `DESIGN_PRINCIPLES.md`, `docs/TERMINOLOGY.md`, and
   `docs/adr/0001-authoritative-transition-boundary.md` establish the first
   authoritative vocabulary and host-owned transition contract.
+- Rust `1.96.0` is pinned with `rustfmt` and `clippy`, `Cargo.lock` is committed,
+  and `Cargo.toml` records the MIT license and minimum Rust version.
+- ADR-0002 keeps M1 in one Cargo package; `docs/COMPATIBILITY.md` and
+  `docs/DEPENDENCY_POLICY.md` define minimum artifact/version and dependency
+  review contracts without claiming migrations or automation.
 
 #### Not Yet Done
 
-- Pin the Rust toolchain and package lockfile.
 - Add formatting, lint, test, link, and currentness checks to CI.
-- Decide the M1 crate/workspace layout and minimal dependency set.
 
 #### Verification
 

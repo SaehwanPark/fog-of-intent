@@ -13,6 +13,10 @@ not increment the package version.
   conservative distribution boundary.
 - Concise design principles, authoritative terminology, and ADR-0001 for the
   host-owned deterministic transition boundary.
+- Pinned Rust `1.96.0` toolchain and binary package lockfile, with ADR-0002
+  keeping M1 in one Cargo package.
+- Minimum artifact/replay compatibility and dependency, security, and license
+  policy documents for the pre-implementation-to-M1 boundary.
 - Canonical evidence-gated project roadmap with milestone dependencies, exit
   evidence, explicit deferrals, and maintenance rules.
 - Lightweight specification and architecture state documents that distinguish

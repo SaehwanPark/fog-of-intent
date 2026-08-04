@@ -75,7 +75,7 @@ players?
 | Area | State |
 | --- | --- |
 | Repository governance and canonical docs | Active — M0 |
-| Rust package | `0.1.0`, edition 2024, no dependencies |
+| Rust package | `0.1.0`, edition 2024, Rust `1.96`, no dependencies, single package |
 | Executable behavior | Prints `Hello, world!` |
 | Deterministic kernel | Not implemented — M1 |
 | One-lane scenario | Not implemented — M2 |
@@ -123,6 +123,10 @@ domain behavior and tests.
 - [Design principles](DESIGN_PRINCIPLES.md) — concise implementation invariants.
 - [Terminology](docs/TERMINOLOGY.md) — authoritative domain vocabulary.
 - [Architecture decision records](docs/adr/) — consequential boundary decisions.
+- [Compatibility policy](docs/COMPATIBILITY.md) — minimum artifact and replay
+  version rules.
+- [Dependency policy](docs/DEPENDENCY_POLICY.md) — dependency, security, and
+  license review obligations.
 - [Project notice](NOTICE.md) — unofficial, noncommercial, and distribution
   boundaries.
 - [Project proposal](docs/project-proposal.md) — detailed product, simulation,

@@ -171,13 +171,15 @@ implement agent-policy boundaries; they do not define them.
 
 Verified today:
 
+- Rust toolchain `1.96.0`, pinned in `rust-toolchain.toml`;
 - Rust edition 2024;
 - Cargo binary package;
+- package license metadata set to MIT;
 - no third-party dependencies.
 
 Proposed but not adopted:
 
-- Rust workspace boundaries;
+- additional Cargo workspace boundaries; ADR-0002 keeps M1 in one package;
 - Serde/JSON, typed errors, deterministic hashing, explicit seeded RNG at edges;
 - Clap or a small interactive shell;
 - Tokio and the official Rust MCP SDK at adapter boundaries;
@@ -207,7 +209,9 @@ and an architecture update or ADR when it changes a consequential boundary.
 
 - No crate/module ownership, public API, schema, hash, or compatibility contract
   exists in code.
-- No toolchain, lockfile, CI, dependency policy, or release workflow is present.
+- No CI automation, automated advisory/license check, or release workflow is
+  present; the dependency and compatibility policies are documented but not yet
+  enforced by hosted checks.
 - Implementation-backed package, schema, compatibility, accessibility, and
   research governance remain incomplete and are tracked in M0 and later
   roadmap gates. Repository policy and the initial authority ADR now exist, but
