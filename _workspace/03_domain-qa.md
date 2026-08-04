@@ -4,87 +4,90 @@
 
 `pass`
 
-This QA covers the M0 policy-boundaries slice only. It does not validate a
-simulation kernel, gameplay, actor behavior, legal clearance, or human
-experience.
+This QA covers the M0 packaging, compatibility, and dependency-policy slice. It
+does not validate a simulation kernel, schema serializer, replay engine, CI
+workflow, legal clearance, or human experience.
 
 ## Reviewed Inputs
 
 - `_workspace/00_input/request-summary.md`
 - `ROADMAP.md` M0 checklist and exit evidence
 - `SPEC.md`, `ARCHITECTURE.md`, `README.md`, and `CHANGELOG.md`
-- `LICENSE`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, and `NOTICE.md`
-- `DESIGN_PRINCIPLES.md`, `docs/TERMINOLOGY.md`, and
-  `docs/adr/0001-authoritative-transition-boundary.md`
-- Local Markdown-link check, `git diff --check`, `cargo fmt --check`,
-  `cargo clippy --all-targets --all-features -- -D warnings`, and `cargo test`
-- One code-reviewer report covering three independent review passes and the
-  targeted corrections it required.
+- `Cargo.toml`, `Cargo.lock`, and `rust-toolchain.toml`
+- `docs/adr/0002-single-package-m1.md`, `docs/COMPATIBILITY.md`, and
+  `docs/DEPENDENCY_POLICY.md`
+- Local Markdown-link check, `git diff --check`, pinned `cargo metadata`,
+  `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`,
+  and `cargo test`
+- One code-reviewer report covering three independent review passes and its
+  follow-up findings.
 
 ## Scope and Roadmap Findings
 
-The changed files implement only the selected M0 policy, vocabulary, and ADR
-items. No M1 mechanics, dependency, adapter, CLI, or release surface was
-introduced. The corresponding M0 checklist items are marked complete, while
-toolchain, lockfile, CI, dependency policy, and compatibility work remain
-visible as incomplete.
+The changed files implement only the selected M0 package/toolchain,
+compatibility, and dependency-policy items. The single-package decision is
+explicit and reversible, while CI automation remains visible as incomplete.
+No M1 mechanics, runtime dependency, adapter, or schema implementation was
+introduced.
 
 ## Authority and Information-Boundary Findings
 
-`docs/TERMINOLOGY.md`, `DESIGN_PRINCIPLES.md`, and ADR-0001 preserve the
-distinctions between true state, belief, observation, report, research
-inspection, intent, command, execution, event, effect, and history. The ADR
-explicitly makes the application host the sole authority. The kernel is a pure
-evaluator invoked by the host, and the host commits history and owns replay and
-debrief authority; adapters remain forbidden from owning simulation truth. The
-architecture component table and flow now express that same relationship.
+ADR-0002 preserves the one-package decision without changing ADR-0001's
+host-owned simulation authority. The compatibility policy keeps internal
+artifact identity separate from future public DTO, prompt, profile, and
+extractor versions; no adapter or package boundary is presented as a second
+simulation engine.
 
 ## Determinism, Replay, and Reproducibility Findings
 
-No executable transition or randomness was changed. ADR-0001 records explicit
-resolved inputs and rejects RNG, wall-clock, I/O, provider, and runtime-log
-dependence inside the future transition boundary. This is a design contract,
-not implementation evidence.
+`rust-toolchain.toml` pins a complete locally installed Rust `1.96.0` toolchain
+with `rustfmt` and `clippy`; `Cargo.lock` records the dependency-free package.
+`docs/COMPATIBILITY.md` requires explicit ruleset/scenario/schema identity,
+immutable semantic binding, closed handling of authoritative unknown fields,
+deterministic migrations, and per-transition replay hash comparison. These are
+future implementation contracts, not shipped replay evidence. Missing advisory
+tooling or data is a default block, with only an explicit owner/rationale/expiry
+defer permitted.
 
 ## Behavior and Playtest Findings
 
-No agents, policies, playtests, or behavioral claims were added. The design
-principles preserve bounded behavior as a future constraint without claiming
-human or model realism.
+No agents, policies, playtests, or behavioral claims were added. Dependency
+policy keeps provider, async, transport, and analytical concerns outside the
+deterministic core unless a later ADR demonstrates a narrow edge need.
 
 ## Gameplay and Debrief Findings
 
-No gameplay or debrief surface was added. The terminology reference records the
-future requirement that debriefs separate intent, coordination, execution, and
-luck, but no scenario evidence exists yet.
+No gameplay or debrief surface was added. Compatibility rules preserve the
+future requirement that replay fixtures retain enough committed input and hash
+identity for causal inspection.
 
 ## Evidence and Claim Limits
 
-The policy files state that project notices are not legal clearance, that the
-MIT License applies only to repository-authored material, and that the
-maintainer's noncommercial release posture does not amend MIT permissions.
-Conduct and security reports have a concrete private maintainer email. README,
-SPEC, and architecture state remain explicit that the executable is still a
-placeholder.
-No public-release, accessibility, enjoyment, trust, or research-validity claim
-was introduced.
+The package metadata and lockfile support local reproducibility only. Hosted CI,
+automated advisory/license scans, schema migration behavior, cross-platform
+validation, and release readiness remain unverified. The dependency policy
+requires an advisory result or an explicit security defer for future dependency
+changes and reports that hosted enforcement automation is deferred.
 
 ## Required Fixes
 
-None for this bounded slice. The reviewer-identified license, policy,
-authority, reporting, currentness, and architecture consistency issues were
+None for this bounded slice. The reviewer-identified compatibility,
+security-policy, environment-rationale, and QA-disposition issues were
 corrected and the focused checks were rerun.
 
 ## Residual Risks
 
-- The license and content posture still need a release-specific legal and
-  provenance review before distributing external material.
-- The ADR and terminology are target contracts until M1 code and tests exist.
-- M0 remains active pending package/toolchain, CI, dependency-policy, and
-  compatibility slices.
+- The pinned `1.96.0` toolchain is verified on the current host only.
+- The separate `stable` alias currently reports `1.97.1`, but is intentionally
+  not used by the repository pin because its explicit versioned resolution was
+  not reliable in this environment.
+- M0 remains active pending CI formatting/lint/test/link/currentness checks and
+  hosted evidence.
 
 ## Verification Evidence
 
+- Pinned `rustc --version`: `1.96.0`.
+- Pinned `cargo metadata --locked --no-deps --format-version 1`: pass.
 - Local Markdown links: pass.
 - `git diff --check`: pass.
 - `cargo fmt --check`: pass.

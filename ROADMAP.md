@@ -156,12 +156,12 @@ and enough governance to begin the deterministic kernel without ambiguity.
   resolved inputs, and adapter boundaries.
 - [x] Define authoritative terminology for state, belief, observation, report,
   intent, command, event, effect, and execution.
-- [ ] Decide whether to keep a single package or adopt a Cargo workspace for M1.
-- [ ] Pin the Rust toolchain and commit the binary package lockfile.
+- [x] Decide whether to keep a single package or adopt a Cargo workspace for M1.
+- [x] Pin the Rust toolchain and commit the binary package lockfile.
 - [ ] Establish formatting, lint, test, documentation-link, and currentness
   checks in CI.
-- [ ] Document dependency, security-advisory, and license-policy checks.
-- [ ] Define scenario, ruleset, schema, and replay compatibility conventions at
+- [x] Document dependency, security-advisory, and license-policy checks.
+- [x] Define scenario, ruleset, schema, and replay compatibility conventions at
   the minimum depth M1 requires.
 
 ### Deliverables
