@@ -369,6 +369,14 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Gold overflow exceeding maximum bounds (`MAX_LANE_GOLD`) fails before transition state mutation with `LaneExecutionError::GoldOverflow`.
 - Three focused gold-resource tests plus the prior sixty-three tests pass, for sixty-six Rust tests total.
 
+#### Delivered in the bounded experience-resource follow-up
+
+- `LaneExperience` is a bounded player resource with a zero default and non-zero state-hash and allied visible-digest tags (`LANE_EXPERIENCE_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` expose player experience without exposing opponent experience.
+- `LaneExecutionInputs` supports experience-gained resolution during execution with direct-immediate `ExperienceGained`/`ExperienceChanged` events and effects, debrief recording, and `LaneRecordIdentity` integration.
+- Experience overflow exceeding maximum bounds (`MAX_LANE_EXPERIENCE`) fails before transition state mutation with `LaneExecutionError::ExperienceOverflow`.
+- Three focused experience-resource tests plus the prior sixty-six tests pass, for sixty-nine Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
