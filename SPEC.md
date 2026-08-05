@@ -160,6 +160,23 @@ exists. Planned proposal or roadmap text is never implementation evidence.
   information boundary, both legal intents, an unfavorable fallback outcome,
   malformed execution, validation, determinism, stream isolation, and replay.
 
+#### Delivered in the bounded branch follow-up
+
+- `branch_from_window` accepts only a verified one-record parent and the
+  immutable record-0 decision boundary; the parent remains independently
+  replayable and unchanged.
+- `BranchExecutionSelection` distinguishes exact parent-input reuse from an
+  explicitly resolved branch execution with a stable branch-scoped trace.
+- `LaneBranchReplayIdentity` and `CounterfactualReview` preserve parent and
+  branch hashes, intent, execution relation, and attribution limits outside the
+  authoritative lane-state hash.
+- Branch replay re-derives the observation, command, input selection,
+  transition result, and terminal hash; tampered branch metadata/results are
+  rejected.
+- Thirteen focused M2 lane tests plus the nineteen M1 tests pass, including
+  matched/regenerated branches, parent immutability, invalid selection,
+  branch identity, replay tamper, and causal-review limits.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
@@ -174,8 +191,8 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 #### Not Yet Done
 
 - The complete lane scenario still needs multiple windows, variable pacing,
-  recall, gank response, allied autonomous behavior, communication, bounded
-  branching, richer resource abstractions, and a full causal debrief surface.
+  recall, gank response, allied autonomous behavior, communication, richer
+  resource abstractions, and a full causal debrief surface.
 - CLI, MCP, agent ecology, and human-experience evidence remain future M3/M4+
   work; this diagnostic slice is not playable and makes no enjoyment,
   accessibility, trust, or behavioral-validity claim.

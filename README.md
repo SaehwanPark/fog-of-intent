@@ -76,10 +76,10 @@ players?
 | --- | --- |
 | Current roadmap milestone | M2 — One-Lane Vertical Slice (Active) |
 | Repository governance and canonical docs | Complete — M0 |
-| Rust package | `0.1.4`, edition 2024, Rust `1.96`, no dependencies, single package |
+| Rust package | `0.1.5`, edition 2024, Rust `1.96`, no dependencies, single package |
 | Executable behavior | Prints `Hello, world!` |
-| Deterministic kernel | M1 fixture/codec complete; M2 one-window lane boundary implemented internally |
-| One-lane scenario | First diagnostic window implemented — full scenario not complete |
+| Deterministic kernel | M1 fixture/codec complete; M2 window and bounded branch implemented internally |
+| One-lane scenario | First diagnostic window plus branch implemented — full scenario not complete |
 | CLI reference experience | Not implemented — M3 |
 | Agent ecology and MCP | Not implemented — M4/M5 |
 | Behavioral experiments and calibration | Not implemented — M6/M7 |

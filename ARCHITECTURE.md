@@ -3,7 +3,7 @@
 **Last reviewed:** 2026-08-04
 **Status:** Partially verified — M1 kernel and fixture codec are implemented;
 M2 scenario architecture remains a bounded target under construction, with the
-first internal lane decision window implemented
+first internal lane decision window and bounded branch implemented
 
 ## Overview
 
@@ -111,7 +111,8 @@ LaneSnapshot -> observe_player -> LaneIntentRequest
 
 The observation receipt keeps the source-state binding private to the host
 boundary; the actor-visible `LanerObservation` does not contain the true-state
-hash or hidden opponent/threat fields.
+hash or hidden opponent/threat fields. A branch borrows and verifies the parent
+history, then owns only a copied one-window record and branch metadata.
 
 ## Consequential Type Boundaries
 
@@ -236,12 +237,12 @@ and an architecture update or ADR when it changes a consequential boundary.
 
 ## Known Gaps
 
-- The M1 kernel/codec and first M2 lane decision-window contract are implemented
+- The M1 kernel/codec and first M2 lane decision-window/branch contracts are implemented
   internally, but they are not a playable scenario, public API, migration
   framework, or persistence service.
-- The M2 window is intentionally one-shot: no allied actor, communication,
-  variable pacing, branching, external scenario serialization, or full
-  debrief surface is implemented yet.
+- The M2 window and one bounded branch are intentionally one-shot: no allied
+  actor, communication, variable pacing, second window, external scenario
+  serialization, branch tree, or full debrief surface is implemented yet.
 - Richer external replay bundles and scenario-specific schema fields remain
   open work.
 - `.github/workflows/ci.yml` and `scripts/check_repository.py` now define the
