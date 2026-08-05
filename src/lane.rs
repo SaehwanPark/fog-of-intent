@@ -21,8 +21,10 @@ pub const SCRIPTED_ALLIED_PROFILE: &str = "scripted-allied-proposal-v1";
 const FNV_OFFSET_BASIS: u64 = 0xcbf29ce484222325;
 const MAX_LANE_HEALTH: u8 = 10;
 const MAX_LANE_MANA: u8 = 6;
+const MAX_LANE_GOLD: u8 = 20;
 const MAX_WAVE_PRESSURE: u8 = 3;
 const LANE_MANA_HASH_TAG: u8 = 0x4d;
+const LANE_GOLD_HASH_TAG: u8 = 0x47;
 
 pub const PLAYER_LANER: ActorId = ActorId::new(1);
 pub const OPPONENT_LANER: ActorId = ActorId::new(2);
@@ -84,6 +86,43 @@ impl LaneMana {
     }
 
     fn subtract(self, amount: Self) -> Option<Self> {
+        self.0.checked_sub(amount.0).map(Self)
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct LaneGold(u8);
+
+impl LaneGold {
+    pub fn new(value: u8) -> Result<Self, LaneBoundsError> {
+        if value <= MAX_LANE_GOLD {
+            Ok(Self(value))
+        } else {
+            Err(LaneBoundsError {
+                value,
+                maximum: MAX_LANE_GOLD,
+            })
+        }
+    }
+
+    pub const fn zero() -> Self {
+        Self(0)
+    }
+
+    pub fn value(self) -> u8 {
+        self.0
+    }
+
+    fn add(self, amount: Self) -> Option<Self> {
+        let total = (self.0 as u16) + (amount.0 as u16);
+        if total <= MAX_LANE_GOLD as u16 {
+            Some(Self(total as u8))
+        } else {
+            None
+        }
+    }
+
+    pub fn subtract(self, amount: Self) -> Option<Self> {
         self.0.checked_sub(amount.0).map(Self)
     }
 }
@@ -193,12 +232,13 @@ pub struct PlayerLaneState {
     id: ActorId,
     health: LaneHealth,
     mana: LaneMana,
+    gold: LaneGold,
     position: LanePosition,
 }
 
 impl PlayerLaneState {
     pub fn new(id: ActorId, health: LaneHealth, position: LanePosition) -> Self {
-        Self::new_with_mana(id, health, LaneMana::full(), position)
+        Self::new_with_resources(id, health, LaneMana::full(), LaneGold::zero(), position)
     }
 
     pub fn new_with_mana(
@@ -207,10 +247,21 @@ impl PlayerLaneState {
         mana: LaneMana,
         position: LanePosition,
     ) -> Self {
+        Self::new_with_resources(id, health, mana, LaneGold::zero(), position)
+    }
+
+    pub fn new_with_resources(
+        id: ActorId,
+        health: LaneHealth,
+        mana: LaneMana,
+        gold: LaneGold,
+        position: LanePosition,
+    ) -> Self {
         Self {
             id,
             health,
             mana,
+            gold,
             position,
         }
     }
@@ -225,6 +276,10 @@ impl PlayerLaneState {
 
     pub fn mana(self) -> LaneMana {
         self.mana
+    }
+
+    pub fn gold(self) -> LaneGold {
+        self.gold
     }
 
     pub fn position(self) -> LanePosition {
@@ -423,6 +478,9 @@ impl LaneSnapshot {
         if self.player.mana() != LaneMana::full() {
             hash = hash_bytes(hash, &[LANE_MANA_HASH_TAG, self.player.mana().value()]);
         }
+        if self.player.gold() != LaneGold::zero() {
+            hash = hash_bytes(hash, &[LANE_GOLD_HASH_TAG, self.player.gold().value()]);
+        }
         hash = hash_bytes(hash, &[position_tag(self.player.position())]);
         hash = hash_bytes(
             hash,
@@ -601,6 +659,7 @@ pub struct LanerObservation {
     observation_id: ObservationId,
     self_health: LaneHealth,
     self_mana: LaneMana,
+    self_gold: LaneGold,
     self_position: LanePosition,
     wave_pressure: WavePressure,
     opponent: OpponentReport,
@@ -661,6 +720,10 @@ impl LanerObservation {
 
     pub fn self_mana(self) -> LaneMana {
         self.self_mana
+    }
+
+    pub fn self_gold(self) -> LaneGold {
+        self.self_gold
     }
 
     pub fn self_position(self) -> LanePosition {
@@ -726,6 +789,7 @@ pub fn observe_player(
             observation_id,
             self_health: state.player().health(),
             self_mana: state.player().mana(),
+            self_gold: state.player().gold(),
             self_position: state.player().position(),
             wave_pressure: state.wave().pressure(),
             opponent: player_opponent_report(state),
@@ -751,6 +815,7 @@ pub struct AlliedLaneObservation {
     observation_id: ObservationId,
     laner_health: LaneHealth,
     laner_mana: LaneMana,
+    laner_gold: LaneGold,
     laner_position: LanePosition,
     wave_pressure: WavePressure,
     opponent: OpponentReport,
@@ -782,6 +847,10 @@ impl AlliedLaneObservation {
 
     pub fn laner_mana(self) -> LaneMana {
         self.laner_mana
+    }
+
+    pub fn laner_gold(self) -> LaneGold {
+        self.laner_gold
     }
 
     pub fn laner_position(self) -> LanePosition {
@@ -842,6 +911,7 @@ pub fn observe_allied(
             observation_id,
             laner_health: state.player().health(),
             laner_mana: state.player().mana(),
+            laner_gold: state.player().gold(),
             laner_position: state.player().position(),
             wave_pressure: state.wave().pressure(),
             opponent: OpponentReport::unknown(),
@@ -1100,6 +1170,9 @@ fn allied_visible_digest(observation: AlliedLaneObservation) -> StateHash {
     hash = hash_bytes(hash, &[observation.laner_health.value()]);
     if observation.laner_mana != LaneMana::full() {
         hash = hash_bytes(hash, &[LANE_MANA_HASH_TAG, observation.laner_mana.value()]);
+    }
+    if observation.laner_gold != LaneGold::zero() {
+        hash = hash_bytes(hash, &[LANE_GOLD_HASH_TAG, observation.laner_gold.value()]);
     }
     hash = hash_bytes(hash, &[position_tag(observation.laner_position)]);
     hash = hash_bytes(hash, &[observation.wave_pressure.value()]);
@@ -1785,6 +1858,7 @@ pub struct LaneExecutionInputs {
     opponent_damage: LaneDamage,
     wave_result: LaneWaveResult,
     mana_spent: LaneMana,
+    gold_earned: LaneGold,
 }
 
 impl LaneExecutionInputs {
@@ -1800,11 +1874,17 @@ impl LaneExecutionInputs {
             opponent_damage,
             wave_result,
             mana_spent: LaneMana::zero(),
+            gold_earned: LaneGold::zero(),
         }
     }
 
     pub fn with_mana_spent(mut self, mana_spent: LaneMana) -> Self {
         self.mana_spent = mana_spent;
+        self
+    }
+
+    pub fn with_gold_earned(mut self, gold_earned: LaneGold) -> Self {
+        self.gold_earned = gold_earned;
         self
     }
 
@@ -1826,6 +1906,10 @@ impl LaneExecutionInputs {
 
     pub fn mana_spent(self) -> LaneMana {
         self.mana_spent
+    }
+
+    pub fn gold_earned(self) -> LaneGold {
+        self.gold_earned
     }
 }
 
@@ -1951,6 +2035,11 @@ pub enum LaneEvent {
         amount: LaneMana,
         trace: InputTrace,
     },
+    GoldEarned {
+        actor: ActorId,
+        amount: LaneGold,
+        trace: InputTrace,
+    },
     WaveResolved {
         before: WavePressure,
         after: WavePressure,
@@ -1987,6 +2076,13 @@ pub enum LaneEffect {
         cause: LaneEffectCause,
         provenance: LaneEffectProvenance,
     },
+    GoldChanged {
+        actor: ActorId,
+        before: LaneGold,
+        after: LaneGold,
+        cause: LaneEffectCause,
+        provenance: LaneEffectProvenance,
+    },
     PositionChanged {
         actor: ActorId,
         before: LanePosition,
@@ -2002,6 +2098,7 @@ impl LaneEffect {
             Self::HealthChanged { provenance, .. }
             | Self::WavePressureChanged { provenance, .. }
             | Self::ManaChanged { provenance, .. }
+            | Self::GoldChanged { provenance, .. }
             | Self::PositionChanged { provenance, .. } => provenance,
         }
     }
@@ -2030,6 +2127,10 @@ pub enum LaneExecutionError {
     ManaExceedsAvailable {
         spent: LaneMana,
         available: LaneMana,
+    },
+    GoldOverflow {
+        earned: LaneGold,
+        current: LaneGold,
     },
 }
 
@@ -2061,6 +2162,7 @@ pub struct LaneDebrief {
     intent: LaneIntent,
     self_damage: LaneDamage,
     mana_spent: LaneMana,
+    gold_earned: LaneGold,
     wave_result: LaneWaveResult,
     fallback_activated: bool,
     execution_trace: InputTrace,
@@ -2085,6 +2187,10 @@ impl LaneDebrief {
 
     pub fn mana_spent(self) -> LaneMana {
         self.mana_spent
+    }
+
+    pub fn gold_earned(self) -> LaneGold {
+        self.gold_earned
     }
 
     pub fn wave_result(self) -> LaneWaveResult {
@@ -3115,6 +3221,16 @@ pub fn transition_lane(
                     available: player.mana,
                 },
             ))?;
+    let after_player_gold =
+        player
+            .gold
+            .add(execution.gold_earned)
+            .ok_or(LaneTransitionError::Execution(
+                LaneExecutionError::GoldOverflow {
+                    earned: execution.gold_earned,
+                    current: player.gold,
+                },
+            ))?;
     let after_wave = match execution.wave_result {
         LaneWaveResult::Advanced => state.wave.pressure.advance(),
         LaneWaveResult::Held => Ok(state.wave.pressure),
@@ -3151,10 +3267,11 @@ pub fn transition_lane(
         .value()
         .checked_add(state.window.beats())
         .ok_or(LaneTransitionError::TurnOverflow)?;
-    let next_player = PlayerLaneState::new_with_mana(
+    let next_player = PlayerLaneState::new_with_resources(
         player.id,
         after_player_health,
         after_player_mana,
+        after_player_gold,
         after_position,
     );
     let next_opponent = OpponentTruth::new(
@@ -3222,6 +3339,20 @@ pub fn transition_lane(
             provenance: LaneEffectProvenance::direct_immediate(),
         });
     }
+    if execution.gold_earned != LaneGold::zero() {
+        events.push(LaneEvent::GoldEarned {
+            actor: player.id,
+            amount: execution.gold_earned,
+            trace,
+        });
+        effects.push(LaneEffect::GoldChanged {
+            actor: player.id,
+            before: player.gold,
+            after: after_player_gold,
+            cause: LaneEffectCause::Execution(trace),
+            provenance: LaneEffectProvenance::direct_immediate(),
+        });
+    }
     events.push(LaneEvent::WaveResolved {
         before: state.wave.pressure,
         after: after_wave,
@@ -3267,6 +3398,7 @@ pub fn transition_lane(
         intent: command.command.intent,
         self_damage: execution.self_damage,
         mana_spent: execution.mana_spent,
+        gold_earned: execution.gold_earned,
         wave_result: execution.wave_result,
         fallback_activated,
         execution_trace: trace,
@@ -4561,6 +4693,7 @@ fn lane_record_identity(record: &LaneTransitionRecord) -> StateHash {
     hash = hash_bytes(hash, &[record.inputs.execution.self_damage.value()]);
     hash = hash_bytes(hash, &[record.inputs.execution.opponent_damage.value()]);
     hash = hash_bytes(hash, &[record.inputs.execution.mana_spent.value()]);
+    hash = hash_bytes(hash, &[record.inputs.execution.gold_earned.value()]);
     hash = hash_bytes(
         hash,
         &[wave_result_tag(record.inputs.execution.wave_result)],
@@ -6540,6 +6673,88 @@ mod tests {
                     intent: LaneIntent::Yield,
                     ..
                 }
+            ))
+        ));
+    }
+
+    #[test]
+    fn gold_is_bounded_and_default_zero() {
+        assert_eq!(LaneGold::zero().value(), 0);
+        assert_eq!(LaneGold::new(20).unwrap().value(), 20);
+        assert!(LaneGold::new(21).is_err());
+        let zero = LaneGold::zero();
+        let earned = LaneGold::new(5).unwrap();
+        assert_eq!(zero.add(earned), Some(earned));
+        assert_eq!(earned.add(LaneGold::new(16).unwrap()), None);
+        assert_eq!(
+            earned.subtract(LaneGold::new(2).unwrap()),
+            Some(LaneGold::new(3).unwrap())
+        );
+    }
+
+    #[test]
+    fn gold_earned_is_direct_immediate_and_replayable() {
+        let state = LaneSnapshot::initial();
+        assert_eq!(state.player().gold(), LaneGold::zero());
+
+        let (receipt, request) = request(&state, LaneIntent::Contest);
+        let validated = validate_lane_request(&state, &receipt, &request).expect("valid");
+        let mut gold_inputs = inputs(1, 2, LaneWaveResult::Held);
+        gold_inputs.execution = gold_inputs
+            .execution
+            .with_gold_earned(LaneGold::new(5).unwrap());
+
+        let result =
+            transition_lane(&state, &validated, &gold_inputs).expect("transition with gold");
+        assert_eq!(
+            result.next_state().player().gold(),
+            LaneGold::new(5).unwrap()
+        );
+        assert_ne!(state.hash(), result.next_state().hash());
+
+        let player_obs = observe_player(&result.next_state(), ObservationId::new(1)).observation();
+        assert_eq!(player_obs.self_gold(), LaneGold::new(5).unwrap());
+        let allied_obs = observe_allied(&result.next_state(), ObservationId::new(2)).observation();
+        assert_eq!(allied_obs.laner_gold(), LaneGold::new(5).unwrap());
+
+        assert_eq!(result.debrief().gold_earned(), LaneGold::new(5).unwrap());
+
+        assert!(result.events().iter().any(|e| matches!(
+            e,
+            LaneEvent::GoldEarned { amount, .. } if *amount == LaneGold::new(5).unwrap()
+        )));
+        assert!(result.effects().iter().any(|e| matches!(
+            e,
+            LaneEffect::GoldChanged {
+                before,
+                after,
+                provenance,
+                ..
+            } if *before == LaneGold::zero()
+                && *after == LaneGold::new(5).unwrap()
+                && provenance.relation() == LaneEffectRelation::Direct
+                && provenance.timing() == LaneEffectTiming::Immediate
+        )));
+
+        let mut history = LaneHistory::new(state).expect("valid history");
+        history
+            .append(&receipt, &request, gold_inputs)
+            .expect("append gold execution");
+        assert_eq!(history.verify_replay(), Ok(history.current_state()));
+    }
+
+    #[test]
+    fn gold_overflow_is_rejected() {
+        let state = LaneSnapshot::initial();
+        let (receipt, request) = request(&state, LaneIntent::Contest);
+        let validated = validate_lane_request(&state, &receipt, &request).expect("valid");
+        let mut overflow_inputs = inputs(1, 2, LaneWaveResult::Held);
+        overflow_inputs.execution.gold_earned = LaneGold(21); // bypass constructor for error test
+
+        assert!(matches!(
+            transition_lane(&state, &validated, &overflow_inputs),
+            Err(LaneTransitionError::Execution(
+                LaneExecutionError::GoldOverflow { .. }
             ))
         ));
     }
