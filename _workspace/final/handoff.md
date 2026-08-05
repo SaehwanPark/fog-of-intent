@@ -2,68 +2,66 @@
 
 ## Outcome
 
-The bounded M2 effect-provenance slice is implemented on the existing
-authoritative lane transition and replay path. M2 remains active because
-delayed effects, causal completeness, adaptive pacing, automatic execution
-outcomes, richer mechanics, communication, and the complete one-lane scenario
-are not yet built.
+The bounded M2 mana-resource slice is implemented in the existing authoritative
+lane state, observations, execution inputs, transition, effects, debrief, and
+replay path. M2 remains active because cooldowns, gold, experience,
+regeneration, abilities, communication, richer vision, and the complete
+one-lane scenario are not yet built.
 
 ## Changed Files
 
-- `Cargo.toml`, `Cargo.lock` — package version `0.1.15`.
-- `src/lane.rs` — `LaneEffectProvenance`, direct/indirect immediate labels,
-  effect accessors, transition mapping, and provenance/replay tests.
+- `Cargo.toml`, `Cargo.lock` — package version `0.1.16`.
+- `src/lane.rs` — `LaneMana`, player/allied projections, hash/digest binding,
+  Contest-only spend validation, `ManaSpent`/`ManaChanged`, debrief recording,
+  lane identity binding, intent-aware matched branching, and focused
+  resource/replay tests.
 - `README.md`, `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` —
-  synchronized effect-provenance evidence and limits.
-- `_workspace/00_input/request-summary.md` — effect-provenance slice framing.
-- `_workspace/01_simulation-design.md` — relationship/timing contract.
+  synchronized mana-resource evidence and limits.
+- `_workspace/00_input/request-summary.md` — mana-resource slice framing.
+- `_workspace/01_simulation-design.md` — resource/authority/replay contract.
 - `_workspace/02_design-synthesis.md` — reconciled production contract.
 - `_workspace/03_domain-qa.md` — domain-QA pass.
-- `_workspace/00_input/m2-variable-window-request-summary.md`,
-  `_workspace/01-simulation-design-m2-variable-window.md`,
-  `_workspace/03-domain-qa-m2-variable-window.md`, and
-  `_workspace/final/m2-variable-window-handoff.md` — immutable prior
-  variable-window evidence.
-- `_workspace/00_input/m2-gank-response-request-summary.md`,
-  `_workspace/01-simulation-design-m2-gank-response.md`,
-  `_workspace/03-domain-qa-m2-gank-response.md`, and
-  `_workspace/final/m2-gank-response-handoff.md` — immutable prior
-  gank-response evidence.
+- `_workspace/00_input/m2-effect-provenance-request-summary.md`,
+  `_workspace/01-simulation-design-m2-effect-provenance.md`,
+  `_workspace/03-domain-qa-m2-effect-provenance.md`, and
+  `_workspace/final/m2-effect-provenance-handoff.md` — immutable prior
+  effect-provenance evidence.
 
 ## Verification
 
 - `cargo +1.96.0 fmt --check`
 - `cargo +1.96.0 clippy --all-targets --all-features -- -D warnings`
-- `cargo +1.96.0 test --locked` — 55 tests passed.
+- `cargo +1.96.0 test --locked` — 59 tests passed.
 - `python3 scripts/check_repository.py`
 - `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'`
 - `git diff --check`
 
 ## Domain QA Disposition
 
-`_workspace/03_domain-qa.md` is `pass` for the declared effect-provenance
-slice. Explicit health/wave/intent effects are direct/immediate, Contest
-fallback movement is indirect/immediate, no delayed effect is emitted, and
-replay preserves the labels. Delayed effects, causal completeness, and
+`_workspace/03_domain-qa.md` is `pass` for the declared mana-resource slice.
+Full mana remains the compatibility default; non-full mana is visible only to
+authorized player/allied projections, Contest spending is fail-closed and
+direct/immediate, lane identities include spend, and matched branching applies
+an explicit non-Contest normalization policy. Economy completeness and
 human-evidence claims remain open.
 
 ## Canonical State Updates
 
-`ROADMAP.md` records the bounded effect-provenance evidence while keeping
-delayed effects, causal completeness, automatic execution outcomes,
-communication, and complete-scenario scope open. `SPEC.md` and
-`ARCHITECTURE.md` record the relationship/timing boundary. The package
-advances to `0.1.15`; the binary remains a placeholder.
+`ROADMAP.md` records one bounded mana resource and Contest spend path while
+keeping cooldowns, gold, experience, regeneration, abilities, communication,
+and complete-scenario scope open. `SPEC.md` and `ARCHITECTURE.md` record the
+resource boundary. The package advances to `0.1.16`; the binary remains a
+placeholder.
 
 ## Known Limits
 
-No delayed-effect queue, complete causal-chain model, automatic threat damage,
-communication, debrief serialization, CLI, MCP adapter, or full scenario
+No cooldown, gold, experience, regeneration, ability, resource-economy,
+communication, debrief-serialization, CLI, MCP adapter, or full scenario
 exists.
 
 ## Next Milestone Dependencies
 
-Use the effect-provenance, TwoBeats, Withdraw, last-known, window, branch,
-coordination, objective, fixture, scenario, debrief, and Recall contracts to
-choose the next bounded M2 slice without creating a second transition
-authority.
+Use the mana-resource, effect-provenance, TwoBeats, Withdraw, last-known,
+window, branch, coordination, objective, fixture, scenario, debrief, and Recall
+contracts to choose the next bounded M2 slice without creating a second
+transition authority.

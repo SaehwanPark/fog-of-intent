@@ -34,6 +34,25 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.16 — 2026-08-04
+
+### Added
+
+- A bounded `LaneMana` player resource with full-resource compatibility
+  defaults, player/allied observation projections, and non-full state/digest
+  binding.
+- Contest-only explicit mana spending with fail-closed validation, ordered
+  `ManaSpent`/`ManaChanged` attribution, debrief recording, and replay tests.
+- Mana is included in lane record identity; matched-parent branches apply and
+  record an intent-aware normalization when a Contest-only spend crosses to a
+  non-Contest alternate.
+
+### Changed
+
+- The package version advances to `0.1.16` for the bounded mana-resource
+  slice; cooldowns, gold, experience, regeneration, and abilities remain
+  deferred and the executable remains the documented placeholder.
+
 ## 0.1.15 — 2026-08-04
 
 ### Added
