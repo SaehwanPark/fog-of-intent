@@ -107,6 +107,7 @@ pub struct LanerObservation {
     pub(crate) available_threat_response: Option<LaneIntent>,
     pub(crate) available_target_focuses: [LaneTargetFocus; 3],
     pub(crate) available_commitments: [LaneCommitment; 3],
+    pub(crate) available_ping_signals: [LanePingSignal; 5],
     pub(crate) window: LaneWindow,
 }
 
@@ -227,6 +228,10 @@ impl LanerObservation {
         self.available_commitments
     }
 
+    pub fn available_ping_signals(self) -> [LanePingSignal; 5] {
+        self.available_ping_signals
+    }
+
     pub fn window(self) -> LaneWindow {
         self.window
     }
@@ -294,6 +299,13 @@ pub fn observe_player(
                 LaneCommitment::Standard,
                 LaneCommitment::Cautious,
                 LaneCommitment::Aggressive,
+            ],
+            available_ping_signals: [
+                LanePingSignal::None,
+                LanePingSignal::Danger,
+                LanePingSignal::OnMyWay,
+                LanePingSignal::Assist,
+                LanePingSignal::EnemyMissing,
             ],
             window: state.window(),
         },

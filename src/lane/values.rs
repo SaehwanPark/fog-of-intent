@@ -38,6 +38,22 @@ impl LaneCommitment {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+pub enum LanePingSignal {
+    #[default]
+    None,
+    Danger,
+    OnMyWay,
+    Assist,
+    EnemyMissing,
+}
+
+impl LanePingSignal {
+    pub const fn default_signal() -> Self {
+        Self::None
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct LaneHealth(pub(crate) u8);
 

@@ -34,6 +34,16 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.31 — 2026-08-05
+
+### Added
+
+- Bounded `LanePingSignal` player intent communication signal abstraction (`None`, `Danger`, `OnMyWay`, `Assist`, `EnemyMissing`) with `None` default.
+- Non-default `LanePingSignal` state-hash binding (`LANE_PING_SIGNAL_HASH_TAG`).
+- `LanerObservation` advertising of available ping signals.
+- Request/command integration with `ping_signal` getters and constructors while preserving existing constructors.
+- Direct-immediate `PingSignalSelected` and `PingSignalSet` events and effects during transition resolution, debrief recording, and replay verification.
+
 ## 0.1.30 — 2026-08-05
 
 ### Added

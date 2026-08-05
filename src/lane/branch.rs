@@ -418,6 +418,10 @@ pub(crate) fn lane_record_identity(record: &LaneTransitionRecord) -> StateHash {
         hash = hash_bytes(hash, &[LANE_COMMITMENT_HASH_TAG]);
         hash = hash_bytes(hash, &[commitment_tag(record.command.commitment)]);
     }
+    if record.command.ping_signal != LanePingSignal::None {
+        hash = hash_bytes(hash, &[LANE_PING_SIGNAL_HASH_TAG]);
+        hash = hash_bytes(hash, &[ping_signal_tag(record.command.ping_signal)]);
+    }
     hash = hash_bytes(hash, &record.prior_state_hash.value().to_le_bytes());
     for trace in [
         record.inputs.environment,

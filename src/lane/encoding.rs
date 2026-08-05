@@ -24,6 +24,7 @@ pub(crate) const LANE_WARD_HASH_TAG: u8 = 0x57;
 pub(crate) const LANE_TARGET_FOCUS_HASH_TAG: u8 = 0x54;
 pub(crate) const LANE_COMMITMENT_HASH_TAG: u8 = 0x56;
 pub(crate) const LANE_DELAYED_EFFECT_HASH_TAG: u8 = 0x44;
+pub(crate) const LANE_PING_SIGNAL_HASH_TAG: u8 = 0x50;
 
 pub(crate) fn phase_tag(phase: LanePhase) -> u8 {
     match phase {
@@ -100,5 +101,15 @@ pub(crate) fn commitment_tag(commitment: LaneCommitment) -> u8 {
         LaneCommitment::Standard => 0,
         LaneCommitment::Cautious => 1,
         LaneCommitment::Aggressive => 2,
+    }
+}
+
+pub(crate) fn ping_signal_tag(signal: LanePingSignal) -> u8 {
+    match signal {
+        LanePingSignal::None => 0,
+        LanePingSignal::Danger => 1,
+        LanePingSignal::OnMyWay => 2,
+        LanePingSignal::Assist => 3,
+        LanePingSignal::EnemyMissing => 4,
     }
 }
