@@ -566,6 +566,15 @@ This evidence establishes one bounded gold resource. It does not establish items
 
 This evidence establishes one bounded experience resource. It does not establish leveling curves, ability unlocks, cooldowns, or a complete playable lane scenario.
 
+### Current bounded cooldown-resource evidence
+
+- [x] Add bounded `LaneCooldown` to player state with zero default and non-zero state-hash binding.
+- [x] Expose `LaneCooldown` in player and allied observations without exposing opponent cooldown.
+- [x] Resolve explicit `cooldown_set` and turn/window beat ticking during execution with direct-immediate `CooldownSet`/`CooldownTicked`/`CooldownChanged` events and effects, debrief recording, and replay verification.
+- [x] Reject cooldown overflow exceeding maximum bounds before transition evaluation.
+
+This evidence establishes one bounded cooldown resource. It does not establish complete ability catalogs, item active cooldowns, or a complete playable lane scenario.
+
 ### Current final-debrief evidence
 
 - [x] Build a versioned final debrief only from a replay-verified two-window

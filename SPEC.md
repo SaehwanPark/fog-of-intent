@@ -377,6 +377,14 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Experience overflow exceeding maximum bounds (`MAX_LANE_EXPERIENCE`) fails before transition state mutation with `LaneExecutionError::ExperienceOverflow`.
 - Three focused experience-resource tests plus the prior sixty-six tests pass, for sixty-nine Rust tests total.
 
+#### Delivered in the bounded cooldown-resource follow-up
+
+- `LaneCooldown` is a bounded player resource with a zero default and non-zero state-hash and allied visible-digest tags (`LANE_COOLDOWN_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` expose player cooldown without exposing opponent cooldown.
+- `LaneExecutionInputs` supports explicit `cooldown_set` resolution and automatic turn/window beat ticking during execution with direct-immediate `CooldownSet`/`CooldownTicked`/`CooldownChanged` events and effects, debrief recording, and `LaneRecordIdentity` integration.
+- Cooldown overflow exceeding maximum bounds (`MAX_LANE_COOLDOWN`) fails before transition state mutation with `LaneExecutionError::CooldownOverflow`.
+- Three focused cooldown-resource tests plus the prior sixty-nine tests pass, for seventy-two Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
