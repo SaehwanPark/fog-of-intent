@@ -34,6 +34,16 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.32 — 2026-08-05
+
+### Added
+
+- Bounded `LaneAbortCondition` player intent abort condition abstraction (`None`, `HealthThreshold`, `ThreatSpotted`, `ResourceDepleted`) with `None` default.
+- Non-default `LaneAbortCondition` state-hash binding (`LANE_ABORT_CONDITION_HASH_TAG`).
+- `LanerObservation` advertising of available abort conditions.
+- Request/command integration with `abort_condition` getters and constructors while preserving existing constructors.
+- Direct-immediate `AbortConditionSelected`, `AbortConditionSet`, and `AbortConditionTriggered` events and effects during transition evaluation, debrief recording, and replay verification.
+
 ## 0.1.31 — 2026-08-05
 
 ### Added

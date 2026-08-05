@@ -319,6 +319,14 @@ pub enum LaneEvent {
         actor: ActorId,
         ping_signal: LanePingSignal,
     },
+    AbortConditionSelected {
+        actor: ActorId,
+        abort_condition: LaneAbortCondition,
+    },
+    AbortConditionTriggered {
+        actor: ActorId,
+        abort_condition: LaneAbortCondition,
+    },
     PlayerDamaged {
         target: ActorId,
         amount: LaneDamage,
@@ -518,6 +526,12 @@ pub enum LaneEffect {
         cause: LaneEffectCause,
         provenance: LaneEffectProvenance,
     },
+    AbortConditionSet {
+        actor: ActorId,
+        abort_condition: LaneAbortCondition,
+        cause: LaneEffectCause,
+        provenance: LaneEffectProvenance,
+    },
 }
 
 impl LaneEffect {
@@ -539,7 +553,8 @@ impl LaneEffect {
             | Self::DelayedEffectResolved { provenance, .. }
             | Self::TargetFocusSet { provenance, .. }
             | Self::CommitmentSet { provenance, .. }
-            | Self::PingSignalSet { provenance, .. } => provenance,
+            | Self::PingSignalSet { provenance, .. }
+            | Self::AbortConditionSet { provenance, .. } => provenance,
         }
     }
 }
@@ -632,6 +647,7 @@ pub struct LaneDebrief {
     pub(crate) target_focus: LaneTargetFocus,
     pub(crate) commitment: LaneCommitment,
     pub(crate) ping_signal: LanePingSignal,
+    pub(crate) abort_condition: LaneAbortCondition,
     pub(crate) self_damage: LaneDamage,
     pub(crate) mana_spent: LaneMana,
     pub(crate) gold_earned: LaneGold,
@@ -672,6 +688,10 @@ impl LaneDebrief {
 
     pub fn ping_signal(self) -> LanePingSignal {
         self.ping_signal
+    }
+
+    pub fn abort_condition(self) -> LaneAbortCondition {
+        self.abort_condition
     }
 
     pub fn self_damage(self) -> LaneDamage {
@@ -1172,7 +1192,17 @@ fn project_lane_events(
             actor: command.command.actor,
             ping_signal: command.command.ping_signal,
         },
+        LaneEvent::AbortConditionSelected {
+            actor: command.command.actor,
+            abort_condition: command.command.abort_condition,
+        },
     ];
+    if command.command.abort_condition != LaneAbortCondition::None {
+        events.push(LaneEvent::AbortConditionTriggered {
+            actor: command.command.actor,
+            abort_condition: command.command.abort_condition,
+        });
+    }
     if execution.self_damage != LaneDamage::zero() {
         events.push(LaneEvent::PlayerDamaged {
             target: player.id,
@@ -1316,6 +1346,12 @@ fn project_lane_effects(
         LaneEffect::PingSignalSet {
             actor: player.id,
             ping_signal: command.command.ping_signal,
+            cause: LaneEffectCause::Intent,
+            provenance: LaneEffectProvenance::direct_immediate(),
+        },
+        LaneEffect::AbortConditionSet {
+            actor: player.id,
+            abort_condition: command.command.abort_condition,
             cause: LaneEffectCause::Intent,
             provenance: LaneEffectProvenance::direct_immediate(),
         },
@@ -1493,6 +1529,7 @@ pub fn transition_lane(
         target_focus: command.command.target_focus,
         commitment: command.command.commitment,
         ping_signal: command.command.ping_signal,
+        abort_condition: command.command.abort_condition,
         self_damage: execution.self_damage,
         mana_spent: execution.mana_spent,
         gold_earned: execution.gold_earned,

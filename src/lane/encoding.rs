@@ -25,6 +25,7 @@ pub(crate) const LANE_TARGET_FOCUS_HASH_TAG: u8 = 0x54;
 pub(crate) const LANE_COMMITMENT_HASH_TAG: u8 = 0x56;
 pub(crate) const LANE_DELAYED_EFFECT_HASH_TAG: u8 = 0x44;
 pub(crate) const LANE_PING_SIGNAL_HASH_TAG: u8 = 0x50;
+pub(crate) const LANE_ABORT_CONDITION_HASH_TAG: u8 = 0x41;
 
 pub(crate) fn phase_tag(phase: LanePhase) -> u8 {
     match phase {
@@ -111,5 +112,14 @@ pub(crate) fn ping_signal_tag(signal: LanePingSignal) -> u8 {
         LanePingSignal::OnMyWay => 2,
         LanePingSignal::Assist => 3,
         LanePingSignal::EnemyMissing => 4,
+    }
+}
+
+pub(crate) fn abort_condition_tag(condition: LaneAbortCondition) -> u8 {
+    match condition {
+        LaneAbortCondition::None => 0,
+        LaneAbortCondition::HealthThreshold => 1,
+        LaneAbortCondition::ThreatSpotted => 2,
+        LaneAbortCondition::ResourceDepleted => 3,
     }
 }
