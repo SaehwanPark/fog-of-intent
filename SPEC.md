@@ -213,6 +213,20 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Three focused objective tests plus the prior thirty-seven tests pass, for
   forty Rust tests total.
 
+#### Delivered in the matched-input strategy-fixture follow-up
+
+- `StrategyFixture` defines named `HappyPath`, `RiskTaking`, and
+  `Conservative` bundles with explicit intent/response, coordination input,
+  lane execution input, and expected modeled outcome.
+- `run_strategy_fixture` binds each response to the canonical proposal ID and
+  runs through host validation, coordinated history append, and terminal
+  objective review; expectations do not alter transition authority.
+- Repeated runs are equivalent, the three cases produce distinct declared
+  input/output contrasts, legal-unfavorable risk-taking remains valid, and
+  tampered expected outcomes are rejected.
+- One focused strategy-fixture test plus the prior forty tests pass, for
+  forty-one Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
@@ -229,7 +243,7 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - The complete lane scenario still needs multiple windows, variable pacing,
   recall, gank response, richer resource abstractions, communication, and a
   full causal debrief surface; these follow-ups model only one fixed allied
-  proposal, coordination, and terminal-objective boundary.
+  proposal, coordination, terminal-objective, and strategy-fixture boundary.
 - CLI, MCP, full agent ecology, and human-experience evidence remain future
   M3/M4+ work; this diagnostic slice is not playable and makes no enjoyment,
   accessibility, trust, or behavioral-validity claim.

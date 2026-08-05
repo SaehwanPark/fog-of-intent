@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs` | Placeholder `Hello, world!` binary |
-| Package | `Cargo.toml` | Version `0.1.7`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.8`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -317,7 +317,7 @@ a causal debrief.
 - [ ] Define a terminal outcome that does not collapse evaluation to win/loss.
 - [ ] Produce immediate review and final debrief projections.
 - [x] Support replay and a bounded counterfactual branch at a pivotal decision.
-- [ ] Add scripted happy-path, risk-taking, and conservative-strategy fixtures.
+- [x] Add scripted happy-path, risk-taking, and conservative-strategy fixtures.
 - [ ] Test hidden-state leakage and actor-visible report completeness.
 - [ ] Inspect every transition in at least one complete replay manually.
 
@@ -388,6 +388,19 @@ optimality, human behavior, or a playable multi-window scenario.
 This evidence establishes one deterministic terminal-objective projection. It
 does not establish a complete scenario, optimality, balance, or human
 experience.
+
+### Current strategy-fixture evidence
+
+- [x] Define named `HappyPath`, `RiskTaking`, and `Conservative` matched-input
+  bundles over the existing observation, coordination, execution, and
+  objective contracts.
+- [x] Run each fixture through host validation and one coordinated history
+  append; expected outcomes remain checks rather than hidden transition rules.
+- [x] Verify repeated-run equality, distinct modeled outcomes, legal-unfavorable
+  risk-taking behavior, objective replay, and tampered expectation rejection.
+
+This evidence establishes three deterministic modeled cases for one window. It
+does not establish strategy quality, balance, optimality, or human preference.
 
 ### Deliverables
 

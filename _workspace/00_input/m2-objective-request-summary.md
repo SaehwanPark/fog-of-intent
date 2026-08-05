@@ -3,30 +3,28 @@
 ## Requested Outcome
 
 Implement the next bounded M2 slice after the merged one-window lane, branch,
-allied coordination, and objective contracts: add three explicit matched-input
-diagnostic strategy fixtures (happy-path, risk-taking, conservative) over the
-existing one-window mechanics. Keep fixture content separate from simulation
-authority and do not add a second window yet.
+and allied coordination contracts: define one scenario goal and a
+host-owned terminal-objective projection for the existing one-window record.
+Keep objective evaluation separate from lane mechanics and do not add a second
+window yet.
 
 ## Roadmap Milestone
 
-M2 — One-Lane Vertical Slice, strategy-fixture follow-up.
+M2 — One-Lane Vertical Slice, scenario goal and terminal-objective follow-up.
 
 ## Current Evidence
 
-- M1 is complete; the first M2 decision window, bounded branch, allied
-  proposal/coordination overlay, and terminal-objective review are merged on
-  `main` through `31836e0`; this branch advances the package from `0.1.7` to
-  `0.1.8`, pinned to Rust `1.96.0`,
+- M1 is complete; the first M2 decision window, bounded branch, and allied
+  proposal/coordination overlay are merged on `main` through `ae87d0d`; this
+  branch advances the package from `0.1.6` to `0.1.7`, pinned to Rust `1.96.0`,
   with no dependencies.
 - The binary remains a placeholder and the M2 scenario is not yet playable.
 
 ## In Scope
 
-- Define three named strategy fixtures: happy-path, risk-taking, and
-  conservative.
-- Bind each fixture to explicit player intent/response and resolved execution
-  inputs, then evaluate the existing terminal objective.
+- Define one bounded scenario goal for the current diagnostic lane window.
+- Evaluate a terminal-objective projection from committed lane/coordination
+  facts without changing `LaneSnapshot`, its hash, or transition authority.
 - Preserve actor-visible information limits, deterministic replay, branch
   compatibility, and the existing coordination/debrief attribution.
 - Synchronize the M2 design, roadmap, SPEC, architecture, changelog, and domain
@@ -36,8 +34,8 @@ M2 — One-Lane Vertical Slice, strategy-fixture follow-up.
 
 - No second decision window, full lane scenario, CLI, MCP, GUI, broad agent
   population, persistence codec, or general communication framework.
-- No hidden-state strategy score, optimality claim, balance claim, or new
-  mechanics beyond the existing bounded projection.
+- No hidden-state objective score, optimality claim, balance claim, or new
+  terminal mechanics beyond the bounded projection.
 - No change to the placeholder binary or claim of a playable simulation.
 
 ## Project Boundaries Touched
@@ -48,15 +46,15 @@ M2 — One-Lane Vertical Slice, strategy-fixture follow-up.
 
 ## Source Files
 
-- `src/lane.rs` fixture descriptors and focused tests
+- `src/lane.rs` objective projection and focused tests
 - existing M1 fixture tests remain unchanged
 - `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md`
 - `_workspace/01_simulation-design.md`, `_workspace/03_domain-qa.md`, and
-  immutable M2 objective handoff snapshots
+  immutable M2 coordination handoff snapshots
 
 ## Expected Outputs
 
-- Happy-path, risk-taking, conservative, objective, and replay tests.
+- Scenario-goal, terminal-objective, attribution, and replay tests.
 - Updated M2 checklist and SDD/domain handoff artifacts.
 - Passing local checks, one code-reviewer’s three-pass review, hosted CI, and a
   merged PR.
@@ -69,13 +67,13 @@ M2 — One-Lane Vertical Slice, strategy-fixture follow-up.
 - `python3 scripts/check_repository.py`
 - `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'`
 - `git diff --check`
-- Focused fixture-boundary, objective attribution, deterministic projection,
-  and replay tests.
+- Focused objective-boundary, coordination attribution, deterministic
+  projection, and replay tests.
 
 ## Evidence Limits and Open Questions
 
-- The slice establishes only three one-window matched-input fixture cases; it
-  does not establish a playable scenario, balance, optimality, or
+- The slice establishes only a one-window scenario-goal/objective projection;
+  it does not establish a playable scenario, balance, optimality, or
   human-experience evidence.
 - Portable serialization, migration, multi-window state, general communication,
   and broad agent-population claims remain deferred.
