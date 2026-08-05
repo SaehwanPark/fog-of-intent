@@ -299,7 +299,7 @@ a causal debrief.
 
 ### Scope
 
-- [ ] Choose one scenario goal and simulated duration, such as surviving a weak
+- [x] Choose one scenario goal and simulated duration, such as surviving a weak
   lane, preparing a gank, or recalling with limited loss.
 - [ ] Define one human-controlled laner, one opposing laner, one allied autonomous
   actor, and one abstract opposing jungle threat.
@@ -401,6 +401,22 @@ experience.
 
 This evidence establishes three deterministic modeled cases for one window. It
 does not establish strategy quality, balance, optimality, or human preference.
+
+### Current bounded two-window scenario evidence
+
+- [x] Compose two sequential one-beat lane records under a versioned scenario
+  replay identity without changing the existing transition or branch IDs.
+- [x] Reopen only a valid resolved first-window state through an explicit
+  deterministic host boundary that preserves domain values and clears only
+  per-window phase/outcome status.
+- [x] Store exact start/reopened states and complete base records; reject a
+  third append, invalid reopen, resolved-window action, and tampered replay.
+- [x] Reach and replay a resolved two-window terminal state while preserving
+  the first-window objective and prior one-window/coordination/fixture tests.
+
+This evidence establishes a bounded two-window composition. It does not
+establish variable pacing, recall, gank response, communication, or a complete
+playable lane scenario.
 
 ### Deliverables
 

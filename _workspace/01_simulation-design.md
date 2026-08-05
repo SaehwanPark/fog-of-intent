@@ -1,104 +1,122 @@
-# Simulation Design — M2 Matched-Input Strategy Fixtures
+# Simulation Design — M2 Bounded Two-Window Scenario Wrapper
 
 ## Goal and Boundary
 
-This slice adds exactly three named diagnostic fixtures over the existing
-one-window lane, allied-coordination, and terminal-objective contracts:
-
-- `HappyPath`: `Contest` with accepted allied support and favorable explicit
-  execution, expected to achieve `HoldLaneSpaceThroughWindow`;
-- `RiskTaking`: `Contest` with rejected support and unfavorable but legal
-  execution, expected to yield space while surviving the beat;
-- `Conservative`: `Stabilize` with rejected support and held explicit
-  execution, expected to miss the hold-space goal while surviving.
-
-Fixtures are immutable input bundles for tests and diagnostic inspection. They
-are not a scenario engine, policy population, balance model, or hidden
-benchmark. They do not add a second window or change the existing transition.
-
-## Preserved Authority
-
-`LaneSnapshot`, `LaneResolvedInputs`, `transition_lane`, `LaneHistory`,
-`LaneBranch`, `CoordinatedLaneHistory`, and terminal-objective evaluation remain
-the existing authorities. A fixture chooses already-resolved inputs at the
-edge; it cannot read hidden truth, create randomness, bypass validation, or
-mutate a record. The same fixture input must reproduce the same player
-observation, proposal/offer, response, coordination disposition, lane result,
-objective review, and state hash.
-
-## Typed Fixture Contract
+This slice composes exactly two sequential one-beat lane windows over the
+implemented `LaneSnapshot` transition. It adds no new lane mechanics. The
+first committed window produces the existing resolved result; one explicit
+host-owned reopen boundary prepares a second open window; the second commit
+finishes the bounded scenario history.
 
 ```text
-StrategyFixture {
-    id: HappyPath | RiskTaking | Conservative,
-    player_intent: LaneIntent,
-    response: ProposalResponse,
-    coordination_inputs: CoordinationResolutionInputs,
-    lane_inputs: LaneResolvedInputs,
-    expected_objective: ObjectiveDisposition,
-    expected_outcome: LaneOutcome,
+open snapshot 0
+  -> existing observe/validate/transition
+  -> resolved result 0
+  -> reopen_lane_window(result 0)
+  -> open snapshot 1
+  -> existing observe/validate/transition
+  -> resolved result 1 / scenario terminal state
+```
+
+The existing one-window `LaneHistory`, `LaneBranch`,
+`CoordinatedLaneHistory`, replay IDs, `LaneSnapshot::hash()`, and
+`transition_lane` remain unchanged and independently valid. The new wrapper
+owns only the two-window sequence and the deterministic reopen boundary.
+
+## Scope and Exclusions
+
+Included:
+
+- `m2-two-window-scenario-v1` identity;
+- a `LaneScenarioHistory` that accepts at most two sequential ordinary lane
+  records;
+- one `reopen_lane_window` operation from resolved result 0 to open window 1,
+  preserving player/opponent/wave/hidden-threat values and the incremented
+  turn while clearing only phase/terminal-window status;
+- append-only scenario records that retain each window's start state, base
+  transition record, and optional reopened state;
+- deterministic replay of both transitions and the reopen boundary;
+- a final terminal state after window 2, plus objective review of either
+  committed record through the existing objective API.
+
+Excluded are variable-duration windows, automatic pacing, recall, gank
+response, new resources, communication, multiple allied proposals, scenario
+serialization, branching across scenario windows, merge/delete operations,
+CLI/MCP/GUI, and human-experience claims.
+
+## Reopen Contract
+
+`reopen_lane_window(result)` accepts only the opaque committed
+`LaneTransitionResult`; it verifies the result hash/outcome against its
+resolved next state and then requires `phase == Resolved` with
+`terminal_outcome.is_some()`. It returns:
+
+```text
+LaneSnapshot::new(
+    same ruleset,
+    same turn,
+    Open,
+    same player/opponent/wave/jungle values,
+    None,
+)
+```
+
+It does not call `transition_lane`, create randomness, or mutate the prior
+result. Its output hash is an explicit scenario-boundary state and is stored
+in the scenario record/replay stream. The raw snapshot helper is private; only
+the scenario wrapper may accept the open state as the next window's starting
+point.
+
+## History and Authority
+
+```text
+LaneScenarioRecord {
+    window: ScenarioWindow,
+    start_state: LaneSnapshot,
+    transition: LaneTransitionRecord,
+    reopened_state: Option<LaneSnapshot>,
 }
 ```
 
-The fixture exposes its declared values through getters and is `Copy`/`Eq`.
-Its response proposal ID is bound to the generated canonical allied proposal,
-not a free-form fixture value. Construction is a pure function of the initial
-snapshot and fixed observation/policy traces; a host still validates the
-embedded request and resolves the coordinated record through existing APIs.
+Window 0 stores `reopened_state = Some(...)`; window 1 stores `None`. The
+wrapper rejects a third append, a non-open current state, an invalid initial
+state, or a record whose observation/command does not validate against the
+current window. It never accepts an actor action against the resolved window.
 
-The three canonical input bundles are:
-
-| Fixture | Intent/response | Coordination input | Lane execution | Expected review |
-| --- | --- | --- | --- | --- |
-| HappyPath | Contest + Accept | AllyCommitted | self 0, opponent 2, wave Advanced | Achieved / HeldSpace |
-| RiskTaking | Contest + Reject | NotRequested | self 3, opponent 0, wave Lost | Missed / YieldedSpace |
-| Conservative | Stabilize + Reject | NotRequested | self 0, opponent 0, wave Held | Missed / YieldedSpace |
-
-`RiskTaking` is a legal unfavorable result, not a rejected command. The
-fixture descriptions do not claim that one strategy is globally better; they
-only name matched inputs and expected modeled outputs.
-
-## Information and Causality
-
-Fixture construction uses the public initial state and host-side receipts only
-to bind the current observation/proposal ID. Ordinary actor projections remain
-unchanged. No fixture exposes opponent health, posture, jungle threat, source
-hashes, proposal policy internals, or private receipts as actor input.
-
-Fixture review keeps decision, coordination, execution, objective, and
-attribution separate. The expected objective is checked against the committed
-`ObjectiveReviewRecord`, not used to force a transition result.
+The scenario host can use existing ordinary lane records in this slice. The
+allied coordination and fixture APIs remain available for one-window cases;
+scenario-aware coordination is deferred until a versioned composition is
+needed.
 
 ## Replay and Determinism
 
-`run_strategy_fixture(fixture)` builds the canonical receipts/offer, creates the
-declared request, appends one coordinated record, and returns the history plus
-objective review. It rejects any fixture whose generated response or expected
-outcome does not match the committed result. A repeated run with identical
-fixture and initial state is field-equivalent. Existing ordinary history and
-branch replay tests remain unchanged.
+`LaneScenarioHistory::verify_replay` starts from the initial open snapshot. For
+each record it checks the window index and exact `start_state`, regenerates the
+player observation, validates the stored command, reruns `transition_lane`,
+compares the complete `LaneTransitionRecord`, and compares the stored reopen
+state when present. It then uses the reopened state as the next start. The
+terminal scenario state must equal the wrapper's current state.
 
-No fixture introduces a random draw. The environment, observation, policy,
-coordination, and execution traces remain explicit in `LaneResolvedInputs` and
-`CoordinationResolutionInputs`. Changing a fixture input is a new committed
-condition and is evaluated through the same host path.
+Changing a prior outcome, start-state phase, reopened state, command,
+observation, input trace, or terminal result is replay failure. Identical
+states/commands/inputs reproduce the same window results and hashes. The
+wrapper does not infer a second transition from runtime logs.
 
 ## Verification Contract
 
-Focused tests cover:
+Focused tests must cover:
 
-- all three fixture IDs and declared intent/response/input values;
-- host validation before append and response proposal-ID binding;
-- one successful run per fixture with expected lane outcome and objective
-  disposition;
-- exact repeated-run equality and unchanged transition/state hash authority;
-- distinct strategy inputs and outcomes under the same initial state;
-- legal-unfavorable risk-taking behavior remaining distinct from invalidity;
-- hidden-state and report-boundary invariants through the existing tests;
-- tampering with fixture expectations or committed record data being rejected;
-- preservation of ordinary history and bounded branch replay.
+- valid reopen preserving all domain values while changing only window phase;
+- reject reopen from open/invalid states;
+- append first window, reopen, append second window, and reach terminal state;
+- reject third append and actions against the resolved final window;
+- preserve first-window outcome and objective facts across the reopen;
+- deterministic repeated two-window replay and unchanged base results/hashes;
+- tamper detection for window index, start state, reopened state, command,
+  observation, input traces, result, and terminal state;
+- existing one-window history, coordinated history, branch, fixture, and M1
+  replay tests remain passing.
 
-Evidence establishes only deterministic software fixture coverage and modeled
-strategy contrast for one window. It does not establish strategy quality,
-balance, optimality, human preference, enjoyment, accessibility, trust, or
-behavioral validity.
+Evidence establishes only a two-window deterministic composition and replay
+boundary. It does not establish variable pacing, a complete lane scenario,
+strategy quality, balance, optimality, or human behavior.
