@@ -2,7 +2,8 @@
 
 **Last reviewed:** 2026-08-04
 **Status:** Partially verified — M1 kernel and fixture codec are implemented;
-M2 scenario architecture remains a bounded target under construction
+M2 scenario architecture remains a bounded target under construction, with the
+first internal lane decision window implemented
 
 ## Overview
 
@@ -38,6 +39,7 @@ Cargo.toml
 src/main.rs
 src/lib.rs
 src/kernel.rs
+src/lane.rs
 src/serialization.rs
 tests/fixtures/
 README.md
@@ -50,15 +52,16 @@ docs/
 _workspace/
 ```
 
-`src/lib.rs`, `src/kernel.rs`, and `src/serialization.rs` are the current
-internal kernel/fixture surface; `src/main.rs` remains a placeholder executable.
-The other paths are project-state, design-source, and agent-workflow artifacts.
+`src/lib.rs`, `src/kernel.rs`, `src/lane.rs`, and `src/serialization.rs` are the
+current internal kernel/fixture surface; `src/main.rs` remains a placeholder
+executable. The other paths are project-state, design-source, and agent-
+workflow artifacts.
 
 ## Target Components
 
-These are ownership boundaries; the bounded kernel and fixture codec are
-implemented, while scenario, observation, host, and adapter rows remain target
-boundaries.
+These are ownership boundaries; the bounded kernel, fixture codec, and first
+one-window lane observation/transition are implemented, while the host and
+adapter rows remain target boundaries.
 
 | Component | Owns | Must not own |
 | --- | --- | --- |
@@ -96,6 +99,19 @@ The host may gather independent actor decisions concurrently at the edge. It
 must close the window before resolution so one actor cannot observe another's
 private uncommitted action. Async collection never makes the transition itself
 asynchronous.
+
+The implemented M2 diagnostic flow is the same boundary without an external
+adapter:
+
+```text
+LaneSnapshot -> observe_player -> LaneIntentRequest
+  -> host validation + explicit LaneResolvedInputs
+  -> transition_lane -> LaneHistory append/replay
+```
+
+The observation receipt keeps the source-state binding private to the host
+boundary; the actor-visible `LanerObservation` does not contain the true-state
+hash or hidden opponent/threat fields.
 
 ## Consequential Type Boundaries
 
@@ -220,9 +236,12 @@ and an architecture update or ADR when it changes a consequential boundary.
 
 ## Known Gaps
 
-- The first M1 kernel and strict `1.0.0` text fixture codec are implemented, but
-  they are not a playable scenario, public API, migration framework, or
-  persistence service.
+- The M1 kernel/codec and first M2 lane decision-window contract are implemented
+  internally, but they are not a playable scenario, public API, migration
+  framework, or persistence service.
+- The M2 window is intentionally one-shot: no allied actor, communication,
+  variable pacing, branching, external scenario serialization, or full
+  debrief surface is implemented yet.
 - Richer external replay bundles and scenario-specific schema fields remain
   open work.
 - `.github/workflows/ci.yml` and `scripts/check_repository.py` now define the

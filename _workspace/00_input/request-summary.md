@@ -16,8 +16,9 @@ M2 — One-Lane Vertical Slice, first decision-window boundary.
 
 - PR #6 merged the versioned replay fixture codecs to `main` as `c5d7a9d` after
   the prior M1 implementation and codec checks passed.
-- M1 is now promoted to complete in `ROADMAP.md` and `SPEC.md`; the package is
-  version `0.1.3`, remains pinned to Rust `1.96.0`, and has no dependencies.
+- M1 is now promoted to complete in `ROADMAP.md` and `SPEC.md`; this slice
+  advances the package from `0.1.3` to `0.1.4`, remains pinned to Rust
+  `1.96.0`, and adds no dependencies.
 - The binary remains a placeholder and the M2 scenario is not yet playable.
 
 ## In Scope
@@ -46,10 +47,12 @@ M2 — One-Lane Vertical Slice, first decision-window boundary.
 
 ## Source Files
 
-- `src/kernel.rs`, `src/lib.rs`, and the new M2 lane/observation modules
-- `tests/fixtures/` versioned text fixtures and focused M2 tests
+- `src/kernel.rs`, `src/lib.rs`, and new `src/lane.rs` M2 lane/observation
+  contracts
+- existing `tests/fixtures/` plus focused lane tests in `src/lane.rs`
 - `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md`
-- `_workspace/01_simulation-design.md`, `_workspace/03_domain-qa.md`
+- `_workspace/01_simulation-design.md`, `_workspace/03_domain-qa.md`, and
+  immutable M1 handoff snapshots
 
 ## Expected Outputs
 

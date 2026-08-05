@@ -76,10 +76,10 @@ players?
 | --- | --- |
 | Current roadmap milestone | M2 — One-Lane Vertical Slice (Active) |
 | Repository governance and canonical docs | Complete — M0 |
-| Rust package | `0.1.3`, edition 2024, Rust `1.96`, no dependencies, single package |
+| Rust package | `0.1.4`, edition 2024, Rust `1.96`, no dependencies, single package |
 | Executable behavior | Prints `Hello, world!` |
-| Deterministic kernel | Internal bounded/replay fixture implemented — M1 complete; not playable |
-| One-lane scenario | Not implemented — M2 |
+| Deterministic kernel | M1 fixture/codec complete; M2 one-window lane boundary implemented internally |
+| One-lane scenario | First diagnostic window implemented — full scenario not complete |
 | CLI reference experience | Not implemented — M3 |
 | Agent ecology and MCP | Not implemented — M4/M5 |
 | Behavioral experiments and calibration | Not implemented — M6/M7 |
@@ -113,9 +113,9 @@ python3 scripts/check_repository.py
 python3 -m unittest discover -s scripts -p 'test_*.py'
 ```
 
-These commands validate the internal M1 kernel fixture and repository policy;
-the binary itself remains a placeholder until a later milestone adds a
-user-facing host.
+These commands validate the internal M1 kernel and M2 lane boundary plus
+repository policy; the binary itself remains a placeholder until a later
+milestone adds a user-facing host.
 
 ## Canonical Documents
 
@@ -162,7 +162,7 @@ git practices remain reusable global concerns.
 ## Repository Map
 
 ```text
-src/                         Current Rust placeholder
+src/                         Rust placeholder plus internal kernel fixtures
 docs/                        Proposal, stack analysis, ADRs, terminology, and harness contract
 scripts/                     Dependency-free repository currentness checks
 .agents/skills/              Repo-local domain skills

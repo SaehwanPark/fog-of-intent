@@ -141,6 +141,25 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Preserve append-only history and replay identity while leaving the binary,
   CLI, full scenario, and external adapters deferred.
 
+#### Delivered in the first bounded slice
+
+- `src/lane.rs` defines bounded lane health, damage, wave pressure, positions,
+  phase, opponent truth, hidden threat truth, terminal outcome, and the fixed
+  `m2-lane-v1` ruleset.
+- `observe_player` returns an actor-valid `m2-lane-observation-v1` projection
+  with explicit unknown opponent/threat reports and no latent state or hash.
+- `Stabilize` and `Contest` requests become host-created validated commands;
+  command metadata, observation receipts, and exact prior-state binding reject
+  wrong actor, turn, ruleset, stale observation, and stale hash inputs.
+- `transition_lane` consumes explicit execution damage and wave results,
+  preserves intent/execution separation, emits ordered attributed events and
+  effects, produces a one-window debrief, and computes the next-state hash.
+- `LaneHistory` commits one append-only record and verifies its observation,
+  command, resolved inputs, result, and terminal snapshot through replay.
+- Nine focused lane tests plus the nineteen M1 tests pass, covering the
+  information boundary, both legal intents, an unfavorable fallback outcome,
+  malformed execution, validation, determinism, stream isolation, and replay.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
@@ -154,8 +173,12 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 
 #### Not Yet Done
 
-- Full lane scenario, autonomous policy population, CLI, MCP, branching,
-  terminal debrief, and human-experience evidence remain future M2/M3/M4 work.
+- The complete lane scenario still needs multiple windows, variable pacing,
+  recall, gank response, allied autonomous behavior, communication, bounded
+  branching, richer resource abstractions, and a full causal debrief surface.
+- CLI, MCP, agent ecology, and human-experience evidence remain future M3/M4+
+  work; this diagnostic slice is not playable and makes no enjoyment,
+  accessibility, trust, or behavioral-validity claim.
 
 ## Future
 
