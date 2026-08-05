@@ -593,6 +593,15 @@ This evidence establishes one bounded bounty resource. It does not establish com
 
 This evidence establishes one bounded level resource. It does not establish complete leveling curves, ability point trees, or a complete playable lane scenario.
 
+### Current bounded minion-kills-resource evidence
+
+- [x] Add bounded `LaneMinionKills` to player state with zero default and non-zero state-hash binding.
+- [x] Expose `LaneMinionKills` in player and allied observations without exposing opponent minion kills.
+- [x] Resolve explicit `minion_kills_gained` during execution with direct-immediate `MinionKillsGained`/`MinionKillsChanged` events and effects, debrief recording, and replay verification.
+- [x] Reject minion kills overflow exceeding maximum bounds before transition evaluation.
+
+This evidence establishes one bounded minion kills resource. It does not establish minion wave spawn timing, last-hitting mechanics, or a complete playable lane scenario.
+
 ### Current final-debrief evidence
 
 - [x] Build a versioned final debrief only from a replay-verified two-window
