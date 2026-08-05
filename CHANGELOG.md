@@ -34,6 +34,22 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.5 — 2026-08-04
+
+### Added
+
+- A bounded one-window counterfactual branch with immutable parent history,
+  matched-parent or explicitly regenerated execution inputs, stable branch
+  traces, replay identity, and comparison limits that separate decision from
+  execution changes.
+- Branch validation, replay, tamper, parent-immutability, and causal-review
+  tests while preserving the existing M2 lane transition contract.
+
+### Changed
+
+- The package version advances to `0.1.5` for the bounded branch slice; the
+  executable remains the documented placeholder.
+
 ## 0.1.4 — 2026-08-04
 
 ### Added

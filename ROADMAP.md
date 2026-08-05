@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs` | Placeholder `Hello, world!` binary |
-| Package | `Cargo.toml` | Version `0.1.4`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.5`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -316,7 +316,7 @@ a causal debrief.
 - [ ] Record direct, indirect, immediate, and delayed effects with provenance.
 - [ ] Define a terminal outcome that does not collapse evaluation to win/loss.
 - [ ] Produce immediate review and final debrief projections.
-- [ ] Support replay and a bounded counterfactual branch at a pivotal decision.
+- [x] Support replay and a bounded counterfactual branch at a pivotal decision.
 - [ ] Add scripted happy-path, risk-taking, and conservative-strategy fixtures.
 - [ ] Test hidden-state leakage and actor-visible report completeness.
 - [ ] Inspect every transition in at least one complete replay manually.
@@ -339,6 +339,19 @@ a causal debrief.
 
 This evidence promotes only the bounded M2 diagnostic slice. The unchecked
 scope items remain required for the complete one-lane milestone.
+
+### Current bounded branch evidence
+
+- [x] Branch only from the verified record-0 prefix before the original window,
+  preserving the parent history and its replay result.
+- [x] Support exact matched-parent execution inputs and explicitly regenerated
+  execution inputs with stable branch-scoped stream identities.
+- [x] Record versioned branch identity and bounded comparison metadata without
+  adding branch fields to authoritative lane state or its hash.
+- [x] Reject same-intent, wrong-actor, stale-observation, invalid-identity,
+  malformed-parent, and tampered-branch inputs before accepting a result.
+- [x] Cover matched/regenerated replay, parent immutability, attribution
+  limits, hidden-state boundaries, and branch tamper detection.
 
 ### Deliverables
 
