@@ -1,8 +1,8 @@
 # Architecture
 
 **Last reviewed:** 2026-08-04
-**Status:** Partially verified — repository baseline is current; simulation
-architecture is a target contract, not an implementation claim
+**Status:** Partially verified — M1 kernel and fixture codec are implemented;
+M2 scenario architecture remains a bounded target under construction
 
 ## Overview
 
@@ -10,7 +10,9 @@ Fog of Intent is currently a single Rust 2024 package with no dependencies. The
 binary still prints `Hello, world!`; an internal `kernel` library now provides
 the first bounded deterministic transition and in-memory replay fixture. No
 playable scenario, CLI command host, persistence, MCP, research, or GUI
-component exists yet.
+component exists yet. M1 is complete as an internal, non-playable fixture;
+M2 currently begins with a lane decision-window contract rather than a user-
+facing host.
 
 The target architecture is one authoritative Rust simulation product with thin
 human, agent, and research adapters. The strongest boundary is:
@@ -54,8 +56,9 @@ The other paths are project-state, design-source, and agent-workflow artifacts.
 
 ## Target Components
 
-These are ownership boundaries; only the bounded kernel row is currently
-implemented.
+These are ownership boundaries; the bounded kernel and fixture codec are
+implemented, while scenario, observation, host, and adapter rows remain target
+boundaries.
 
 | Component | Owns | Must not own |
 | --- | --- | --- |

@@ -10,7 +10,9 @@ experience, legal clearance, or research validity.
 
 ## Reviewed Inputs
 
-- _workspace/00_input/request-summary.md
+- _workspace/00_input/m1-request-summary.md (verbatim snapshot of
+  `_workspace/00_input/request-summary.md` at commit
+  `c5d7a9d26930f2f73406f3690385dc16b3fed8dc`)
 - _workspace/01_simulation-design.md
 - ROADMAP.md, SPEC.md, ARCHITECTURE.md, README.md, and CHANGELOG.md
 - docs/TERMINOLOGY.md, docs/COMPATIBILITY.md, and ADR-0001

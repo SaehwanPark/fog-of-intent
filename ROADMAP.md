@@ -2,7 +2,7 @@
 
 **Document role:** Canonical milestone order, scope, and promotion gates
 **Status:** Active
-**Current milestone:** M1 — Deterministic Simulation Kernel
+**Current milestone:** M2 — One-Lane Vertical Slice
 **Last reviewed:** 2026-08-04
 
 This document is the authoritative execution roadmap. The project proposal
@@ -36,15 +36,16 @@ sequencing or checklist differs from this file, this file governs current work.
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
-| Simulation, CLI, MCP, replay, research, GUI | No implementation evidence | Not implemented |
+| Internal kernel/replay fixture | `src/kernel.rs`, `src/serialization.rs` | M1 complete; not playable |
+| Scenario, CLI, MCP, research, GUI | No implementation evidence | Not implemented |
 
 ## Milestone Map
 
 | Milestone | Outcome | Status | Required predecessor |
 | --- | --- | --- | --- |
 | M0 | Governed repository baseline | Complete | Repository inception |
-| M1 | Replayable deterministic kernel | Active | M0 |
-| M2 | First complete one-lane scenario | Planned | M1 |
+| M1 | Replayable deterministic kernel | Complete | M0 |
+| M2 | First complete one-lane scenario | Active | M1 |
 | M3 | CLI reference experience | Planned | M2 |
 | M4 | Interpretable bounded-agent population | Planned | M2; preferably M3 |
 | M5 | Model-agnostic MCP play | Planned | M3 and stable actor contracts |
@@ -190,7 +191,7 @@ and enough governance to begin the deterministic kernel without ambiguity.
 ## Phase 1 — Deterministic Simulation Kernel
 
 **Milestone:** M1
-**Status:** Active
+**Status:** Complete
 **Depends on:** M0
 
 ### Initial bounded slice
@@ -262,6 +263,13 @@ async, terminal, database, or model-provider dependencies in the core.
 - The checked-in `m1_snapshot_v1.txt` and `m1_history_v1.txt` fixtures use the
   explicit `1.0.0` schema and `fnv1a64-le-v1` hash representation.
 
+### Promotion evidence
+
+- The M1 checklist is complete and its exit evidence is recorded above.
+- The locked Rust 1.96.0 format, clippy, test, repository-currentness, and
+  focused checker suites pass on the merged `0.1.3` implementation.
+- `SPEC.md` records M1 as past and identifies the bounded M2 slice now active.
+
 ### Explicit deferrals
 
 - No complete lane model or promise of enjoyable play.
@@ -271,8 +279,17 @@ async, terminal, database, or model-provider dependencies in the core.
 ## Phase 2 — One-Lane Vertical Slice
 
 **Milestone:** M2
-**Status:** Planned
+**Status:** Active
 **Depends on:** M1
+
+### Initial bounded slice
+
+Start with one deterministic lane decision window rather than the full
+scenario: a typed lane snapshot, a host-owned observation for the human laner,
+one legal intent command, explicit resolved execution input, and a replayable
+transition that records a visible outcome without exposing latent opponent
+state. Hold, pressure, and recall remain planned follow-up actions until this
+boundary is verified.
 
 ### Outcome
 

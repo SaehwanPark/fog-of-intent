@@ -78,30 +78,13 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - M0 does not establish intellectual-property clearance, public-release
   readiness, accessibility, enjoyment, or research validity.
 
-## Present
+### M1 — Bounded deterministic transition fixture — 2026-08-04
 
-### M1 — Bounded deterministic transition fixture
-
-**Status:** Active
+**Status:** Complete
 **Started:** 2026-08-04
 **Selected after:** M0 hosted CI promotion
 
-#### Target slice
-
-- Keep the existing single Cargo package and add internal kernel modules only
-  where the first fixture needs them.
-- Define one stable identifier, one bounded numeric/resource value, immutable
-  `WorldState`, and the minimum actor state for a tiny scripted fixture.
-- Define `Command`, `ValidatedCommand`, `ResolvedInputs`, `Event`, `Effect`,
-  `TransitionResult`, and typed validation errors.
-- Implement one pure deterministic transition from explicit resolved inputs,
-  including one invalid command and one legal but unfavorable outcome.
-- Record an append-only transition history entry, a deterministic authoritative
-  state hash, and replay verification of every transition hash.
-- Keep environment, observation, policy, coordination, and execution input
-  categories explicit even if the first fixture uses only a subset.
-
-#### Delivered in the first implementation slice
+#### Delivered
 
 - `src/kernel.rs` provides stable identifiers, bounded `Units`, immutable
   `WorldState`, a versioned ruleset identifier, host validation, and the pure
@@ -128,20 +111,59 @@ exists. Planned proposal or roadmap text is never implementation evidence.
   conservation, ordering, and unrelated input-stream isolation as implemented.
 - Core dependency inspection confirms no I/O, async runtime, wall clock,
   terminal, database, MCP, model-provider, or hidden RNG dependency.
+- The M1 checklist and exit evidence in `ROADMAP.md` are complete, and the
+  merged `0.1.3` implementation passes the locked project checks.
+
+#### Deferred
+
+- No lane model, full scenario, interactive CLI, MCP transport, general
+  entity-component system, arbitrary scenario scripting, migration support, or
+  richer external replay bundle is implemented.
+- The codec remains a local fixture contract; it does not claim external
+  compatibility, human experience, or a playable simulation.
+
+## Present
+
+### M2 — First bounded one-lane decision window
+
+**Status:** Active
+**Started:** 2026-08-04
+**Selected after:** M1 replay and codec promotion
+
+#### Target slice
+
+- Define the smallest typed lane snapshot needed for one decision window.
+- Project actor-valid observation text/data for the human laner without latent
+  opponent state or research-only inspection.
+- Accept one host-validated intent command and explicit resolved execution
+  input, then return deterministic events, effects, next state, and hash through
+  the existing kernel boundary.
+- Preserve append-only history and replay identity while leaving the binary,
+  CLI, full scenario, and external adapters deferred.
+
+#### Verification
+
+- Identical prior state, validated intent, resolved input, and ruleset yield
+  equivalent output and hash.
+- Invalid actor, turn, ruleset, stale-hash, and out-of-contract commands fail
+  before transition evaluation.
+- Actor-visible observation omits latent opponent values and labels unknown or
+  last-known information explicitly.
+- A legal but unfavorable execution result remains distinct from command
+  rejection and is replay-verifiable.
 
 #### Not Yet Done
 
-- No lane model, full scenario, interactive CLI, MCP
-  transport, general entity-component system, or arbitrary scenario scripting.
-- Migration support, richer external replay bundles, and scenario-specific
-  schema fields remain deferred beyond this local `1.0.0` fixture contract.
+- Full lane scenario, autonomous policy population, CLI, MCP, branching,
+  terminal debrief, and human-experience evidence remain future M2/M3/M4 work.
 
 ## Future
 
 The detailed and canonical order is in `ROADMAP.md`.
 
-- **M2:** one complete lane scenario with actor-specific uncertainty, intent,
-  delegated execution, branching, and causal debrief.
+- **M2:** complete the one-lane scenario from the active decision-window slice,
+  including actor-specific uncertainty, intent, delegated execution, branching,
+  and causal debrief.
 - **M3:** keyboard-first CLI reference experience.
 - **M4:** interpretable non-LLM agent ecology.
 - **M5:** thin, versioned, model-agnostic MCP adapter.

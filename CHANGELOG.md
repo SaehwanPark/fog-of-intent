@@ -30,6 +30,9 @@ not increment the package version.
 - M0 is promoted to complete after the hosted clean-checkout CI run passed; the
   first bounded M1 deterministic-kernel fixture is now the active project-state
   slice.
+- M1 is promoted to complete after its replay, codec, determinism, and bounded
+  invariant evidence passed; the first bounded M2 lane decision-window slice is
+  now active.
 
 ## 0.1.3 — 2026-08-04
 
