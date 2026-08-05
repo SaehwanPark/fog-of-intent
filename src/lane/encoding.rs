@@ -19,6 +19,8 @@ pub(crate) const LANE_LEVEL_HASH_TAG: u8 = 0x4c;
 pub(crate) const LANE_MINION_KILLS_HASH_TAG: u8 = 0x4b;
 pub(crate) const LANE_TARGET_FOCUS_HASH_TAG: u8 = 0x54;
 pub(crate) const LANE_COMMITMENT_HASH_TAG: u8 = 0x56;
+pub(crate) const LANE_DELAYED_EFFECT_HASH_TAG: u8 = 0x44;
+
 pub(crate) fn phase_tag(phase: LanePhase) -> u8 {
     match phase {
         LanePhase::Open => 0,

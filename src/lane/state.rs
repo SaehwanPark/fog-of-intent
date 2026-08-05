@@ -378,6 +378,75 @@ impl WaveState {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum LaneDelayedEffectKind {
+    SelfHealthRegen { amount: LaneHealth },
+    SelfManaRegen { amount: LaneMana },
+    SelfCooldownReduction { amount: LaneCooldown },
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct LaneDelayedEffect {
+    pub(crate) delay_beats: u8,
+    pub(crate) kind: LaneDelayedEffectKind,
+}
+
+impl LaneDelayedEffect {
+    pub fn new(delay_beats: u8, kind: LaneDelayedEffectKind) -> Self {
+        Self { delay_beats, kind }
+    }
+
+    pub fn delay_beats(self) -> u8 {
+        self.delay_beats
+    }
+
+    pub fn kind(self) -> LaneDelayedEffectKind {
+        self.kind
+    }
+}
+
+pub(crate) const MAX_DELAYED_EFFECTS: usize = 4;
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Default)]
+pub struct LaneDelayedEffects {
+    pub(crate) count: u8,
+    pub(crate) items: [Option<LaneDelayedEffect>; MAX_DELAYED_EFFECTS],
+}
+
+impl LaneDelayedEffects {
+    pub const fn empty() -> Self {
+        Self {
+            count: 0,
+            items: [None; MAX_DELAYED_EFFECTS],
+        }
+    }
+
+    pub fn count(self) -> u8 {
+        self.count
+    }
+
+    pub fn is_empty(self) -> bool {
+        self.count == 0
+    }
+
+    pub fn items(&self) -> &[Option<LaneDelayedEffect>] {
+        &self.items[..self.count as usize]
+    }
+
+    pub fn push(&mut self, effect: LaneDelayedEffect) -> Result<(), LaneBoundsError> {
+        if (self.count as usize) < MAX_DELAYED_EFFECTS {
+            self.items[self.count as usize] = Some(effect);
+            self.count += 1;
+            Ok(())
+        } else {
+            Err(LaneBoundsError {
+                value: self.count + 1,
+                maximum: MAX_DELAYED_EFFECTS as u8,
+            })
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct LaneSnapshot {
     pub(crate) ruleset: RulesetId,
     pub(crate) turn: Turn,
@@ -387,6 +456,7 @@ pub struct LaneSnapshot {
     pub(crate) opponent: OpponentTruth,
     pub(crate) wave: WaveState,
     pub(crate) jungle_threat: JungleThreatTruth,
+    pub(crate) delayed_effects: LaneDelayedEffects,
     pub(crate) terminal_outcome: Option<LaneOutcome>,
 }
 
@@ -449,6 +519,33 @@ impl LaneSnapshot {
         jungle_threat: JungleThreatTruth,
         terminal_outcome: Option<LaneOutcome>,
     ) -> Self {
+        Self::new_with_delayed_effects(
+            ruleset,
+            turn,
+            window,
+            phase,
+            player,
+            opponent,
+            wave,
+            jungle_threat,
+            LaneDelayedEffects::empty(),
+            terminal_outcome,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_delayed_effects(
+        ruleset: RulesetId,
+        turn: Turn,
+        window: LaneWindow,
+        phase: LanePhase,
+        player: PlayerLaneState,
+        opponent: OpponentTruth,
+        wave: WaveState,
+        jungle_threat: JungleThreatTruth,
+        delayed_effects: LaneDelayedEffects,
+        terminal_outcome: Option<LaneOutcome>,
+    ) -> Self {
         Self {
             ruleset,
             turn,
@@ -458,6 +555,7 @@ impl LaneSnapshot {
             opponent,
             wave,
             jungle_threat,
+            delayed_effects,
             terminal_outcome,
         }
     }
@@ -492,6 +590,10 @@ impl LaneSnapshot {
 
     pub fn jungle_threat(self) -> JungleThreatTruth {
         self.jungle_threat
+    }
+
+    pub fn delayed_effects(self) -> LaneDelayedEffects {
+        self.delayed_effects
     }
 
     pub fn terminal_outcome(self) -> Option<LaneOutcome> {
@@ -552,6 +654,26 @@ impl LaneSnapshot {
         hash = hash_bytes(hash, &[posture_tag(self.opponent.posture())]);
         hash = hash_bytes(hash, &[self.wave.pressure().value()]);
         hash = hash_bytes(hash, &[threat_tag(self.jungle_threat)]);
+        if !self.delayed_effects.is_empty() {
+            hash = hash_bytes(
+                hash,
+                &[LANE_DELAYED_EFFECT_HASH_TAG, self.delayed_effects.count()],
+            );
+            for item in self.delayed_effects.items().iter().flatten() {
+                hash = hash_bytes(hash, &[item.delay_beats()]);
+                match item.kind() {
+                    LaneDelayedEffectKind::SelfHealthRegen { amount } => {
+                        hash = hash_bytes(hash, &[0x01, amount.value()]);
+                    }
+                    LaneDelayedEffectKind::SelfManaRegen { amount } => {
+                        hash = hash_bytes(hash, &[0x02, amount.value()]);
+                    }
+                    LaneDelayedEffectKind::SelfCooldownReduction { amount } => {
+                        hash = hash_bytes(hash, &[0x03, amount.value()]);
+                    }
+                }
+            }
+        }
         hash = hash_bytes(hash, &[outcome_tag(self.terminal_outcome)]);
         StateHash::from_raw(hash)
     }

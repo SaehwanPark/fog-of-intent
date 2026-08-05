@@ -423,6 +423,14 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Transition evaluation emits direct-immediate `CommitmentSelected` and `CommitmentSet` events and effects, records commitment in `LaneDebrief`, and verifies replay through `LaneHistory`.
 - Three focused commitment tests plus the prior eighty-seven tests pass, for ninety Rust tests total.
 
+#### Delivered in the bounded delayed-effect follow-up
+
+- `LaneDelayedEffects` is a bounded player delayed-effect queue abstraction (maximum 4 items) with `LANE_DELAYED_EFFECT_HASH_TAG` state-hash binding.
+- `LaneExecutionInputs` supports `delayed_effect` resolution; queued effects tick on each transition beat and resolve when their delay expires.
+- Resolving delayed effects (health regen, mana regen, cooldown reduction) emits `DelayedEffectResolved` events/effects with `direct_delayed` provenance, records queuing and resolution counts in `LaneDebrief`, and verifies replay through `LaneScenarioHistory`.
+- Overflowing the delayed-effect queue fails before state mutation with `LaneExecutionError::DelayedEffectOverflow`.
+- Three focused delayed-effect tests plus the prior ninety tests pass, for ninety-three Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield

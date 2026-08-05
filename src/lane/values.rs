@@ -96,6 +96,15 @@ impl LaneMana {
     pub(crate) fn subtract(self, amount: Self) -> Option<Self> {
         self.0.checked_sub(amount.0).map(Self)
     }
+
+    pub(crate) fn add(self, amount: Self) -> Option<Self> {
+        let total = self.0.checked_add(amount.0)?;
+        if total <= MAX_LANE_MANA {
+            Some(Self(total))
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

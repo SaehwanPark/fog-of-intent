@@ -189,14 +189,16 @@ pub(crate) fn reopen_resolved_snapshot(
     {
         return Err(ScenarioError::InvalidReopenState);
     }
-    Ok(LaneSnapshot::new(
+    Ok(LaneSnapshot::new_with_delayed_effects(
         resolved.ruleset,
         resolved.turn,
+        resolved.window,
         LanePhase::Open,
         resolved.player,
         resolved.opponent,
         resolved.wave,
         resolved.jungle_threat,
+        resolved.delayed_effects,
         None,
     ))
 }
