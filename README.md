@@ -76,10 +76,10 @@ players?
 | --- | --- |
 | Current roadmap milestone | M2 — One-Lane Vertical Slice (Active) |
 | Repository governance and canonical docs | Complete — M0 |
-| Rust package | `0.1.12`, edition 2024, Rust `1.96`, no dependencies, single package |
+| Rust package | `0.1.13`, edition 2024, Rust `1.96`, no dependencies, single package |
 | Executable behavior | Prints `Hello, world!` |
-| Deterministic kernel | M1 fixture/codec complete; M2 window, branch, coordination, objective, strategy fixtures, two-window wrapper, final debrief, bounded Recall intent, and last-known threat projection implemented internally |
-| One-lane scenario | First diagnostic window, bounded branch, allied proposal/coordination, terminal objective, three strategy fixtures, two-window replay, final debrief, bounded Recall intent, and last-known threat projection implemented — full scenario not complete |
+| Deterministic kernel | M1 fixture/codec complete; M2 window, branch, coordination, objective, strategy fixtures, two-window wrapper, final debrief, bounded Recall intent, last-known threat projection, and conditional Withdraw response implemented internally |
+| One-lane scenario | First diagnostic window, bounded branch, allied proposal/coordination, terminal objective, three strategy fixtures, two-window replay, final debrief, bounded Recall intent, last-known threat projection, and conditional Withdraw response implemented — full scenario not complete |
 | CLI reference experience | Not implemented — M3 |
 | Agent ecology and MCP | One bounded M2 proposal baseline; full ecology/MCP not implemented — M4/M5 |
 | Behavioral experiments and calibration | Not implemented — M6/M7 |

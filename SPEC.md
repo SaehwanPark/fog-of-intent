@@ -283,6 +283,20 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Two focused last-known-report tests plus the prior forty-eight tests pass, for
   fifty Rust tests total.
 
+#### Delivered in the bounded gank-response follow-up
+
+- `Withdraw` is a conditional player command intent advertised only through a
+  current RiverSide `LastKnown` threat report; the strategic intent set and
+  allied two-candidate policy remain unchanged.
+- Host validation rejects Withdraw for Unknown, stale, resolved-window,
+  wrong-actor, malformed, and unsupported requests before transition evaluation.
+- `transition_lane` resolves Withdraw to NearTower for one beat while keeping
+  explicit wave/damage/trace inputs authoritative, marking movement as
+  intent-attributed, and leaving Contest fallback inactive.
+- Withdraw history and terminal-objective review replay with committed intent
+  attribution; three focused gank-response tests plus the prior fifty tests
+  pass, for fifty-three Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
@@ -297,9 +311,10 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 #### Not Yet Done
 
 - The complete lane scenario still needs complete vision/belief updates,
-  variable pacing, gank response, richer resource abstractions, communication,
-  and a broader causal debrief surface; the last-known follow-up is only one
-  bounded report over the existing fixed one-beat window contract.
+  variable pacing, richer resource abstractions, communication, automatic
+  threat/execution timing, and a broader causal debrief surface; the Withdraw
+  follow-up is only one conditional response over the existing fixed one-beat
+  window contract.
 - CLI, MCP, full agent ecology, and human-experience evidence remain future
   M3/M4+ work; this diagnostic slice is not playable and makes no enjoyment,
   accessibility, trust, or behavioral-validity claim.
