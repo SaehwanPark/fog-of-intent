@@ -4,55 +4,54 @@
 
 pass
 
-This QA covers the bounded player-facing Recall intent over the existing
-one-window lane authority and replay/debrief projections. It does not promote
-the complete M2 scenario and does not validate variable pacing, gank response,
-communication, a playable host, human experience, accessibility, trust, legal
-clearance, or research validity.
+This QA covers the bounded player-visible last-known jungle-threat report over
+the existing one-window lane authority. It does not promote complete vision,
+belief updates, gank response, variable pacing, a playable host, human
+experience, accessibility, trust, legal clearance, or research validity.
 
 ## Reviewed Inputs
 
 - `_workspace/00_input/request-summary.md`
 - `_workspace/01_simulation-design.md`
 - `_workspace/02_design-synthesis.md`
-- `_workspace/00_input/m2-final-debrief-request-summary.md`,
-  `_workspace/01-simulation-design-m2-final-debrief.md`,
-  `_workspace/03-domain-qa-m2-final-debrief.md`, and
-  `_workspace/final/m2-final-debrief-handoff.md` as immutable prior-slice
-  evidence
+- `_workspace/00_input/m2-recall-request-summary.md`,
+  `_workspace/01-simulation-design-m2-recall.md`,
+  `_workspace/03-domain-qa-m2-recall.md`, and
+  `_workspace/final/m2-recall-handoff.md` as immutable prior-slice evidence
 - `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `README.md`, and `CHANGELOG.md`
 - `src/lane.rs`, `src/kernel.rs`, `src/lib.rs`, and focused test output
 
 ## Scope and Authority Findings
 
-Recall is represented as an existing `LaneIntent` value. The player observation
-advertises it, the allied observation and scripted proposal remain limited to
-the two prior candidates, and host validation binds the request to the current
-actor-visible observation. No policy output becomes a command and no new
-authoritative state or hidden-state fact is introduced.
+`ThreatReport::LastKnown` is a projection of the bounded RiverSide reportable
+case. `Absent` and current hidden `InLane` threat truth remain `Unknown`, so
+the observation does not become an omniscient view of the jungle threat. No
+new state field, command, intent, transition rule, or policy authority was
+introduced.
 
-Recall resolves synchronously through `transition_lane`: NearTower movement is
-intent-attributed, explicit wave and execution inputs remain authoritative, and
-the existing YieldedSpace/ForcedOut outcome boundary is retained. Contest-only
-fallback behavior remains isolated from Recall.
+The report exposes only a region label and observation turn. It omits source
+hashes, exact entities, current movement, opponent truth, and execution
+values. The allied proposal artifact remains unchanged and continues to use
+its prior unknown-threat boundary.
 
-## Attribution and Replay Findings
+## Replay and Information Findings
 
-Recall uses the existing command, record, branch, objective, scenario, and final
-debrief paths. Its intent tag is distinct while Stabilize/Contest tags remain
-stable. The visible observation contains no latent opponent values, threat
-truth, source hash, or execution result. Legal unfavorable Recall execution is
-distinct from invalid command rejection and remains replay-verifiable.
+Player observation regeneration during lane-history replay reproduces the
+RiverSide report exactly. Existing transition outputs, state hashes, command
+validation, intent availability, branch identities, objective records, and
+debrief contracts remain unchanged. The report is explicitly last-known and
+does not claim current truth after the observation.
 
 ## Required Fixes
 
-None for the declared bounded Recall slice.
+None for the declared bounded last-known threat-report slice.
 
 ## Residual Risks
 
-- Recall has no timing, resource restoration, or pacing semantics yet.
-- Portable serialization, multi-window coordinated debrief, communication,
-  gank response, and broader presentation remain deferred.
+- Complete vision, belief updates, threat timing, and gank-response semantics
+  remain unimplemented.
+- Portable serialization, variable pacing, communication, and broader
+  presentation remain deferred.
 - The repository remains an internal non-playable fixture; no human-experience,
   accessibility, trust, balance, or strategy-quality claim is supported.
 
@@ -60,7 +59,7 @@ None for the declared bounded Recall slice.
 
 - `cargo +1.96.0 fmt --check`
 - `cargo +1.96.0 clippy --all-targets --all-features -- -D warnings`
-- `cargo +1.96.0 test --locked` — 48 tests passed: 19 M1 and 29 M2 tests.
+- `cargo +1.96.0 test --locked` — 50 tests passed: 19 M1 and 31 M2 tests.
 - `python3 scripts/check_repository.py`
 - `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'`
 - `git diff --check`

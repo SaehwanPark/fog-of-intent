@@ -1,77 +1,61 @@
-# Simulation Design — M2 Bounded Recall Intent
+# Simulation Design — M2 Bounded Last-Known Threat Report
 
 ## Goal and Boundary
 
-This slice adds one player-facing `Recall` intent to the existing one-window
-lane contract. Recall is a strategic plan, not an immediate teleport or a new
-resource system. It is legal only through the same actor-valid observation,
-command, input, transition, history, branch, objective, and debrief paths.
+This slice adds one actor-visible last-known report to the existing player
+observation. It is a projection of a bounded reportable fact, not a new source
+of truth, intent, transition rule, or gank mechanic. The current hidden threat
+truth remains in `LaneSnapshot` and is never copied into the player report
+except for the deliberately reportable RiverSide last-known case.
 
-The allied proposal policy remains proposal-only and advertises only
-`Stabilize` and `Contest`; it does not learn or emit Recall in this slice.
+The existing player intent set remains `[Stabilize, Contest, Recall]`. The
+allied observation and scripted proposal remain unchanged and continue to use
+unknown threat wording.
 
-## Recall Contract
+## Threat-Report Contract
 
-`LanerObservation::available_intents()` exposes:
+`ThreatReport` has two forms:
 
 ```text
-[Stabilize, Contest, Recall]
+Unknown
+LastKnown { region: RiverSide, last_seen_turn: Turn }
 ```
 
-`Recall` commits for the current beat, moves the player to `NearTower`, holds
-the wave through the explicit `LaneWaveResult`, and sends no allied proposal or
-message. Execution damage remains an explicit input and is validated exactly
-as for other intents. A nonzero damage result can still make Recall an
-unfavorable legal action; Recall is low-risk by intent semantics, not a damage
-immunity.
+`observe_player` maps `JungleThreatTruth::RiverSide` to `LastKnown` at the
+current observation turn. `JungleThreatTruth::Absent` and
+`JungleThreatTruth::InLane` both map to `Unknown`: absence is not proof of
+complete vision, and an in-lane threat remains hidden current truth rather than
+an actor-visible fact.
 
-The transition outcome is `YieldedSpace` unless the explicit self damage
-reduces health to zero, which remains `ForcedOut`. Position change is caused by
-the intent, not fallback. Existing `Stabilize`/`Contest` event/effect ordering,
-hashing, replay, branch, objective, fixture, and debrief behavior is unchanged.
+The report exposes only the bounded region and last-seen turn. It does not
+expose a source state hash, exact threat entity, current movement, hidden
+opponent values, execution input, or whether the report remains current after
+the observation.
 
-## Validation and Information
+## Authority and Replay
 
-Host command validation rejects an intent not advertised by the current player
-observation. A stale observation or resolved window still fails before
-transition. The player sees no opponent health/posture, jungle threat, source
-hash, or execution result. Recall does not change the hidden-state boundary or
-create a new actor-visible fact.
+The projection remains synchronous and deterministic. `LaneHistory::verify_replay`
+regenerates the player observation from the replay state, so a RiverSide report
+is replay-checked without adding a new authoritative state field or changing
+the transition/state-hash contract. Existing command, branch, coordination,
+objective, scenario, and final-debrief identities remain unchanged.
 
-`CounterProposal` remains limited to the existing `Stabilize`/`Contest` cover
-shapes. The allied scripted candidate set remains exactly two intents, so a
-Recall player request can be rejected or used as an ordinary player plan but
-cannot be silently accepted as an allied policy proposal.
-
-## Replay, Branching, and Attribution
-
-Existing `LaneHistory`, `LaneBranch`, `CoordinatedLaneHistory`,
-`LaneScenarioHistory`, objective reviews, and final debriefs store/replay
-Recall through their existing `LaneIntent` fields. No replay identity or state
-hash version changes. A branch may use Recall as an alternate intent only if
-the existing branch actor/observation/explicit-input guards pass.
-
-Debriefs report Recall as the committed intent and retain the distinction
-between an intentional position change, explicit execution damage, and
-`ForcedOut`. The objective may be missed because Recall yields space; no
-optimality or balance judgment is inferred.
+The allied policy remains bound to its existing visible artifact and does not
+learn or emit a RiverSide report in this slice. A future gank-response slice
+must define how an intent acts on last-known information without treating it as
+current truth.
 
 ## Verification Contract
 
-Focused tests must cover:
+Focused tests cover:
 
-- Recall appears in the player observation but not allied proposal candidates;
-- Recall command validation succeeds with a current observation and fails
-  when the observation omits Recall or is stale;
-- Recall moves to `NearTower`, holds the supplied wave result, and yields space
-  when health remains positive;
-- legal Recall with fatal explicit damage remains `ForcedOut`, not invalid;
-- deterministic output/hash/replay and existing branch/objective/debrief
-  preservation;
-- no hidden-state or source-hash leakage and no change to the allied policy
-  artifact;
+- RiverSide projects to a last-known report with the current observation turn;
+- Absent and InLane project to Unknown;
+- player intent availability and hidden opponent/source-hash boundaries remain
+  unchanged;
+- a history containing a RiverSide observation replays exactly;
 - existing M1/M2 tests remain passing.
 
-Evidence establishes one bounded Recall plan and its existing authority/replay
-integration. It does not establish recall timing, resource restoration,
-variable pacing, gank response, strategy quality, balance, or human behavior.
+Evidence establishes one bounded last-known threat report only. It does not
+establish complete vision, belief updates, gank response, variable pacing,
+communication, strategy quality, balance, or human behavior.

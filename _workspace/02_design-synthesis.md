@@ -1,42 +1,42 @@
-# Design Synthesis — M2 Bounded Recall Intent
+# Design Synthesis — M2 Bounded Last-Known Threat Report
 
 ## Decision
 
-Add one player-facing `Recall` intent to the existing synchronous, one-beat
-lane transition. Recall is a low-risk plan that commits for the current beat,
-moves the player to `NearTower`, and leaves wave and execution results under
-the existing explicit input contract. The allied proposal policy remains
-limited to `Stabilize` and `Contest`.
+Add a bounded `LastKnown` threat report to the player observation without
+adding a new intent or transition mechanic. The report is generated from the
+existing host-owned snapshot: `RiverSide` is reportable at the observation turn;
+`Absent` and hidden current `InLane` remain `Unknown`.
 
-The change stays inside `LaneIntent`; it adds no resource system, pacing rule,
-communication channel, hidden-state fact, or alternate transition authority.
-The player observation is the authority for the legal intent set, so host
-validation rejects a Recall request when the current actor-visible receipt does
-not advertise it.
+This is the smallest useful vision/last-known slice before gank response. It
+keeps the authoritative state, transition result, state hash, player intent
+set, allied policy artifact, and all replay identities unchanged.
 
 ## Resolved Contract
 
-`LanerObservation::available_intents()` returns
-`[Stabilize, Contest, Recall]`; `AlliedLaneObservation` and the scripted allied
-candidate artifact remain `[Stabilize, Contest]`. Recall produces
-`NearTower` with an intent-attributed position effect, `YieldedSpace` while
-health remains positive, and `ForcedOut` when explicit damage reaches zero
-health. It never activates the existing Contest fallback.
+`ThreatReport` exposes:
 
-`LaneHistory`, `LaneBranch`, `CoordinatedLaneHistory`, `LaneScenarioHistory`,
-objective reviews, and final debriefs continue to use their existing
-`LaneIntent` fields and replay checks. Recall can be a branch alternate when
-the existing actor, observation, and explicit-input guards pass. A Recall
-player request may be rejected or treated as an ordinary player plan; it is
-not silently converted into an allied proposal or counter shape.
+```text
+Unknown
+LastKnown { region: RiverSide, last_seen_turn: Turn }
+```
+
+The player can inspect the bounded report region and observation turn, but not
+the source hash, exact threat entity, current movement, hidden InLane truth,
+opponent truth, or execution values. The allied actor continues to receive
+the existing unknown threat projection in this slice.
+
+`LaneHistory::verify_replay` regenerates the observation from the replay state,
+so a RiverSide observation is committed and replay-checked through the same
+authority as every prior record. No new state field or transition input is
+needed.
 
 ## Evidence and Limits
 
-Focused tests cover player/allied intent-set separation, valid and omitted
-Recall validation, deterministic NearTower/YieldedSpace resolution, fatal but
-legal Recall execution, intent attribution, and existing replay-compatible
-transition behavior. The full suite passes with 48 Rust tests.
+Focused tests cover RiverSide last-known wording, Absent/InLane unknown
+behavior, public report accessors, source-hash boundaries, and replay of a
+RiverSide history record. The full suite passes with 50 Rust tests.
 
-This establishes one bounded Recall plan only. It does not establish recall
-timing, resource restoration, variable pacing, gank response, communication,
-strategy quality, balance, or a complete playable lane scenario.
+This establishes one bounded last-known threat report only. It does not
+establish complete vision, belief updates, gank response, variable pacing,
+communication, strategy quality, balance, or a complete playable lane
+scenario.

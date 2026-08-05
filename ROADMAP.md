@@ -326,10 +326,11 @@ a causal debrief.
 - [x] Define one typed lane snapshot with bounded health, wave pressure,
   position, phase, hidden opponent truth, and hidden jungle-threat truth.
 - [x] Project a player-laner observation with explicit unknown reports and no
-  latent opponent or threat values.
-- [x] Validate `Stabilize`, `Contest`, and bounded `Recall` through one
-  host-created intent command, including actor, turn, ruleset, observation,
-  advertised-intent, and prior-hash guards.
+  latent opponent values; the bounded RiverSide threat case is represented as
+  an explicit last-known report while hidden current InLane truth remains
+  unknown.
+- [x] Validate `Stabilize` and `Contest` through one host-created intent
+  command, including actor, turn, ruleset, observation, and prior-hash guards.
 - [x] Resolve one deterministic window from explicit execution damage and wave
   inputs, with ordered events, attributed effects, outcome, and hash.
 - [x] Commit and replay one append-only lane history record while preserving
@@ -435,6 +436,22 @@ lane scenario.
 This evidence establishes one bounded Recall plan. It does not establish recall
 timing, resource restoration, variable pacing, gank response, communication,
 strategy quality, balance, or a complete playable lane scenario.
+
+### Current bounded last-known threat-report evidence
+
+- [x] Project only the bounded `RiverSide` threat case as
+  `LastKnown { region, last_seen_turn }` in the player observation.
+- [x] Keep `Absent` and current hidden `InLane` truth as `Unknown`, with no
+  source-state hash, exact entity, execution result, or current-location claim.
+- [x] Regenerate and replay a RiverSide observation through the existing
+  history/transition authority without changing lane state, transition output,
+  state hashes, or replay identities.
+- [x] Preserve the existing player intent set and allied policy artifact while
+  covering the unknown/last-known information boundary in focused tests.
+
+This evidence establishes one bounded last-known threat report. It does not
+establish complete vision, belief updates, gank response, variable pacing,
+communication, strategy quality, balance, or a complete playable lane scenario.
 
 ### Current final-debrief evidence
 
