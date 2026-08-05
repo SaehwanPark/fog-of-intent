@@ -2,50 +2,55 @@
 
 ## Outcome
 
-M1 is promoted to `Complete` and M2 is the active roadmap milestone. The next
-bounded implementation slice is one actor-valid lane decision window.
+The first bounded M2 lane decision-window slice is implemented internally.
+M2 remains active because the complete one-lane scenario is not yet built.
 
 ## Changed Files
 
-- `README.md` — current milestone and M1 state.
-- `ROADMAP.md` — M1 promotion evidence and active M2 slice.
-- `SPEC.md` — completed M1 state and M2 target/verification.
-- `ARCHITECTURE.md` — current implementation boundary and M2 target status.
-- `CHANGELOG.md` — contributor-facing milestone promotion.
-- `_workspace/00_input/request-summary.md` — current M2 request framing.
-- `_workspace/00_input/m1-request-summary.md` — immutable M1 request framing
-  preserved for the prior domain-QA record.
-- `_workspace/final/handoff.md` — this durable continuation handoff.
-
-The existing `_workspace/03_domain-qa.md` is reviewed evidence, not a changed
-file in this handoff.
+- `Cargo.toml`, `Cargo.lock` — package version `0.1.4`.
+- `src/kernel.rs` — const-safe actor/ruleset constructors and shared hash
+  helper visibility for the lane module.
+- `src/lib.rs` — exports the lane module.
+- `src/lane.rs` — typed lane state, observation, intent validation, transition,
+  debrief data, history/replay, and eight focused tests.
+- `README.md`, `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` —
+  synchronized M2 current-state and checklist evidence.
+- `_workspace/00_input/request-summary.md` — completed M2 slice framing.
+- `_workspace/01_simulation-design.md` — M2 design contract.
+- `_workspace/03_domain-qa.md` — M2 domain-QA pass.
+- `_workspace/01_simulation-design-m1.md`, `_workspace/03_domain-qa-m1.md`,
+  `_workspace/00_input/m1-request-summary.md`, and
+  `_workspace/final/m1-handoff.md` — immutable M1 evidence snapshots.
 
 ## Verification
 
+- `cargo +1.96.0 fmt --check`
+- `cargo +1.96.0 clippy --all-targets --all-features -- -D warnings`
+- `cargo +1.96.0 test --locked` — 27 tests passed.
 - `python3 scripts/check_repository.py`
 - `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'`
 - `git diff --check`
 
 ## Domain QA Disposition
 
-The existing M1 domain-QA artifact is `pass` for the bounded kernel and local
-fixture codec. M2 domain QA is deferred until the new lane code exists.
+`_workspace/03_domain-qa.md` is `pass` for the declared first M2 slice. The
+QA explicitly leaves complete-scenario and human-evidence claims open.
 
 ## Canonical State Updates
 
-The M1 checklist remains fully checked. M2 is active with a narrow first slice;
-full lane mechanics, autonomous policies, CLI, MCP, branching, and terminal
-debrief remain deferred until their own bounded slices are verified.
+The M2 current bounded-slice checklist is checked in `ROADMAP.md`; the broader
+M2 scope remains unchecked. `SPEC.md` records the delivered code and its
+deferrals. The package advances to `0.1.4` because executable code changed;
+the binary remains a placeholder.
 
 ## Known Limits
 
-The binary remains a placeholder. M1 evidence establishes internal software
-properties only and does not establish a playable simulation, human enjoyment,
-accessibility, trust, legal clearance, or public-release readiness.
+No playable host, CLI, MCP adapter, lane serialization, allied actor,
+communication, variable pacing, branching, or full scenario exists yet. The
+slice establishes software properties only.
 
 ## Next Milestone Dependencies
 
-Implement the typed lane snapshot, actor-visible observation, one validated
-intent command, explicit execution input, deterministic transition output, and
-replay tests without adding a CLI, external adapter, or general scenario
-framework.
+Use this evidence to choose the next thin M2 slice, likely a second decision
+window or an allied proposal, while preserving the actor-visible information
+boundary and the deterministic replay contract.

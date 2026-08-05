@@ -4,86 +4,104 @@
 
 pass
 
-This QA covers the M1 bounded deterministic kernel plus its local versioned
-snapshot/history fixture codec. It does not validate a playable scenario, human
-experience, legal clearance, or research validity.
+This QA covers the first bounded M2 lane decision-window implementation. It
+does not promote the complete M2 scenario and does not validate a playable
+host, human experience, accessibility, trust, legal clearance, or research
+validity.
 
 ## Reviewed Inputs
 
-- _workspace/00_input/m1-request-summary.md (verbatim snapshot of
-  `_workspace/00_input/request-summary.md` at commit
-  `c5d7a9d26930f2f73406f3690385dc16b3fed8dc`)
-- _workspace/01_simulation-design.md
-- ROADMAP.md, SPEC.md, ARCHITECTURE.md, README.md, and CHANGELOG.md
-- docs/TERMINOLOGY.md, docs/COMPATIBILITY.md, and ADR-0001
-- src/lib.rs, src/kernel.rs, src/serialization.rs, and
-  tests/fixtures/m1_*_v1.txt
-- Local Rust 1.96.0 locked metadata, formatting, clippy, tests, repository
-  currentness/link checks, focused checker tests, and diff checks
+- `_workspace/00_input/request-summary.md`
+- `_workspace/01_simulation-design.md`
+- `_workspace/01_simulation-design-m1.md` and `_workspace/03_domain-qa-m1.md`
+  as immutable prior-slice evidence
+- `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `README.md`, and `CHANGELOG.md`
+- `docs/harness/fog-of-intent/team-spec.md`, `docs/TERMINOLOGY.md`, and
+  `docs/adr/0001-authoritative-transition-boundary.md`
+- `src/kernel.rs`, `src/lane.rs`, `src/lib.rs`, and focused test output
+- Locked Rust 1.96.0 format, clippy, tests, repository checks, and diff checks
 
 ## Scope and Roadmap Findings
 
-The implementation completes the selected M1 items for typed transitions,
-in-memory history/replay, strict 1.0.0 snapshot/history text fixtures, and
-exhaustive bounded spend/yield checks. The codec is deliberately local and
-dependency-free; no M2 lane mechanics, adapter, migration framework, or
-persistence service was added.
+The implementation matches the declared first M2 slice: one typed lane
+snapshot, one player-laner observation, two legal intent variants, explicit
+execution inputs, one deterministic transition, one-window debrief data, and
+append-only replay. The overarching M2 checklist remains open for multiple
+windows, allied behavior, communication, pacing, branching, and a complete
+scenario. No CLI, MCP, persistence codec, or general scenario framework was
+added.
 
 ## Authority and Information-Boundary Findings
 
-WorldState and committed History remain kernel-owned true state. The serializer
-only translates owned values and reconstructs histories through History::append;
-it does not implement legality, transition semantics, or a second replay engine.
-Commands, resolved inputs, events, effects, and hashes remain distinct.
+`LaneSnapshot` is true host-owned state. `observe_player` returns only the
+player's health/position, wave pressure, explicit unknown reports, legal intent
+set, and window identity. Opponent health/posture/position and jungle threat
+remain outside the actor-visible projection. `LaneObservationReceipt` keeps
+the exact source-state hash private to the host validation boundary.
+
+Requests are not authoritative commands. Host validation creates a
+`LaneIntentCommand` bound to actor, turn, ruleset, observation receipt, and
+prior hash; `ValidatedLaneIntent` is required by the pure transition. Invalid
+metadata is rejected before events, effects, or history mutation.
 
 ## Determinism, Replay, and Reproducibility Findings
 
-Snapshot and history output is canonical line-oriented text with explicit
-schema and hash-representation versions. The codec rejects unsupported versions,
-unknown/duplicate/missing fields, malformed bounded values, hash mismatches, and
-tampered result records. Deserialized history is revalidated, reevaluated, and
-replayed by the kernel. All five input categories and stable stream/draw
-identities are recorded.
+`transition_lane` consumes only owned state, validated intent, and explicit
+resolved execution inputs. It generates no random values, reads no clock or
+I/O, and keeps neutral environment/observation/policy/coordination traces
+separate from the consumed execution trace. Lane state hashing uses the
+declared stable field order and the existing FNV-1a little-endian representation.
+
+`LaneHistory` stores the actor-visible observation, host command, prior hash,
+resolved inputs, complete result, and terminal state. Replay regenerates the
+observation, revalidates the command, reevaluates the inputs, compares the
+result, and checks the terminal snapshot. The M1 serialization fixtures remain
+unchanged; lane serialization is explicitly deferred.
 
 ## Behavior and Playtest Findings
 
-No actor policy, playtest, or behavioral claim was added. Exhaustive finite tests
-cover every bounded spend/yield pair and establish only software invariants.
+No autonomous policy or agent population was added. `Stabilize` and `Contest`
+are two observation-available strategies; execution damage and wave outcomes
+are resolved inputs, not policy decisions. The test suite covers a legal but
+unfavorable contest with fallback and does not claim human-like behavior.
 
 ## Gameplay and Debrief Findings
 
-No gameplay or debrief surface was added. Serialized causal events/effects
-remain inspectable data for later work, not a player-facing explanation.
+The one-window diagnostic preserves a meaningful conservative/risk-taking
+choice and separates intent, coordination-not-applicable, execution, and luck
+trace data. Its terminal result is `HeldSpace`, `YieldedSpace`, or `ForcedOut`,
+not a binary win/loss judgment. This is a technical debrief contract, not
+evidence of enjoyment, balance, or an understandable human experience.
 
 ## Evidence and Claim Limits
 
-The slice establishes software properties only: typed validation, exact-state
-binding, boundedness, energy conservation, deterministic output, provenance,
-versioned fixture round trips, fail-closed parsing, and replay verification. It
-does not establish human enjoyment, accessibility, trust, legal clearance,
-public-release readiness, or scientific validity.
+The evidence establishes typed software boundaries, hidden-state omission,
+validation ordering, legal unfavorable execution, boundedness, deterministic
+outputs, stream isolation, append-only replay, and a one-window debrief shape.
+It does not establish a playable simulation, human enjoyment, accessibility,
+trust, behavioral validity, legal clearance, public-release readiness, or
+research validity.
 
 ## Required Fixes
 
-None for the bounded M1 slice.
+None for the declared first M2 slice.
 
 ## Residual Risks
 
-- The 1.0.0 text format has no migration support or external compatibility
-  promise; future semantic changes require a new version and fixtures.
-- The binary remains a placeholder; no user-facing host or playable simulation
-  exists.
-- A future non-empty dependency graph still requires the approved advisory and
-  license policy tooling or an exact machine-readable defer record.
+- Lane snapshots/history are not serialized; external compatibility and
+  migration policy remain deferred.
+- The host/application layer and player-facing adapter are not implemented;
+  the binary remains a placeholder.
+- Branching, multiple windows, allied autonomous behavior, communication,
+  variable pacing, and full terminal debrief remain unimplemented.
+- The two strategies and diagnostic values are fixtures, not balance or human
+  experience evidence.
 
 ## Verification Evidence
 
-- Nineteen focused Rust tests pass: thirteen kernel tests and six serialization
-  tests, including exhaustive bounds/conservation, fixture round trips,
-  unsupported-ruleset, malformed/version/tamper rejection, and replay.
-- cargo +1.96.0 test --locked passes.
-- cargo +1.96.0 fmt --check passes.
-- cargo +1.96.0 clippy --all-targets --all-features -- -D warnings passes.
-- python3 scripts/check_repository.py passes.
-- Seven focused repository-checker tests pass.
-- git diff --check passes.
+- `cargo +1.96.0 fmt --check`
+- `cargo +1.96.0 clippy --all-targets --all-features -- -D warnings`
+- `cargo +1.96.0 test --locked` — 27 tests passed: 19 M1 and 8 M2 lane tests.
+- `python3 scripts/check_repository.py`
+- `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'`
+- `git diff --check`

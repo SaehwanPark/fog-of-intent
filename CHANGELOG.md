@@ -34,6 +34,22 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.4 — 2026-08-04
+
+### Added
+
+- Internal M2 lane decision-window contracts for bounded lane state,
+  actor-visible observations, `Stabilize`/`Contest` intent validation,
+  explicit execution inputs, attributed events/effects, one-window debriefs,
+  and append-only replay.
+- Focused information-boundary, unfavorable-execution, validation,
+  determinism, stream-isolation, and replay tests for the first lane slice.
+
+### Changed
+
+- The package version advances to `0.1.4` for the first M2 code slice; the
+  executable remains the documented placeholder.
+
 ## 0.1.3 — 2026-08-04
 
 ### Added

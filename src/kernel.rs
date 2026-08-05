@@ -16,7 +16,7 @@ pub const CURRENT_RULESET: RulesetId = RulesetId(1);
 pub struct ActorId(u8);
 
 impl ActorId {
-    pub fn new(value: u8) -> Self {
+    pub const fn new(value: u8) -> Self {
         Self(value)
     }
 
@@ -42,7 +42,7 @@ impl Turn {
 pub struct RulesetId(u16);
 
 impl RulesetId {
-    pub fn new(value: u16) -> Self {
+    pub const fn new(value: u16) -> Self {
         Self(value)
     }
 
@@ -222,7 +222,7 @@ impl WorldState {
     }
 }
 
-fn hash_bytes(mut hash: u64, bytes: &[u8]) -> u64 {
+pub(crate) fn hash_bytes(mut hash: u64, bytes: &[u8]) -> u64 {
     for byte in bytes {
         hash ^= u64::from(*byte);
         hash = hash.wrapping_mul(FNV_PRIME);

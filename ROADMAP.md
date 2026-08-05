@@ -321,6 +321,25 @@ a causal debrief.
 - [ ] Test hidden-state leakage and actor-visible report completeness.
 - [ ] Inspect every transition in at least one complete replay manually.
 
+### Current bounded slice evidence
+
+- [x] Define one typed lane snapshot with bounded health, wave pressure,
+  position, phase, hidden opponent truth, and hidden jungle-threat truth.
+- [x] Project a player-laner observation with explicit unknown reports and no
+  latent opponent or threat values.
+- [x] Validate `Stabilize` and `Contest` through one host-created intent
+  command, including actor, turn, ruleset, observation, and prior-hash guards.
+- [x] Resolve one deterministic window from explicit execution damage and wave
+  inputs, with ordered events, attributed effects, outcome, and hash.
+- [x] Commit and replay one append-only lane history record while preserving
+  the M1 fixture contract.
+- [x] Cover legal unfavorable execution, malformed inputs, determinism, stream
+  isolation, hidden-state omission, validation rejection, and replay in eight
+  focused lane tests.
+
+This evidence promotes only the bounded M2 diagnostic slice. The unchecked
+scope items remain required for the complete one-lane milestone.
+
 ### Deliverables
 
 - One versioned scenario and actor profile set.
