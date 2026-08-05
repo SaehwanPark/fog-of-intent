@@ -602,6 +602,14 @@ This evidence establishes one bounded level resource. It does not establish comp
 
 This evidence establishes one bounded minion kills resource. It does not establish minion wave spawn timing, last-hitting mechanics, or a complete playable lane scenario.
 
+### Current bounded target-focus evidence
+
+- [x] Add bounded `LaneTargetFocus` to player intent requests and commands with `Minions` default and non-default record-identity hash binding.
+- [x] Expose available target focus options in player observations.
+- [x] Emit direct-immediate `TargetFocusSelected`/`TargetFocusSet` events and effects during transition evaluation, with debrief recording and replay verification.
+
+This evidence establishes one bounded intent focus abstraction. It does not establish multi-actor focus target switching or a complete playable lane scenario.
+
 ### Current final-debrief evidence
 
 - [x] Build a versioned final debrief only from a replay-verified two-window

@@ -10,6 +10,20 @@ pub const PLAYER_LANER: ActorId = ActorId::new(1);
 pub const OPPONENT_LANER: ActorId = ActorId::new(2);
 pub const ALLIED_AUTONOMOUS_ACTOR: ActorId = ActorId::new(3);
 
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+pub enum LaneTargetFocus {
+    #[default]
+    Minions,
+    OpposingLaner,
+    Tower,
+}
+
+impl LaneTargetFocus {
+    pub const fn default_focus() -> Self {
+        Self::Minions
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct LaneHealth(pub(crate) u8);
 

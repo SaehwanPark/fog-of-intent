@@ -103,6 +103,7 @@ pub struct LanerObservation {
     pub(crate) jungle_threat: ThreatReport,
     pub(crate) available_intents: [LaneIntent; 4],
     pub(crate) available_threat_response: Option<LaneIntent>,
+    pub(crate) available_target_focuses: [LaneTargetFocus; 3],
     pub(crate) window: LaneWindow,
 }
 
@@ -207,6 +208,10 @@ impl LanerObservation {
         self.available_threat_response
     }
 
+    pub fn available_target_focuses(self) -> [LaneTargetFocus; 3] {
+        self.available_target_focuses
+    }
+
     pub fn window(self) -> LaneWindow {
         self.window
     }
@@ -263,6 +268,11 @@ pub fn observe_player(
                 LaneIntent::Recall,
             ],
             available_threat_response: player_threat_response(jungle_threat),
+            available_target_focuses: [
+                LaneTargetFocus::Minions,
+                LaneTargetFocus::OpposingLaner,
+                LaneTargetFocus::Tower,
+            ],
             window: state.window(),
         },
         source_state_hash: state.hash(),

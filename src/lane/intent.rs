@@ -14,14 +14,30 @@ pub struct LaneIntentRequest {
     pub(crate) actor: ActorId,
     pub(crate) observation_id: ObservationId,
     pub(crate) intent: LaneIntent,
+    pub(crate) target_focus: LaneTargetFocus,
 }
 
 impl LaneIntentRequest {
     pub fn new(actor: ActorId, observation_id: ObservationId, intent: LaneIntent) -> Self {
+        Self::new_with_target_focus(
+            actor,
+            observation_id,
+            intent,
+            LaneTargetFocus::default_focus(),
+        )
+    }
+
+    pub fn new_with_target_focus(
+        actor: ActorId,
+        observation_id: ObservationId,
+        intent: LaneIntent,
+        target_focus: LaneTargetFocus,
+    ) -> Self {
         Self {
             actor,
             observation_id,
             intent,
+            target_focus,
         }
     }
 
@@ -36,6 +52,10 @@ impl LaneIntentRequest {
     pub fn intent(self) -> LaneIntent {
         self.intent
     }
+
+    pub fn target_focus(self) -> LaneTargetFocus {
+        self.target_focus
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -46,6 +66,7 @@ pub struct LaneIntentCommand {
     pub(crate) observation_id: ObservationId,
     pub(crate) host_prior_state_hash: StateHash,
     pub(crate) intent: LaneIntent,
+    pub(crate) target_focus: LaneTargetFocus,
 }
 
 impl LaneIntentCommand {
@@ -57,6 +78,26 @@ impl LaneIntentCommand {
         host_prior_state_hash: StateHash,
         intent: LaneIntent,
     ) -> Self {
+        Self::new_with_target_focus(
+            actor,
+            turn,
+            ruleset,
+            observation_id,
+            host_prior_state_hash,
+            intent,
+            LaneTargetFocus::default_focus(),
+        )
+    }
+
+    pub fn new_with_target_focus(
+        actor: ActorId,
+        turn: Turn,
+        ruleset: RulesetId,
+        observation_id: ObservationId,
+        host_prior_state_hash: StateHash,
+        intent: LaneIntent,
+        target_focus: LaneTargetFocus,
+    ) -> Self {
         Self {
             actor,
             turn,
@@ -64,6 +105,7 @@ impl LaneIntentCommand {
             observation_id,
             host_prior_state_hash,
             intent,
+            target_focus,
         }
     }
 
@@ -89,6 +131,10 @@ impl LaneIntentCommand {
 
     pub fn intent(self) -> LaneIntent {
         self.intent
+    }
+
+    pub fn target_focus(self) -> LaneTargetFocus {
+        self.target_focus
     }
 }
 
