@@ -15,6 +15,7 @@ pub struct LaneIntentRequest {
     pub(crate) observation_id: ObservationId,
     pub(crate) intent: LaneIntent,
     pub(crate) target_focus: LaneTargetFocus,
+    pub(crate) commitment: LaneCommitment,
 }
 
 impl LaneIntentRequest {
@@ -33,11 +34,43 @@ impl LaneIntentRequest {
         intent: LaneIntent,
         target_focus: LaneTargetFocus,
     ) -> Self {
+        Self::new_with_focus_and_commitment(
+            actor,
+            observation_id,
+            intent,
+            target_focus,
+            LaneCommitment::default_commitment(),
+        )
+    }
+
+    pub fn new_with_commitment(
+        actor: ActorId,
+        observation_id: ObservationId,
+        intent: LaneIntent,
+        commitment: LaneCommitment,
+    ) -> Self {
+        Self::new_with_focus_and_commitment(
+            actor,
+            observation_id,
+            intent,
+            LaneTargetFocus::default_focus(),
+            commitment,
+        )
+    }
+
+    pub fn new_with_focus_and_commitment(
+        actor: ActorId,
+        observation_id: ObservationId,
+        intent: LaneIntent,
+        target_focus: LaneTargetFocus,
+        commitment: LaneCommitment,
+    ) -> Self {
         Self {
             actor,
             observation_id,
             intent,
             target_focus,
+            commitment,
         }
     }
 
@@ -56,6 +89,10 @@ impl LaneIntentRequest {
     pub fn target_focus(self) -> LaneTargetFocus {
         self.target_focus
     }
+
+    pub fn commitment(self) -> LaneCommitment {
+        self.commitment
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -67,6 +104,7 @@ pub struct LaneIntentCommand {
     pub(crate) host_prior_state_hash: StateHash,
     pub(crate) intent: LaneIntent,
     pub(crate) target_focus: LaneTargetFocus,
+    pub(crate) commitment: LaneCommitment,
 }
 
 impl LaneIntentCommand {
@@ -98,6 +136,50 @@ impl LaneIntentCommand {
         intent: LaneIntent,
         target_focus: LaneTargetFocus,
     ) -> Self {
+        Self::new_with_focus_and_commitment(
+            actor,
+            turn,
+            ruleset,
+            observation_id,
+            host_prior_state_hash,
+            intent,
+            target_focus,
+            LaneCommitment::default_commitment(),
+        )
+    }
+
+    pub fn new_with_commitment(
+        actor: ActorId,
+        turn: Turn,
+        ruleset: RulesetId,
+        observation_id: ObservationId,
+        host_prior_state_hash: StateHash,
+        intent: LaneIntent,
+        commitment: LaneCommitment,
+    ) -> Self {
+        Self::new_with_focus_and_commitment(
+            actor,
+            turn,
+            ruleset,
+            observation_id,
+            host_prior_state_hash,
+            intent,
+            LaneTargetFocus::default_focus(),
+            commitment,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_focus_and_commitment(
+        actor: ActorId,
+        turn: Turn,
+        ruleset: RulesetId,
+        observation_id: ObservationId,
+        host_prior_state_hash: StateHash,
+        intent: LaneIntent,
+        target_focus: LaneTargetFocus,
+        commitment: LaneCommitment,
+    ) -> Self {
         Self {
             actor,
             turn,
@@ -106,6 +188,7 @@ impl LaneIntentCommand {
             host_prior_state_hash,
             intent,
             target_focus,
+            commitment,
         }
     }
 
@@ -135,6 +218,10 @@ impl LaneIntentCommand {
 
     pub fn target_focus(self) -> LaneTargetFocus {
         self.target_focus
+    }
+
+    pub fn commitment(self) -> LaneCommitment {
+        self.commitment
     }
 }
 

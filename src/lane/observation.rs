@@ -104,6 +104,7 @@ pub struct LanerObservation {
     pub(crate) available_intents: [LaneIntent; 4],
     pub(crate) available_threat_response: Option<LaneIntent>,
     pub(crate) available_target_focuses: [LaneTargetFocus; 3],
+    pub(crate) available_commitments: [LaneCommitment; 3],
     pub(crate) window: LaneWindow,
 }
 
@@ -212,6 +213,10 @@ impl LanerObservation {
         self.available_target_focuses
     }
 
+    pub fn available_commitments(self) -> [LaneCommitment; 3] {
+        self.available_commitments
+    }
+
     pub fn window(self) -> LaneWindow {
         self.window
     }
@@ -272,6 +277,11 @@ pub fn observe_player(
                 LaneTargetFocus::Minions,
                 LaneTargetFocus::OpposingLaner,
                 LaneTargetFocus::Tower,
+            ],
+            available_commitments: [
+                LaneCommitment::Standard,
+                LaneCommitment::Cautious,
+                LaneCommitment::Aggressive,
             ],
             window: state.window(),
         },

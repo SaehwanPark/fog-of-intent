@@ -416,6 +416,13 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Transition evaluation emits direct-immediate `TargetFocusSelected` and `TargetFocusSet` events and effects, records target focus in `LaneDebrief`, and verifies replay through `LaneHistory`.
 - Three focused target-focus tests plus the prior eighty-four tests pass, for eighty-seven Rust tests total.
 
+#### Delivered in the bounded commitment follow-up
+
+- `LaneCommitment` is a bounded player intent commitment abstraction with default `Standard` and non-default record-identity hash binding (`LANE_COMMITMENT_HASH_TAG`).
+- `LanerObservation` advertises available commitment options (`Standard`, `Cautious`, `Aggressive`).
+- Transition evaluation emits direct-immediate `CommitmentSelected` and `CommitmentSet` events and effects, records commitment in `LaneDebrief`, and verifies replay through `LaneHistory`.
+- Three focused commitment tests plus the prior eighty-seven tests pass, for ninety Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield

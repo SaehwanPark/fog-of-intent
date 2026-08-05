@@ -29,7 +29,7 @@ pub fn validate_lane_request(
     receipt: &LaneObservationReceipt,
     request: &LaneIntentRequest,
 ) -> Result<ValidatedLaneIntent, LaneValidationError> {
-    let command = LaneIntentCommand::new_with_target_focus(
+    let command = LaneIntentCommand::new_with_focus_and_commitment(
         request.actor,
         state.turn,
         M2_LANE_RULESET,
@@ -37,6 +37,7 @@ pub fn validate_lane_request(
         state.hash(),
         request.intent,
         request.target_focus,
+        request.commitment,
     );
     validate_lane_command(state, receipt, &command)
 }

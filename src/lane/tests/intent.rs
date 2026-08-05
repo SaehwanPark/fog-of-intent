@@ -388,3 +388,121 @@
             ]
         );
     }
+
+    #[test]
+    fn commitment_defaults_to_standard_and_replays() {
+        let state = LaneSnapshot::initial();
+        let (receipt, req) = request(&state, LaneIntent::Stabilize);
+        assert_eq!(req.commitment(), LaneCommitment::Standard);
+        let validated = validate_lane_request(&state, &receipt, &req).expect("valid request");
+        assert_eq!(validated.command().commitment(), LaneCommitment::Standard);
+
+        let result = transition_lane(&state, &validated, &inputs(0, 0, LaneWaveResult::Held))
+            .expect("transition");
+        assert_eq!(result.debrief().commitment(), LaneCommitment::Standard);
+        assert!(result.events().iter().any(|e| matches!(
+            e,
+            LaneEvent::CommitmentSelected {
+                commitment: LaneCommitment::Standard,
+                ..
+            }
+        )));
+        assert!(result.effects().iter().any(|e| matches!(
+            e,
+            LaneEffect::CommitmentSet {
+                commitment: LaneCommitment::Standard,
+                ..
+            }
+        )));
+
+        let mut history = LaneHistory::new(state).expect("valid initial state");
+        history
+            .append(&receipt, &req, inputs(0, 0, LaneWaveResult::Held))
+            .expect("append");
+        assert_eq!(history.verify_replay(), Ok(history.current_state()));
+    }
+
+    #[test]
+    fn commitment_cautious_and_aggressive_are_valid_and_bind_record_identity() {
+        let state = LaneSnapshot::initial();
+        let receipt = observe_player(&state, ObservationId::new(1));
+
+        let default_req = LaneIntentRequest::new_with_commitment(
+            PLAYER_LANER,
+            receipt.observation().observation_id(),
+            LaneIntent::Contest,
+            LaneCommitment::Standard,
+        );
+        let cautious_req = LaneIntentRequest::new_with_commitment(
+            PLAYER_LANER,
+            receipt.observation().observation_id(),
+            LaneIntent::Contest,
+            LaneCommitment::Cautious,
+        );
+        let aggressive_req = LaneIntentRequest::new_with_commitment(
+            PLAYER_LANER,
+            receipt.observation().observation_id(),
+            LaneIntent::Contest,
+            LaneCommitment::Aggressive,
+        );
+
+        let default_val = validate_lane_request(&state, &receipt, &default_req).expect("valid");
+        let cautious_val = validate_lane_request(&state, &receipt, &cautious_req).expect("valid");
+        let aggressive_val = validate_lane_request(&state, &receipt, &aggressive_req).expect("valid");
+
+        let default_res = transition_lane(&state, &default_val, &inputs(0, 0, LaneWaveResult::Held))
+            .expect("default transition");
+        let cautious_res = transition_lane(&state, &cautious_val, &inputs(0, 0, LaneWaveResult::Held))
+            .expect("cautious transition");
+        let aggressive_res = transition_lane(&state, &aggressive_val, &inputs(0, 0, LaneWaveResult::Held))
+            .expect("aggressive transition");
+
+        assert_eq!(default_res.debrief().commitment(), LaneCommitment::Standard);
+        assert_eq!(cautious_res.debrief().commitment(), LaneCommitment::Cautious);
+        assert_eq!(aggressive_res.debrief().commitment(), LaneCommitment::Aggressive);
+
+        let mut h_default = LaneHistory::new(state).unwrap();
+        h_default
+            .append(&receipt, &default_req, inputs(0, 0, LaneWaveResult::Held))
+            .unwrap();
+
+        let mut h_cautious = LaneHistory::new(state).unwrap();
+        h_cautious
+            .append(&receipt, &cautious_req, inputs(0, 0, LaneWaveResult::Held))
+            .unwrap();
+
+        let mut h_aggressive = LaneHistory::new(state).unwrap();
+        h_aggressive
+            .append(&receipt, &aggressive_req, inputs(0, 0, LaneWaveResult::Held))
+            .unwrap();
+
+        assert_ne!(
+            lane_record_identity(&h_default.records()[0]),
+            lane_record_identity(&h_cautious.records()[0])
+        );
+        assert_ne!(
+            lane_record_identity(&h_default.records()[0]),
+            lane_record_identity(&h_aggressive.records()[0])
+        );
+        assert_ne!(
+            lane_record_identity(&h_cautious.records()[0]),
+            lane_record_identity(&h_aggressive.records()[0])
+        );
+
+        assert_eq!(h_cautious.verify_replay(), Ok(h_cautious.current_state()));
+        assert_eq!(h_aggressive.verify_replay(), Ok(h_aggressive.current_state()));
+    }
+
+    #[test]
+    fn laner_observation_advertises_available_commitments() {
+        let state = LaneSnapshot::initial();
+        let obs = observe_player(&state, ObservationId::new(42)).observation();
+        assert_eq!(
+            obs.available_commitments(),
+            [
+                LaneCommitment::Standard,
+                LaneCommitment::Cautious,
+                LaneCommitment::Aggressive,
+            ]
+        );
+    }

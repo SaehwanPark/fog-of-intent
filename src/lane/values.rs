@@ -24,6 +24,20 @@ impl LaneTargetFocus {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+pub enum LaneCommitment {
+    #[default]
+    Standard,
+    Cautious,
+    Aggressive,
+}
+
+impl LaneCommitment {
+    pub const fn default_commitment() -> Self {
+        Self::Standard
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct LaneHealth(pub(crate) u8);
 

@@ -67,7 +67,7 @@
         let validated = validate_lane_request(&state, &receipt, &stabilize_request).expect("valid");
         let result = transition_lane(&state, &validated, &inputs(1, 1, LaneWaveResult::Advanced))
             .expect("transition");
-        assert_eq!(result.effects().len(), 5);
+        assert_eq!(result.effects().len(), 6);
         assert!(result.effects().iter().all(|effect| {
             let provenance = effect.provenance();
             provenance.relation() == LaneEffectRelation::Direct
