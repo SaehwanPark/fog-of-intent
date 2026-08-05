@@ -575,6 +575,15 @@ This evidence establishes one bounded experience resource. It does not establish
 
 This evidence establishes one bounded cooldown resource. It does not establish complete ability catalogs, item active cooldowns, or a complete playable lane scenario.
 
+### Current bounded bounty-resource evidence
+
+- [x] Add bounded `LaneBounty` to player state with zero default and non-zero state-hash binding.
+- [x] Expose `LaneBounty` in player and allied observations without exposing opponent bounty.
+- [x] Resolve explicit `bounty_earned` during execution with direct-immediate `BountyEarned`/`BountyChanged` events and effects, debrief recording, and replay verification.
+- [x] Reject bounty overflow exceeding maximum bounds before transition evaluation.
+
+This evidence establishes one bounded bounty resource. It does not establish complete bounty system scaling, multi-actor kills, or a complete playable lane scenario.
+
 ### Current final-debrief evidence
 
 - [x] Build a versioned final debrief only from a replay-verified two-window
