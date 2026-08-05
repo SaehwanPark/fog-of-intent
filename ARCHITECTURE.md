@@ -6,8 +6,8 @@ M2 scenario architecture remains a bounded target under construction, with the
 first internal lane decision window, bounded branch, one-window allied
 proposal/coordination overlay, terminal-objective projection, matched-input
 strategy fixtures, bounded two-window wrapper, final debrief projection, one
-bounded player-facing Recall intent, a bounded last-known threat report, and a
-conditional Withdraw response implemented
+bounded player-facing Recall intent, a bounded last-known threat report, a
+conditional Withdraw response, and one bounded TwoBeats duration implemented
 
 ## Overview
 
@@ -261,7 +261,8 @@ and an architecture update or ADR when it changes a consequential boundary.
   terminal-objective review, three strategy fixtures, two-window wrapper, and
   bounded Recall intent, last-known threat report, and conditional Withdraw
   response remain bounded: no communication system, complete vision/belief
-  model, automatic threat damage, variable pacing, resource restoration,
+  model, automatic threat damage, adaptive pacing, manual tick semantics,
+  resource restoration,
   external scenario serialization, branch tree, or broader debrief surface is
   implemented.
 - Richer external replay bundles and scenario-specific schema fields remain

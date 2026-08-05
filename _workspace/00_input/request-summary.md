@@ -4,64 +4,61 @@
 
 Implement the next bounded M2 slice after the merged one-window lane, branch,
 allied coordination, objective, strategy-fixture, two-window, debrief, Recall,
-and last-known threat-report contracts: add one conditional `Withdraw` gank
-response that is available only when the player sees the bounded RiverSide
-last-known threat report. Preserve the existing command, transition, replay,
-and hidden-state boundaries.
+last-known threat-report, and conditional Withdraw contracts: add one explicit
+two-beat decision-window duration to the existing deterministic transition.
+Preserve the one-beat hash/identity behavior, command/replay authority, allied
+policy bounds, and hidden-state boundaries.
 
 ## Roadmap Milestone
 
-M2 — One-Lane Vertical Slice, bounded gank-response follow-up.
+M2 — One-Lane Vertical Slice, bounded variable-duration-window follow-up.
 
 ## Current Evidence
 
-- M1 and the prior M2 slices are merged on `main` through `e625304`; this
-  branch advances the package from `0.1.12` to `0.1.13`, pinned to Rust
+- M1 and the prior M2 slices are merged on `main` through `68cfee2`; this
+  branch advances the package from `0.1.13` to `0.1.14`, pinned to Rust
   `1.96.0`, with no dependencies.
 - The binary remains a placeholder and the M2 scenario is not yet playable.
 
 ## In Scope
 
-- Add `Withdraw` as a player command intent that is advertised only through a
-  current `LastKnown { region: RiverSide, ... }` observation.
-- Resolve Withdraw through the existing deterministic lane transition as a
-  one-beat NearTower response, preserving explicit wave/execution inputs and
-  intent attribution without activating Contest fallback.
-- Reject Withdraw for Unknown threat reports, stale observations, resolved
-  windows, wrong actors, and malformed command bindings.
-- Preserve the allied two-intent policy, existing player strategic intents,
-  state-hash inputs, replay identities, objective/debrief paths, and hidden
-  current InLane truth.
-- Synchronize the M2 design, roadmap, SPEC, architecture, changelog, and
-  domain-QA handoff artifacts after verification.
+- Add `LaneWindow::TwoBeats` to the authoritative snapshot and current
+  actor-visible observations.
+- Advance a committed two-beat transition by exactly two turns and close the
+  window automatically on the existing transition commit.
+- Keep one-beat state hashes and prior replay/identity behavior stable while
+  making two-beat state hashes distinct and replay-verifiable.
+- Preserve the allied two-intent policy, existing player intents and threat
+  response, objective/debrief paths, and hidden current InLane truth.
 
 ## Non-Goals
 
-- No automatic threat damage rule, full vision/belief system, variable pacing,
-  communication, resource mechanic, CLI, MCP, GUI, or playable scenario.
-- No policy-generated Withdraw proposal or counter shape; the allied policy
-  remains limited to Stabilize and Contest.
-- No claim that last-known information is current truth or that Withdraw is
-  optimal, balanced, or generally safe.
+- No third duration, adaptive pacing, manual tick command, automatic threat
+  damage rule, full vision/belief system, communication, resource mechanic,
+  CLI, MCP, GUI, or playable scenario.
+- No change to policy candidate selection or allied support semantics.
+- No claim that a two-beat window establishes pacing quality, balance,
+  optimality, or human experience.
 
 ## Project Boundaries Touched
 
-- Actor-visible conditional intent availability and host validation.
+- Variable-duration window state and automatic close-on-commit behavior.
 - Existing functional transition/replay boundary with no second authority.
 
 ## Source Files
 
-- `src/lane.rs` Withdraw intent availability, transition, and focused tests
+- `src/lane.rs` LaneWindow duration, snapshot/hash/observation propagation,
+  transition advancement, and focused tests
 - `Cargo.toml`, `Cargo.lock`, `README.md`, `ROADMAP.md`, `SPEC.md`,
   `ARCHITECTURE.md`, `CHANGELOG.md`
 - `_workspace/01_simulation-design.md`, `_workspace/03_domain-qa.md`, and
-  immutable last-known-threat handoff snapshots
+  immutable gank-response handoff snapshots
 
 ## Expected Outputs
 
-- Conditional Withdraw API and deterministic NearTower response behavior.
-- Tests for availability, unknown/stale/resolved rejection, explicit execution
-  preservation, attribution, and replay/objective compatibility.
+- Two-beat window API and deterministic turn/hash/observation behavior.
+- Tests for duration propagation, automatic close, distinct state hashing,
+  allied observation compatibility, and replay compatibility.
 - Passing local checks, one-code-reviewer PR handoff, hosted CI, and merged PR
   with temporary branch cleanup.
 
@@ -76,8 +73,8 @@ M2 — One-Lane Vertical Slice, bounded gank-response follow-up.
 
 ## Evidence Limits and Open Questions
 
-- The slice establishes one conditional Withdraw response only. It does not
-  establish complete vision, current threat tracking, automatic execution
-  outcomes, pacing, strategy quality, balance, or human-experience evidence.
-- Future gank-response work may add richer threat timing only after it can keep
-  last-known reports distinct from hidden current truth.
+- The slice establishes one two-beat duration only. It does not establish
+  adaptive pacing, automatic execution outcomes, strategy quality, balance, or
+  human-experience evidence.
+- Future pacing work may add additional durations only after preserving
+  deterministic transition and replay identities.
