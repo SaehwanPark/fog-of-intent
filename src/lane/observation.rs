@@ -108,6 +108,7 @@ pub struct LanerObservation {
     pub(crate) available_target_focuses: [LaneTargetFocus; 3],
     pub(crate) available_commitments: [LaneCommitment; 3],
     pub(crate) available_ping_signals: [LanePingSignal; 5],
+    pub(crate) available_abort_conditions: [LaneAbortCondition; 4],
     pub(crate) window: LaneWindow,
 }
 
@@ -232,6 +233,10 @@ impl LanerObservation {
         self.available_ping_signals
     }
 
+    pub fn available_abort_conditions(self) -> [LaneAbortCondition; 4] {
+        self.available_abort_conditions
+    }
+
     pub fn window(self) -> LaneWindow {
         self.window
     }
@@ -306,6 +311,12 @@ pub fn observe_player(
                 LanePingSignal::OnMyWay,
                 LanePingSignal::Assist,
                 LanePingSignal::EnemyMissing,
+            ],
+            available_abort_conditions: [
+                LaneAbortCondition::None,
+                LaneAbortCondition::HealthThreshold,
+                LaneAbortCondition::ThreatSpotted,
+                LaneAbortCondition::ResourceDepleted,
             ],
             window: state.window(),
         },

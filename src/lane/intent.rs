@@ -17,6 +17,7 @@ pub struct LaneIntentRequest {
     pub(crate) target_focus: LaneTargetFocus,
     pub(crate) commitment: LaneCommitment,
     pub(crate) ping_signal: LanePingSignal,
+    pub(crate) abort_condition: LaneAbortCondition,
 }
 
 impl LaneIntentRequest {
@@ -72,6 +73,24 @@ impl LaneIntentRequest {
             LaneTargetFocus::default_focus(),
             LaneCommitment::default_commitment(),
             ping_signal,
+            LaneAbortCondition::default_condition(),
+        )
+    }
+
+    pub fn new_with_abort_condition(
+        actor: ActorId,
+        observation_id: ObservationId,
+        intent: LaneIntent,
+        abort_condition: LaneAbortCondition,
+    ) -> Self {
+        Self::new_with_full_intent(
+            actor,
+            observation_id,
+            intent,
+            LaneTargetFocus::default_focus(),
+            LaneCommitment::default_commitment(),
+            LanePingSignal::default_signal(),
+            abort_condition,
         )
     }
 
@@ -89,6 +108,7 @@ impl LaneIntentRequest {
             target_focus,
             commitment,
             LanePingSignal::default_signal(),
+            LaneAbortCondition::default_condition(),
         )
     }
 
@@ -99,6 +119,7 @@ impl LaneIntentRequest {
         target_focus: LaneTargetFocus,
         commitment: LaneCommitment,
         ping_signal: LanePingSignal,
+        abort_condition: LaneAbortCondition,
     ) -> Self {
         Self {
             actor,
@@ -107,6 +128,7 @@ impl LaneIntentRequest {
             target_focus,
             commitment,
             ping_signal,
+            abort_condition,
         }
     }
 
@@ -133,6 +155,10 @@ impl LaneIntentRequest {
     pub fn ping_signal(self) -> LanePingSignal {
         self.ping_signal
     }
+
+    pub fn abort_condition(self) -> LaneAbortCondition {
+        self.abort_condition
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -146,6 +172,7 @@ pub struct LaneIntentCommand {
     pub(crate) target_focus: LaneTargetFocus,
     pub(crate) commitment: LaneCommitment,
     pub(crate) ping_signal: LanePingSignal,
+    pub(crate) abort_condition: LaneAbortCondition,
 }
 
 impl LaneIntentCommand {
@@ -229,6 +256,30 @@ impl LaneIntentCommand {
             LaneTargetFocus::default_focus(),
             LaneCommitment::default_commitment(),
             ping_signal,
+            LaneAbortCondition::default_condition(),
+        )
+    }
+
+    pub fn new_with_abort_condition(
+        actor: ActorId,
+        turn: Turn,
+        ruleset: RulesetId,
+        observation_id: ObservationId,
+        host_prior_state_hash: StateHash,
+        intent: LaneIntent,
+        abort_condition: LaneAbortCondition,
+    ) -> Self {
+        Self::new_with_full_intent(
+            actor,
+            turn,
+            ruleset,
+            observation_id,
+            host_prior_state_hash,
+            intent,
+            LaneTargetFocus::default_focus(),
+            LaneCommitment::default_commitment(),
+            LanePingSignal::default_signal(),
+            abort_condition,
         )
     }
 
@@ -253,6 +304,7 @@ impl LaneIntentCommand {
             target_focus,
             commitment,
             LanePingSignal::default_signal(),
+            LaneAbortCondition::default_condition(),
         )
     }
 
@@ -267,6 +319,7 @@ impl LaneIntentCommand {
         target_focus: LaneTargetFocus,
         commitment: LaneCommitment,
         ping_signal: LanePingSignal,
+        abort_condition: LaneAbortCondition,
     ) -> Self {
         Self {
             actor,
@@ -278,6 +331,7 @@ impl LaneIntentCommand {
             target_focus,
             commitment,
             ping_signal,
+            abort_condition,
         }
     }
 
@@ -315,6 +369,10 @@ impl LaneIntentCommand {
 
     pub fn ping_signal(self) -> LanePingSignal {
         self.ping_signal
+    }
+
+    pub fn abort_condition(self) -> LaneAbortCondition {
+        self.abort_condition
     }
 }
 

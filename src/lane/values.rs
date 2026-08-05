@@ -54,6 +54,21 @@ impl LanePingSignal {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+pub enum LaneAbortCondition {
+    #[default]
+    None,
+    HealthThreshold,
+    ThreatSpotted,
+    ResourceDepleted,
+}
+
+impl LaneAbortCondition {
+    pub const fn default_condition() -> Self {
+        Self::None
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct LaneHealth(pub(crate) u8);
 

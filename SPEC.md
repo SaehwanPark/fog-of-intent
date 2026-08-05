@@ -454,6 +454,13 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Transition evaluation emits direct-immediate `PingSignalSelected` and `PingSignalSet` events and effects, records ping signal in `LaneDebrief`, and verifies replay through `LaneHistory`.
 - Three focused ping-signal tests plus the prior ninety-nine tests pass, for 102 Rust tests total.
 
+#### Delivered in the bounded abort-condition follow-up
+
+- `LaneAbortCondition` is a bounded player intent abort condition abstraction with `None` default and non-default record-identity hash binding (`LANE_ABORT_CONDITION_HASH_TAG`).
+- `LanerObservation` advertises available abort conditions (`None`, `HealthThreshold`, `ThreatSpotted`, `ResourceDepleted`).
+- Transition evaluation emits direct-immediate `AbortConditionSelected`, `AbortConditionSet`, and `AbortConditionTriggered` events and effects, records abort condition in `LaneDebrief`, and verifies replay through `LaneHistory`.
+- Three focused abort-condition tests plus the prior 102 tests pass, for 105 Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield

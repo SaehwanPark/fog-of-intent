@@ -618,6 +618,14 @@ This evidence establishes one bounded intent focus abstraction. It does not esta
 
 This evidence establishes one bounded intent commitment abstraction. It does not establish commitment-based stat scaling or a complete playable lane scenario.
 
+### Current bounded abort-condition evidence
+
+- [x] Add bounded `LaneAbortCondition` to player intent requests and commands with `None` default and non-default record-identity hash binding.
+- [x] Expose available abort condition options in player observations.
+- [x] Emit direct-immediate `AbortConditionSelected`/`AbortConditionSet`/`AbortConditionTriggered` events and effects during transition evaluation, with debrief recording and replay verification.
+
+This evidence establishes one bounded intent abort condition abstraction. It does not establish multi-beat contingency resolution or a complete playable lane scenario.
+
 ### Current bounded shield-resource evidence
 
 - [x] Add bounded `LaneShield` to player state with zero default and non-zero state-hash binding.

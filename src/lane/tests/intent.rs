@@ -616,3 +616,110 @@
             ]
         );
     }
+
+    #[test]
+    fn abort_condition_defaults_to_none_and_replays() {
+        let state = LaneSnapshot::initial();
+        let receipt = observe_player(&state, ObservationId::new(1));
+        let request = LaneIntentRequest::new(PLAYER_LANER, ObservationId::new(1), LaneIntent::Stabilize);
+        assert_eq!(request.abort_condition(), LaneAbortCondition::None);
+        let validated = validate_lane_request(&state, &receipt, &request).unwrap();
+        assert_eq!(validated.command().abort_condition(), LaneAbortCondition::None);
+
+        let mut history = LaneHistory::new(state).unwrap();
+        let result = history
+            .append(&receipt, &request, inputs(0, 0, LaneWaveResult::Held))
+            .unwrap();
+        assert_eq!(result.debrief().abort_condition(), LaneAbortCondition::None);
+        assert!(result.events().contains(&LaneEvent::AbortConditionSelected {
+            actor: PLAYER_LANER,
+            abort_condition: LaneAbortCondition::None,
+        }));
+        assert!(!result.events().iter().any(|e| matches!(e, LaneEvent::AbortConditionTriggered { .. })));
+        assert!(result.effects().contains(&LaneEffect::AbortConditionSet {
+            actor: PLAYER_LANER,
+            abort_condition: LaneAbortCondition::None,
+            cause: LaneEffectCause::Intent,
+            provenance: LaneEffectProvenance::direct_immediate(),
+        }));
+        assert_eq!(history.verify_replay(), Ok(history.current_state()));
+    }
+
+    #[test]
+    fn abort_conditions_are_valid_and_bind_record_identity() {
+        let state = LaneSnapshot::initial();
+        let receipt = observe_player(&state, ObservationId::new(1));
+
+        let default_req = LaneIntentRequest::new(PLAYER_LANER, ObservationId::new(1), LaneIntent::Contest);
+        let health_req = LaneIntentRequest::new_with_abort_condition(
+            PLAYER_LANER,
+            ObservationId::new(1),
+            LaneIntent::Contest,
+            LaneAbortCondition::HealthThreshold,
+        );
+        let threat_req = LaneIntentRequest::new_with_abort_condition(
+            PLAYER_LANER,
+            ObservationId::new(1),
+            LaneIntent::Contest,
+            LaneAbortCondition::ThreatSpotted,
+        );
+
+        let mut h_default = LaneHistory::new(state).unwrap();
+        let default_res = h_default
+            .append(&receipt, &default_req, inputs(0, 0, LaneWaveResult::Held))
+            .unwrap();
+
+        let mut h_health = LaneHistory::new(state).unwrap();
+        let health_res = h_health
+            .append(&receipt, &health_req, inputs(0, 0, LaneWaveResult::Held))
+            .unwrap();
+
+        let mut h_threat = LaneHistory::new(state).unwrap();
+        let threat_res = h_threat
+            .append(&receipt, &threat_req, inputs(0, 0, LaneWaveResult::Held))
+            .unwrap();
+
+        assert_eq!(default_res.debrief().abort_condition(), LaneAbortCondition::None);
+        assert_eq!(health_res.debrief().abort_condition(), LaneAbortCondition::HealthThreshold);
+        assert_eq!(threat_res.debrief().abort_condition(), LaneAbortCondition::ThreatSpotted);
+
+        assert!(health_res.events().contains(&LaneEvent::AbortConditionTriggered {
+            actor: PLAYER_LANER,
+            abort_condition: LaneAbortCondition::HealthThreshold,
+        }));
+        assert!(threat_res.events().contains(&LaneEvent::AbortConditionTriggered {
+            actor: PLAYER_LANER,
+            abort_condition: LaneAbortCondition::ThreatSpotted,
+        }));
+
+        assert_ne!(
+            lane_record_identity(&h_default.records()[0]),
+            lane_record_identity(&h_health.records()[0])
+        );
+        assert_ne!(
+            lane_record_identity(&h_default.records()[0]),
+            lane_record_identity(&h_threat.records()[0])
+        );
+        assert_ne!(
+            lane_record_identity(&h_health.records()[0]),
+            lane_record_identity(&h_threat.records()[0])
+        );
+
+        assert_eq!(h_health.verify_replay(), Ok(h_health.current_state()));
+        assert_eq!(h_threat.verify_replay(), Ok(h_threat.current_state()));
+    }
+
+    #[test]
+    fn laner_observation_advertises_available_abort_conditions() {
+        let state = LaneSnapshot::initial();
+        let obs = observe_player(&state, ObservationId::new(42)).observation();
+        assert_eq!(
+            obs.available_abort_conditions(),
+            [
+                LaneAbortCondition::None,
+                LaneAbortCondition::HealthThreshold,
+                LaneAbortCondition::ThreatSpotted,
+                LaneAbortCondition::ResourceDepleted,
+            ]
+        );
+    }
