@@ -1,56 +1,52 @@
-# Simulation Design — M2 Bounded Variable-Duration Window
+# Simulation Design — M2 Bounded Effect Provenance
 
 ## Goal and Boundary
 
-This slice adds one explicit `TwoBeats` decision-window duration to the
-existing synchronous lane transition. The selected window duration is
-authoritative state, appears in current player/allied observations, advances
-the committed turn deterministically, and closes automatically when the
-existing transition commits its resolved execution input.
+This slice makes the existing lane effects explicit about relationship and
+timing. Every currently emitted effect is `Immediate`; explicit health, wave,
+and intent position changes are `Direct`, while Contest fallback position
+movement is `Indirect` because the fallback rule mediates the movement.
 
-The prior `OneBeat` contract remains the default. No manual tick command,
-adaptive pacing, third duration, threat-damage rule, or new actor policy is
-introduced.
+The existing `LaneEffectCause` remains unchanged and continues to carry intent,
+fallback, or execution trace attribution. No delayed queue, future event, new
+state field, or transition authority is added.
 
-## Window Contract
+## Provenance Contract
 
 ```text
-LaneWindow::OneBeat  -> turn span 1, closes on transition commit
-LaneWindow::TwoBeats -> turn span 2, closes on transition commit
+LaneEffectProvenance {
+    relation: Direct | Indirect,
+    timing: Immediate | Delayed,
+}
 ```
 
-`LaneSnapshot::new` continues to create a `OneBeat` state. A bounded
-`new_with_window` constructor creates a `TwoBeats` state for the diagnostic
-case. `transition_lane` advances the turn by the selected span and retains the
-window kind in the resolved state. The resolved phase is the automatic
-close-on-commit condition; no separate advance command is needed.
+Current emission mapping:
 
-One-beat state hashes remain byte-compatible with the prior contract. Two-beat
-state hashes include an explicit duration tag and therefore cannot collide with
-the corresponding one-beat snapshot solely because of duration. Existing
-one-beat record identities and replay results remain unchanged.
+- health changed by explicit execution: `Direct + Immediate`;
+- wave pressure changed by explicit execution: `Direct + Immediate`;
+- position changed by Stabilize, Recall, or Withdraw intent:
+  `Direct + Immediate`;
+- position changed by Contest fallback: `Indirect + Immediate`.
 
-## Observation and Coordination
+`Delayed` is a declared vocabulary value only in this slice; no delayed effect
+is emitted or stored. Existing event ordering, effect cause/trace, state hash,
+history, branch, objective, scenario, and final-debrief contracts remain
+unchanged.
 
-Player and allied observations carry the current `LaneWindow`. The allied
-scripted policy accepts either bounded duration but keeps the same two
-`Stabilize`/`Contest` candidates, scores, and support semantics. The duration
-is included in the allied visible input digest only for `TwoBeats`, preserving
-prior one-beat policy identities while binding longer-window policy input.
+## Read Models and Replay
 
-Player intent, conditional Withdraw availability, last-known threat reporting,
-objective attribution, branch checks, scenario reopening, and final-debrief
-projections use their existing authority. A future scenario can choose a
-duration explicitly at its host boundary; this slice only proves the typed
-two-beat transition contract.
+`LaneEffect` exposes provenance accessors without exposing hidden truth. The
+transition constructs the labels from the same explicit command/execution
+causes used by the prior implementation. Replay regenerates the same effects
+and provenance; objective/debrief projections can retain their existing
+committed-facts boundary.
 
 ## Verification Contract
 
-Focused tests cover duration propagation to both observations, distinct
-two-beat state hashing, two-turn advancement, automatic resolved closure,
-unchanged allied candidate bounds, and exact history replay. Existing M1/M2
-tests remain passing.
+Focused tests cover direct immediate health/wave/intent effects, indirect
+immediate Contest fallback movement, absence of delayed effects, and replay
+equality. Existing M1/M2 tests remain passing.
 
-Evidence establishes one bounded TwoBeats duration only. It does not establish
-adaptive pacing, automatic execution outcomes, communication, strategy
-quality, balance, or a complete playable lane scenario.
+Evidence establishes provenance labels for current immediate effects only. It
+does not establish delayed effects, causal completeness, strategy quality,
+balance, or a complete playable scenario.

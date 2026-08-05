@@ -1795,6 +1795,48 @@ pub enum LaneEffectCause {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum LaneEffectRelation {
+    Direct,
+    Indirect,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum LaneEffectTiming {
+    Immediate,
+    Delayed,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct LaneEffectProvenance {
+    relation: LaneEffectRelation,
+    timing: LaneEffectTiming,
+}
+
+impl LaneEffectProvenance {
+    pub const fn direct_immediate() -> Self {
+        Self {
+            relation: LaneEffectRelation::Direct,
+            timing: LaneEffectTiming::Immediate,
+        }
+    }
+
+    pub const fn indirect_immediate() -> Self {
+        Self {
+            relation: LaneEffectRelation::Indirect,
+            timing: LaneEffectTiming::Immediate,
+        }
+    }
+
+    pub fn relation(self) -> LaneEffectRelation {
+        self.relation
+    }
+
+    pub fn timing(self) -> LaneEffectTiming {
+        self.timing
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum LaneEvent {
     IntentCommitted {
         actor: ActorId,
@@ -1831,18 +1873,31 @@ pub enum LaneEffect {
         before: LaneHealth,
         after: LaneHealth,
         cause: LaneEffectCause,
+        provenance: LaneEffectProvenance,
     },
     WavePressureChanged {
         before: WavePressure,
         after: WavePressure,
         cause: LaneEffectCause,
+        provenance: LaneEffectProvenance,
     },
     PositionChanged {
         actor: ActorId,
         before: LanePosition,
         after: LanePosition,
         cause: LaneEffectCause,
+        provenance: LaneEffectProvenance,
     },
+}
+
+impl LaneEffect {
+    pub fn provenance(self) -> LaneEffectProvenance {
+        match self {
+            Self::HealthChanged { provenance, .. }
+            | Self::WavePressureChanged { provenance, .. }
+            | Self::PositionChanged { provenance, .. } => provenance,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -2992,6 +3047,7 @@ pub fn transition_lane(
             before: player.health,
             after: after_player_health,
             cause: LaneEffectCause::Execution(trace),
+            provenance: LaneEffectProvenance::direct_immediate(),
         });
     }
     if execution.opponent_damage != LaneDamage::zero() {
@@ -3005,6 +3061,7 @@ pub fn transition_lane(
             before: opponent.health,
             after: after_opponent_health,
             cause: LaneEffectCause::Execution(trace),
+            provenance: LaneEffectProvenance::direct_immediate(),
         });
     }
     events.push(LaneEvent::WaveResolved {
@@ -3017,6 +3074,7 @@ pub fn transition_lane(
             before: state.wave.pressure,
             after: after_wave,
             cause: LaneEffectCause::Execution(trace),
+            provenance: LaneEffectProvenance::direct_immediate(),
         });
     }
     if after_position != player.position {
@@ -3025,11 +3083,17 @@ pub fn transition_lane(
         } else {
             LaneEffectCause::Intent
         };
+        let provenance = if fallback_activated {
+            LaneEffectProvenance::indirect_immediate()
+        } else {
+            LaneEffectProvenance::direct_immediate()
+        };
         effects.push(LaneEffect::PositionChanged {
             actor: player.id,
             before: player.position,
             after: after_position,
             cause,
+            provenance,
         });
     }
     if fallback_activated {
@@ -4778,6 +4842,38 @@ mod tests {
                 .events()
                 .iter()
                 .any(|event| { matches!(event, LaneEvent::FallbackActivated { .. }) })
+        );
+        assert_eq!(
+            result
+                .effects()
+                .iter()
+                .find_map(|effect| match effect {
+                    LaneEffect::PositionChanged { provenance, .. } => Some(*provenance),
+                    _ => None,
+                })
+                .expect("fallback position effect"),
+            LaneEffectProvenance::indirect_immediate()
+        );
+    }
+
+    #[test]
+    fn explicit_effects_are_direct_immediate_and_have_no_delayed_emission() {
+        let state = LaneSnapshot::initial();
+        let (receipt, stabilize_request) = request(&state, LaneIntent::Stabilize);
+        let validated = validate_lane_request(&state, &receipt, &stabilize_request).expect("valid");
+        let result = transition_lane(&state, &validated, &inputs(1, 1, LaneWaveResult::Advanced))
+            .expect("transition");
+        assert_eq!(result.effects().len(), 4);
+        assert!(result.effects().iter().all(|effect| {
+            let provenance = effect.provenance();
+            provenance.relation() == LaneEffectRelation::Direct
+                && provenance.timing() == LaneEffectTiming::Immediate
+        }));
+        assert!(
+            result
+                .effects()
+                .iter()
+                .all(|effect| { effect.provenance().timing() != LaneEffectTiming::Delayed })
         );
     }
 

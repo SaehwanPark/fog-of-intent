@@ -7,7 +7,8 @@ first internal lane decision window, bounded branch, one-window allied
 proposal/coordination overlay, terminal-objective projection, matched-input
 strategy fixtures, bounded two-window wrapper, final debrief projection, one
 bounded player-facing Recall intent, a bounded last-known threat report, a
-conditional Withdraw response, and one bounded TwoBeats duration implemented
+conditional Withdraw response, one bounded TwoBeats duration, and bounded
+direct/indirect immediate effect provenance implemented
 
 ## Overview
 
@@ -173,8 +174,10 @@ to reduce type count.
 - Research inspection may expose true state only through a separately authorized
   interface and must not contaminate playable policies or metrics.
 - Debriefs evaluate decisions using information available at decision time.
-- Effects retain provenance sufficient to distinguish direct/indirect,
-  immediate/delayed, strategic/coordination/execution, and stochastic causes.
+- Current effects expose direct/indirect and immediate/delayed vocabulary while
+  retaining their existing cause/trace attribution; only immediate effects are
+  emitted today, and delayed effects, broader causal chains, and stochastic
+  provenance remain open.
 - A good decision may fail and a poor decision may succeed; the model and
   presentation must support that distinction.
 
