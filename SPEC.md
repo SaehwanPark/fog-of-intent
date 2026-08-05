@@ -270,6 +270,19 @@ exists. Planned proposal or roadmap text is never implementation evidence.
   contracts remain unchanged; four focused Recall tests plus the prior
   forty-four tests pass, for forty-eight Rust tests total.
 
+#### Delivered in the bounded last-known threat-report follow-up
+
+- `ThreatReport` now distinguishes `Unknown` from the bounded
+  `LastKnown { region: RiverSide, last_seen_turn }` player-facing report.
+- `observe_player` reports only RiverSide as last-known; Absent and hidden
+  current InLane threat truth remain Unknown, and source hashes, exact entities,
+  execution values, and current-location claims remain outside the projection.
+- A RiverSide history record regenerates and replays the same observation while
+  preserving the existing transition, lane-state hash, intent set, and replay
+  identities.
+- Two focused last-known-report tests plus the prior forty-eight tests pass, for
+  fifty Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
@@ -283,10 +296,10 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 
 #### Not Yet Done
 
-- The complete lane scenario still needs variable pacing, gank
-  response, richer resource abstractions, communication, and a broader causal
-  debrief surface; the Recall follow-up is only one bounded intent over the
-  existing fixed one-beat window contract.
+- The complete lane scenario still needs complete vision/belief updates,
+  variable pacing, gank response, richer resource abstractions, communication,
+  and a broader causal debrief surface; the last-known follow-up is only one
+  bounded report over the existing fixed one-beat window contract.
 - CLI, MCP, full agent ecology, and human-experience evidence remain future
   M3/M4+ work; this diagnostic slice is not playable and makes no enjoyment,
   accessibility, trust, or behavioral-validity claim.

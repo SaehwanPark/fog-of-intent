@@ -34,6 +34,21 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.12 — 2026-08-04
+
+### Added
+
+- A bounded player-visible `LastKnown` RiverSide threat report with explicit
+  observation-turn provenance while Absent and hidden current InLane truth
+  remain Unknown.
+- Last-known/unknown boundary and RiverSide replay tests while preserving the
+  existing transition, intent, state-hash, and replay contracts.
+
+### Changed
+
+- The package version advances to `0.1.12` for the bounded last-known
+  threat-report slice; the executable remains the documented placeholder.
+
 ## 0.1.11 — 2026-08-04
 
 ### Added

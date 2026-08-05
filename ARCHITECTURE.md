@@ -5,8 +5,9 @@
 M2 scenario architecture remains a bounded target under construction, with the
 first internal lane decision window, bounded branch, one-window allied
 proposal/coordination overlay, terminal-objective projection, matched-input
-strategy fixtures, bounded two-window wrapper, and final debrief projection
-and one bounded player-facing Recall intent implemented
+strategy fixtures, bounded two-window wrapper, final debrief projection, one
+bounded player-facing Recall intent, and a bounded last-known threat report
+implemented
 
 ## Overview
 
@@ -258,9 +259,10 @@ and an architecture update or ADR when it changes a consequential boundary.
   framework, or persistence service.
 - The M2 window, one bounded branch, allied proposal/coordination overlay, one
   terminal-objective review, three strategy fixtures, two-window wrapper, and
-  bounded Recall intent remain bounded: no communication system, variable
-  pacing, gank response, resource restoration, external scenario serialization,
-  branch tree, or broader debrief surface is implemented.
+  bounded Recall intent, and last-known threat report remain bounded: no
+  communication system, complete vision/belief model, variable pacing, gank
+  response, resource restoration, external scenario serialization, branch tree,
+  or broader debrief surface is implemented.
 - Richer external replay bundles and scenario-specific schema fields remain
   open work.
 - `.github/workflows/ci.yml` and `scripts/check_repository.py` now define the

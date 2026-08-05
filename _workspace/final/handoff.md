@@ -2,58 +2,60 @@
 
 ## Outcome
 
-The bounded M2 Recall intent is implemented inside the existing one-window
-lane command/transition boundary. M2 remains active because pacing, richer
-mechanics, communication, and the complete one-lane scenario are not yet
-built.
+The bounded M2 last-known threat-report projection is implemented over the
+existing player observation and replay authority. M2 remains active because
+complete vision/belief updates, gank response, pacing, richer mechanics,
+communication, and the complete one-lane scenario are not yet built.
 
 ## Changed Files
 
-- `Cargo.toml`, `Cargo.lock` — package version `0.1.11`.
-- `src/lane.rs` — player-visible Recall intent, advertised-intent validation,
-  deterministic NearTower resolution, intent attribution, and focused tests.
+- `src/lane.rs` — `JungleThreatRegion`, `ThreatReport::LastKnown`, player
+  projection, accessors, and RiverSide/unknown/replay tests.
+- `Cargo.toml`, `Cargo.lock` — package version `0.1.12`.
 - `README.md`, `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` —
-  synchronized Recall evidence and current-state claims.
-- `_workspace/00_input/request-summary.md` — Recall slice framing.
-- `_workspace/01_simulation-design.md` — Recall simulation contract.
-- `_workspace/02_design-synthesis.md` — reconciled Recall production contract.
+  synchronized last-known threat evidence and limits.
+- `_workspace/00_input/request-summary.md` — last-known report slice framing.
+- `_workspace/01_simulation-design.md` — last-known report contract.
+- `_workspace/02_design-synthesis.md` — reconciled production contract.
 - `_workspace/03_domain-qa.md` — domain-QA pass.
-- `_workspace/00_input/m2-final-debrief-request-summary.md`,
-  `_workspace/01-simulation-design-m2-final-debrief.md`,
-  `_workspace/03-domain-qa-m2-final-debrief.md`, and
-  `_workspace/final/m2-final-debrief-handoff.md` — immutable prior M2 evidence.
+- `_workspace/00_input/m2-recall-request-summary.md`,
+  `_workspace/01-simulation-design-m2-recall.md`,
+  `_workspace/03-domain-qa-m2-recall.md`, and
+  `_workspace/final/m2-recall-handoff.md` — immutable prior Recall evidence.
 
 ## Verification
 
 - `cargo +1.96.0 fmt --check`
 - `cargo +1.96.0 clippy --all-targets --all-features -- -D warnings`
-- `cargo +1.96.0 test --locked` — 48 tests passed.
+- `cargo +1.96.0 test --locked` — 50 tests passed.
 - `python3 scripts/check_repository.py`
 - `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'`
 - `git diff --check`
 
 ## Domain QA Disposition
 
-`_workspace/03_domain-qa.md` is `pass` for the declared Recall slice. The
-player/allied information boundary is preserved, host validation requires the
-advertised intent, and legal unfavorable execution remains distinct from
-invalid commands. Complete-scenario and human-evidence claims remain open.
+`_workspace/03_domain-qa.md` is `pass` for the declared last-known report
+slice. RiverSide is explicitly reportable, Absent/InLane remain unknown, and
+history replay regenerates the same actor-visible projection. Complete vision,
+gank response, and human-evidence claims remain open.
 
 ## Canonical State Updates
 
-`ROADMAP.md` records the bounded Recall evidence while keeping the broad hold,
-pacing, gank-response, communication, and complete-scenario scope open.
-`SPEC.md` and `ARCHITECTURE.md` record Recall as an internal bounded contract.
-The package advances to `0.1.11`; the binary remains a placeholder.
+`ROADMAP.md` records the bounded last-known threat evidence while keeping
+complete vision, belief updates, pacing, gank-response, communication, and
+complete-scenario scope open. `SPEC.md` and `ARCHITECTURE.md` record the
+observation-only boundary. The package advances to `0.1.12`; the binary remains
+a placeholder.
 
 ## Known Limits
 
-No variable-duration windows, automatic pacing, recall timing or resource
-restoration, gank response, communication, debrief serialization, coordinated
-multi-window debrief, CLI, MCP adapter, or full scenario exists.
+No complete vision model, belief update, gank response, variable-duration
+window, communication, debrief serialization, CLI, MCP adapter, or full
+scenario exists.
 
 ## Next Milestone Dependencies
 
-Use the preserved window, branch, coordination, objective, fixture, scenario,
-debrief, and Recall contracts to choose the next thin M2 slice without
-widening into a general framework.
+Use this report plus the existing window, branch, coordination, objective,
+fixture, scenario, debrief, and Recall contracts to define a gank-response
+slice that acts on last-known information without granting hidden current
+truth.

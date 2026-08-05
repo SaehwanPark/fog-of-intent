@@ -417,8 +417,33 @@ pub enum HiddenValue {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum JungleThreatRegion {
+    RiverSide,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ThreatReport {
     Unknown,
+    LastKnown {
+        region: JungleThreatRegion,
+        last_seen_turn: Turn,
+    },
+}
+
+impl ThreatReport {
+    pub fn last_known_region(self) -> Option<JungleThreatRegion> {
+        match self {
+            Self::Unknown => None,
+            Self::LastKnown { region, .. } => Some(region),
+        }
+    }
+
+    pub fn last_seen_turn(self) -> Option<Turn> {
+        match self {
+            Self::Unknown => None,
+            Self::LastKnown { last_seen_turn, .. } => Some(last_seen_turn),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -465,6 +490,16 @@ pub struct LanerObservation {
     jungle_threat: ThreatReport,
     available_intents: [LaneIntent; 3],
     window: LaneWindow,
+}
+
+fn player_threat_report(state: &LaneSnapshot) -> ThreatReport {
+    match state.jungle_threat {
+        JungleThreatTruth::RiverSide => ThreatReport::LastKnown {
+            region: JungleThreatRegion::RiverSide,
+            last_seen_turn: state.turn,
+        },
+        JungleThreatTruth::Absent | JungleThreatTruth::InLane => ThreatReport::Unknown,
+    }
 }
 
 impl LanerObservation {
@@ -553,7 +588,7 @@ pub fn observe_player(
                 health: HiddenValue::Unknown,
                 posture: HiddenValue::Unknown,
             },
-            jungle_threat: ThreatReport::Unknown,
+            jungle_threat: player_threat_report(state),
             available_intents: [
                 LaneIntent::Stabilize,
                 LaneIntent::Contest,
@@ -4250,6 +4285,83 @@ mod tests {
         assert_eq!(first_observation.opponent().health(), HiddenValue::Unknown);
         assert_eq!(first_observation.opponent().posture(), HiddenValue::Unknown);
         assert_eq!(first_observation.jungle_threat(), ThreatReport::Unknown);
+    }
+
+    #[test]
+    fn observation_reports_only_the_bounded_river_side_last_known_threat() {
+        let state = LaneSnapshot::initial();
+        let river_side = LaneSnapshot::new(
+            state.ruleset(),
+            Turn::new(3),
+            LanePhase::Open,
+            state.player(),
+            state.opponent(),
+            state.wave(),
+            JungleThreatTruth::RiverSide,
+            None,
+        );
+        let river_observation = observe_player(&river_side, ObservationId::new(1)).observation();
+        assert_eq!(
+            river_observation.jungle_threat(),
+            ThreatReport::LastKnown {
+                region: JungleThreatRegion::RiverSide,
+                last_seen_turn: Turn::new(3),
+            }
+        );
+        assert_eq!(
+            river_observation.jungle_threat().last_known_region(),
+            Some(JungleThreatRegion::RiverSide)
+        );
+        assert_eq!(
+            river_observation.jungle_threat().last_seen_turn(),
+            Some(Turn::new(3))
+        );
+        assert_eq!(
+            observe_player(&state, ObservationId::new(1))
+                .observation()
+                .jungle_threat(),
+            ThreatReport::Unknown
+        );
+    }
+
+    #[test]
+    fn river_side_observation_replays_without_changing_transition_authority() {
+        let initial = LaneSnapshot::new(
+            M2_LANE_RULESET,
+            Turn::new(0),
+            LanePhase::Open,
+            PlayerLaneState::new(
+                PLAYER_LANER,
+                LaneHealth::new(8).expect("bounded"),
+                LanePosition::Center,
+            ),
+            OpponentTruth::new(
+                OPPONENT_LANER,
+                LaneHealth::new(7).expect("bounded"),
+                LanePosition::Center,
+                OpponentPosture::Aggressive,
+            ),
+            WaveState::new(WavePressure::new(1).expect("bounded")),
+            JungleThreatTruth::RiverSide,
+            None,
+        );
+        let (receipt, request) = request(&initial, LaneIntent::Contest);
+        assert_eq!(
+            receipt.observation().jungle_threat(),
+            ThreatReport::LastKnown {
+                region: JungleThreatRegion::RiverSide,
+                last_seen_turn: Turn::new(0),
+            }
+        );
+        let mut history = LaneHistory::new(initial).expect("valid initial state");
+        history
+            .append(&receipt, &request, inputs(0, 0, LaneWaveResult::Held))
+            .expect("append");
+        assert_eq!(history.verify_replay(), Ok(history.current_state()));
+        assert_eq!(
+            history.current_state().jungle_threat(),
+            JungleThreatTruth::RiverSide
+        );
     }
 
     #[test]

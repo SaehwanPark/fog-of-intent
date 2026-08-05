@@ -3,63 +3,62 @@
 ## Requested Outcome
 
 Implement the next bounded M2 slice after the merged one-window lane, branch,
-allied coordination, objective, strategy-fixture, two-window, and debrief
-contracts: add one explicit low-risk `Recall` player intent to the existing
-one-window command/transition boundary. Keep allied proposals limited to their
-existing two-intent policy and preserve all replay identities.
+allied coordination, objective, strategy-fixture, two-window, debrief, and
+Recall contracts: add one explicit player-visible last-known jungle-threat
+report without exposing current hidden threat truth or adding a new transition
+mechanic. Preserve the existing player intent set, allied policy boundary, and
+replay identities.
 
 ## Roadmap Milestone
 
-M2 — One-Lane Vertical Slice, bounded Recall-intent follow-up.
+M2 — One-Lane Vertical Slice, bounded last-known threat-report follow-up.
 
 ## Current Evidence
 
-- M1 is complete; the first M2 decision window, bounded branch, allied
-  proposal/coordination overlay, terminal-objective review, three strategy
-  fixtures, two-window wrapper, and final debrief are merged on `main` through
-  `7491bca`; this branch advances the package from `0.1.10` to `0.1.11`,
-  pinned to Rust `1.96.0`,
-  with no dependencies.
+- M1 and the prior M2 slices are merged on `main` through `20935a0`; this
+  branch advances the package from `0.1.11` to `0.1.12`, pinned to Rust
+  `1.96.0`, with no dependencies.
 - The binary remains a placeholder and the M2 scenario is not yet playable.
 
 ## In Scope
 
-- Add `Recall` to the player-visible legal intent set and host validation.
-- Resolve Recall as a deterministic low-risk plan that moves the player near
-  tower, holds the wave, and preserves explicit execution inputs/provenance.
-- Preserve allied policy candidate bounds, deterministic replay, branch
-  compatibility, objective attribution, and final-debrief contracts.
-- Synchronize the M2 design, roadmap, SPEC, architecture, changelog, and domain
-  QA evidence after verification.
+- Add an actor-visible `LastKnown` jungle-threat report for the bounded
+  `RiverSide` truth case, including the observation turn.
+- Keep `Absent` and current `InLane` threat truth reported as `Unknown`; no
+  current hidden threat location or source state hash may cross the boundary.
+- Preserve the existing `Stabilize`/`Contest`/`Recall` player intents, allied
+  two-intent candidate policy, transition authority, and replay behavior.
+- Synchronize the M2 design, roadmap, SPEC, architecture, and domain-QA
+  handoff artifacts after verification.
 
 ## Non-Goals
 
-- No second decision window, full lane scenario, CLI, MCP, GUI, broad agent
-  population, persistence codec, or general communication framework.
-- No variable pacing, gank mechanics, hidden-state score, optimality claim,
-  balance claim, or new lane mechanics beyond this bounded Recall plan.
-- No change to the placeholder binary or claim of a playable simulation.
+- No gank-response intent, threat damage rule, variable pacing, vision system,
+  communication, resource mechanic, CLI, MCP, GUI, or playable scenario.
+- No change to authoritative `LaneSnapshot` fields, transition outputs, state
+  hash inputs, or replay IDs.
+- No claim that a last-known report is current truth, complete vision, or a
+  model of human threat perception.
 
 ## Project Boundaries Touched
 
-- Host-owned history/replay authority from ADR-0001.
-- Functional core boundary: objective evaluation is a post-commit pure
-  projection; coordination and transition semantics remain host/kernel-owned.
+- Actor-specific observation projection and explicit unknown/last-known wording.
+- Host-owned replay regeneration of the exact observation from committed state.
 
 ## Source Files
 
-- `src/lane.rs` Recall intent and focused tests
-- existing M1 fixture tests remain unchanged
-- `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md`
+- `src/lane.rs` threat report type, player projection, and focused tests
+- `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`
 - `_workspace/01_simulation-design.md`, `_workspace/03_domain-qa.md`, and
-  immutable M2 final-debrief handoff snapshots
+  immutable Recall handoff snapshots
 
 ## Expected Outputs
 
-- Recall legality, transition, objective attribution, and replay tests.
-- Updated M2 checklist and SDD/domain handoff artifacts.
-- Passing local checks, one code-reviewer’s three-pass review, hosted CI, and a
-  merged PR.
+- Last-known report API with RiverSide-only projection.
+- Tests for unknown current/absent threats, RiverSide last-known wording,
+  observation replay, and hidden-state/source-hash boundaries.
+- Passing local checks, one code-reviewer PR handoff, hosted CI, and a merged
+  PR with temporary branch cleanup.
 
 ## Verification
 
@@ -69,13 +68,11 @@ M2 — One-Lane Vertical Slice, bounded Recall-intent follow-up.
 - `python3 scripts/check_repository.py`
 - `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'`
 - `git diff --check`
-- Focused Recall-boundary, actor-observation, deterministic transition, and
-  replay tests.
 
 ## Evidence Limits and Open Questions
 
-- The slice establishes only one bounded Recall plan; it does not establish a
-  complete playable scenario, pacing, gank response, balance, optimality, or
-  human-experience evidence.
-- Portable serialization, migration, multi-window state, general communication,
-  and broad agent-population claims remain deferred.
+- The slice establishes only one bounded last-known report. It does not
+  establish vision completeness, threat timing, gank response, pacing,
+  balance, strategy quality, or human-experience evidence.
+- The next gank-response slice must define what an actor can act on without
+  treating the last-known report as current hidden truth.
