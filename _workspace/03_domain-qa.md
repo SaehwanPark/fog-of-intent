@@ -4,91 +4,81 @@
 
 pass
 
-This QA covers the one-window M2 allied proposal and host-owned coordination
-overlay. It does not promote the complete M2 scenario and does not validate a
-playable host, human experience, accessibility, trust, legal clearance, or
-research validity.
+This QA covers the one-window M2 scenario-goal and terminal-objective
+projection over ordinary and allied-coordinated records. It does not promote
+the complete M2 scenario and does not validate a playable host, human
+experience, accessibility, trust, legal clearance, or research validity.
 
 ## Reviewed Inputs
 
 - `_workspace/00_input/request-summary.md`
 - `_workspace/01_simulation-design.md`
-- `_workspace/01_agent-ecology-design.md`
 - `_workspace/02_design-synthesis.md`
-- `_workspace/00_input/m2-branch-request-summary.md`,
-  `_workspace/01-simulation-design-m2-branch.md`,
-  `_workspace/03-domain-qa-m2-branch.md`, and
-  `_workspace/final/m2-branch-handoff.md` as immutable prior-slice evidence
+- `_workspace/00_input/m2-coordination-request-summary.md`,
+  `_workspace/01-simulation-design-m2-coordination.md`,
+  `_workspace/03-domain-qa-m2-coordination.md`, and
+  `_workspace/final/m2-coordination-handoff.md` as immutable prior-slice
+  evidence
 - `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `README.md`, and `CHANGELOG.md`
 - `docs/harness/fog-of-intent/team-spec.md`, `docs/TERMINOLOGY.md`, and
   `docs/adr/0001-authoritative-transition-boundary.md`
 - `src/kernel.rs`, `src/lane.rs`, `src/lib.rs`, and focused test output
 
-## Scope and Roadmap Findings
+## Scope and Authority Findings
 
-The implementation matches the declared slice: one proposal-only allied role,
-one actor-valid observation, one support offer, one player response, one
-host-owned coordination resolution, and one existing lane transition. The
-roadmap records this as bounded coordination evidence while leaving multiple
-windows, pacing, recall, gank response, communication, and full scenario
-completion open. No general messaging framework, agent population, CLI, MCP,
-persistence codec, or GUI was added.
+The implementation adds exactly one scenario goal,
+`HoldLaneSpaceThroughWindow`, and evaluates it after an existing one-window
+record is committed. It does not add a second window, new lane mechanics, a
+state field, transition event/effect, objective framework, or playable-host
+surface.
 
-## Authority and Information-Boundary Findings
+The host derives objective inputs from committed lane/coordination facts.
+`transition_lane` remains the authority for state, outcome, events/effects, and
+hash. Objective evaluation is pure and cannot feed back into the transition.
+Ordinary records retain `NotApplicable` coordination; coordinated records
+retain the exact committed disposition.
 
-The allied policy receives only `AlliedLaneObservation`, its versioned profile,
-and an actor-visible input identity. Hidden opponent/jungle truth, source-state
-hashes, receipts, history, and execution values remain outside the policy
-boundary. Proposal output is not a command and cannot close a window or mutate
-history. The host validates the observation, proposal/offer identity, player
-request, and response before coordination or transition.
+## Information and Attribution Findings
 
-Coordination is an envelope sidecar. `transition_lane` remains the only
-authority for lane state, events/effects, terminal outcome, and state hash.
-Coordination effects carry the explicit coordination trace; existing lane
-effects retain their execution causes.
+The evaluator receives result facts, intent, coordination disposition, and
+explicit execution trace. It does not receive opponent truth, jungle truth,
+proposal scores, policy internals, source receipts, or a snapshot. The
+privileged input identity carries replay/hash provenance, while the visible
+`ObjectiveReport` omits source hashes and private receipts.
 
-## Determinism, Replay, and Reproducibility Findings
+`SpaceHeld` and `SurvivedBeat` are classified as committed criteria. The
+achieved/partial/missed result is a diagnostic disposition, not an optimality,
+balance, win-rate, trust, or human-value judgment. Coordination and execution
+remain separately attributable.
 
-The scripted profile separates candidate generation, scoring, and selection;
-the canonical observation selects `Contest` with scores `2` and `5`, and ties
-select `Stabilize`. Profile/input identity and proposal IDs are deterministic.
-Matched hidden-state substitutions produce identical observations and policy
-artifacts. Follow-through and mechanical execution are explicit inputs; no
-policy or transition function creates randomness.
+## Determinism and Replay Findings
 
-`CoordinatedLaneHistory` stores one append-only coordination sidecar and
-replays the regenerated allied observation/proposal, validates the response,
-reruns coordination and the base transition, and compares the full result.
-Tampered response/proposal/record data is rejected. Existing no-proposal
-`LaneHistory` and record-0 `LaneBranch` tests remain passing; the old branch
-API does not silently discard coordination metadata.
-
-## Debrief and Claim Limits
-
-The coordinated debrief separates player response, coordination disposition,
-execution conditioned on the disposition, and explicit execution-input trace.
-It does not infer optimality, hidden-state knowledge, luck beyond the committed
-input, communication quality, trust, balance, human behavior, or enjoyment.
+The evaluator is deterministic for identical typed inputs and accepts only the
+two versioned source replay identities. `ObjectiveInputIdentity` hashes the
+canonical committed facts. `ObjectiveReviewRecord` stores source replay and
+record identity, inputs, and review; verification reconstructs expected facts
+and review and rejects altered hashes, results, coordination, traces, goal, or
+review data. Existing ordinary history, bounded branch, and coordinated
+history replay remain valid.
 
 ## Required Fixes
 
-None for the declared one-window allied proposal/coordination slice.
+None for the declared one-window objective slice.
 
 ## Residual Risks
 
-- Coordinated records are in-memory only; portable serialization and migration
+- Objective reviews are in-memory only; portable serialization and migration
   remain deferred.
-- Coordination-aware branching requires a future versioned branch identity and
-  is intentionally not added to the old branch API.
-- Multiple windows, communication, pacing, recall, gank response, richer
+- Partial achievement is a typed evaluation case and is not necessarily
+  reachable from every current mechanical input combination.
+- Multiple windows, pacing, recall, gank response, communication, richer
   resources, and full debrief/presentation remain unimplemented.
 
 ## Verification Evidence
 
 - `cargo +1.96.0 fmt --check`
 - `cargo +1.96.0 clippy --all-targets --all-features -- -D warnings`
-- `cargo +1.96.0 test --locked` — 37 tests passed: 19 M1 and 18 M2 tests.
+- `cargo +1.96.0 test --locked` — 40 tests passed: 19 M1 and 21 M2 tests.
 - `python3 scripts/check_repository.py`
 - `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'`
 - `git diff --check`

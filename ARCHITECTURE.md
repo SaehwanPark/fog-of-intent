@@ -3,8 +3,8 @@
 **Last reviewed:** 2026-08-04
 **Status:** Partially verified — M1 kernel and fixture codec are implemented;
 M2 scenario architecture remains a bounded target under construction, with the
-first internal lane decision window, bounded branch, and one-window allied
-proposal/coordination overlay implemented
+first internal lane decision window, bounded branch, one-window allied
+proposal/coordination overlay, and terminal-objective projection implemented
 
 ## Overview
 
@@ -109,15 +109,18 @@ LaneSnapshot -> observe_player + observe_allied -> proposal/offer
   -> CoordinatedLaneRequest + host validation
   -> explicit coordination and LaneResolvedInputs
   -> transition_lane -> coordinated history append/replay
+  -> terminal-objective evaluation/report
 ```
 
 The observation receipts keep source-state bindings private to the host
 boundary; actor-visible observations do not contain the true-state hash or
 hidden opponent/threat fields. The allied policy is proposal-only. A
 coordination overlay composes typed offer/response/resolution provenance around
-one unchanged lane transition and state hash. A branch borrows and verifies the
-parent history, then owns only a copied one-window record and branch metadata;
-the old branch API does not silently discard a future coordination overlay.
+one unchanged lane transition and state hash. A terminal-objective review is a
+post-commit projection over visible result facts and cannot mutate the lane.
+A branch borrows and verifies the parent history, then owns only a copied
+one-window record and branch metadata; the old branch API does not silently
+discard a future coordination overlay.
 
 ## Consequential Type Boundaries
 
@@ -242,13 +245,13 @@ and an architecture update or ADR when it changes a consequential boundary.
 
 ## Known Gaps
 
-- The M1 kernel/codec and first M2 lane decision-window/branch/coordination contracts are implemented
+- The M1 kernel/codec and first M2 lane decision-window/branch/coordination/objective contracts are implemented
   internally, but they are not a playable scenario, public API, migration
   framework, or persistence service.
-- The M2 window, one bounded branch, and one allied proposal/coordination
-  overlay are intentionally one-shot: no communication system, variable
-  pacing, second window, external scenario serialization, branch tree, or full
-  debrief surface is implemented yet.
+- The M2 window, one bounded branch, allied proposal/coordination overlay, and
+  one terminal-objective review are intentionally one-shot: no communication
+  system, variable pacing, second window, external scenario serialization,
+  branch tree, or full debrief surface is implemented yet.
 - Richer external replay bundles and scenario-specific schema fields remain
   open work.
 - `.github/workflows/ci.yml` and `scripts/check_repository.py` now define the

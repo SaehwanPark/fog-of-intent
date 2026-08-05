@@ -197,6 +197,22 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Five focused coordination/policy/history tests plus the prior thirty-two
   tests pass, for thirty-seven Rust tests total.
 
+#### Delivered in the scenario-goal and terminal-objective follow-up
+
+- `ScenarioGoal::HoldLaneSpaceThroughWindow` defines one bounded diagnostic
+  goal without adding a new lane mechanic, state field, event, or transition.
+- `ObjectiveEvaluationInputs` and `ObjectiveInputIdentity` derive committed
+  result facts, source replay identity, and provenance for ordinary and
+  coordinated records while keeping hidden truth outside evaluation.
+- `TerminalObjectiveReview` evaluates `SpaceHeld` and `SurvivedBeat` into
+  achieved, partial, or missed dispositions and preserves coordination and
+  execution attribution without claiming optimality.
+- `ObjectiveReport` is a visible projection that omits source-state hashes and
+  private receipts; `ObjectiveReviewRecord` verifies source identity, facts,
+  review, and tampering for both record types.
+- Three focused objective tests plus the prior thirty-seven tests pass, for
+  forty Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
@@ -212,8 +228,8 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 
 - The complete lane scenario still needs multiple windows, variable pacing,
   recall, gank response, richer resource abstractions, communication, and a
-  full causal debrief surface; this follow-up models only one fixed allied
-  proposal and coordination boundary.
+  full causal debrief surface; these follow-ups model only one fixed allied
+  proposal, coordination, and terminal-objective boundary.
 - CLI, MCP, full agent ecology, and human-experience evidence remain future
   M3/M4+ work; this diagnostic slice is not playable and makes no enjoyment,
   accessibility, trust, or behavioral-validity claim.
