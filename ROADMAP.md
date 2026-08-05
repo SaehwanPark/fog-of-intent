@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs` | Placeholder `Hello, world!` binary |
-| Package | `Cargo.toml` | Version `0.1.25`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.30`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -626,6 +626,15 @@ This evidence establishes one bounded intent commitment abstraction. It does not
 - [x] Reject shield overflow exceeding maximum bounds before transition evaluation.
 
 This evidence establishes one bounded defensive shield resource. It does not establish complete shield degradation, absorption mechanics, or a complete playable lane scenario.
+
+### Current bounded ward-resource evidence
+
+- [x] Add bounded `LaneWard` to player state with zero default and non-zero state-hash binding.
+- [x] Expose `LaneWard` in player and allied observations without exposing opponent ward count.
+- [x] Resolve explicit `ward_gained` during execution with direct-immediate `WardGained`/`WardChanged` events and effects, debrief recording, and replay verification.
+- [x] Reject ward overflow exceeding maximum bounds before transition evaluation.
+
+This evidence establishes one bounded vision ward resource. It does not establish map ward placement locations, vision radius calculations, or a complete playable lane scenario.
 
 ### Current final-debrief evidence
 

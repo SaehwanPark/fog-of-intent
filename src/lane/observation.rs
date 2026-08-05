@@ -98,6 +98,7 @@ pub struct LanerObservation {
     pub(crate) self_level: LaneLevel,
     pub(crate) self_minion_kills: LaneMinionKills,
     pub(crate) self_shield: LaneShield,
+    pub(crate) self_ward: LaneWard,
     pub(crate) self_position: LanePosition,
     pub(crate) wave_pressure: WavePressure,
     pub(crate) opponent: OpponentReport,
@@ -190,6 +191,10 @@ impl LanerObservation {
         self.self_shield
     }
 
+    pub fn self_ward(self) -> LaneWard {
+        self.self_ward
+    }
+
     pub fn self_position(self) -> LanePosition {
         self.self_position
     }
@@ -268,6 +273,7 @@ pub fn observe_player(
             self_level: state.player().level(),
             self_minion_kills: state.player().minion_kills(),
             self_shield: state.player().shield(),
+            self_ward: state.player().ward(),
             self_position: state.player().position(),
             wave_pressure: state.wave().pressure(),
             opponent: player_opponent_report(state),
@@ -310,6 +316,7 @@ pub struct AlliedLaneObservation {
     pub(crate) laner_level: LaneLevel,
     pub(crate) laner_minion_kills: LaneMinionKills,
     pub(crate) laner_shield: LaneShield,
+    pub(crate) laner_ward: LaneWard,
     pub(crate) laner_position: LanePosition,
     pub(crate) wave_pressure: WavePressure,
     pub(crate) opponent: OpponentReport,
@@ -369,6 +376,10 @@ impl AlliedLaneObservation {
 
     pub fn laner_shield(self) -> LaneShield {
         self.laner_shield
+    }
+
+    pub fn laner_ward(self) -> LaneWard {
+        self.laner_ward
     }
 
     pub fn laner_position(self) -> LanePosition {
@@ -436,6 +447,7 @@ pub fn observe_allied(
             laner_level: state.player().level(),
             laner_minion_kills: state.player().minion_kills(),
             laner_shield: state.player().shield(),
+            laner_ward: state.player().ward(),
             laner_position: state.player().position(),
             wave_pressure: state.wave().pressure(),
             opponent: OpponentReport::unknown(),

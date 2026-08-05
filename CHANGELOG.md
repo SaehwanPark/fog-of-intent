@@ -34,6 +34,15 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.30 — 2026-08-05
+
+### Added
+
+- Bounded `LaneWard` player vision resource abstraction `[0, MAX_LANE_WARD=5]` with zero default.
+- Non-zero `LaneWard` state-hash binding (`LANE_WARD_HASH_TAG`).
+- Player (`self_ward`) and allied (`laner_ward`) observation projections without exposing opponent ward count.
+- Resolution of explicit `ward_gained` execution inputs emitting direct-immediate `WardGained`/`WardChanged` events & effects, debrief recording, and replay verification.
+
 ## 0.1.29 — 2026-08-05
 
 ### Added

@@ -717,3 +717,128 @@
         ));
     }
 
+    #[test]
+    fn ward_is_bounded_and_default_zero() {
+        let player = PlayerLaneState::new(PLAYER_LANER, LaneHealth::new(8).unwrap(), LanePosition::Center);
+        assert_eq!(player.ward(), LaneWard::zero());
+        assert_eq!(player.ward().value(), 0);
+
+        let valid = LaneWard::new(3).expect("valid ward");
+        assert_eq!(valid.value(), 3);
+
+        let overflow = LaneWard::new(MAX_LANE_WARD + 1);
+        assert_eq!(
+            overflow,
+            Err(LaneBoundsError {
+                value: MAX_LANE_WARD + 1,
+                maximum: MAX_LANE_WARD,
+            })
+        );
+    }
+
+    #[test]
+    fn ward_gained_is_direct_immediate_and_replayable() {
+        let state = LaneSnapshot::initial();
+        let obs = observe_player(&state, ObservationId::new(1));
+        assert_eq!(obs.observation().self_ward(), LaneWard::zero());
+
+        let allied_obs = observe_allied(&state, ObservationId::new(1));
+        assert_eq!(allied_obs.observation().laner_ward(), LaneWard::zero());
+
+        let (receipt, req) = request(&state, LaneIntent::Stabilize);
+        let validated = validate_lane_request(&state, &receipt, &req).expect("valid");
+
+        let ward = LaneWard::new(2).expect("valid ward");
+        let mut resolved_inputs = inputs(1, 1, LaneWaveResult::Held);
+        resolved_inputs.execution = resolved_inputs.execution.with_ward_gained(ward);
+
+        let result = transition_lane(&state, &validated, &resolved_inputs).expect("transition");
+        let next = result.next_state();
+        assert_eq!(next.player().ward(), ward);
+        assert_eq!(result.debrief().ward_gained(), ward);
+
+        assert!(result.events().iter().any(|e| matches!(
+            e,
+            LaneEvent::WardGained { actor, amount, .. }
+                if *actor == PLAYER_LANER && *amount == ward
+        )));
+
+        assert!(result.effects().iter().any(|e| matches!(
+            e,
+            LaneEffect::WardChanged {
+                actor,
+                before,
+                after,
+                provenance,
+                ..
+            } if *actor == PLAYER_LANER
+                && *before == LaneWard::zero()
+                && *after == ward
+                && provenance.relation() == LaneEffectRelation::Direct
+                && provenance.timing() == LaneEffectTiming::Immediate
+        )));
+
+        let mut history = LaneHistory::new(state).expect("valid history");
+        history.append(&receipt, &req, resolved_inputs).expect("append");
+        assert_eq!(history.verify_replay(), Ok(next));
+    }
+
+    #[test]
+    fn ward_overflow_is_rejected() {
+        let player = PlayerLaneState::new_with_absolute_state(
+            PLAYER_LANER,
+            LaneHealth::new(8).unwrap(),
+            LaneMana::full(),
+            LaneGold::zero(),
+            LaneExperience::zero(),
+            LaneCooldown::zero(),
+            LaneBounty::zero(),
+            LaneLevel::initial(),
+            LaneMinionKills::zero(),
+            LanePosition::Center,
+        );
+        let state = LaneSnapshot::new_with_window(
+            M2_LANE_RULESET,
+            Turn::new(1),
+            LaneWindow::OneBeat,
+            LanePhase::Open,
+            player,
+            OpponentTruth::new(
+                OPPONENT_LANER,
+                LaneHealth::new(8).unwrap(),
+                LanePosition::Center,
+                OpponentPosture::Passive,
+            ),
+            WaveState::new(WavePressure::new(1).unwrap()),
+            JungleThreatTruth::Absent,
+            None,
+        );
+
+        let (receipt, req) = request(&state, LaneIntent::Stabilize);
+        let validated = validate_lane_request(&state, &receipt, &req).expect("valid");
+
+        let ward = LaneWard::new(MAX_LANE_WARD).expect("max ward");
+        let mut overflow_inputs = inputs(1, 1, LaneWaveResult::Held);
+        overflow_inputs.execution = overflow_inputs.execution.with_ward_gained(ward);
+
+        let overflow_inputs = overflow_inputs.with_mana_spent(LaneMana::zero());
+
+        let result = transition_lane(&state, &validated, &overflow_inputs).expect("transition 1");
+        let full_ward_state = reopen_lane_window(&result).expect("reopen");
+
+        let (rec2, req2) = request(&full_ward_state, LaneIntent::Stabilize);
+        let val2 = validate_lane_request(&full_ward_state, &rec2, &req2).expect("valid");
+
+        let mut overflow_inputs_2 = inputs(1, 1, LaneWaveResult::Held);
+        overflow_inputs_2.execution = overflow_inputs_2
+            .execution
+            .with_ward_gained(LaneWard::new(1).unwrap());
+
+        assert!(matches!(
+            transition_lane(&full_ward_state, &val2, &overflow_inputs_2),
+            Err(LaneTransitionError::Execution(
+                LaneExecutionError::WardOverflow { .. }
+            ))
+        ));
+    }
+
