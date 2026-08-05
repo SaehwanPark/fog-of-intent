@@ -34,6 +34,24 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.7 — 2026-08-04
+
+### Added
+
+- A bounded `HoldLaneSpaceThroughWindow` scenario goal with deterministic
+  `SpaceHeld`/`SurvivedBeat` criteria, achieved/partial/missed dispositions,
+  committed-facts attribution, and a redacted visible objective report.
+- Versioned objective input/source-record identities plus ordinary and
+  coordinated objective review/replay verification with tamper detection.
+- Focused objective, coordination-attribution, state-hash, report-redaction,
+  and replay tests while retaining the existing M2 window, branch, and
+  coordination fixtures.
+
+### Changed
+
+- The package version advances to `0.1.7` for the one-window scenario-goal and
+  terminal-objective slice; the executable remains the documented placeholder.
+
 ## 0.1.6 — 2026-08-04
 
 ### Added

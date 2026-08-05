@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs` | Placeholder `Hello, world!` binary |
-| Package | `Cargo.toml` | Version `0.1.6`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.7`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -312,7 +312,7 @@ a causal debrief.
   and fallback behavior.
 - [ ] Implement hold, pressure/trade, yield, recall, and gank-response decisions
   only where they create real tradeoffs.
-- [ ] Implement coordination and execution as distinct resolutions.
+- [x] Implement coordination and execution as distinct resolutions.
 - [ ] Record direct, indirect, immediate, and delayed effects with provenance.
 - [ ] Define a terminal outcome that does not collapse evaluation to win/loss.
 - [ ] Produce immediate review and final debrief projections.
@@ -371,6 +371,23 @@ scope items remain required for the complete one-lane milestone.
 This evidence establishes a deterministic, modeled coordination boundary for
 one window. It does not establish communication quality, trust, balance,
 optimality, human behavior, or a playable multi-window scenario.
+
+### Current scenario-goal and terminal-objective evidence
+
+- [x] Define the bounded `HoldLaneSpaceThroughWindow` scenario goal without
+  changing authoritative lane state or mechanics.
+- [x] Evaluate `SpaceHeld` and `SurvivedBeat` from committed visible result
+  facts with explicit achieved/partial/missed dispositions.
+- [x] Preserve ordinary `NotApplicable` coordination and coordinated
+  dispositions as separate causal attribution facts.
+- [x] Record versioned objective input identity and a source-record identity;
+  replay reconstructs objective facts and rejects tampered reviews.
+- [x] Provide a visible objective report that omits source-state hashes and
+  private receipts while retaining a committed-facts attribution limit.
+
+This evidence establishes one deterministic terminal-objective projection. It
+does not establish a complete scenario, optimality, balance, or human
+experience.
 
 ### Deliverables
 
