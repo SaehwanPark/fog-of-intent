@@ -20,6 +20,7 @@ pub struct LaneExecutionInputs {
     pub(crate) bounty_earned: LaneBounty,
     pub(crate) level_gained: LaneLevel,
     pub(crate) minion_kills_gained: LaneMinionKills,
+    pub(crate) delayed_effect: Option<LaneDelayedEffect>,
 }
 
 impl LaneExecutionInputs {
@@ -41,7 +42,17 @@ impl LaneExecutionInputs {
             bounty_earned: LaneBounty::zero(),
             level_gained: LaneLevel::zero(),
             minion_kills_gained: LaneMinionKills::zero(),
+            delayed_effect: None,
         }
+    }
+
+    pub fn with_delayed_effect(mut self, delayed_effect: LaneDelayedEffect) -> Self {
+        self.delayed_effect = Some(delayed_effect);
+        self
+    }
+
+    pub fn delayed_effect(self) -> Option<LaneDelayedEffect> {
+        self.delayed_effect
     }
 
     pub fn with_mana_spent(mut self, mana_spent: LaneMana) -> Self {
@@ -241,6 +252,20 @@ impl LaneEffectProvenance {
         }
     }
 
+    pub const fn direct_delayed() -> Self {
+        Self {
+            relation: LaneEffectRelation::Direct,
+            timing: LaneEffectTiming::Delayed,
+        }
+    }
+
+    pub const fn indirect_delayed() -> Self {
+        Self {
+            relation: LaneEffectRelation::Indirect,
+            timing: LaneEffectTiming::Delayed,
+        }
+    }
+
     pub fn relation(self) -> LaneEffectRelation {
         self.relation
     }
@@ -312,6 +337,16 @@ pub enum LaneEvent {
     MinionKillsGained {
         actor: ActorId,
         amount: LaneMinionKills,
+        trace: InputTrace,
+    },
+    DelayedEffectQueued {
+        actor: ActorId,
+        effect: LaneDelayedEffect,
+        trace: InputTrace,
+    },
+    DelayedEffectResolved {
+        actor: ActorId,
+        effect: LaneDelayedEffect,
         trace: InputTrace,
     },
     WaveResolved {
@@ -399,6 +434,18 @@ pub enum LaneEffect {
         cause: LaneEffectCause,
         provenance: LaneEffectProvenance,
     },
+    DelayedEffectQueued {
+        actor: ActorId,
+        effect: LaneDelayedEffect,
+        cause: LaneEffectCause,
+        provenance: LaneEffectProvenance,
+    },
+    DelayedEffectResolved {
+        actor: ActorId,
+        effect: LaneDelayedEffect,
+        cause: LaneEffectCause,
+        provenance: LaneEffectProvenance,
+    },
     TargetFocusSet {
         actor: ActorId,
         focus: LaneTargetFocus,
@@ -426,6 +473,8 @@ impl LaneEffect {
             | Self::LevelChanged { provenance, .. }
             | Self::MinionKillsChanged { provenance, .. }
             | Self::PositionChanged { provenance, .. }
+            | Self::DelayedEffectQueued { provenance, .. }
+            | Self::DelayedEffectResolved { provenance, .. }
             | Self::TargetFocusSet { provenance, .. }
             | Self::CommitmentSet { provenance, .. } => provenance,
         }
@@ -480,6 +529,7 @@ pub enum LaneExecutionError {
         gained: LaneMinionKills,
         current: LaneMinionKills,
     },
+    DelayedEffectOverflow,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -520,6 +570,8 @@ pub struct LaneDebrief {
     pub(crate) minion_kills_gained: LaneMinionKills,
     pub(crate) wave_result: LaneWaveResult,
     pub(crate) fallback_activated: bool,
+    pub(crate) delayed_effects_queued: u8,
+    pub(crate) delayed_effects_resolved: u8,
     pub(crate) execution_trace: InputTrace,
 }
 
@@ -582,6 +634,14 @@ impl LaneDebrief {
 
     pub fn fallback_activated(self) -> bool {
         self.fallback_activated
+    }
+
+    pub fn delayed_effects_queued(self) -> u8 {
+        self.delayed_effects_queued
+    }
+
+    pub fn delayed_effects_resolved(self) -> u8 {
+        self.delayed_effects_resolved
     }
 
     pub fn execution_trace(self) -> InputTrace {
@@ -837,11 +897,13 @@ fn apply_player_resources(
     })
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 struct ResolvedLaneExecution {
     next_state: LaneSnapshot,
     outcome: LaneOutcome,
     fallback_activated: bool,
+    delayed_effects_resolved: Vec<LaneDelayedEffect>,
+    delayed_effect_queued: Option<LaneDelayedEffect>,
 }
 
 fn resolve_lane_execution(
@@ -868,7 +930,7 @@ fn resolve_lane_execution(
         ));
     }
     let resource_deltas = ResourceExecutionDeltas::from_execution(execution);
-    let after_resources = apply_player_resources(
+    let mut after_resources = apply_player_resources(
         player.resources(),
         resource_deltas,
         state.window.beats(),
@@ -881,7 +943,7 @@ fn resolve_lane_execution(
         LaneWaveResult::Lost => lose_wave(state.wave.pressure),
     }
     .map_err(LaneTransitionError::Execution)?;
-    let after_player_health = player
+    let mut after_player_health = player
         .health
         .subtract(execution.self_damage)
         .expect("validated damage must be subtractable");
@@ -889,6 +951,43 @@ fn resolve_lane_execution(
         .health
         .subtract(execution.opponent_damage)
         .expect("validated damage must be subtractable");
+
+    let beats = state.window.beats() as u8;
+    let mut next_delayed_effects = LaneDelayedEffects::empty();
+    let mut delayed_effects_resolved = Vec::new();
+
+    for effect in state.delayed_effects.items().iter().flatten() {
+        if effect.delay_beats <= beats {
+            delayed_effects_resolved.push(*effect);
+            match effect.kind {
+                LaneDelayedEffectKind::SelfHealthRegen { amount } => {
+                    let val = (after_player_health.0 + amount.0).min(MAX_LANE_HEALTH);
+                    after_player_health = LaneHealth::new(val).expect("valid bounded health");
+                }
+                LaneDelayedEffectKind::SelfManaRegen { amount } => {
+                    after_resources.mana =
+                        after_resources.mana.add(amount).unwrap_or(LaneMana::full());
+                }
+                LaneDelayedEffectKind::SelfCooldownReduction { amount } => {
+                    after_resources.cooldown = after_resources.cooldown.tick(amount.value() as u32);
+                }
+            }
+        } else {
+            let remaining = effect.delay_beats - beats;
+            next_delayed_effects
+                .push(LaneDelayedEffect::new(remaining, effect.kind))
+                .expect("valid queue bounds");
+        }
+    }
+
+    let mut delayed_effect_queued = None;
+    if let Some(new_delayed) = execution.delayed_effect {
+        next_delayed_effects.push(new_delayed).map_err(|_| {
+            LaneTransitionError::Execution(LaneExecutionError::DelayedEffectOverflow)
+        })?;
+        delayed_effect_queued = Some(new_delayed);
+    }
+
     let fallback_activated =
         command.command.intent == LaneIntent::Contest && execution.self_damage.0 >= 2;
     let after_position = match command.command.intent {
@@ -929,7 +1028,7 @@ fn resolve_lane_execution(
         opponent.position,
         opponent.posture,
     );
-    let next_state = LaneSnapshot::new_with_window(
+    let next_state = LaneSnapshot::new_with_delayed_effects(
         state.ruleset,
         Turn::new(next_turn),
         state.window,
@@ -938,12 +1037,15 @@ fn resolve_lane_execution(
         next_opponent,
         WaveState::new(after_wave),
         state.jungle_threat,
+        next_delayed_effects,
         Some(outcome),
     );
     Ok(ResolvedLaneExecution {
         next_state,
         outcome,
         fallback_activated,
+        delayed_effects_resolved,
+        delayed_effect_queued,
     })
 }
 
@@ -951,9 +1053,7 @@ fn project_lane_events(
     state: &LaneSnapshot,
     command: &ValidatedLaneIntent,
     execution: LaneExecutionInputs,
-    next_state: LaneSnapshot,
-    outcome: LaneOutcome,
-    fallback_activated: bool,
+    resolved: &ResolvedLaneExecution,
     trace: InputTrace,
 ) -> Vec<LaneEvent> {
     let player = state.player;
@@ -1007,7 +1107,7 @@ fn project_lane_events(
             trace,
         });
     }
-    if next_state.player.cooldown != player.cooldown {
+    if resolved.next_state.player.cooldown != player.cooldown {
         if execution.cooldown_set != LaneCooldown::zero() {
             events.push(LaneEvent::CooldownSet {
                 actor: player.id,
@@ -1043,18 +1143,34 @@ fn project_lane_events(
             trace,
         });
     }
+    if let Some(queued) = resolved.delayed_effect_queued {
+        events.push(LaneEvent::DelayedEffectQueued {
+            actor: player.id,
+            effect: queued,
+            trace,
+        });
+    }
+    for item in &resolved.delayed_effects_resolved {
+        events.push(LaneEvent::DelayedEffectResolved {
+            actor: player.id,
+            effect: *item,
+            trace,
+        });
+    }
     events.push(LaneEvent::WaveResolved {
         before: state.wave.pressure,
-        after: next_state.wave.pressure,
+        after: resolved.next_state.wave.pressure,
         trace,
     });
-    if fallback_activated {
+    if resolved.fallback_activated {
         events.push(LaneEvent::FallbackActivated {
             actor: player.id,
             intent: command.command.intent,
         });
     }
-    events.push(LaneEvent::WindowResolved { outcome });
+    events.push(LaneEvent::WindowResolved {
+        outcome: resolved.outcome,
+    });
     events
 }
 
@@ -1062,12 +1178,12 @@ fn project_lane_effects(
     state: &LaneSnapshot,
     command: &ValidatedLaneIntent,
     execution: LaneExecutionInputs,
-    next_state: LaneSnapshot,
-    fallback_activated: bool,
+    resolved: &ResolvedLaneExecution,
     trace: InputTrace,
 ) -> Vec<LaneEffect> {
     let player = state.player;
     let opponent = state.opponent;
+    let next_state = resolved.next_state;
     let next_player = next_state.player;
     let mut effects = vec![
         LaneEffect::TargetFocusSet {
@@ -1164,6 +1280,22 @@ fn project_lane_effects(
             provenance: LaneEffectProvenance::direct_immediate(),
         });
     }
+    if let Some(queued) = resolved.delayed_effect_queued {
+        effects.push(LaneEffect::DelayedEffectQueued {
+            actor: player.id,
+            effect: queued,
+            cause: LaneEffectCause::Execution(trace),
+            provenance: LaneEffectProvenance::direct_immediate(),
+        });
+    }
+    for item in &resolved.delayed_effects_resolved {
+        effects.push(LaneEffect::DelayedEffectResolved {
+            actor: player.id,
+            effect: *item,
+            cause: LaneEffectCause::Execution(trace),
+            provenance: LaneEffectProvenance::direct_delayed(),
+        });
+    }
     if next_state.wave.pressure != state.wave.pressure {
         effects.push(LaneEffect::WavePressureChanged {
             before: state.wave.pressure,
@@ -1173,12 +1305,12 @@ fn project_lane_effects(
         });
     }
     if next_player.position != player.position {
-        let cause = if fallback_activated {
+        let cause = if resolved.fallback_activated {
             LaneEffectCause::Fallback
         } else {
             LaneEffectCause::Intent
         };
-        let provenance = if fallback_activated {
+        let provenance = if resolved.fallback_activated {
             LaneEffectProvenance::indirect_immediate()
         } else {
             LaneEffectProvenance::direct_immediate()
@@ -1212,25 +1344,9 @@ pub fn transition_lane(
     let resolved = resolve_lane_execution(state, command, execution)?;
     let next_state = resolved.next_state;
     let outcome = resolved.outcome;
-    let fallback_activated = resolved.fallback_activated;
     let trace = execution.trace;
-    let events = project_lane_events(
-        state,
-        command,
-        execution,
-        next_state,
-        outcome,
-        fallback_activated,
-        trace,
-    );
-    let effects = project_lane_effects(
-        state,
-        command,
-        execution,
-        next_state,
-        fallback_activated,
-        trace,
-    );
+    let events = project_lane_events(state, command, execution, &resolved, trace);
+    let effects = project_lane_effects(state, command, execution, &resolved, trace);
     let debrief = LaneDebrief {
         decision: LaneDecisionReview::InformationConsistent,
         coordination: LaneCoordinationReview::NotApplicable,
@@ -1246,7 +1362,13 @@ pub fn transition_lane(
         level_gained: execution.level_gained,
         minion_kills_gained: execution.minion_kills_gained,
         wave_result: execution.wave_result,
-        fallback_activated,
+        fallback_activated: resolved.fallback_activated,
+        delayed_effects_queued: if resolved.delayed_effect_queued.is_some() {
+            1
+        } else {
+            0
+        },
+        delayed_effects_resolved: resolved.delayed_effects_resolved.len() as u8,
         execution_trace: trace,
     };
     Ok(LaneTransitionResult {

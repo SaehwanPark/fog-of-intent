@@ -470,3 +470,124 @@
             ))
         ));
     }
+
+#[test]
+    fn delayed_effects_are_bounded_and_default_empty() {
+        let empty = LaneDelayedEffects::empty();
+        assert_eq!(empty.count(), 0);
+        assert!(empty.is_empty());
+        let effect = LaneDelayedEffect::new(
+            1,
+            LaneDelayedEffectKind::SelfHealthRegen {
+                amount: LaneHealth::new(2).unwrap(),
+            },
+        );
+        assert_eq!(effect.delay_beats(), 1);
+        assert_eq!(
+            effect.kind(),
+            LaneDelayedEffectKind::SelfHealthRegen {
+                amount: LaneHealth::new(2).unwrap()
+            }
+        );
+
+        let mut queue = LaneDelayedEffects::empty();
+        for _ in 0..4 {
+            assert!(queue.push(effect).is_ok());
+        }
+        assert_eq!(queue.count(), 4);
+        assert!(queue.push(effect).is_err());
+    }
+
+#[test]
+    fn delayed_effect_queues_ticks_resolves_and_replays() {
+        let state = LaneSnapshot::initial(); // player health 8
+        let (receipt, req) = request(&state, LaneIntent::Contest);
+        let validated = validate_lane_request(&state, &receipt, &req).expect("valid");
+
+        // Window 1: take 3 damage (health becomes 5) and queue a 1-beat health regen of +2
+        let regen = LaneDelayedEffect::new(
+            1,
+            LaneDelayedEffectKind::SelfHealthRegen {
+                amount: LaneHealth::new(2).unwrap(),
+            },
+        );
+        let mut inputs_w1 = inputs(3, 1, LaneWaveResult::Held);
+        inputs_w1.execution = inputs_w1.execution.with_delayed_effect(regen);
+
+        let res1 = transition_lane(&state, &validated, &inputs_w1).expect("transition 1");
+        assert_eq!(res1.next_state().player().health(), LaneHealth::new(5).unwrap());
+        assert_eq!(res1.next_state().delayed_effects().count(), 1);
+        assert_eq!(res1.debrief().delayed_effects_queued(), 1);
+        assert_eq!(res1.debrief().delayed_effects_resolved(), 0);
+        assert!(res1.events().iter().any(|e| matches!(
+            e,
+            LaneEvent::DelayedEffectQueued { effect, .. } if *effect == regen
+        )));
+        assert!(res1.effects().iter().any(|e| matches!(
+            e,
+            LaneEffect::DelayedEffectQueued { effect, provenance, .. }
+                if *effect == regen && provenance.timing() == LaneEffectTiming::Immediate
+        )));
+
+        // Window 2: transition from reopened state; delayed effect should resolve (health 5 -> 7)
+        let s2 = reopen_lane_window(&res1).expect("reopen");
+        let (rec2, req2) = request(&s2, LaneIntent::Contest);
+        let val2 = validate_lane_request(&s2, &rec2, &req2).expect("valid 2");
+        let inputs_w2 = inputs(0, 0, LaneWaveResult::Held);
+
+        let res2 = transition_lane(&s2, &val2, &inputs_w2).expect("transition 2");
+        assert_eq!(res2.next_state().player().health(), LaneHealth::new(7).unwrap());
+        assert_eq!(res2.next_state().delayed_effects().count(), 0);
+        assert_eq!(res2.debrief().delayed_effects_queued(), 0);
+        assert_eq!(res2.debrief().delayed_effects_resolved(), 1);
+        assert!(res2.events().iter().any(|e| matches!(
+            e,
+            LaneEvent::DelayedEffectResolved { effect, .. } if *effect == regen
+        )));
+        assert!(res2.effects().iter().any(|e| matches!(
+            e,
+            LaneEffect::DelayedEffectResolved { effect, provenance, .. }
+                if *effect == regen
+                    && provenance.relation() == LaneEffectRelation::Direct
+                    && provenance.timing() == LaneEffectTiming::Delayed
+        )));
+
+        let mut scenario_history = LaneScenarioHistory::new(state).expect("valid scenario history");
+        scenario_history
+            .append(&receipt, &req, inputs_w1)
+            .expect("append 1");
+        scenario_history
+            .append(&rec2, &req2, inputs_w2)
+            .expect("append 2");
+        assert_eq!(
+            scenario_history.verify_replay(),
+            Ok(scenario_history.current_state())
+        );
+    }
+
+#[test]
+    fn delayed_effect_overflow_is_rejected() {
+        let mut state = LaneSnapshot::initial();
+        let regen = LaneDelayedEffect::new(
+            2,
+            LaneDelayedEffectKind::SelfHealthRegen {
+                amount: LaneHealth::new(1).unwrap(),
+            },
+        );
+        for _ in 0..4 {
+            state.delayed_effects.push(regen).unwrap();
+        }
+
+        let (receipt, req) = request(&state, LaneIntent::Contest);
+        let validated = validate_lane_request(&state, &receipt, &req).expect("valid");
+        let mut overflow_inputs = inputs(1, 1, LaneWaveResult::Held);
+        overflow_inputs.execution = overflow_inputs.execution.with_delayed_effect(regen);
+
+        assert!(matches!(
+            transition_lane(&state, &validated, &overflow_inputs),
+            Err(LaneTransitionError::Execution(
+                LaneExecutionError::DelayedEffectOverflow
+            ))
+        ));
+    }
+

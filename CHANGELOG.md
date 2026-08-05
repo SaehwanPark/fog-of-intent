@@ -34,6 +34,19 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.28 — 2026-08-05
+
+### Added
+
+- A bounded `LaneDelayedEffects` player delayed-effect queue abstraction (maximum 4 items) with `LANE_DELAYED_EFFECT_HASH_TAG` state-hash binding.
+- `LaneExecutionInputs` support for `delayed_effect` resolution; queued effects tick on each transition beat and resolve when delay expires (health regen, mana regen, cooldown reduction).
+- Direct/indirect `Delayed` provenance for resolved effects, `DelayedEffectQueued` and `DelayedEffectResolved` events and effects, debrief recording (`delayed_effects_queued`, `delayed_effects_resolved`), and replay verification through `LaneScenarioHistory`.
+- `LaneExecutionError::DelayedEffectOverflow` error when queuing past maximum capacity.
+
+### Changed
+
+- The package version advances to `0.1.28` for the bounded delayed-effect slice; complete scenario mechanics remain deferred and the executable remains the documented placeholder.
+
 ## 0.1.27 — 2026-08-05
 
 ### Added
