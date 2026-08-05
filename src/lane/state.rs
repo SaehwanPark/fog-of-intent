@@ -1,0 +1,585 @@
+use super::*;
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum LanePosition {
+    NearTower,
+    Center,
+    FarSide,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum OpponentPosture {
+    Aggressive,
+    Passive,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum JungleThreatTruth {
+    Absent,
+    RiverSide,
+    InLane,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum LanePhase {
+    Open,
+    Resolved,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum LaneOutcome {
+    HeldSpace,
+    YieldedSpace,
+    ForcedOut,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub(crate) struct PlayerResources {
+    pub(crate) mana: LaneMana,
+    pub(crate) gold: LaneGold,
+    pub(crate) experience: LaneExperience,
+    pub(crate) cooldown: LaneCooldown,
+    pub(crate) bounty: LaneBounty,
+    pub(crate) level: LaneLevel,
+    pub(crate) minion_kills: LaneMinionKills,
+}
+
+impl PlayerResources {
+    fn baseline() -> Self {
+        Self {
+            mana: LaneMana::full(),
+            gold: LaneGold::zero(),
+            experience: LaneExperience::zero(),
+            cooldown: LaneCooldown::zero(),
+            bounty: LaneBounty::zero(),
+            level: LaneLevel::initial(),
+            minion_kills: LaneMinionKills::zero(),
+        }
+    }
+
+    fn with_mana(self, mana: LaneMana) -> Self {
+        Self { mana, ..self }
+    }
+
+    fn with_gold(self, gold: LaneGold) -> Self {
+        Self { gold, ..self }
+    }
+
+    fn with_experience(self, experience: LaneExperience) -> Self {
+        Self { experience, ..self }
+    }
+
+    fn with_cooldown(self, cooldown: LaneCooldown) -> Self {
+        Self { cooldown, ..self }
+    }
+
+    fn with_bounty(self, bounty: LaneBounty) -> Self {
+        Self { bounty, ..self }
+    }
+
+    fn with_level(self, level: LaneLevel) -> Self {
+        Self { level, ..self }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct PlayerLaneState {
+    pub(crate) id: ActorId,
+    pub(crate) health: LaneHealth,
+    pub(crate) mana: LaneMana,
+    pub(crate) gold: LaneGold,
+    pub(crate) experience: LaneExperience,
+    pub(crate) cooldown: LaneCooldown,
+    pub(crate) bounty: LaneBounty,
+    pub(crate) level: LaneLevel,
+    pub(crate) minion_kills: LaneMinionKills,
+    pub(crate) position: LanePosition,
+}
+
+impl PlayerLaneState {
+    pub(crate) fn from_resources(
+        id: ActorId,
+        health: LaneHealth,
+        resources: PlayerResources,
+        position: LanePosition,
+    ) -> Self {
+        Self {
+            id,
+            health,
+            mana: resources.mana,
+            gold: resources.gold,
+            experience: resources.experience,
+            cooldown: resources.cooldown,
+            bounty: resources.bounty,
+            level: resources.level,
+            minion_kills: resources.minion_kills,
+            position,
+        }
+    }
+
+    pub(crate) fn resources(self) -> PlayerResources {
+        PlayerResources {
+            mana: self.mana,
+            gold: self.gold,
+            experience: self.experience,
+            cooldown: self.cooldown,
+            bounty: self.bounty,
+            level: self.level,
+            minion_kills: self.minion_kills,
+        }
+    }
+
+    pub fn new(id: ActorId, health: LaneHealth, position: LanePosition) -> Self {
+        Self::from_resources(id, health, PlayerResources::baseline(), position)
+    }
+
+    pub fn new_with_mana(
+        id: ActorId,
+        health: LaneHealth,
+        mana: LaneMana,
+        position: LanePosition,
+    ) -> Self {
+        Self::from_resources(
+            id,
+            health,
+            PlayerResources::baseline().with_mana(mana),
+            position,
+        )
+    }
+
+    pub fn new_with_resources(
+        id: ActorId,
+        health: LaneHealth,
+        mana: LaneMana,
+        gold: LaneGold,
+        position: LanePosition,
+    ) -> Self {
+        Self::from_resources(
+            id,
+            health,
+            PlayerResources::baseline().with_mana(mana).with_gold(gold),
+            position,
+        )
+    }
+
+    pub fn new_with_all_resources(
+        id: ActorId,
+        health: LaneHealth,
+        mana: LaneMana,
+        gold: LaneGold,
+        experience: LaneExperience,
+        position: LanePosition,
+    ) -> Self {
+        Self::from_resources(
+            id,
+            health,
+            PlayerResources::baseline()
+                .with_mana(mana)
+                .with_gold(gold)
+                .with_experience(experience),
+            position,
+        )
+    }
+
+    pub fn new_with_complete_state(
+        id: ActorId,
+        health: LaneHealth,
+        mana: LaneMana,
+        gold: LaneGold,
+        experience: LaneExperience,
+        cooldown: LaneCooldown,
+        position: LanePosition,
+    ) -> Self {
+        Self::from_resources(
+            id,
+            health,
+            PlayerResources::baseline()
+                .with_mana(mana)
+                .with_gold(gold)
+                .with_experience(experience)
+                .with_cooldown(cooldown),
+            position,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_full_state(
+        id: ActorId,
+        health: LaneHealth,
+        mana: LaneMana,
+        gold: LaneGold,
+        experience: LaneExperience,
+        cooldown: LaneCooldown,
+        bounty: LaneBounty,
+        position: LanePosition,
+    ) -> Self {
+        Self::from_resources(
+            id,
+            health,
+            PlayerResources::baseline()
+                .with_mana(mana)
+                .with_gold(gold)
+                .with_experience(experience)
+                .with_cooldown(cooldown)
+                .with_bounty(bounty),
+            position,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_entire_state(
+        id: ActorId,
+        health: LaneHealth,
+        mana: LaneMana,
+        gold: LaneGold,
+        experience: LaneExperience,
+        cooldown: LaneCooldown,
+        bounty: LaneBounty,
+        level: LaneLevel,
+        position: LanePosition,
+    ) -> Self {
+        Self::from_resources(
+            id,
+            health,
+            PlayerResources::baseline()
+                .with_mana(mana)
+                .with_gold(gold)
+                .with_experience(experience)
+                .with_cooldown(cooldown)
+                .with_bounty(bounty)
+                .with_level(level),
+            position,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_absolute_state(
+        id: ActorId,
+        health: LaneHealth,
+        mana: LaneMana,
+        gold: LaneGold,
+        experience: LaneExperience,
+        cooldown: LaneCooldown,
+        bounty: LaneBounty,
+        level: LaneLevel,
+        minion_kills: LaneMinionKills,
+        position: LanePosition,
+    ) -> Self {
+        Self::from_resources(
+            id,
+            health,
+            PlayerResources {
+                mana,
+                gold,
+                experience,
+                cooldown,
+                bounty,
+                level,
+                minion_kills,
+            },
+            position,
+        )
+    }
+
+    pub fn id(self) -> ActorId {
+        self.id
+    }
+
+    pub fn health(self) -> LaneHealth {
+        self.health
+    }
+
+    pub fn mana(self) -> LaneMana {
+        self.mana
+    }
+
+    pub fn gold(self) -> LaneGold {
+        self.gold
+    }
+
+    pub fn experience(self) -> LaneExperience {
+        self.experience
+    }
+
+    pub fn cooldown(self) -> LaneCooldown {
+        self.cooldown
+    }
+
+    pub fn bounty(self) -> LaneBounty {
+        self.bounty
+    }
+
+    pub fn level(self) -> LaneLevel {
+        self.level
+    }
+
+    pub fn minion_kills(self) -> LaneMinionKills {
+        self.minion_kills
+    }
+
+    pub fn position(self) -> LanePosition {
+        self.position
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct OpponentTruth {
+    pub(crate) id: ActorId,
+    pub(crate) health: LaneHealth,
+    pub(crate) position: LanePosition,
+    pub(crate) posture: OpponentPosture,
+}
+
+impl OpponentTruth {
+    pub fn new(
+        id: ActorId,
+        health: LaneHealth,
+        position: LanePosition,
+        posture: OpponentPosture,
+    ) -> Self {
+        Self {
+            id,
+            health,
+            position,
+            posture,
+        }
+    }
+
+    pub fn id(self) -> ActorId {
+        self.id
+    }
+
+    pub fn health(self) -> LaneHealth {
+        self.health
+    }
+
+    pub fn position(self) -> LanePosition {
+        self.position
+    }
+
+    pub fn posture(self) -> OpponentPosture {
+        self.posture
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct WaveState {
+    pub(crate) pressure: WavePressure,
+}
+
+impl WaveState {
+    pub fn new(pressure: WavePressure) -> Self {
+        Self { pressure }
+    }
+
+    pub fn pressure(self) -> WavePressure {
+        self.pressure
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct LaneSnapshot {
+    pub(crate) ruleset: RulesetId,
+    pub(crate) turn: Turn,
+    pub(crate) window: LaneWindow,
+    pub(crate) phase: LanePhase,
+    pub(crate) player: PlayerLaneState,
+    pub(crate) opponent: OpponentTruth,
+    pub(crate) wave: WaveState,
+    pub(crate) jungle_threat: JungleThreatTruth,
+    pub(crate) terminal_outcome: Option<LaneOutcome>,
+}
+
+impl LaneSnapshot {
+    pub fn initial() -> Self {
+        Self::new(
+            M2_LANE_RULESET,
+            Turn::new(0),
+            LanePhase::Open,
+            PlayerLaneState::new(
+                PLAYER_LANER,
+                LaneHealth::new(8).expect("fixture health must be bounded"),
+                LanePosition::Center,
+            ),
+            OpponentTruth::new(
+                OPPONENT_LANER,
+                LaneHealth::new(7).expect("fixture health must be bounded"),
+                LanePosition::Center,
+                OpponentPosture::Aggressive,
+            ),
+            WaveState::new(WavePressure::new(1).expect("fixture pressure must be bounded")),
+            JungleThreatTruth::InLane,
+            None,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        ruleset: RulesetId,
+        turn: Turn,
+        phase: LanePhase,
+        player: PlayerLaneState,
+        opponent: OpponentTruth,
+        wave: WaveState,
+        jungle_threat: JungleThreatTruth,
+        terminal_outcome: Option<LaneOutcome>,
+    ) -> Self {
+        Self::new_with_window(
+            ruleset,
+            turn,
+            LaneWindow::OneBeat,
+            phase,
+            player,
+            opponent,
+            wave,
+            jungle_threat,
+            terminal_outcome,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_window(
+        ruleset: RulesetId,
+        turn: Turn,
+        window: LaneWindow,
+        phase: LanePhase,
+        player: PlayerLaneState,
+        opponent: OpponentTruth,
+        wave: WaveState,
+        jungle_threat: JungleThreatTruth,
+        terminal_outcome: Option<LaneOutcome>,
+    ) -> Self {
+        Self {
+            ruleset,
+            turn,
+            window,
+            phase,
+            player,
+            opponent,
+            wave,
+            jungle_threat,
+            terminal_outcome,
+        }
+    }
+
+    pub fn ruleset(self) -> RulesetId {
+        self.ruleset
+    }
+
+    pub fn turn(self) -> Turn {
+        self.turn
+    }
+
+    pub fn window(self) -> LaneWindow {
+        self.window
+    }
+
+    pub fn phase(self) -> LanePhase {
+        self.phase
+    }
+
+    pub fn player(self) -> PlayerLaneState {
+        self.player
+    }
+
+    pub fn opponent(self) -> OpponentTruth {
+        self.opponent
+    }
+
+    pub fn wave(self) -> WaveState {
+        self.wave
+    }
+
+    pub fn jungle_threat(self) -> JungleThreatTruth {
+        self.jungle_threat
+    }
+
+    pub fn terminal_outcome(self) -> Option<LaneOutcome> {
+        self.terminal_outcome
+    }
+
+    pub fn hash(self) -> StateHash {
+        let mut hash = FNV_OFFSET_BASIS;
+        hash = hash_bytes(hash, &self.ruleset.value().to_le_bytes());
+        hash = hash_bytes(hash, &self.turn.value().to_le_bytes());
+        if self.window != LaneWindow::OneBeat {
+            hash = hash_bytes(hash, &[window_tag(self.window)]);
+        }
+        hash = hash_bytes(hash, &[phase_tag(self.phase)]);
+        hash = hash_bytes(
+            hash,
+            &[self.player.id().value(), self.player.health().value()],
+        );
+        if self.player.mana() != LaneMana::full() {
+            hash = hash_bytes(hash, &[LANE_MANA_HASH_TAG, self.player.mana().value()]);
+        }
+        if self.player.gold() != LaneGold::zero() {
+            hash = hash_bytes(hash, &[LANE_GOLD_HASH_TAG, self.player.gold().value()]);
+        }
+        if self.player.experience() != LaneExperience::zero() {
+            hash = hash_bytes(
+                hash,
+                &[LANE_EXPERIENCE_HASH_TAG, self.player.experience().value()],
+            );
+        }
+        if self.player.cooldown() != LaneCooldown::zero() {
+            hash = hash_bytes(
+                hash,
+                &[LANE_COOLDOWN_HASH_TAG, self.player.cooldown().value()],
+            );
+        }
+        if self.player.bounty() != LaneBounty::zero() {
+            hash = hash_bytes(hash, &[LANE_BOUNTY_HASH_TAG, self.player.bounty().value()]);
+        }
+        if self.player.level() != LaneLevel::initial() {
+            hash = hash_bytes(hash, &[LANE_LEVEL_HASH_TAG, self.player.level().value()]);
+        }
+        if self.player.minion_kills() != LaneMinionKills::zero() {
+            hash = hash_bytes(
+                hash,
+                &[
+                    LANE_MINION_KILLS_HASH_TAG,
+                    self.player.minion_kills().value(),
+                ],
+            );
+        }
+        hash = hash_bytes(hash, &[position_tag(self.player.position())]);
+        hash = hash_bytes(
+            hash,
+            &[self.opponent.id().value(), self.opponent.health().value()],
+        );
+        hash = hash_bytes(hash, &[position_tag(self.opponent.position())]);
+        hash = hash_bytes(hash, &[posture_tag(self.opponent.posture())]);
+        hash = hash_bytes(hash, &[self.wave.pressure().value()]);
+        hash = hash_bytes(hash, &[threat_tag(self.jungle_threat)]);
+        hash = hash_bytes(hash, &[outcome_tag(self.terminal_outcome)]);
+        StateHash::from_raw(hash)
+    }
+
+    pub(crate) fn is_valid_lane_state(self) -> bool {
+        self.ruleset == M2_LANE_RULESET
+            && self.player.id == PLAYER_LANER
+            && self.opponent.id == OPPONENT_LANER
+            && ((self.phase == LanePhase::Open && self.terminal_outcome.is_none())
+                || (self.phase == LanePhase::Resolved && self.terminal_outcome.is_some()))
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum LaneWindow {
+    OneBeat,
+    TwoBeats,
+}
+
+impl LaneWindow {
+    pub const fn beats(self) -> u32 {
+        match self {
+            Self::OneBeat => 1,
+            Self::TwoBeats => 2,
+        }
+    }
+
+    pub const fn closes_on_commit(self) -> bool {
+        true
+    }
+}

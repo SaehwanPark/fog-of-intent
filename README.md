@@ -76,7 +76,7 @@ players?
 | --- | --- |
 | Current roadmap milestone | M2 — One-Lane Vertical Slice (Active) |
 | Repository governance and canonical docs | Complete — M0 |
-| Rust package | `0.1.19`, edition 2024, Rust `1.96`, no dependencies, single package |
+| Rust package | `0.1.25`, edition 2024, Rust `1.96`, no dependencies, single package |
 | Executable behavior | Prints `Hello, world!` |
 | Deterministic kernel | M1 fixture/codec complete; M2 window, bounded variable-duration window, bounded mana/gold resources, effect provenance, bounded opponent last-known report, branch, coordination, objective, strategy fixtures, two-window wrapper, final debrief, bounded Recall/Yield intents, last-known threat projection, and conditional Withdraw response implemented internally |
 | One-lane scenario | First diagnostic window, bounded variable-duration window, bounded mana/gold resources, effect provenance, bounded opponent last-known report, bounded branch, allied proposal/coordination, terminal objective, three strategy fixtures, two-window replay, final debrief, bounded Recall/Yield intents, last-known threat projection, and conditional Withdraw response implemented — full scenario not complete |
