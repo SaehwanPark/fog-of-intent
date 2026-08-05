@@ -173,7 +173,7 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Branch replay re-derives the observation, command, input selection,
   transition result, and terminal hash; tampered branch metadata/results are
   rejected.
-- Twelve focused M2 lane tests plus the nineteen M1 tests pass, including
+- Thirteen focused M2 lane tests plus the nineteen M1 tests pass, including
   matched/regenerated branches, parent immutability, invalid selection,
   branch identity, replay tamper, and causal-review limits.
 

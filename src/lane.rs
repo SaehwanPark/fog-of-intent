@@ -1412,6 +1412,7 @@ pub struct LaneBranchReplayIdentity {
     parent_record_index: usize,
     parent_initial_state_hash: StateHash,
     parent_terminal_state_hash: StateHash,
+    parent_record_identity: StateHash,
     branch_id: Option<BranchId>,
     alternate_intent: LaneIntent,
     execution_mode: BranchExecutionMode,
@@ -1437,6 +1438,10 @@ impl LaneBranchReplayIdentity {
 
     pub fn parent_terminal_state_hash(self) -> StateHash {
         self.parent_terminal_state_hash
+    }
+
+    pub fn parent_record_identity(self) -> StateHash {
+        self.parent_record_identity
     }
 
     pub fn branch_id(self) -> Option<BranchId> {
@@ -1676,6 +1681,7 @@ pub fn branch_from_window(
         parent_record_index: 0,
         parent_initial_state_hash: parent.initial_state.hash(),
         parent_terminal_state_hash: parent.current_state.hash(),
+        parent_record_identity: lane_record_identity(parent_record),
         branch_id,
         alternate_intent: alternate.intent,
         execution_mode,
@@ -1696,6 +1702,52 @@ pub fn branch_from_window(
 
 fn branch_execution_trace(branch_id: BranchId) -> InputTrace {
     InputTrace::new(StreamId::new(128 + branch_id.0), DrawId::new(0))
+}
+
+fn lane_record_identity(record: &LaneTransitionRecord) -> StateHash {
+    let mut hash = FNV_OFFSET_BASIS;
+    hash = hash_bytes(hash, &[record.command.actor.value()]);
+    hash = hash_bytes(hash, &record.command.turn.value().to_le_bytes());
+    hash = hash_bytes(hash, &record.command.ruleset.value().to_le_bytes());
+    hash = hash_bytes(hash, &record.command.observation_id.value().to_le_bytes());
+    hash = hash_bytes(
+        hash,
+        &record.command.host_prior_state_hash.value().to_le_bytes(),
+    );
+    hash = hash_bytes(hash, &[intent_tag(record.command.intent)]);
+    hash = hash_bytes(hash, &record.prior_state_hash.value().to_le_bytes());
+    for trace in [
+        record.inputs.environment,
+        record.inputs.observation,
+        record.inputs.policy,
+        record.inputs.coordination,
+        record.inputs.execution.trace,
+    ] {
+        hash = hash_bytes(hash, &[trace.stream().value()]);
+        hash = hash_bytes(hash, &trace.draw().value().to_le_bytes());
+    }
+    hash = hash_bytes(hash, &[record.inputs.execution.self_damage.value()]);
+    hash = hash_bytes(hash, &[record.inputs.execution.opponent_damage.value()]);
+    hash = hash_bytes(
+        hash,
+        &[wave_result_tag(record.inputs.execution.wave_result)],
+    );
+    StateHash::from_raw(hash)
+}
+
+fn intent_tag(intent: LaneIntent) -> u8 {
+    match intent {
+        LaneIntent::Stabilize => 0,
+        LaneIntent::Contest => 1,
+    }
+}
+
+fn wave_result_tag(result: LaneWaveResult) -> u8 {
+    match result {
+        LaneWaveResult::Advanced => 0,
+        LaneWaveResult::Held => 1,
+        LaneWaveResult::Lost => 2,
+    }
 }
 
 #[cfg(test)]
@@ -2121,6 +2173,55 @@ mod tests {
             LaneAttributionLimit::DecisionAndExecutionChanged
         );
         branch.verify_replay(&parent).expect("branch replay");
+    }
+
+    #[test]
+    fn parent_record_identity_preserves_neutral_input_provenance() {
+        let state = LaneSnapshot::initial();
+        let (receipt, parent_request) = request(&state, LaneIntent::Contest);
+        let parent_inputs = inputs(1, 1, LaneWaveResult::Held);
+        let alternate = LaneIntentRequest::new(
+            PLAYER_LANER,
+            receipt.observation().observation_id(),
+            LaneIntent::Stabilize,
+        );
+
+        let mut first_parent = LaneHistory::new(state).expect("valid");
+        first_parent
+            .append(&receipt, &parent_request, parent_inputs)
+            .expect("append");
+        let changed_neutral_inputs = LaneResolvedInputs::new(
+            trace(101, 101),
+            trace(102, 102),
+            trace(103, 103),
+            trace(104, 104),
+            parent_inputs.execution(),
+        );
+        let mut second_parent = LaneHistory::new(state).expect("valid");
+        second_parent
+            .append(&receipt, &parent_request, changed_neutral_inputs)
+            .expect("append");
+
+        let first_branch = branch_from_window(
+            &first_parent,
+            &alternate,
+            BranchExecutionSelection::matched_parent(),
+        )
+        .expect("branch");
+        let second_branch = branch_from_window(
+            &second_parent,
+            &alternate,
+            BranchExecutionSelection::matched_parent(),
+        )
+        .expect("branch");
+        assert_eq!(
+            first_branch.record().result(),
+            second_branch.record().result()
+        );
+        assert_ne!(
+            first_branch.identity().parent_record_identity(),
+            second_branch.identity().parent_record_identity()
+        );
     }
 
     #[test]

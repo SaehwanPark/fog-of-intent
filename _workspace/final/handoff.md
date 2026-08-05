@@ -10,7 +10,8 @@ built.
 
 - `Cargo.toml`, `Cargo.lock` — package version `0.1.5`.
 - `src/lane.rs` — branch IDs, matched/regenerated input selection, branch
-  replay identity, bounded comparison, branch verification, and focused tests.
+  replay identity, parent-record input identity, bounded comparison, branch
+  verification, and focused tests.
 - `README.md`, `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` —
   synchronized branch evidence and current-state claims.
 - `_workspace/00_input/request-summary.md` — branch slice framing.
@@ -25,7 +26,7 @@ built.
 
 - `cargo +1.96.0 fmt --check`
 - `cargo +1.96.0 clippy --all-targets --all-features -- -D warnings`
-- `cargo +1.96.0 test --locked` — 31 tests passed.
+- `cargo +1.96.0 test --locked` — 32 tests passed.
 - `python3 scripts/check_repository.py`
 - `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'`
 - `git diff --check`

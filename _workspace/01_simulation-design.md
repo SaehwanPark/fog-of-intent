@@ -311,6 +311,7 @@ LaneBranchReplayIdentity {
   parent_record_index: 0,
   parent_initial_state_hash: StateHash,
   parent_terminal_state_hash: StateHash,
+  parent_record_identity: StateHash, // command + observation/input identity
   branch_id: BranchId,
   alternate_intent: LaneIntent,
   execution_mode: MatchedParent | Regenerated,
@@ -319,8 +320,10 @@ LaneBranchReplayIdentity {
 ```
 
 The parent terminal hash binds the branch to the verified parent artifact;
-the parent initial hash binds the exact branch point. Branch identity is
-history metadata and is not included in `LaneSnapshot::hash()`.
+the parent initial hash binds the exact branch point; and
+`parent_record_identity` hashes the parent command, prior hash, all five input
+traces, and resolved execution values. Branch identity is history metadata and
+is not included in `LaneSnapshot::hash()`.
 
 `LaneBranch::verify_replay(parent)` must:
 

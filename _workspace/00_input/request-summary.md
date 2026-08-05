@@ -50,7 +50,7 @@ M2 — One-Lane Vertical Slice, bounded counterfactual branch follow-up.
 - existing M1 fixture tests remain unchanged
 - `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md`
 - `_workspace/01_simulation-design.md`, `_workspace/03_domain-qa.md`, and
-  immutable M1 handoff snapshots
+  immutable M2 window-1 handoff snapshots
 
 ## Expected Outputs
 

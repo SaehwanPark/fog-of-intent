@@ -59,7 +59,10 @@ perturb the lane state hash.
 `LaneBranch::verify_replay` verifies the parent, reconstructs the observation,
 revalidates the alternate command, re-derives the selected inputs, reruns the
 transition, and compares the complete branch record and identity. Parent
-records/current state remain unchanged and independently replayable.
+records/current state remain unchanged and independently replayable. Branch
+identity also includes a digest of the parent command, prior hash, all input
+traces, and resolved execution values, so neutral-trace provenance cannot
+silently collapse into the same branch identity.
 
 ## Behavior and Playtest Findings
 
@@ -103,7 +106,7 @@ None for the declared bounded branch slice.
 
 - `cargo +1.96.0 fmt --check`
 - `cargo +1.96.0 clippy --all-targets --all-features -- -D warnings`
-- `cargo +1.96.0 test --locked` — 31 tests passed: 19 M1 and 12 M2 lane tests.
+- `cargo +1.96.0 test --locked` — 32 tests passed: 19 M1 and 13 M2 lane tests.
 - `python3 scripts/check_repository.py`
 - `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'`
 - `git diff --check`
