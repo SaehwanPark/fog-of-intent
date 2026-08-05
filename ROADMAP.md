@@ -618,6 +618,15 @@ This evidence establishes one bounded intent focus abstraction. It does not esta
 
 This evidence establishes one bounded intent commitment abstraction. It does not establish commitment-based stat scaling or a complete playable lane scenario.
 
+### Current bounded shield-resource evidence
+
+- [x] Add bounded `LaneShield` to player state with zero default and non-zero state-hash binding.
+- [x] Expose `LaneShield` in player and allied observations without exposing opponent shield.
+- [x] Resolve explicit `shield_gained` during execution with direct-immediate `ShieldGained`/`ShieldChanged` events and effects, debrief recording, and replay verification.
+- [x] Reject shield overflow exceeding maximum bounds before transition evaluation.
+
+This evidence establishes one bounded defensive shield resource. It does not establish complete shield degradation, absorption mechanics, or a complete playable lane scenario.
+
 ### Current final-debrief evidence
 
 - [x] Build a versioned final debrief only from a replay-verified two-window

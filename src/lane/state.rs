@@ -42,6 +42,7 @@ pub(crate) struct PlayerResources {
     pub(crate) bounty: LaneBounty,
     pub(crate) level: LaneLevel,
     pub(crate) minion_kills: LaneMinionKills,
+    pub(crate) shield: LaneShield,
 }
 
 impl PlayerResources {
@@ -54,6 +55,7 @@ impl PlayerResources {
             bounty: LaneBounty::zero(),
             level: LaneLevel::initial(),
             minion_kills: LaneMinionKills::zero(),
+            shield: LaneShield::zero(),
         }
     }
 
@@ -93,6 +95,7 @@ pub struct PlayerLaneState {
     pub(crate) bounty: LaneBounty,
     pub(crate) level: LaneLevel,
     pub(crate) minion_kills: LaneMinionKills,
+    pub(crate) shield: LaneShield,
     pub(crate) position: LanePosition,
 }
 
@@ -113,6 +116,7 @@ impl PlayerLaneState {
             bounty: resources.bounty,
             level: resources.level,
             minion_kills: resources.minion_kills,
+            shield: resources.shield,
             position,
         }
     }
@@ -126,6 +130,7 @@ impl PlayerLaneState {
             bounty: self.bounty,
             level: self.level,
             minion_kills: self.minion_kills,
+            shield: self.shield,
         }
     }
 
@@ -276,6 +281,7 @@ impl PlayerLaneState {
                 bounty,
                 level,
                 minion_kills,
+                shield: LaneShield::zero(),
             },
             position,
         )
@@ -315,6 +321,10 @@ impl PlayerLaneState {
 
     pub fn minion_kills(self) -> LaneMinionKills {
         self.minion_kills
+    }
+
+    pub fn shield(self) -> LaneShield {
+        self.shield
     }
 
     pub fn position(self) -> LanePosition {
@@ -644,6 +654,9 @@ impl LaneSnapshot {
                     self.player.minion_kills().value(),
                 ],
             );
+        }
+        if self.player.shield() != LaneShield::zero() {
+            hash = hash_bytes(hash, &[LANE_SHIELD_HASH_TAG, self.player.shield().value()]);
         }
         hash = hash_bytes(hash, &[position_tag(self.player.position())]);
         hash = hash_bytes(

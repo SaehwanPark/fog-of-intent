@@ -282,6 +282,6 @@ fn branch_parent_record_identity_hash_remains_stable() {
 
     assert_eq!(
         branch.identity().parent_record_identity().value(),
-        7_562_503_447_568_141_036
+        5_542_080_334_125_281_402
     );
 }
