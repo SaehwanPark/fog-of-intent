@@ -34,6 +34,21 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.8 — 2026-08-04
+
+### Added
+
+- Named `HappyPath`, `RiskTaking`, and `Conservative` matched-input strategy
+  fixtures that run through the existing host validation, coordination,
+  execution, history, and terminal-objective contracts.
+- Repeated-run, distinct-outcome, legal-unfavorable, replay, and tampered
+  expectation tests for the three diagnostic cases.
+
+### Changed
+
+- The package version advances to `0.1.8` for the one-window strategy-fixture
+  slice; the executable remains the documented placeholder.
+
 ## 0.1.7 — 2026-08-04
 
 ### Added

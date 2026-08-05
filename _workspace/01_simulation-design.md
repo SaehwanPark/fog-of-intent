@@ -1,178 +1,104 @@
-# Simulation Design — M2 One-Window Scenario Goal and Terminal Objective
+# Simulation Design — M2 Matched-Input Strategy Fixtures
 
 ## Goal and Boundary
 
-This slice adds one bounded scenario goal and a host-owned terminal-objective
-projection over the implemented one-window lane decision, allied proposal, and
-coordination record. The goal is **hold lane space through this diagnostic
-beat**. It is a review/evaluation contract, not a new transition or a second
-window.
+This slice adds exactly three named diagnostic fixtures over the existing
+one-window lane, allied-coordination, and terminal-objective contracts:
 
-The following remain authoritative and unchanged:
+- `HappyPath`: `Contest` with accepted allied support and favorable explicit
+  execution, expected to achieve `HoldLaneSpaceThroughWindow`;
+- `RiskTaking`: `Contest` with rejected support and unfavorable but legal
+  execution, expected to yield space while surviving the beat;
+- `Conservative`: `Stabilize` with rejected support and held explicit
+  execution, expected to miss the hold-space goal while surviving.
 
-- `LaneSnapshot`, its hash, `m2-lane-v1`, and hidden opponent/jungle truth;
-- player and allied actor-valid observations;
-- `LaneIntentRequest`, `LaneIntentCommand`, and existing validation;
-- `LaneResolvedInputs`, `transition_lane`, `LaneTransitionResult`, and
-  `LaneTransitionRecord`;
-- `LaneHistory`, `LaneBranch`, their replay identities, and the coordination
-  sidecar replay contract.
+Fixtures are immutable input bundles for tests and diagnostic inspection. They
+are not a scenario engine, policy population, balance model, or hidden
+benchmark. They do not add a second window or change the existing transition.
 
-The new composition is:
+## Preserved Authority
 
-```text
-committed lane or coordinated record
-  -> host-owned ScenarioGoal + ObjectiveEvaluationInputs
-  -> deterministic TerminalObjectiveReview
-  -> visible objective/debrief projection
-```
+`LaneSnapshot`, `LaneResolvedInputs`, `transition_lane`, `LaneHistory`,
+`LaneBranch`, `CoordinatedLaneHistory`, and terminal-objective evaluation remain
+the existing authorities. A fixture chooses already-resolved inputs at the
+edge; it cannot read hidden truth, create randomness, bypass validation, or
+mutate a record. The same fixture input must reproduce the same player
+observation, proposal/offer, response, coordination disposition, lane result,
+objective review, and state hash.
 
-Objective evaluation happens after the existing result is committed. It cannot
-change state, events, effects, execution inputs, coordination disposition, or
-the authoritative state hash.
-
-## Scope and Exclusions
-
-Included:
-
-- one versioned goal `HoldLaneSpaceThroughWindow`;
-- one objective schema `m2-terminal-objective-v1`;
-- one host-owned evaluation from the next snapshot, lane outcome, player
-  position/health, wave result, player intent, coordination disposition, and
-  explicit execution trace;
-- one explicit objective input identity containing the record replay identity,
-  prior/terminal hashes, and committed outcome facts;
-- typed objective result, criterion statuses, terminal disposition, and causal
-  attribution limits;
-- one objective review attached to an ordinary or coordinated one-window
-  result, with replay and tamper tests.
-
-Excluded are a second window, variable pacing, new mechanics, hidden-state
-scoring, a utility/optimality model, win-rate or balance claims, a general
-objective framework, objective changes to `LaneSnapshot`, portable
-serialization, CLI/MCP/GUI, and human-experience evidence.
-
-## Goal, Inputs, and Authority
+## Typed Fixture Contract
 
 ```text
-ScenarioGoal::HoldLaneSpaceThroughWindow {
-    goal_id: "m2-hold-lane-space-v1"
-}
-
-ObjectiveEvaluationInputs {
-    replay_id: "m2-one-lane-window-v1"
-             | "m2-one-lane-coordination-v1",
-    prior_state_hash: StateHash,
-    terminal_state_hash: StateHash,
-    outcome: LaneOutcome,
-    player_position: LanePosition,
-    player_health: LaneHealth,
-    intent: LaneIntent,
-    wave_result: LaneWaveResult,
-    coordination: LaneCoordinationReview
-                  | CoordinationDisposition,
-    execution_trace: InputTrace,
+StrategyFixture {
+    id: HappyPath | RiskTaking | Conservative,
+    player_intent: LaneIntent,
+    response: ProposalResponse,
+    coordination_inputs: CoordinationResolutionInputs,
+    lane_inputs: LaneResolvedInputs,
+    expected_objective: ObjectiveDisposition,
+    expected_outcome: LaneOutcome,
 }
 ```
 
-The host derives these values from a committed lane result/record. A caller
-cannot supply a different health, position, outcome, or trace independently of
-the committed record. For coordinated records, the coordination disposition
-is copied from the committed resolution; for ordinary records it is the
-existing `NotApplicable` review. The objective evaluator receives no
-`LaneSnapshot` opponent truth, jungle truth, proposal scores, source receipts,
-or policy internals.
+The fixture exposes its declared values through getters and is `Copy`/`Eq`.
+Its response proposal ID is bound to the generated canonical allied proposal,
+not a free-form fixture value. Construction is a pure function of the initial
+snapshot and fixed observation/policy traces; a host still validates the
+embedded request and resolves the coordinated record through existing APIs.
 
-`ObjectiveInputIdentity` binds the versioned objective schema, goal identity,
-replay identity, prior hash, terminal hash, and a canonical digest of all
-visible evaluation facts. It is provenance, not a replacement for the lane
-state hash. The evaluator is synchronous and pure over the typed goal and
-inputs; it reads no clock, I/O, RNG, history, or model provider.
+The three canonical input bundles are:
 
-## Criterion and Outcome Contract
+| Fixture | Intent/response | Coordination input | Lane execution | Expected review |
+| --- | --- | --- | --- | --- |
+| HappyPath | Contest + Accept | AllyCommitted | self 0, opponent 2, wave Advanced | Achieved / HeldSpace |
+| RiskTaking | Contest + Reject | NotRequested | self 3, opponent 0, wave Lost | Missed / YieldedSpace |
+| Conservative | Stabilize + Reject | NotRequested | self 0, opponent 0, wave Held | Missed / YieldedSpace |
 
-The goal has two criteria:
+`RiskTaking` is a legal unfavorable result, not a rejected command. The
+fixture descriptions do not claim that one strategy is globally better; they
+only name matched inputs and expected modeled outputs.
 
-```text
-SpaceHeld:      next player position == Center
-SurvivedBeat:   next player health > zero
-```
+## Information and Causality
 
-Their statuses are `Met` or `NotMet`. The closed terminal disposition is:
+Fixture construction uses the public initial state and host-side receipts only
+to bind the current observation/proposal ID. Ordinary actor projections remain
+unchanged. No fixture exposes opponent health, posture, jungle threat, source
+hashes, proposal policy internals, or private receipts as actor input.
 
-| SpaceHeld | SurvivedBeat | Disposition |
-| --- | --- | --- |
-| Met | Met | `GoalAchieved` |
-| Met | NotMet | `GoalPartiallyAchieved` |
-| NotMet | Met | `GoalMissed` |
-| NotMet | NotMet | `GoalMissed` |
+Fixture review keeps decision, coordination, execution, objective, and
+attribution separate. The expected objective is checked against the committed
+`ObjectiveReviewRecord`, not used to force a transition result.
 
-This is a diagnostic objective classification, not a universal value
-judgment. `ForcedOut` cannot be called success; a `YieldedSpace` result is
-classified from the committed position, not from hidden opponent truth. The
-objective does not inspect whether an intent was “optimal”.
+## Replay and Determinism
 
-`TerminalObjectiveReview` stores the goal, objective input identity, criterion
-statuses, disposition, player intent, coordination attribution, execution
-trace, and a bounded `ObjectiveAttributionLimit`:
+`run_strategy_fixture(fixture)` builds the canonical receipts/offer, creates the
+declared request, appends one coordinated record, and returns the history plus
+objective review. It rejects any fixture whose generated response or expected
+outcome does not match the committed result. A repeated run with identical
+fixture and initial state is field-equivalent. Existing ordinary history and
+branch replay tests remain unchanged.
 
-```text
-ObjectiveAttributionLimit::CommittedFactsOnly
-```
-
-The visible projection may report the goal, criterion statuses, disposition,
-intent, coordination disposition, and execution trace. It must not expose
-hidden state, source-state hashes, proposal policy scores, or private receipts.
-
-## Coordination and Causality
-
-The objective observes coordination but does not rewrite it. A committed
-`AcceptedOffer` or `CounterAccepted` remains a coordination fact; an
-`AllyDeclined`, `CounterRejected`, or `PlayerRejected` remains distinguishable
-from execution. Ordinary lane records retain `NotApplicable`.
-
-The review attributes the criterion result only to committed facts:
-
-- `Decision`: the existing information-consistent player intent review;
-- `Coordination`: the stored coordination disposition or not-applicable value;
-- `Execution`: the stored wave/health/position result and execution trace;
-- `Objective`: the deterministic criterion classification.
-
-No objective result creates an event/effect or feeds back into the lane
-transition. The terminal disposition is an evaluation artifact, not a new
-`LaneOutcome` and not a persistent state field.
-
-## Replay and Compatibility
-
-`evaluate_terminal_objective(goal, inputs)` must be deterministic for identical
-typed inputs. `review_lane_objective(record)` derives inputs directly from an
-ordinary `LaneTransitionRecord`; `review_coordinated_objective(record)` derives
-them from its base record and coordinated result. The coordinated review keeps
-the `m2-one-lane-coordination-v1` identity while the ordinary review keeps
-`m2-one-lane-window-v1`.
-
-Replay verifies the objective identity, all canonical input facts, criterion
-statuses, disposition, and attribution against the already replay-verified
-record. Tampering with terminal hash, outcome, position, health, intent,
-coordination disposition, trace, goal identity, or objective result fails.
-Existing ordinary history, old branches, and coordinated-history replay remain
-valid even when no objective review is requested.
+No fixture introduces a random draw. The environment, observation, policy,
+coordination, and execution traces remain explicit in `LaneResolvedInputs` and
+`CoordinationResolutionInputs`. Changing a fixture input is a new committed
+condition and is evaluated through the same host path.
 
 ## Verification Contract
 
-Focused tests must cover:
+Focused tests cover:
 
-- canonical `Contest`/accepted-support input with Center and positive health;
-- `Stabilize`/rejected-support input with NearTower;
-- forced-out and yielded-space cases, including partial achievement;
-- all criterion/disposition combinations and explicit attribution limits;
-- ordinary versus coordinated replay identity and not-applicable coordination;
-- hidden-state substitution invariance and absence of source-hash leakage;
-- identical input determinism and unrelated trace isolation;
-- tampering with every committed objective fact and review result;
-- unchanged `LaneSnapshot::hash()` and unchanged base transition result.
+- all three fixture IDs and declared intent/response/input values;
+- host validation before append and response proposal-ID binding;
+- one successful run per fixture with expected lane outcome and objective
+  disposition;
+- exact repeated-run equality and unchanged transition/state hash authority;
+- distinct strategy inputs and outcomes under the same initial state;
+- legal-unfavorable risk-taking behavior remaining distinct from invalidity;
+- hidden-state and report-boundary invariants through the existing tests;
+- tampering with fixture expectations or committed record data being rejected;
+- preservation of ordinary history and bounded branch replay.
 
-Evidence establishes only deterministic objective projection and causal
-bookkeeping for one window. It does not establish a complete scenario,
-optimality, balance, trust, enjoyment, accessibility, behavioral validity, or
-human preference.
+Evidence establishes only deterministic software fixture coverage and modeled
+strategy contrast for one window. It does not establish strategy quality,
+balance, optimality, human preference, enjoyment, accessibility, trust, or
+behavioral validity.

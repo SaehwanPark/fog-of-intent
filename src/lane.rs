@@ -2345,6 +2345,204 @@ impl ObjectiveReviewRecord {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum StrategyFixtureId {
+    HappyPath,
+    RiskTaking,
+    Conservative,
+}
+
+impl StrategyFixtureId {
+    pub fn id(self) -> &'static str {
+        match self {
+            Self::HappyPath => "m2-strategy-happy-path-v1",
+            Self::RiskTaking => "m2-strategy-risk-taking-v1",
+            Self::Conservative => "m2-strategy-conservative-v1",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct StrategyFixture {
+    id: StrategyFixtureId,
+    player_intent: LaneIntent,
+    response: ProposalResponse,
+    coordination_inputs: CoordinationResolutionInputs,
+    lane_inputs: LaneResolvedInputs,
+    expected_objective: ObjectiveDisposition,
+    expected_outcome: LaneOutcome,
+}
+
+impl StrategyFixture {
+    pub fn id(self) -> StrategyFixtureId {
+        self.id
+    }
+
+    pub fn player_intent(self) -> LaneIntent {
+        self.player_intent
+    }
+
+    pub fn response(self) -> ProposalResponse {
+        self.response
+    }
+
+    pub fn coordination_inputs(self) -> CoordinationResolutionInputs {
+        self.coordination_inputs
+    }
+
+    pub fn lane_inputs(self) -> LaneResolvedInputs {
+        self.lane_inputs
+    }
+
+    pub fn expected_objective(self) -> ObjectiveDisposition {
+        self.expected_objective
+    }
+
+    pub fn expected_outcome(self) -> LaneOutcome {
+        self.expected_outcome
+    }
+}
+
+pub struct StrategyFixtureRun {
+    history: CoordinatedLaneHistory,
+    objective: ObjectiveReviewRecord,
+}
+
+impl StrategyFixtureRun {
+    pub fn history(&self) -> &CoordinatedLaneHistory {
+        &self.history
+    }
+
+    pub fn objective(&self) -> &ObjectiveReviewRecord {
+        &self.objective
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum StrategyFixtureError {
+    UnsupportedFixture,
+    Coordination(CoordinationError),
+    Objective(ObjectiveError),
+    UnexpectedOutcome,
+    UnexpectedObjective,
+}
+
+pub fn strategy_fixture(id: StrategyFixtureId) -> Result<StrategyFixture, StrategyFixtureError> {
+    let policy_trace = InputTrace::new(StreamId::new(13), DrawId::new(0));
+    let coordination_trace = InputTrace::new(StreamId::new(14), DrawId::new(0));
+    let (intent, response_kind, execution, expected_objective, expected_outcome) = match id {
+        StrategyFixtureId::HappyPath => (
+            LaneIntent::Contest,
+            FollowThrough::AllyCommitted,
+            LaneExecutionInputs::new(
+                InputTrace::new(StreamId::new(15), DrawId::new(0)),
+                LaneDamage::zero(),
+                LaneDamage::new(2).map_err(|_| StrategyFixtureError::UnsupportedFixture)?,
+                LaneWaveResult::Advanced,
+            ),
+            ObjectiveDisposition::GoalAchieved,
+            LaneOutcome::HeldSpace,
+        ),
+        StrategyFixtureId::RiskTaking => (
+            LaneIntent::Contest,
+            FollowThrough::NotRequested,
+            LaneExecutionInputs::new(
+                InputTrace::new(StreamId::new(15), DrawId::new(1)),
+                LaneDamage::new(3).map_err(|_| StrategyFixtureError::UnsupportedFixture)?,
+                LaneDamage::zero(),
+                LaneWaveResult::Lost,
+            ),
+            ObjectiveDisposition::GoalMissed,
+            LaneOutcome::YieldedSpace,
+        ),
+        StrategyFixtureId::Conservative => (
+            LaneIntent::Stabilize,
+            FollowThrough::NotRequested,
+            LaneExecutionInputs::new(
+                InputTrace::new(StreamId::new(15), DrawId::new(2)),
+                LaneDamage::zero(),
+                LaneDamage::zero(),
+                LaneWaveResult::Held,
+            ),
+            ObjectiveDisposition::GoalMissed,
+            LaneOutcome::YieldedSpace,
+        ),
+    };
+    let lane_inputs = LaneResolvedInputs::new(
+        InputTrace::new(StreamId::new(11), DrawId::new(0)),
+        InputTrace::new(StreamId::new(12), DrawId::new(0)),
+        policy_trace,
+        coordination_trace,
+        execution,
+    );
+    let allied_receipt = observe_allied(&LaneSnapshot::initial(), ObservationId::new(9));
+    let proposal = scripted_allied_proposal(allied_receipt.observation(), policy_trace)
+        .map_err(|_| StrategyFixtureError::UnsupportedFixture)?;
+    let proposal_id = proposal.id();
+    let response = match response_kind {
+        FollowThrough::NotRequested => ProposalResponse::Reject { proposal_id },
+        FollowThrough::AllyCommitted => ProposalResponse::Accept { proposal_id },
+        FollowThrough::AllyDeclined => ProposalResponse::Accept { proposal_id },
+    };
+    Ok(StrategyFixture {
+        id,
+        player_intent: intent,
+        response,
+        coordination_inputs: CoordinationResolutionInputs::new(coordination_trace, response_kind),
+        lane_inputs,
+        expected_objective,
+        expected_outcome,
+    })
+}
+
+pub fn run_strategy_fixture(
+    fixture: StrategyFixture,
+) -> Result<StrategyFixtureRun, StrategyFixtureError> {
+    let state = LaneSnapshot::initial();
+    let player_receipt = observe_player(&state, ObservationId::new(9));
+    let allied_receipt = observe_allied(&state, ObservationId::new(9));
+    let proposal =
+        scripted_allied_proposal(allied_receipt.observation(), fixture.lane_inputs.policy())
+            .map_err(|_| StrategyFixtureError::UnsupportedFixture)?;
+    let offer =
+        offer_allied_proposal(proposal).map_err(|_| StrategyFixtureError::UnsupportedFixture)?;
+    let request = CoordinatedLaneRequest::new(
+        LaneIntentRequest::new(
+            PLAYER_LANER,
+            player_receipt.observation().observation_id(),
+            fixture.player_intent,
+        ),
+        fixture.response,
+    );
+    let mut history =
+        CoordinatedLaneHistory::new(state).map_err(StrategyFixtureError::Coordination)?;
+    let result = history
+        .append(
+            &player_receipt,
+            &allied_receipt,
+            &offer,
+            &request,
+            fixture.coordination_inputs,
+            fixture.lane_inputs,
+        )
+        .map_err(StrategyFixtureError::Coordination)?;
+    if result.lane().outcome() != fixture.expected_outcome {
+        return Err(StrategyFixtureError::UnexpectedOutcome);
+    }
+    let objective = review_coordinated_objective(
+        ScenarioGoal::HoldLaneSpaceThroughWindow,
+        history
+            .records()
+            .first()
+            .ok_or(StrategyFixtureError::UnexpectedOutcome)?,
+    )
+    .map_err(StrategyFixtureError::Objective)?;
+    if objective.review().disposition() != fixture.expected_objective {
+        return Err(StrategyFixtureError::UnexpectedObjective);
+    }
+    Ok(StrategyFixtureRun { history, objective })
+}
+
 pub fn review_lane_objective(
     goal: ScenarioGoal,
     record: &LaneTransitionRecord,
@@ -4496,5 +4694,64 @@ mod tests {
             evaluate_terminal_objective(ScenarioGoal::HoldLaneSpaceThroughWindow, &unsupported,),
             Err(ObjectiveError::UnsupportedReplayId)
         );
+    }
+
+    #[test]
+    fn named_strategy_fixtures_are_matched_input_and_replayable() {
+        let fixtures = [
+            StrategyFixtureId::HappyPath,
+            StrategyFixtureId::RiskTaking,
+            StrategyFixtureId::Conservative,
+        ];
+        let mut outcomes = Vec::new();
+        for id in fixtures {
+            let fixture = strategy_fixture(id).expect("fixture");
+            let first = run_strategy_fixture(fixture).expect("first run");
+            let second = run_strategy_fixture(fixture).expect("second run");
+            assert_eq!(first.objective().review(), second.objective().review());
+            assert_eq!(
+                first.history().records()[0].result(),
+                second.history().records()[0].result()
+            );
+            first
+                .history()
+                .verify_replay()
+                .expect("fixture history replay");
+            first
+                .objective()
+                .verify_coordinated(&first.history().records()[0])
+                .expect("fixture objective replay");
+            outcomes.push((
+                fixture.id(),
+                first.history().records()[0].result().lane().outcome(),
+                first.objective().review().disposition(),
+            ));
+        }
+        assert_eq!(
+            outcomes,
+            vec![
+                (
+                    StrategyFixtureId::HappyPath,
+                    LaneOutcome::HeldSpace,
+                    ObjectiveDisposition::GoalAchieved,
+                ),
+                (
+                    StrategyFixtureId::RiskTaking,
+                    LaneOutcome::YieldedSpace,
+                    ObjectiveDisposition::GoalMissed,
+                ),
+                (
+                    StrategyFixtureId::Conservative,
+                    LaneOutcome::YieldedSpace,
+                    ObjectiveDisposition::GoalMissed,
+                ),
+            ]
+        );
+        let mut tampered = strategy_fixture(StrategyFixtureId::RiskTaking).expect("fixture");
+        tampered.expected_outcome = LaneOutcome::HeldSpace;
+        assert!(matches!(
+            run_strategy_fixture(tampered),
+            Err(StrategyFixtureError::UnexpectedOutcome)
+        ));
     }
 }
