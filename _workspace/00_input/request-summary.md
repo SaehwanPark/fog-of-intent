@@ -33,6 +33,9 @@ M2 — One-Lane Vertical Slice, bounded mana-resource follow-up.
   and debrief attribution while preserving existing causes and traces.
 - Include non-full mana in the authoritative state hash and allied visible
   digest so replay and visible policy inputs bind to the resource.
+- Include mana in lane record identities; matched-parent branches clear a
+  Contest-only spend when the alternate intent cannot legally spend it, with
+  the normalization recorded in branch identity and review attribution.
 - Synchronize canonical documents and SDD/domain-QA handoff artifacts.
 
 ## Non-Goals
@@ -63,7 +66,8 @@ M2 — One-Lane Vertical Slice, bounded mana-resource follow-up.
 
 ## Expected Outputs
 
-- A typed, bounded mana resource with visible player/allied projections.
+- A typed, bounded mana resource with visible player/allied projections and an
+  intent-aware matched-branch resource policy.
 - Contest-only spend validation with deterministic transition and attribution.
 - State-hash, allied-digest, no-leakage, malformed-input, and replay tests.
 - Passing local checks, one-code-reviewer PR handoff, hosted CI, merged PR, and

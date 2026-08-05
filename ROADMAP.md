@@ -515,7 +515,8 @@ complete playable lane scenario.
 - [x] Emit ordered `ManaSpent`/`ManaChanged` direct-immediate attribution,
   record the spend in debrief data, and replay the reduced resource exactly.
 - [x] Bind non-full mana to the allied visible digest and cover bounds,
-  information projection, malformed inputs, hash distinction, and replay.
+  information projection, malformed inputs, hash distinction, lane identity,
+  intent-aware matched branching, and replay.
 
 This evidence establishes one bounded mana resource and one Contest spend path.
 It does not establish cooldowns, gold, experience, regeneration, abilities,

@@ -44,8 +44,11 @@ small declared risk score without changing its two-candidate contract.
 
 The transition stores the reduced mana in the next snapshot, emits ordered
 `ManaSpent`/`ManaChanged` attribution, and records `mana_spent` in the debrief.
-History replay regenerates the same explicit spend, event/effect, state hash,
-and terminal snapshot. Full no-spend paths retain the prior hash bytes.
+Lane record identity includes the spend. Matched-parent branching clears a
+Contest-only spend for a non-Contest alternate and records that normalization
+in branch identity and review attribution. History replay regenerates the same
+explicit spend, event/effect, state hash, and terminal snapshot. Full no-spend
+paths retain the prior hash bytes.
 
 ## Required Fixes
 
@@ -64,7 +67,7 @@ None for the declared bounded mana-resource slice.
 
 - `cargo +1.96.0 fmt --check`
 - `cargo +1.96.0 clippy --all-targets --all-features -- -D warnings`
-- `cargo +1.96.0 test --locked` — 58 tests passed: 19 M1 and 39 M2 tests.
+- `cargo +1.96.0 test --locked` — 59 tests passed: 19 M1 and 40 M2 tests.
 - `python3 scripts/check_repository.py`
 - `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'`
 - `git diff --check`

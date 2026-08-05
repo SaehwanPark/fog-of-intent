@@ -334,8 +334,11 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - `ManaSpent` and `ManaChanged` preserve the execution trace and
   direct/immediate provenance, `LaneDebrief` records the spend, and non-full
   mana binds state hashes and the allied visible digest.
-- Three focused mana tests plus the prior fifty-five tests pass, for
-  fifty-eight Rust tests total; no-spend defaults retain the prior hash
+- Lane record identities include mana spent; matched-parent branches clear a
+  Contest-only spend for non-Contest alternates and record the normalization in
+  branch identity/review attribution.
+- Four focused mana/branch tests plus the prior fifty-five tests pass, for
+  fifty-nine Rust tests total; no-spend defaults retain the prior hash
   representation and history replay verifies spent-resource results.
 
 #### Verification

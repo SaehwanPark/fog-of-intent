@@ -43,6 +43,9 @@ not increment the package version.
   binding.
 - Contest-only explicit mana spending with fail-closed validation, ordered
   `ManaSpent`/`ManaChanged` attribution, debrief recording, and replay tests.
+- Mana is included in lane record identity; matched-parent branches apply and
+  record an intent-aware normalization when a Contest-only spend crosses to a
+  non-Contest alternate.
 
 ### Changed
 

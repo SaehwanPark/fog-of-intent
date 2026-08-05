@@ -4152,6 +4152,13 @@ pub enum BranchExecutionMode {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum LaneBranchManaPolicy {
+    ParentSpendPreserved,
+    NonContestSpendCleared,
+    ExplicitExecution,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum BranchExecutionSelection {
     MatchedParent {
         source_record: usize,
@@ -4193,6 +4200,7 @@ pub struct LaneBranchReplayIdentity {
     branch_id: Option<BranchId>,
     alternate_intent: LaneIntent,
     execution_mode: BranchExecutionMode,
+    mana_policy: LaneBranchManaPolicy,
     execution_trace: InputTrace,
 }
 
@@ -4231,6 +4239,10 @@ impl LaneBranchReplayIdentity {
 
     pub fn execution_mode(self) -> BranchExecutionMode {
         self.execution_mode
+    }
+
+    pub fn mana_policy(self) -> LaneBranchManaPolicy {
+        self.mana_policy
     }
 
     pub fn execution_trace(self) -> InputTrace {
@@ -4278,16 +4290,31 @@ impl LaneBranch {
             .records
             .first()
             .ok_or(LaneBranchError::ParentNotExactlyOneWindow)?;
-        let (execution_relation, attribution_limit) = match self.identity.execution_mode {
-            BranchExecutionMode::MatchedParent => (
-                LaneExecutionRelation::Matched,
-                LaneAttributionLimit::MatchedDecisionOnly,
-            ),
-            BranchExecutionMode::Regenerated => (
-                LaneExecutionRelation::Regenerated,
-                LaneAttributionLimit::DecisionAndExecutionChanged,
-            ),
-        };
+        let (execution_relation, attribution_limit) =
+            match (self.identity.execution_mode, self.identity.mana_policy) {
+                (
+                    BranchExecutionMode::MatchedParent,
+                    LaneBranchManaPolicy::ParentSpendPreserved,
+                ) => (
+                    LaneExecutionRelation::Matched,
+                    LaneAttributionLimit::MatchedDecisionOnly,
+                ),
+                (
+                    BranchExecutionMode::MatchedParent,
+                    LaneBranchManaPolicy::NonContestSpendCleared,
+                ) => (
+                    LaneExecutionRelation::MatchedWithResourceNormalization,
+                    LaneAttributionLimit::DecisionAndResourceChanged,
+                ),
+                (BranchExecutionMode::MatchedParent, LaneBranchManaPolicy::ExplicitExecution) => (
+                    LaneExecutionRelation::MatchedWithResourceNormalization,
+                    LaneAttributionLimit::DecisionAndResourceChanged,
+                ),
+                (BranchExecutionMode::Regenerated, _) => (
+                    LaneExecutionRelation::Regenerated,
+                    LaneAttributionLimit::DecisionAndExecutionChanged,
+                ),
+            };
         Ok(CounterfactualReview {
             parent_outcome: parent_record.result.outcome,
             branch_outcome: self.record.result.outcome,
@@ -4304,12 +4331,14 @@ impl LaneBranch {
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum LaneExecutionRelation {
     Matched,
+    MatchedWithResourceNormalization,
     Regenerated,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum LaneAttributionLimit {
     MatchedDecisionOnly,
+    DecisionAndResourceChanged,
     DecisionAndExecutionChanged,
 }
 
@@ -4415,17 +4444,32 @@ pub fn branch_from_window(
     }
     let validated = validate_lane_request(&branch_point, &receipt, alternate)
         .map_err(LaneBranchError::Validation)?;
-    let (inputs, branch_id, execution_mode, execution_trace) = match selection {
+    let (inputs, branch_id, execution_mode, mana_policy, execution_trace) = match selection {
         BranchExecutionSelection::MatchedParent { source_record } => {
             if source_record != 0 {
                 return Err(LaneBranchError::InvalidBranchPoint);
             }
             let parent_inputs = parent_record.inputs;
+            let mana_policy = if parent_inputs.execution.mana_spent != LaneMana::zero()
+                && alternate.intent != LaneIntent::Contest
+            {
+                LaneBranchManaPolicy::NonContestSpendCleared
+            } else {
+                LaneBranchManaPolicy::ParentSpendPreserved
+            };
+            let inputs = match mana_policy {
+                LaneBranchManaPolicy::ParentSpendPreserved => parent_inputs,
+                LaneBranchManaPolicy::NonContestSpendCleared => {
+                    parent_inputs.with_mana_spent(LaneMana::zero())
+                }
+                LaneBranchManaPolicy::ExplicitExecution => unreachable!(),
+            };
             (
-                parent_inputs,
+                inputs,
                 None,
                 BranchExecutionMode::MatchedParent,
-                parent_inputs.execution.trace,
+                mana_policy,
+                inputs.execution.trace,
             )
         }
         BranchExecutionSelection::Regenerated {
@@ -4446,6 +4490,7 @@ pub fn branch_from_window(
                 ),
                 Some(branch_id),
                 BranchExecutionMode::Regenerated,
+                LaneBranchManaPolicy::ExplicitExecution,
                 execution.trace,
             )
         }
@@ -4462,6 +4507,7 @@ pub fn branch_from_window(
         branch_id,
         alternate_intent: alternate.intent,
         execution_mode,
+        mana_policy,
         execution_trace,
     };
     Ok(LaneBranch {
@@ -4505,6 +4551,7 @@ fn lane_record_identity(record: &LaneTransitionRecord) -> StateHash {
     }
     hash = hash_bytes(hash, &[record.inputs.execution.self_damage.value()]);
     hash = hash_bytes(hash, &[record.inputs.execution.opponent_damage.value()]);
+    hash = hash_bytes(hash, &[record.inputs.execution.mana_spent.value()]);
     hash = hash_bytes(
         hash,
         &[wave_result_tag(record.inputs.execution.wave_result)],
@@ -5441,6 +5488,72 @@ mod tests {
         assert_eq!(parent.records, parent_records);
         assert_eq!(parent.current_state(), parent_current);
         assert_eq!(parent.verify_replay(), Ok(parent_current));
+    }
+
+    #[test]
+    fn matched_branch_clears_contest_only_mana_for_non_contest_and_binds_identity() {
+        let state = LaneSnapshot::initial();
+        let (receipt, parent_request) = request(&state, LaneIntent::Contest);
+        let spent = LaneMana::new(1).expect("bounded spend");
+        let spent_inputs = inputs(1, 1, LaneWaveResult::Held).with_mana_spent(spent);
+        let mut spent_parent = LaneHistory::new(state).expect("valid");
+        spent_parent
+            .append(&receipt, &parent_request, spent_inputs)
+            .expect("append");
+        let alternate = LaneIntentRequest::new(
+            PLAYER_LANER,
+            receipt.observation().observation_id(),
+            LaneIntent::Stabilize,
+        );
+        let spent_branch = branch_from_window(
+            &spent_parent,
+            &alternate,
+            BranchExecutionSelection::matched_parent(),
+        )
+        .expect("matched branch normalizes intent-scoped spend");
+        assert_eq!(
+            spent_branch.record().inputs().execution().mana_spent(),
+            LaneMana::zero()
+        );
+        assert_eq!(
+            spent_branch.identity().mana_policy(),
+            LaneBranchManaPolicy::NonContestSpendCleared
+        );
+        let spent_review = spent_branch.review(&spent_parent).expect("review");
+        assert_eq!(
+            spent_review.execution_relation(),
+            LaneExecutionRelation::MatchedWithResourceNormalization
+        );
+        assert_eq!(
+            spent_review.attribution_limit(),
+            LaneAttributionLimit::DecisionAndResourceChanged
+        );
+        spent_branch
+            .verify_replay(&spent_parent)
+            .expect("branch replay");
+
+        let mut no_spend_parent = LaneHistory::new(state).expect("valid");
+        no_spend_parent
+            .append(
+                &receipt,
+                &parent_request,
+                inputs(1, 1, LaneWaveResult::Held),
+            )
+            .expect("append");
+        let no_spend_branch = branch_from_window(
+            &no_spend_parent,
+            &alternate,
+            BranchExecutionSelection::matched_parent(),
+        )
+        .expect("matched branch");
+        assert_eq!(
+            no_spend_branch.identity().mana_policy(),
+            LaneBranchManaPolicy::ParentSpendPreserved
+        );
+        assert_ne!(
+            spent_branch.identity().parent_record_identity(),
+            no_spend_branch.identity().parent_record_identity()
+        );
     }
 
     #[test]

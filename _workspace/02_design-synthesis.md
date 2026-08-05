@@ -19,13 +19,18 @@ outcome changes.
 The transition emits `LaneEvent::ManaSpent` and `LaneEffect::ManaChanged` with
 the existing execution trace, direct/immediate provenance, and debrief amount.
 Non-full mana adds a tagged state-hash value and allied visible-digest value;
-full-resource no-spend paths retain their prior representation.
+full-resource no-spend paths retain their prior representation. Lane record
+identity includes mana spent. Matched-parent branching reuses the parent’s
+other execution inputs and clears Contest-only spend for a non-Contest
+alternate, recording `LaneBranchManaPolicy::NonContestSpendCleared` and the
+resource-specific attribution boundary.
 
 ## Evidence and Limits
 
 Focused tests cover visible full/reduced mana, state-hash and allied-digest
 binding, Contest spending and attribution, wrong-intent/insufficient rejection,
-and history replay. The full suite passes with 58 Rust tests.
+record-identity binding, intent-aware matched branching, and history replay.
+The full suite passes with 59 Rust tests.
 
 This establishes one bounded mana resource and one Contest spend path. It does
 not establish cooldowns, gold, experience, regeneration, abilities, resource

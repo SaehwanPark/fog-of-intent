@@ -65,9 +65,13 @@ storing the reduced mana.
 
 Existing lane, coordinated, scenario, branch, objective, and debrief records
 store the enriched execution input and result through their existing value
-equality. Replay revalidates the same explicit spend, regenerates the mana
-event/effect and next-state hash, and rejects tampered resource results. No new
-history or branch authority is added.
+equality. Lane record identity now includes mana spent. A matched-parent branch
+reuses all parent execution inputs except that it deterministically clears a
+Contest-only spend when the alternate intent is non-Contest; the policy and
+resource-attribution change are recorded in branch identity/review. Replay
+revalidates the same explicit spend, regenerates the mana event/effect and
+next-state hash, and rejects tampered resource results. No new history or
+branch authority is added.
 
 ## Debrief and Causal Explanation
 
@@ -81,9 +85,10 @@ facts and does not claim resource optimality.
 
 Focused tests cover full-resource observation, allied visible-resource binding,
 Contest spend and direct/immediate attribution, insufficient-resource and
-wrong-intent rejection, no-spend compatibility, state-hash distinction, and
-history replay. Existing hidden-state, determinism, branch, coordination,
-objective, scenario, debrief, and effect-provenance tests must remain passing.
+wrong-intent rejection, no-spend compatibility, state-hash distinction, lane
+identity binding, intent-aware matched branching, and history replay. Existing
+hidden-state, determinism, branch, coordination, objective, scenario, debrief,
+and effect-provenance tests must remain passing.
 
 ## Open Questions
 

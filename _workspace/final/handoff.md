@@ -13,7 +13,8 @@ one-lane scenario are not yet built.
 - `Cargo.toml`, `Cargo.lock` — package version `0.1.16`.
 - `src/lane.rs` — `LaneMana`, player/allied projections, hash/digest binding,
   Contest-only spend validation, `ManaSpent`/`ManaChanged`, debrief recording,
-  and focused resource/replay tests.
+  lane identity binding, intent-aware matched branching, and focused
+  resource/replay tests.
 - `README.md`, `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` —
   synchronized mana-resource evidence and limits.
 - `_workspace/00_input/request-summary.md` — mana-resource slice framing.
@@ -30,7 +31,7 @@ one-lane scenario are not yet built.
 
 - `cargo +1.96.0 fmt --check`
 - `cargo +1.96.0 clippy --all-targets --all-features -- -D warnings`
-- `cargo +1.96.0 test --locked` — 58 tests passed.
+- `cargo +1.96.0 test --locked` — 59 tests passed.
 - `python3 scripts/check_repository.py`
 - `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'`
 - `git diff --check`
@@ -40,7 +41,8 @@ one-lane scenario are not yet built.
 `_workspace/03_domain-qa.md` is `pass` for the declared mana-resource slice.
 Full mana remains the compatibility default; non-full mana is visible only to
 authorized player/allied projections, Contest spending is fail-closed and
-direct/immediate, and replay preserves the result. Economy completeness and
+direct/immediate, lane identities include spend, and matched branching applies
+an explicit non-Contest normalization policy. Economy completeness and
 human-evidence claims remain open.
 
 ## Canonical State Updates
