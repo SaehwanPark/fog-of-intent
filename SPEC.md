@@ -311,6 +311,19 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - One focused variable-duration test plus the prior fifty-three tests pass, for
   fifty-four Rust tests total.
 
+#### Delivered in the bounded effect-provenance follow-up
+
+- `LaneEffectProvenance` labels each existing effect as `Direct` or `Indirect`
+  and `Immediate` or `Delayed`; current emitted effects are all immediate.
+- Explicit health, wave, and intent-position effects are direct/immediate,
+  while Contest fallback position movement is indirect/immediate; existing
+  `LaneEffectCause` and execution trace attribution remain unchanged.
+- Delayed timing is vocabulary only in this slice: no delayed queue, future
+  event, new state field, or delayed effect is emitted or stored.
+- One focused provenance test plus the prior fifty-four tests pass, for
+  fifty-five Rust tests total; replay, state hashes, and existing identities
+  remain unchanged.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
@@ -326,9 +339,9 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 
 - The complete lane scenario still needs complete vision/belief updates,
   adaptive pacing, richer resource abstractions, communication, automatic
-  threat/execution timing, and a broader causal debrief surface; the TwoBeats
-  follow-up is only one explicit duration over the existing transition
-  contract.
+  threat/execution timing, delayed effects, causal completeness, and a broader
+  debrief surface; the effect-provenance follow-up labels current effects but
+  does not implement a delayed-effect model.
 - CLI, MCP, full agent ecology, and human-experience evidence remain future
   M3/M4+ work; this diagnostic slice is not playable and makes no enjoyment,
   accessibility, trust, or behavioral-validity claim.

@@ -4,17 +4,22 @@
 
 pass
 
-This QA covers the bounded TwoBeats window duration over the existing lane
-snapshot, actor observations, transition, and replay authority. It does not
-promote adaptive pacing, automatic execution outcomes, complete vision,
-communication, a playable host, human experience, accessibility, trust, legal
-clearance, or research validity.
+This QA covers direct/indirect and immediate/delayed labels on existing lane
+effects over the transition and replay authority. It does not promote delayed
+execution, causal completeness, adaptive pacing, automatic execution outcomes,
+complete vision, communication, a playable host, human experience,
+accessibility, trust, legal clearance, or research validity.
 
 ## Reviewed Inputs
 
 - `_workspace/00_input/request-summary.md`
 - `_workspace/01_simulation-design.md`
 - `_workspace/02_design-synthesis.md`
+- `_workspace/00_input/m2-variable-window-request-summary.md`,
+  `_workspace/01-simulation-design-m2-variable-window.md`,
+  `_workspace/03-domain-qa-m2-variable-window.md`, and
+  `_workspace/final/m2-variable-window-handoff.md` as immutable prior-slice
+  evidence
 - `_workspace/00_input/m2-gank-response-request-summary.md`,
   `_workspace/01-simulation-design-m2-gank-response.md`,
   `_workspace/03-domain-qa-m2-gank-response.md`, and
@@ -25,32 +30,32 @@ clearance, or research validity.
 
 ## Scope and Authority Findings
 
-`LaneWindow::TwoBeats` is an explicit bounded state value. The transition uses
-its span to advance the turn and returns a resolved phase on commit, which is
-the declared automatic close condition. There is no wall clock, async wait,
-manual tick authority, or adaptive pacing hidden in the transition.
+`LaneEffectProvenance` is an explicit read-model label, not new simulation
+authority. The transition assigns direct/immediate provenance to explicit
+health, wave, and intent-position changes, and indirect/immediate provenance to
+Contest fallback movement. There is no delayed queue, wall clock, async wait,
+or alternate transition authority hidden in the implementation.
 
-One-beat snapshots retain their previous hash representation; two-beat
-snapshots add a duration tag. Player and allied observations carry the current
-duration, while allied candidate selection and support semantics remain
-unchanged.
+Existing effect causes/traces remain available, while provenance does not add
+hidden state, actor information, or hash inputs. The declared `Delayed` value
+is not emitted or stored.
 
 ## Replay and Information Findings
 
-Two-beat history replay regenerates both observations, validates the command,
-reruns the two-turn transition, and compares the resolved state/hash. Existing
-one-beat, branch, coordination, objective, scenario, and debrief paths remain
+Replay regenerates the same effect provenance from the same explicit inputs and
+continues to compare the resolved state/hash. Existing one-beat, variable-
+duration, branch, coordination, objective, scenario, and debrief paths remain
 valid. No hidden opponent/threat truth or execution result is exposed by the
-duration field.
+labels.
 
 ## Required Fixes
 
-None for the declared bounded TwoBeats slice.
+None for the declared bounded effect-provenance slice.
 
 ## Residual Risks
 
-- Adaptive pacing, additional durations, manual advance semantics, and
-  automatic execution outcomes remain unimplemented.
+- Delayed effects, causal chains beyond the current fallback, adaptive pacing,
+  and automatic execution outcomes remain unimplemented.
 - Portable serialization, communication, and broader presentation remain
   deferred.
 - The repository remains an internal non-playable fixture; no human-experience,
@@ -60,7 +65,7 @@ None for the declared bounded TwoBeats slice.
 
 - `cargo +1.96.0 fmt --check`
 - `cargo +1.96.0 clippy --all-targets --all-features -- -D warnings`
-- `cargo +1.96.0 test --locked` — 54 tests passed: 19 M1 and 35 M2 tests.
+- `cargo +1.96.0 test --locked` — 55 tests passed: 19 M1 and 36 M2 tests.
 - `python3 scripts/check_repository.py`
 - `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'`
 - `git diff --check`

@@ -488,6 +488,22 @@ adaptive pacing, a manual tick command, automatic execution outcomes,
 communication, strategy quality, balance, or a complete playable lane
 scenario.
 
+### Current bounded effect-provenance evidence
+
+- [x] Label all currently emitted lane effects as direct or indirect without
+  replacing their existing cause/trace attribution.
+- [x] Label current effects as immediate and declare delayed timing without
+  emitting or storing delayed effects.
+- [x] Mark explicit health, wave, and intent-position changes direct/immediate;
+  mark Contest fallback movement indirect/immediate.
+- [x] Verify explicit and fallback mappings, no delayed emission, and replay
+  preservation without changing lane-state hashes or transition authority.
+
+This evidence establishes provenance labels for current immediate effects only.
+It does not establish delayed effects, causal completeness, adaptive pacing,
+automatic execution outcomes, communication, strategy quality, balance, or a
+complete playable lane scenario.
+
 ### Current final-debrief evidence
 
 - [x] Build a versioned final debrief only from a replay-verified two-window

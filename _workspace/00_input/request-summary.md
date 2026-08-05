@@ -2,63 +2,58 @@
 
 ## Requested Outcome
 
-Implement the next bounded M2 slice after the merged one-window lane, branch,
-allied coordination, objective, strategy-fixture, two-window, debrief, Recall,
-last-known threat-report, and conditional Withdraw contracts: add one explicit
-two-beat decision-window duration to the existing deterministic transition.
-Preserve the one-beat hash/identity behavior, command/replay authority, allied
-policy bounds, and hidden-state boundaries.
+Implement the next bounded M2 slice after the merged lane window, branch,
+coordination, objective, fixture, scenario, debrief, Recall, threat-report,
+Withdraw, and variable-duration contracts: make existing lane effects expose
+explicit direct/indirect and immediate timing provenance while retaining their
+existing cause/trace attribution. Do not add delayed mechanics in this slice.
 
 ## Roadmap Milestone
 
-M2 — One-Lane Vertical Slice, bounded variable-duration-window follow-up.
+M2 — One-Lane Vertical Slice, bounded effect-provenance follow-up.
 
 ## Current Evidence
 
-- M1 and the prior M2 slices are merged on `main` through `68cfee2`; this
-  branch advances the package from `0.1.13` to `0.1.14`, pinned to Rust
+- M1 and the prior M2 slices are merged on `main` through `f76c584`; this
+  branch advances the package from `0.1.14` to `0.1.15`, pinned to Rust
   `1.96.0`, with no dependencies.
 - The binary remains a placeholder and the M2 scenario is not yet playable.
 
 ## In Scope
 
-- Add `LaneWindow::TwoBeats` to the authoritative snapshot and current
-  actor-visible observations.
-- Advance a committed two-beat transition by exactly two turns and close the
-  window automatically on the existing transition commit.
-- Keep one-beat state hashes and prior replay/identity behavior stable while
-  making two-beat state hashes distinct and replay-verifiable.
-- Preserve the allied two-intent policy, existing player intents and threat
-  response, objective/debrief paths, and hidden current InLane truth.
+- Add public effect provenance distinguishing `Direct` from `Indirect` and
+  `Immediate` timing for all currently emitted lane effects.
+- Mark explicit health/wave/intent changes as direct immediate effects and
+  Contest fallback position movement as an indirect immediate effect.
+- Preserve existing cause/trace fields, event ordering, state hashes,
+  transition authority, replay identities, and actor-visible information.
+- Synchronize canonical M2 documents and SDD/domain-QA handoff artifacts.
 
 ## Non-Goals
 
-- No third duration, adaptive pacing, manual tick command, automatic threat
-  damage rule, full vision/belief system, communication, resource mechanic,
-  CLI, MCP, GUI, or playable scenario.
-- No change to policy candidate selection or allied support semantics.
-- No claim that a two-beat window establishes pacing quality, balance,
-  optimality, or human experience.
+- No delayed effect queue, automatic future event, resource mechanic,
+  communication, serialization change, CLI, MCP, GUI, or playable scenario.
+- No new lane effect categories or changes to transition state/hash inputs.
+- No claim that immediate provenance establishes causal completeness, balance,
+  optimality, strategy quality, or human experience.
 
 ## Project Boundaries Touched
 
-- Variable-duration window state and automatic close-on-commit behavior.
-- Existing functional transition/replay boundary with no second authority.
+- Attributed effect projection at the deterministic transition boundary.
+- Causal debrief/read-model access to direct/indirect and timing labels.
 
 ## Source Files
 
-- `src/lane.rs` LaneWindow duration, snapshot/hash/observation propagation,
-  transition advancement, and focused tests
+- `src/lane.rs` effect provenance types, emitted effects, and focused tests
 - `Cargo.toml`, `Cargo.lock`, `README.md`, `ROADMAP.md`, `SPEC.md`,
   `ARCHITECTURE.md`, `CHANGELOG.md`
 - `_workspace/01_simulation-design.md`, `_workspace/03_domain-qa.md`, and
-  immutable gank-response handoff snapshots
+  immutable variable-duration handoff snapshots
 
 ## Expected Outputs
 
-- Two-beat window API and deterministic turn/hash/observation behavior.
-- Tests for duration propagation, automatic close, distinct state hashing,
-  allied observation compatibility, and replay compatibility.
+- Effect provenance API and direct/indirect immediate labels for current effects.
+- Tests for explicit, fallback, wave, health, and replay-preserved provenance.
 - Passing local checks, one-code-reviewer PR handoff, hosted CI, and merged PR
   with temporary branch cleanup.
 
@@ -73,8 +68,8 @@ M2 — One-Lane Vertical Slice, bounded variable-duration-window follow-up.
 
 ## Evidence Limits and Open Questions
 
-- The slice establishes one two-beat duration only. It does not establish
-  adaptive pacing, automatic execution outcomes, strategy quality, balance, or
-  human-experience evidence.
-- Future pacing work may add additional durations only after preserving
-  deterministic transition and replay identities.
+- The slice establishes provenance labels for existing immediate effects only.
+  Delayed effects, indirect chains beyond fallback, and causal completeness
+  remain open.
+- Future delayed-effect work must preserve committed history and keep timing
+  inputs explicit at the authoritative transition boundary.

@@ -1,35 +1,31 @@
-# Design Synthesis — M2 Bounded Variable-Duration Window
+# Design Synthesis — M2 Bounded Effect Provenance
 
 ## Decision
 
-Add `LaneWindow::TwoBeats` as a typed duration on `LaneSnapshot` while keeping
-`OneBeat` as the compatibility default. The existing transition evaluates the
-whole selected window from explicit resolved inputs, advances the turn by the
-window span, and closes the window on commit.
+Add relationship and timing provenance to the existing `LaneEffect` values
+without changing the authoritative transition inputs or state hash. The
+existing transition continues to evaluate a selected window from explicit
+resolved inputs and emits only immediate effects in this slice.
 
-The authoritative transition, command shape, allied candidate policy, prior
-one-beat state hashes, and replay identities remain stable. Two-beat hashes add
-only a duration tag so duration is part of authoritative state for the new
-case.
+The authoritative transition, command shape, allied candidate policy, state
+hashes, and replay identities remain stable. Existing effect causes and trace
+attribution remain available alongside the new labels.
 
 ## Resolved Contract
 
-`LaneSnapshot::new_with_window(..., LaneWindow::TwoBeats, ...)` creates the
-bounded longer window. Player and allied observations carry the current window;
-the allied policy accepts both bounded durations but retains exactly the
-Stabilize/Contest candidates. `transition_lane` advances a TwoBeats state from
-turn `n` to `n + 2`, retains `TwoBeats`, and returns `Resolved` immediately.
-
-`LaneSnapshot::new` and all prior one-beat paths retain their existing hash
-representation. Scenario reopening intentionally returns the existing default
-open one-beat boundary; adaptive duration selection is deferred.
+`LaneEffectProvenance` distinguishes `Direct` from `Indirect` relationship and
+`Immediate` from `Delayed` timing. Explicit health, wave, and intent-position
+effects are direct/immediate; Contest fallback movement is indirect/immediate.
+`Delayed` is vocabulary only: no delayed queue, future event, or stored delayed
+effect is added. Existing history, branch, objective, scenario, and debrief
+contracts remain intact.
 
 ## Evidence and Limits
 
-The focused two-beat test covers distinct hashing, observation propagation,
-allied policy compatibility, automatic close-on-commit, two-turn advancement,
-and history replay. The full suite passes with 54 Rust tests.
+Focused tests cover direct/immediate explicit effects, indirect/immediate
+fallback movement, absence of delayed emissions, and replay-preserved
+provenance. The full suite passes with 55 Rust tests.
 
-This establishes one bounded variable-duration window only. It does not
-establish adaptive pacing, a manual tick command, automatic execution outcomes,
-communication, strategy quality, balance, or a complete playable scenario.
+This establishes labels for current immediate effects only. It does not
+establish delayed effects, causal completeness, adaptive pacing, communication,
+strategy quality, balance, or a complete playable scenario.

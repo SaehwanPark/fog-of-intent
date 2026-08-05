@@ -34,6 +34,21 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.15 — 2026-08-04
+
+### Added
+
+- Explicit `LaneEffectProvenance` relationship/timing labels for emitted lane
+  effects: direct-immediate for explicit execution/intent changes and
+  indirect-immediate for Contest fallback movement.
+- Direct/indirect effect provenance and no-delayed-emission tests while
+  retaining existing cause/trace attribution and replay behavior.
+
+### Changed
+
+- The package version advances to `0.1.15` for the bounded effect-provenance
+  slice; the executable remains the documented placeholder.
+
 ## 0.1.14 — 2026-08-04
 
 ### Added
