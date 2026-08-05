@@ -297,6 +297,20 @@ exists. Planned proposal or roadmap text is never implementation evidence.
   attribution; three focused gank-response tests plus the prior fifty tests
   pass, for fifty-three Rust tests total.
 
+#### Delivered in the bounded variable-duration-window follow-up
+
+- `LaneWindow::TwoBeats` is explicit snapshot state; `LaneSnapshot::new`
+  remains the one-beat compatibility constructor and `new_with_window` creates
+  the bounded longer window.
+- Player and allied observations carry the selected duration, while allied
+  candidate selection remains exactly Stabilize/Contest and the TwoBeats
+  duration is bound into its visible input digest.
+- `transition_lane` advances a TwoBeats state by exactly two turns and closes
+  it at the existing resolved commit boundary; one-beat hash bytes remain
+  unchanged and TwoBeats hashes are distinct.
+- One focused variable-duration test plus the prior fifty-three tests pass, for
+  fifty-four Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
@@ -311,10 +325,10 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 #### Not Yet Done
 
 - The complete lane scenario still needs complete vision/belief updates,
-  variable pacing, richer resource abstractions, communication, automatic
-  threat/execution timing, and a broader causal debrief surface; the Withdraw
-  follow-up is only one conditional response over the existing fixed one-beat
-  window contract.
+  adaptive pacing, richer resource abstractions, communication, automatic
+  threat/execution timing, and a broader causal debrief surface; the TwoBeats
+  follow-up is only one explicit duration over the existing transition
+  contract.
 - CLI, MCP, full agent ecology, and human-experience evidence remain future
   M3/M4+ work; this diagnostic slice is not playable and makes no enjoyment,
   accessibility, trust, or behavioral-validity claim.

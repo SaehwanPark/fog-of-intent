@@ -242,6 +242,7 @@ impl WaveState {
 pub struct LaneSnapshot {
     ruleset: RulesetId,
     turn: Turn,
+    window: LaneWindow,
     phase: LanePhase,
     player: PlayerLaneState,
     opponent: OpponentTruth,
@@ -284,9 +285,35 @@ impl LaneSnapshot {
         jungle_threat: JungleThreatTruth,
         terminal_outcome: Option<LaneOutcome>,
     ) -> Self {
+        Self::new_with_window(
+            ruleset,
+            turn,
+            LaneWindow::OneBeat,
+            phase,
+            player,
+            opponent,
+            wave,
+            jungle_threat,
+            terminal_outcome,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_window(
+        ruleset: RulesetId,
+        turn: Turn,
+        window: LaneWindow,
+        phase: LanePhase,
+        player: PlayerLaneState,
+        opponent: OpponentTruth,
+        wave: WaveState,
+        jungle_threat: JungleThreatTruth,
+        terminal_outcome: Option<LaneOutcome>,
+    ) -> Self {
         Self {
             ruleset,
             turn,
+            window,
             phase,
             player,
             opponent,
@@ -302,6 +329,10 @@ impl LaneSnapshot {
 
     pub fn turn(self) -> Turn {
         self.turn
+    }
+
+    pub fn window(self) -> LaneWindow {
+        self.window
     }
 
     pub fn phase(self) -> LanePhase {
@@ -332,6 +363,9 @@ impl LaneSnapshot {
         let mut hash = FNV_OFFSET_BASIS;
         hash = hash_bytes(hash, &self.ruleset.value().to_le_bytes());
         hash = hash_bytes(hash, &self.turn.value().to_le_bytes());
+        if self.window != LaneWindow::OneBeat {
+            hash = hash_bytes(hash, &[window_tag(self.window)]);
+        }
         hash = hash_bytes(hash, &[phase_tag(self.phase)]);
         hash = hash_bytes(
             hash,
@@ -475,6 +509,27 @@ impl OpponentReport {
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum LaneWindow {
     OneBeat,
+    TwoBeats,
+}
+
+impl LaneWindow {
+    pub const fn beats(self) -> u32 {
+        match self {
+            Self::OneBeat => 1,
+            Self::TwoBeats => 2,
+        }
+    }
+
+    pub const fn closes_on_commit(self) -> bool {
+        true
+    }
+}
+
+fn window_tag(window: LaneWindow) -> u8 {
+    match window {
+        LaneWindow::OneBeat => 0,
+        LaneWindow::TwoBeats => 1,
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -608,7 +663,7 @@ pub fn observe_player(
                 LaneIntent::Recall,
             ],
             available_threat_response: player_threat_response(jungle_threat),
-            window: LaneWindow::OneBeat,
+            window: state.window(),
         },
         source_state_hash: state.hash(),
     }
@@ -717,7 +772,7 @@ pub fn observe_allied(
             },
             jungle_threat: ThreatReport::Unknown,
             available_intents: [LaneIntent::Stabilize, LaneIntent::Contest],
-            window: LaneWindow::OneBeat,
+            window: state.window(),
         },
         source_state_hash: state.hash(),
     }
@@ -972,6 +1027,9 @@ fn allied_visible_digest(observation: AlliedLaneObservation) -> StateHash {
     hash = hash_bytes(hash, &[observation.wave_pressure.value()]);
     hash = hash_bytes(hash, &[intent_tag(observation.available_intents[0])]);
     hash = hash_bytes(hash, &[intent_tag(observation.available_intents[1])]);
+    if observation.window != LaneWindow::OneBeat {
+        hash = hash_bytes(hash, &[window_tag(observation.window)]);
+    }
     hash = hash_bytes(hash, &[0, 0, 0]);
     StateHash::from_raw(hash)
 }
@@ -999,7 +1057,10 @@ pub fn scripted_allied_proposal(
     let identity = allied_input_identity(observation, policy_trace);
     if observation.schema != M2_ALLIED_OBSERVATION_SCHEMA
         || observation.observer != ALLIED_AUTONOMOUS_ACTOR
-        || observation.window != LaneWindow::OneBeat
+        || !matches!(
+            observation.window,
+            LaneWindow::OneBeat | LaneWindow::TwoBeats
+        )
         || observation.available_intents != [LaneIntent::Stabilize, LaneIntent::Contest]
     {
         return Err(AlliedProposalError::InvalidObservation);
@@ -1333,7 +1394,10 @@ pub fn validate_coordinated_request(
         return Err(CoordinationError::StaleAlliedObservation);
     }
     if allied_observation.observer != ALLIED_AUTONOMOUS_ACTOR
-        || allied_observation.window != LaneWindow::OneBeat
+        || !matches!(
+            allied_observation.window,
+            LaneWindow::OneBeat | LaneWindow::TwoBeats
+        )
         || allied_observation.available_intents != [LaneIntent::Stabilize, LaneIntent::Contest]
     {
         return Err(CoordinationError::InvalidAlliedObservation);
@@ -1585,6 +1649,7 @@ pub fn validate_lane_command(
         || observation.observation_id != command.observation_id
         || observation.schema != M2_OBSERVATION_SCHEMA
         || observation.turn != state.turn
+        || observation.window != state.window
         || receipt.source_state_hash != state.hash()
     {
         return Err(LaneValidationError::StaleObservation);
@@ -2890,7 +2955,7 @@ pub fn transition_lane(
     let next_turn = state
         .turn
         .value()
-        .checked_add(1)
+        .checked_add(state.window.beats())
         .ok_or(LaneTransitionError::TurnOverflow)?;
     let next_player = PlayerLaneState::new(player.id, after_player_health, after_position);
     let next_opponent = OpponentTruth::new(
@@ -2899,9 +2964,10 @@ pub fn transition_lane(
         opponent.position,
         opponent.posture,
     );
-    let next_state = LaneSnapshot::new(
+    let next_state = LaneSnapshot::new_with_window(
         state.ruleset,
         Turn::new(next_turn),
+        state.window,
         LanePhase::Resolved,
         next_player,
         next_opponent,
@@ -4300,6 +4366,21 @@ mod tests {
         )
     }
 
+    fn two_beat_state() -> LaneSnapshot {
+        let state = LaneSnapshot::initial();
+        LaneSnapshot::new_with_window(
+            state.ruleset(),
+            state.turn(),
+            LaneWindow::TwoBeats,
+            LanePhase::Open,
+            state.player(),
+            state.opponent(),
+            state.wave(),
+            state.jungle_threat(),
+            None,
+        )
+    }
+
     #[test]
     fn observation_redacts_latent_state() {
         let first = LaneSnapshot::initial();
@@ -4647,6 +4728,40 @@ mod tests {
         review
             .verify_lane(record)
             .expect("replayable objective review");
+    }
+
+    #[test]
+    fn two_beat_window_closes_on_commit_and_replays_with_a_distinct_hash() {
+        let state = two_beat_state();
+        assert_eq!(state.window(), LaneWindow::TwoBeats);
+        assert!(state.window().closes_on_commit());
+        assert_ne!(state.hash(), LaneSnapshot::initial().hash());
+
+        let player_receipt = observe_player(&state, ObservationId::new(9));
+        assert_eq!(player_receipt.observation().window(), LaneWindow::TwoBeats);
+        let allied_receipt = observe_allied(&state, ObservationId::new(9));
+        assert_eq!(allied_receipt.observation().window(), LaneWindow::TwoBeats);
+        let proposal = scripted_allied_proposal(allied_receipt.observation(), trace(3, 3))
+            .expect("allied policy supports the bounded longer window");
+        assert_eq!(
+            proposal.candidates().map(AlliedCandidate::intent),
+            [LaneIntent::Stabilize, LaneIntent::Contest]
+        );
+
+        let request =
+            LaneIntentRequest::new(PLAYER_LANER, ObservationId::new(9), LaneIntent::Contest);
+        let mut history = LaneHistory::new(state).expect("valid initial state");
+        let result = history
+            .append(
+                &player_receipt,
+                &request,
+                inputs(0, 1, LaneWaveResult::Held),
+            )
+            .expect("two-beat transition");
+        assert_eq!(result.next_state().turn(), Turn::new(2));
+        assert_eq!(result.next_state().window(), LaneWindow::TwoBeats);
+        assert_eq!(result.next_state().phase(), LanePhase::Resolved);
+        assert_eq!(history.verify_replay(), Ok(history.current_state()));
     }
 
     #[test]

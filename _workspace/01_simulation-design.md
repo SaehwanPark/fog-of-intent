@@ -1,70 +1,56 @@
-# Simulation Design — M2 Bounded Gank Response
+# Simulation Design — M2 Bounded Variable-Duration Window
 
 ## Goal and Boundary
 
-This slice adds one conditional player `Withdraw` response to the existing
-lane command and transition boundary. It is available only when the current
-player observation reports a RiverSide `LastKnown` threat. It is not available
-when threat information is `Unknown`, and it does not turn last-known data into
-current hidden truth.
+This slice adds one explicit `TwoBeats` decision-window duration to the
+existing synchronous lane transition. The selected window duration is
+authoritative state, appears in current player/allied observations, advances
+the committed turn deterministically, and closes automatically when the
+existing transition commits its resolved execution input.
 
-The existing strategic intents remain `[Stabilize, Contest, Recall]`. Withdraw
-is a conditional threat response exposed separately as
-`available_threat_response()`. The allied observation and scripted policy
-remain limited to `Stabilize` and `Contest`.
+The prior `OneBeat` contract remains the default. No manual tick command,
+adaptive pacing, third duration, threat-damage rule, or new actor policy is
+introduced.
 
-## Withdraw Contract
+## Window Contract
 
 ```text
-ThreatReport::LastKnown { region: RiverSide, last_seen_turn: Turn }
-  -> available_threat_response() == Some(Withdraw)
-
-ThreatReport::Unknown
-  -> available_threat_response() == None
+LaneWindow::OneBeat  -> turn span 1, closes on transition commit
+LaneWindow::TwoBeats -> turn span 2, closes on transition commit
 ```
 
-With a current RiverSide report, a valid Withdraw command commits one beat and
-moves the player to `NearTower`. The explicit `LaneWaveResult`, damage, and
-execution trace remain authoritative inputs; a legal execution can still make
-the response unfavorable. The outcome is `YieldedSpace` while health remains
-positive and `ForcedOut` when explicit self damage reaches zero. Position
-movement is intent-attributed and Withdraw never activates the Contest-only
-fallback.
+`LaneSnapshot::new` continues to create a `OneBeat` state. A bounded
+`new_with_window` constructor creates a `TwoBeats` state for the diagnostic
+case. `transition_lane` advances the turn by the selected span and retains the
+window kind in the resolved state. The resolved phase is the automatic
+close-on-commit condition; no separate advance command is needed.
 
-## Validation and Information
+One-beat state hashes remain byte-compatible with the prior contract. Two-beat
+state hashes include an explicit duration tag and therefore cannot collide with
+the corresponding one-beat snapshot solely because of duration. Existing
+one-beat record identities and replay results remain unchanged.
 
-Host validation accepts Withdraw only when the current observation advertises
-it through `available_threat_response()`. The same actor, observation ID,
-turn, ruleset, source-state, prior-hash, phase, and state-validity checks remain
-in force. A stale observation from a RiverSide state cannot authorize Withdraw
-against a different state, and an Unknown current InLane/Absent state cannot
-authorize it.
+## Observation and Coordination
 
-No opponent truth, exact threat entity, current threat movement, source hash,
-or execution result is exposed. The allied policy does not receive or emit a
-Withdraw proposal or counter shape in this slice.
+Player and allied observations carry the current `LaneWindow`. The allied
+scripted policy accepts either bounded duration but keeps the same two
+`Stabilize`/`Contest` candidates, scores, and support semantics. The duration
+is included in the allied visible input digest only for `TwoBeats`, preserving
+prior one-beat policy identities while binding longer-window policy input.
 
-## Replay, Objective, and Attribution
-
-Withdraw uses the existing `LaneIntent` field and receives a stable identity tag
-after the existing Stabilize/Contest/Recall tags. `LaneHistory`, branch,
-objective, scenario, and final debrief paths remain unchanged; history replay
-regenerates the same conditional observation before validating the command.
-Objective and debrief projections report Withdraw as the committed intent and
-retain the distinction between intentional withdrawal, explicit execution,
-and ForcedOut. No optimality or balance judgment is inferred.
+Player intent, conditional Withdraw availability, last-known threat reporting,
+objective attribution, branch checks, scenario reopening, and final-debrief
+projections use their existing authority. A future scenario can choose a
+duration explicitly at its host boundary; this slice only proves the typed
+two-beat transition contract.
 
 ## Verification Contract
 
-Focused tests cover:
+Focused tests cover duration propagation to both observations, distinct
+two-beat state hashing, two-turn advancement, automatic resolved closure,
+unchanged allied candidate bounds, and exact history replay. Existing M1/M2
+tests remain passing.
 
-- Withdraw availability only with a current RiverSide last-known report;
-- Unknown, stale, resolved, wrong-actor, and malformed Withdraw rejection;
-- NearTower movement, explicit wave/execution preservation, intent attribution,
-  and no fallback activation;
-- legal unfavorable/ForcedOut execution and history/objective replay;
-- unchanged allied candidate bounds, hidden-state boundary, and prior tests.
-
-Evidence establishes one bounded conditional Withdraw response only. It does
-not establish complete vision, current threat tracking, variable pacing,
-communication, strategy quality, balance, or a complete playable scenario.
+Evidence establishes one bounded TwoBeats duration only. It does not establish
+adaptive pacing, automatic execution outcomes, communication, strategy
+quality, balance, or a complete playable lane scenario.

@@ -34,6 +34,20 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.14 — 2026-08-04
+
+### Added
+
+- A bounded `LaneWindow::TwoBeats` duration in the authoritative snapshot,
+  actor observations, allied proposal input, and transition turn advancement.
+- Automatic close-on-commit and distinct two-beat state hashing with replay
+  coverage while preserving the one-beat hash/identity behavior.
+
+### Changed
+
+- The package version advances to `0.1.14` for the bounded variable-duration
+  window slice; the executable remains the documented placeholder.
+
 ## 0.1.13 — 2026-08-04
 
 ### Added

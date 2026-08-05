@@ -472,6 +472,22 @@ establish automatic threat damage, complete vision/belief updates, variable
 pacing, communication, strategy quality, balance, or a complete playable lane
 scenario.
 
+### Current bounded variable-duration-window evidence
+
+- [x] Add `LaneWindow::TwoBeats` as explicit snapshot state while retaining
+  `OneBeat` as the compatibility default.
+- [x] Propagate the duration to player/allied observations and bind the allied
+  visible digest for TwoBeats without changing its two-candidate policy.
+- [x] Advance a committed TwoBeats transition by exactly two turns and close
+  it automatically at the existing resolved transition boundary.
+- [x] Keep one-beat hashes/identities stable, make TwoBeats hashes distinct,
+  and replay a two-beat history to the same resolved state.
+
+This evidence establishes one bounded TwoBeats duration. It does not establish
+adaptive pacing, a manual tick command, automatic execution outcomes,
+communication, strategy quality, balance, or a complete playable lane
+scenario.
+
 ### Current final-debrief evidence
 
 - [x] Build a versioned final debrief only from a replay-verified two-window
