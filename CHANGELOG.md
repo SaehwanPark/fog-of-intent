@@ -34,6 +34,15 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.25 — 2026-08-05
+
+### Changed
+
+- Split the internal lane implementation and tests into responsibility-oriented
+  private modules behind the unchanged `crate::lane::*` facade, and clarified
+  resource and transition data flow with private product types without
+  changing hashes, events, errors, replay behavior, or the placeholder binary.
+
 ## 0.1.24 — 2026-08-05
 
 ### Added

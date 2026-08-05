@@ -45,7 +45,7 @@ Cargo.toml
 src/main.rs
 src/lib.rs
 src/kernel.rs
-src/lane.rs
+src/lane/
 src/serialization.rs
 tests/fixtures/
 README.md
@@ -58,10 +58,11 @@ docs/
 _workspace/
 ```
 
-`src/lib.rs`, `src/kernel.rs`, `src/lane.rs`, and `src/serialization.rs` are the
+`src/lib.rs`, `src/kernel.rs`, `src/lane/`, and `src/serialization.rs` are the
 current internal kernel/fixture surface; `src/main.rs` remains a placeholder
-executable. The other paths are project-state, design-source, and agent-
-workflow artifacts.
+executable. The lane surface is split into private responsibility-oriented
+modules behind the existing `crate::lane::*` facade. The other paths are
+project-state, design-source, and agent-workflow artifacts.
 
 ## Target Components
 

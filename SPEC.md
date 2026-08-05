@@ -143,7 +143,7 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 
 #### Delivered in the first bounded slice
 
-- `src/lane.rs` defines bounded lane health, damage, wave pressure, positions,
+- `src/lane/` defines bounded lane health, damage, wave pressure, positions,
   phase, opponent truth, hidden threat truth, terminal outcome, and the fixed
   `m2-lane-v1` ruleset.
 - `observe_player` returns an actor-valid `m2-lane-observation-v1` projection
