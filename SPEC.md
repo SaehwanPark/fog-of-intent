@@ -324,6 +324,20 @@ exists. Planned proposal or roadmap text is never implementation evidence.
   fifty-five Rust tests total; replay, state hashes, and existing identities
   remain unchanged.
 
+#### Delivered in the bounded mana-resource follow-up
+
+- `LaneMana` is a bounded player-laner resource with a full-resource default;
+  player and allied observations expose only the authorized player-laner value.
+- Contest execution may spend an explicit resolved mana amount; Stabilize,
+  Recall, and Withdraw spending, plus spending above availability, fail before
+  transition mutation.
+- `ManaSpent` and `ManaChanged` preserve the execution trace and
+  direct/immediate provenance, `LaneDebrief` records the spend, and non-full
+  mana binds state hashes and the allied visible digest.
+- Three focused mana tests plus the prior fifty-five tests pass, for
+  fifty-eight Rust tests total; no-spend defaults retain the prior hash
+  representation and history replay verifies spent-resource results.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
@@ -339,9 +353,9 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 
 - The complete lane scenario still needs complete vision/belief updates,
   adaptive pacing, richer resource abstractions, communication, automatic
-  threat/execution timing, delayed effects, causal completeness, and a broader
-  debrief surface; the effect-provenance follow-up labels current effects but
-  does not implement a delayed-effect model.
+  threat/execution timing, delayed effects, causal completeness, cooldown/gold/
+  experience systems, and a broader debrief surface; the mana follow-up is one
+  bounded resource and does not implement a complete economy or ability model.
 - CLI, MCP, full agent ecology, and human-experience evidence remain future
   M3/M4+ work; this diagnostic slice is not playable and makes no enjoyment,
   accessibility, trust, or behavioral-validity claim.

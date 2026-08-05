@@ -7,8 +7,9 @@ first internal lane decision window, bounded branch, one-window allied
 proposal/coordination overlay, terminal-objective projection, matched-input
 strategy fixtures, bounded two-window wrapper, final debrief projection, one
 bounded player-facing Recall intent, a bounded last-known threat report, a
-conditional Withdraw response, one bounded TwoBeats duration, and bounded
-direct/indirect immediate effect provenance implemented
+conditional Withdraw response, one bounded TwoBeats duration, bounded
+direct/indirect immediate effect provenance, and one bounded player mana
+resource implemented
 
 ## Overview
 
@@ -131,6 +132,11 @@ a valid resolved result and records that boundary; it does not alter the
 one-window transition. A branch borrows and verifies the parent history, then
 owns only a copied one-window record and branch metadata; the old branch API
 does not silently discard a future coordination overlay.
+
+The current player-lane state also carries a bounded mana value. Full mana is
+the compatibility default; Contest-only resolved spending is applied by the
+same transition authority, while player and allied projections expose only the
+authorized player-laner value.
 
 ## Consequential Type Boundaries
 
@@ -262,10 +268,10 @@ and an architecture update or ADR when it changes a consequential boundary.
   framework, or persistence service.
 - The M2 window, one bounded branch, allied proposal/coordination overlay, one
   terminal-objective review, three strategy fixtures, two-window wrapper, and
-  bounded Recall intent, last-known threat report, and conditional Withdraw
-  response remain bounded: no communication system, complete vision/belief
-  model, automatic threat damage, adaptive pacing, manual tick semantics,
-  resource restoration,
+  bounded Recall intent, last-known threat report, conditional Withdraw
+  response, and bounded mana resource remain bounded: no communication system,
+  complete vision/belief model, automatic threat damage, adaptive pacing,
+  manual tick semantics, cooldowns, gold, experience, resource restoration,
   external scenario serialization, branch tree, or broader debrief surface is
   implemented.
 - Richer external replay bundles and scenario-specific schema fields remain

@@ -504,6 +504,23 @@ It does not establish delayed effects, causal completeness, adaptive pacing,
 automatic execution outcomes, communication, strategy quality, balance, or a
 complete playable lane scenario.
 
+### Current bounded mana-resource evidence
+
+- [x] Add bounded `LaneMana` to the player-laner state with a full-resource
+  default and a tagged non-full state-hash representation.
+- [x] Project player mana to the player observation and team-visible mana to the
+  allied observation without adding opponent resource truth.
+- [x] Permit only Contest execution to spend explicit resolved mana; reject
+  wrong-intent and insufficient-resource inputs before state mutation.
+- [x] Emit ordered `ManaSpent`/`ManaChanged` direct-immediate attribution,
+  record the spend in debrief data, and replay the reduced resource exactly.
+- [x] Bind non-full mana to the allied visible digest and cover bounds,
+  information projection, malformed inputs, hash distinction, and replay.
+
+This evidence establishes one bounded mana resource and one Contest spend path.
+It does not establish cooldowns, gold, experience, regeneration, abilities,
+resource economy balance, communication, or a complete playable lane scenario.
+
 ### Current final-debrief evidence
 
 - [x] Build a versioned final debrief only from a replay-verified two-window

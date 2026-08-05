@@ -20,7 +20,9 @@ pub const M2_COORDINATION_REPLAY_ID: &str = "m2-one-lane-coordination-v1";
 pub const SCRIPTED_ALLIED_PROFILE: &str = "scripted-allied-proposal-v1";
 const FNV_OFFSET_BASIS: u64 = 0xcbf29ce484222325;
 const MAX_LANE_HEALTH: u8 = 10;
+const MAX_LANE_MANA: u8 = 6;
 const MAX_WAVE_PRESSURE: u8 = 3;
+const LANE_MANA_HASH_TAG: u8 = 0x4d;
 
 pub const PLAYER_LANER: ActorId = ActorId::new(1);
 pub const OPPONENT_LANER: ActorId = ActorId::new(2);
@@ -50,6 +52,38 @@ impl LaneHealth {
     }
 
     fn subtract(self, amount: LaneDamage) -> Option<Self> {
+        self.0.checked_sub(amount.0).map(Self)
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct LaneMana(u8);
+
+impl LaneMana {
+    pub fn new(value: u8) -> Result<Self, LaneBoundsError> {
+        if value <= MAX_LANE_MANA {
+            Ok(Self(value))
+        } else {
+            Err(LaneBoundsError {
+                value,
+                maximum: MAX_LANE_MANA,
+            })
+        }
+    }
+
+    pub const fn full() -> Self {
+        Self(MAX_LANE_MANA)
+    }
+
+    pub const fn zero() -> Self {
+        Self(0)
+    }
+
+    pub fn value(self) -> u8 {
+        self.0
+    }
+
+    fn subtract(self, amount: Self) -> Option<Self> {
         self.0.checked_sub(amount.0).map(Self)
     }
 }
@@ -158,14 +192,25 @@ pub enum LaneOutcome {
 pub struct PlayerLaneState {
     id: ActorId,
     health: LaneHealth,
+    mana: LaneMana,
     position: LanePosition,
 }
 
 impl PlayerLaneState {
     pub fn new(id: ActorId, health: LaneHealth, position: LanePosition) -> Self {
+        Self::new_with_mana(id, health, LaneMana::full(), position)
+    }
+
+    pub fn new_with_mana(
+        id: ActorId,
+        health: LaneHealth,
+        mana: LaneMana,
+        position: LanePosition,
+    ) -> Self {
         Self {
             id,
             health,
+            mana,
             position,
         }
     }
@@ -176,6 +221,10 @@ impl PlayerLaneState {
 
     pub fn health(self) -> LaneHealth {
         self.health
+    }
+
+    pub fn mana(self) -> LaneMana {
+        self.mana
     }
 
     pub fn position(self) -> LanePosition {
@@ -371,6 +420,9 @@ impl LaneSnapshot {
             hash,
             &[self.player.id().value(), self.player.health().value()],
         );
+        if self.player.mana() != LaneMana::full() {
+            hash = hash_bytes(hash, &[LANE_MANA_HASH_TAG, self.player.mana().value()]);
+        }
         hash = hash_bytes(hash, &[position_tag(self.player.position())]);
         hash = hash_bytes(
             hash,
@@ -539,6 +591,7 @@ pub struct LanerObservation {
     turn: Turn,
     observation_id: ObservationId,
     self_health: LaneHealth,
+    self_mana: LaneMana,
     self_position: LanePosition,
     wave_pressure: WavePressure,
     opponent: OpponentReport,
@@ -584,6 +637,10 @@ impl LanerObservation {
 
     pub fn self_health(self) -> LaneHealth {
         self.self_health
+    }
+
+    pub fn self_mana(self) -> LaneMana {
+        self.self_mana
     }
 
     pub fn self_position(self) -> LanePosition {
@@ -648,6 +705,7 @@ pub fn observe_player(
             turn: state.turn(),
             observation_id,
             self_health: state.player().health(),
+            self_mana: state.player().mana(),
             self_position: state.player().position(),
             wave_pressure: state.wave().pressure(),
             opponent: OpponentReport {
@@ -676,6 +734,7 @@ pub struct AlliedLaneObservation {
     turn: Turn,
     observation_id: ObservationId,
     laner_health: LaneHealth,
+    laner_mana: LaneMana,
     laner_position: LanePosition,
     wave_pressure: WavePressure,
     opponent: OpponentReport,
@@ -703,6 +762,10 @@ impl AlliedLaneObservation {
 
     pub fn laner_health(self) -> LaneHealth {
         self.laner_health
+    }
+
+    pub fn laner_mana(self) -> LaneMana {
+        self.laner_mana
     }
 
     pub fn laner_position(self) -> LanePosition {
@@ -762,6 +825,7 @@ pub fn observe_allied(
             turn: state.turn(),
             observation_id,
             laner_health: state.player().health(),
+            laner_mana: state.player().mana(),
             laner_position: state.player().position(),
             wave_pressure: state.wave().pressure(),
             opponent: OpponentReport {
@@ -1023,6 +1087,9 @@ fn allied_visible_digest(observation: AlliedLaneObservation) -> StateHash {
     hash = hash_bytes(hash, &observation.turn.value().to_le_bytes());
     hash = hash_bytes(hash, &observation.observation_id.value().to_le_bytes());
     hash = hash_bytes(hash, &[observation.laner_health.value()]);
+    if observation.laner_mana != LaneMana::full() {
+        hash = hash_bytes(hash, &[LANE_MANA_HASH_TAG, observation.laner_mana.value()]);
+    }
     hash = hash_bytes(hash, &[position_tag(observation.laner_position)]);
     hash = hash_bytes(hash, &[observation.wave_pressure.value()]);
     hash = hash_bytes(hash, &[intent_tag(observation.available_intents[0])]);
@@ -1066,9 +1133,12 @@ pub fn scripted_allied_proposal(
         return Err(AlliedProposalError::InvalidObservation);
     }
     let health_risk = (5i16 - i16::from(observation.laner_health.value())).max(0);
-    let stabilize_score = 2 * health_risk + (3 - i16::from(observation.wave_pressure.value()));
+    let mana_risk = (3i16 - i16::from(observation.laner_mana.value())).max(0);
+    let stabilize_score =
+        2 * health_risk + (3 - i16::from(observation.wave_pressure.value())) + mana_risk;
     let contest_score = 2 * i16::from(observation.wave_pressure.value())
-        + (i16::from(observation.laner_health.value()) - 5).max(0);
+        + (i16::from(observation.laner_health.value()) - 5).max(0)
+        - mana_risk;
     let candidates = [
         AlliedCandidate {
             intent: LaneIntent::Stabilize,
@@ -1706,6 +1776,7 @@ pub struct LaneExecutionInputs {
     self_damage: LaneDamage,
     opponent_damage: LaneDamage,
     wave_result: LaneWaveResult,
+    mana_spent: LaneMana,
 }
 
 impl LaneExecutionInputs {
@@ -1720,7 +1791,13 @@ impl LaneExecutionInputs {
             self_damage,
             opponent_damage,
             wave_result,
+            mana_spent: LaneMana::zero(),
         }
+    }
+
+    pub fn with_mana_spent(mut self, mana_spent: LaneMana) -> Self {
+        self.mana_spent = mana_spent;
+        self
     }
 
     pub fn trace(self) -> InputTrace {
@@ -1737,6 +1814,10 @@ impl LaneExecutionInputs {
 
     pub fn wave_result(self) -> LaneWaveResult {
         self.wave_result
+    }
+
+    pub fn mana_spent(self) -> LaneMana {
+        self.mana_spent
     }
 }
 
@@ -1768,6 +1849,11 @@ impl LaneResolvedInputs {
 
     pub fn execution(self) -> LaneExecutionInputs {
         self.execution
+    }
+
+    pub fn with_mana_spent(mut self, mana_spent: LaneMana) -> Self {
+        self.execution = self.execution.with_mana_spent(mana_spent);
+        self
     }
 
     pub fn environment(self) -> InputTrace {
@@ -1852,6 +1938,11 @@ pub enum LaneEvent {
         amount: LaneDamage,
         trace: InputTrace,
     },
+    ManaSpent {
+        actor: ActorId,
+        amount: LaneMana,
+        trace: InputTrace,
+    },
     WaveResolved {
         before: WavePressure,
         after: WavePressure,
@@ -1881,6 +1972,13 @@ pub enum LaneEffect {
         cause: LaneEffectCause,
         provenance: LaneEffectProvenance,
     },
+    ManaChanged {
+        actor: ActorId,
+        before: LaneMana,
+        after: LaneMana,
+        cause: LaneEffectCause,
+        provenance: LaneEffectProvenance,
+    },
     PositionChanged {
         actor: ActorId,
         before: LanePosition,
@@ -1895,6 +1993,7 @@ impl LaneEffect {
         match self {
             Self::HealthChanged { provenance, .. }
             | Self::WavePressureChanged { provenance, .. }
+            | Self::ManaChanged { provenance, .. }
             | Self::PositionChanged { provenance, .. } => provenance,
         }
     }
@@ -1915,6 +2014,14 @@ pub enum LaneExecutionError {
     },
     WaveUnderflow {
         pressure: WavePressure,
+    },
+    ManaSpentWithoutContest {
+        intent: LaneIntent,
+        spent: LaneMana,
+    },
+    ManaExceedsAvailable {
+        spent: LaneMana,
+        available: LaneMana,
     },
 }
 
@@ -1945,6 +2052,7 @@ pub struct LaneDebrief {
     coordination: LaneCoordinationReview,
     intent: LaneIntent,
     self_damage: LaneDamage,
+    mana_spent: LaneMana,
     wave_result: LaneWaveResult,
     fallback_activated: bool,
     execution_trace: InputTrace,
@@ -1965,6 +2073,10 @@ impl LaneDebrief {
 
     pub fn self_damage(self) -> LaneDamage {
         self.self_damage
+    }
+
+    pub fn mana_spent(self) -> LaneMana {
+        self.mana_spent
     }
 
     pub fn wave_result(self) -> LaneWaveResult {
@@ -2977,6 +3089,24 @@ pub fn transition_lane(
             },
         ));
     }
+    if execution.mana_spent != LaneMana::zero() && command.command.intent != LaneIntent::Contest {
+        return Err(LaneTransitionError::Execution(
+            LaneExecutionError::ManaSpentWithoutContest {
+                intent: command.command.intent,
+                spent: execution.mana_spent,
+            },
+        ));
+    }
+    let after_player_mana =
+        player
+            .mana
+            .subtract(execution.mana_spent)
+            .ok_or(LaneTransitionError::Execution(
+                LaneExecutionError::ManaExceedsAvailable {
+                    spent: execution.mana_spent,
+                    available: player.mana,
+                },
+            ))?;
     let after_wave = match execution.wave_result {
         LaneWaveResult::Advanced => state.wave.pressure.advance(),
         LaneWaveResult::Held => Ok(state.wave.pressure),
@@ -3012,7 +3142,12 @@ pub fn transition_lane(
         .value()
         .checked_add(state.window.beats())
         .ok_or(LaneTransitionError::TurnOverflow)?;
-    let next_player = PlayerLaneState::new(player.id, after_player_health, after_position);
+    let next_player = PlayerLaneState::new_with_mana(
+        player.id,
+        after_player_health,
+        after_player_mana,
+        after_position,
+    );
     let next_opponent = OpponentTruth::new(
         opponent.id,
         after_opponent_health,
@@ -3064,6 +3199,20 @@ pub fn transition_lane(
             provenance: LaneEffectProvenance::direct_immediate(),
         });
     }
+    if execution.mana_spent != LaneMana::zero() {
+        events.push(LaneEvent::ManaSpent {
+            actor: player.id,
+            amount: execution.mana_spent,
+            trace,
+        });
+        effects.push(LaneEffect::ManaChanged {
+            actor: player.id,
+            before: player.mana,
+            after: after_player_mana,
+            cause: LaneEffectCause::Execution(trace),
+            provenance: LaneEffectProvenance::direct_immediate(),
+        });
+    }
     events.push(LaneEvent::WaveResolved {
         before: state.wave.pressure,
         after: after_wave,
@@ -3108,6 +3257,7 @@ pub fn transition_lane(
         coordination: LaneCoordinationReview::NotApplicable,
         intent: command.command.intent,
         self_damage: execution.self_damage,
+        mana_spent: execution.mana_spent,
         wave_result: execution.wave_result,
         fallback_activated,
         execution_trace: trace,
@@ -4874,6 +5024,149 @@ mod tests {
                 .effects()
                 .iter()
                 .all(|effect| { effect.provenance().timing() != LaneEffectTiming::Delayed })
+        );
+    }
+
+    #[test]
+    fn mana_is_bounded_visible_and_binds_non_full_hashes_and_policy_inputs() {
+        let full = LaneSnapshot::initial();
+        let reduced_player = PlayerLaneState::new_with_mana(
+            full.player().id(),
+            full.player().health(),
+            LaneMana::new(4).expect("bounded mana"),
+            full.player().position(),
+        );
+        let reduced = LaneSnapshot::new(
+            full.ruleset(),
+            full.turn(),
+            full.phase(),
+            reduced_player,
+            full.opponent(),
+            full.wave(),
+            full.jungle_threat(),
+            full.terminal_outcome(),
+        );
+        assert_eq!(
+            observe_player(&full, ObservationId::new(1))
+                .observation()
+                .self_mana(),
+            LaneMana::full()
+        );
+        assert_eq!(
+            observe_player(&reduced, ObservationId::new(1))
+                .observation()
+                .self_mana(),
+            LaneMana::new(4).expect("bounded mana")
+        );
+        let full_allied = observe_allied(&full, ObservationId::new(1)).observation();
+        let reduced_allied = observe_allied(&reduced, ObservationId::new(1)).observation();
+        assert_eq!(full_allied.laner_mana(), LaneMana::full());
+        assert_eq!(
+            reduced_allied.laner_mana(),
+            LaneMana::new(4).expect("bounded mana")
+        );
+        assert_ne!(full.hash(), reduced.hash());
+        assert_ne!(
+            allied_input_identity(full_allied, trace(3, 3)).visible_digest(),
+            allied_input_identity(reduced_allied, trace(3, 3)).visible_digest()
+        );
+    }
+
+    #[test]
+    fn contest_mana_spend_is_direct_immediate_and_replayable() {
+        let state = LaneSnapshot::initial();
+        let (receipt, contest_request) = request(&state, LaneIntent::Contest);
+        let validated = validate_lane_request(&state, &receipt, &contest_request).expect("valid");
+        let spent = LaneMana::new(1).expect("bounded spend");
+        let resolved_inputs = inputs(0, 1, LaneWaveResult::Advanced).with_mana_spent(spent);
+        let result =
+            transition_lane(&state, &validated, &resolved_inputs).expect("contest spend is valid");
+        assert_eq!(
+            result.next_state().player().mana(),
+            LaneMana::new(5).unwrap()
+        );
+        assert_eq!(result.debrief().mana_spent(), spent);
+        assert!(result.events().iter().any(|event| matches!(
+            event,
+            LaneEvent::ManaSpent {
+                actor: PLAYER_LANER,
+                amount,
+                ..
+            } if *amount == spent
+        )));
+        assert!(result.effects().iter().any(|effect| matches!(
+            effect,
+            LaneEffect::ManaChanged {
+                actor: PLAYER_LANER,
+                before,
+                after,
+                cause: LaneEffectCause::Execution(_),
+                provenance,
+            } if *before == LaneMana::full()
+                && *after == LaneMana::new(5).unwrap()
+                && *provenance == LaneEffectProvenance::direct_immediate()
+        )));
+        let mut history = LaneHistory::new(state).expect("valid history");
+        history
+            .append(&receipt, &contest_request, resolved_inputs)
+            .expect("append");
+        assert_eq!(
+            history.verify_replay().expect("replay"),
+            result.next_state()
+        );
+    }
+
+    #[test]
+    fn mana_spend_rejects_wrong_intent_and_insufficient_resource() {
+        let state = LaneSnapshot::initial();
+        let (stabilize_receipt, stabilize_request) = request(&state, LaneIntent::Stabilize);
+        let stabilize =
+            validate_lane_request(&state, &stabilize_receipt, &stabilize_request).expect("valid");
+        let spent = LaneMana::new(1).expect("bounded spend");
+        assert_eq!(
+            transition_lane(
+                &state,
+                &stabilize,
+                &inputs(0, 0, LaneWaveResult::Held).with_mana_spent(spent),
+            ),
+            Err(LaneTransitionError::Execution(
+                LaneExecutionError::ManaSpentWithoutContest {
+                    intent: LaneIntent::Stabilize,
+                    spent,
+                }
+            ))
+        );
+
+        let empty_player = PlayerLaneState::new_with_mana(
+            state.player().id(),
+            state.player().health(),
+            LaneMana::zero(),
+            state.player().position(),
+        );
+        let empty = LaneSnapshot::new(
+            state.ruleset(),
+            state.turn(),
+            state.phase(),
+            empty_player,
+            state.opponent(),
+            state.wave(),
+            state.jungle_threat(),
+            state.terminal_outcome(),
+        );
+        let (receipt, request) = request(&empty, LaneIntent::Contest);
+        let validated = validate_lane_request(&empty, &receipt, &request).expect("valid");
+        assert_eq!(
+            transition_lane(
+                &empty,
+                &validated,
+                &inputs(0, 0, LaneWaveResult::Held).with_mana_spent(spent),
+            ),
+            Err(LaneTransitionError::Execution(
+                LaneExecutionError::ManaExceedsAvailable {
+                    spent,
+                    available: LaneMana::zero(),
+                }
+            ))
         );
     }
 

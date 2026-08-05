@@ -2,60 +2,72 @@
 
 ## Requested Outcome
 
-Implement the next bounded M2 slice after the merged lane window, branch,
-coordination, objective, fixture, scenario, debrief, Recall, threat-report,
-Withdraw, and variable-duration contracts: make existing lane effects expose
-explicit direct/indirect and immediate timing provenance while retaining their
-existing cause/trace attribution. Do not add delayed mechanics in this slice.
+Implement the next bounded M2 resource slice: add a typed player-lane mana
+resource that is explicit in authoritative state and actor-visible observations,
+can be spent by Contest execution through resolved inputs, emits an attributed
+immediate effect, and survives validation, hashing, history, and replay. Keep
+cooldowns, gold, experience, regeneration, and ability-specific mechanics out
+of this slice.
 
 ## Roadmap Milestone
 
-M2 — One-Lane Vertical Slice, bounded effect-provenance follow-up.
+M2 — One-Lane Vertical Slice, bounded mana-resource follow-up.
 
 ## Current Evidence
 
-- M1 and the prior M2 slices are merged on `main` through `f76c584`; this
-  branch advances the package from `0.1.14` to `0.1.15`, pinned to Rust
-  `1.96.0`, with no dependencies.
+- M1 and the prior M2 slices are merged on `main` through `d8b997f`; this branch
+  advances the package from `0.1.15` to `0.1.16`, pinned to Rust `1.96.0`, with
+  no dependencies.
 - The binary remains a placeholder and the M2 scenario is not yet playable.
+- Health, wave pressure, position, window duration, intent, execution inputs,
+  effect provenance, history, and replay are already implemented.
 
 ## In Scope
 
-- Add public effect provenance distinguishing `Direct` from `Indirect` and
-  `Immediate` timing for all currently emitted lane effects.
-- Mark explicit health/wave/intent changes as direct immediate effects and
-  Contest fallback position movement as an indirect immediate effect.
-- Preserve existing cause/trace fields, event ordering, state hashes,
-  transition authority, replay identities, and actor-visible information.
-- Synchronize canonical M2 documents and SDD/domain-QA handoff artifacts.
+- Add bounded `LaneMana` state to the player laner with a full-resource default.
+- Project player mana to the player observation and team-visible mana to the
+  allied observation without exposing opponent truth.
+- Allow only Contest execution to spend explicit mana from resolved inputs;
+  reject spending for other intents or above the available resource.
+- Emit an ordered `ManaSpent` event, a direct/immediate `ManaChanged` effect,
+  and debrief attribution while preserving existing causes and traces.
+- Include non-full mana in the authoritative state hash and allied visible
+  digest so replay and visible policy inputs bind to the resource.
+- Synchronize canonical documents and SDD/domain-QA handoff artifacts.
 
 ## Non-Goals
 
-- No delayed effect queue, automatic future event, resource mechanic,
-  communication, serialization change, CLI, MCP, GUI, or playable scenario.
-- No new lane effect categories or changes to transition state/hash inputs.
-- No claim that immediate provenance establishes causal completeness, balance,
-  optimality, strategy quality, or human experience.
+- No cooldown, gold, experience, mana regeneration, abilities, item system,
+  opponent mana report, automatic resource timing, serialization, CLI, MCP,
+  GUI, or playable-scenario claim.
+- No new transition authority, stochastic draw, delayed effect, or hidden-state
+  exposure.
+- No requirement that existing no-spend fixtures change outcome or state hash;
+  the full-resource default preserves their prior representation.
 
 ## Project Boundaries Touched
 
-- Attributed effect projection at the deterministic transition boundary.
-- Causal debrief/read-model access to direct/indirect and timing labels.
+- Authoritative player state and hash boundary.
+- Player/allied observations and visible-policy digest.
+- Explicit execution input validation, transition events/effects, and debrief.
+- Append-only history/replay and existing objective/branch identity checks.
 
 ## Source Files
 
-- `src/lane.rs` effect provenance types, emitted effects, and focused tests
+- `src/lane.rs` resource types, observations, execution inputs, transition,
+  events/effects, debrief, and focused tests
 - `Cargo.toml`, `Cargo.lock`, `README.md`, `ROADMAP.md`, `SPEC.md`,
   `ARCHITECTURE.md`, `CHANGELOG.md`
 - `_workspace/01_simulation-design.md`, `_workspace/03_domain-qa.md`, and
-  immutable variable-duration handoff snapshots
+  immutable effect-provenance handoff snapshots
 
 ## Expected Outputs
 
-- Effect provenance API and direct/indirect immediate labels for current effects.
-- Tests for explicit, fallback, wave, health, and replay-preserved provenance.
-- Passing local checks, one-code-reviewer PR handoff, hosted CI, and merged PR
-  with temporary branch cleanup.
+- A typed, bounded mana resource with visible player/allied projections.
+- Contest-only spend validation with deterministic transition and attribution.
+- State-hash, allied-digest, no-leakage, malformed-input, and replay tests.
+- Passing local checks, one-code-reviewer PR handoff, hosted CI, merged PR, and
+  temporary branch cleanup.
 
 ## Verification
 
@@ -68,8 +80,9 @@ M2 — One-Lane Vertical Slice, bounded effect-provenance follow-up.
 
 ## Evidence Limits and Open Questions
 
-- The slice establishes provenance labels for existing immediate effects only.
-  Delayed effects, indirect chains beyond fallback, and causal completeness
-  remain open.
-- Future delayed-effect work must preserve committed history and keep timing
-  inputs explicit at the authoritative transition boundary.
+- The slice establishes one bounded resource with explicit Contest spending;
+  it does not establish a complete resource economy, ability balance, or
+  strategic quality.
+- Future cooldown/gold/experience work must choose its own actor-visible
+  boundary and preserve explicit resolved inputs, committed history, and
+  deterministic replay.

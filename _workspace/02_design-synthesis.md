@@ -1,31 +1,33 @@
-# Design Synthesis — M2 Bounded Effect Provenance
+# Design Synthesis — M2 Bounded Mana Resource
 
 ## Decision
 
-Add relationship and timing provenance to the existing `LaneEffect` values
-without changing the authoritative transition inputs or state hash. The
-existing transition continues to evaluate a selected window from explicit
-resolved inputs and emits only immediate effects in this slice.
-
-The authoritative transition, command shape, allied candidate policy, state
-hashes, and replay identities remain stable. Existing effect causes and trace
-attribution remain available alongside the new labels.
+Add one bounded `LaneMana` resource to the existing player-laner state and
+execution boundary. Full mana remains the compatibility default; explicit
+Contest execution may spend mana, producing a direct/immediate attributed
+effect and a replay-verifiable reduced resource.
 
 ## Resolved Contract
 
-`LaneEffectProvenance` distinguishes `Direct` from `Indirect` relationship and
-`Immediate` from `Delayed` timing. Explicit health, wave, and intent-position
-effects are direct/immediate; Contest fallback movement is indirect/immediate.
-`Delayed` is vocabulary only: no delayed queue, future event, or stored delayed
-effect is added. Existing history, branch, objective, scenario, and debrief
-contracts remain intact.
+`PlayerLaneState` stores `LaneMana` with a maximum of six. `LanerObservation`
+and `AlliedLaneObservation` expose the authorized player-laner value, while
+opponent truth remains unchanged. `LaneExecutionInputs::with_mana_spent`
+defaults to zero and is legal only for Contest. The transition rejects wrong-
+intent or insufficient spends before applying health, wave, position, or
+outcome changes.
+
+The transition emits `LaneEvent::ManaSpent` and `LaneEffect::ManaChanged` with
+the existing execution trace, direct/immediate provenance, and debrief amount.
+Non-full mana adds a tagged state-hash value and allied visible-digest value;
+full-resource no-spend paths retain their prior representation.
 
 ## Evidence and Limits
 
-Focused tests cover direct/immediate explicit effects, indirect/immediate
-fallback movement, absence of delayed emissions, and replay-preserved
-provenance. The full suite passes with 55 Rust tests.
+Focused tests cover visible full/reduced mana, state-hash and allied-digest
+binding, Contest spending and attribution, wrong-intent/insufficient rejection,
+and history replay. The full suite passes with 58 Rust tests.
 
-This establishes labels for current immediate effects only. It does not
-establish delayed effects, causal completeness, adaptive pacing, communication,
-strategy quality, balance, or a complete playable scenario.
+This establishes one bounded mana resource and one Contest spend path. It does
+not establish cooldowns, gold, experience, regeneration, abilities, resource
+economy balance, delayed resource timing, communication, or a complete
+playable scenario.
