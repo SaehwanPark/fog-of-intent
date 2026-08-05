@@ -3504,6 +3504,277 @@ pub enum ScenarioError {
     ReplayMismatch,
 }
 
+pub const M2_FINAL_DEBRIEF_REPLAY_ID: &str = "m2-two-window-final-debrief-v1";
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum FinalDebriefAttributionLimit {
+    CommittedHistoryFactsOnly,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct WindowDebriefSummary {
+    window: ScenarioWindow,
+    intent: LaneIntent,
+    outcome: LaneOutcome,
+    player_health: LaneHealth,
+    player_position: LanePosition,
+    wave_result: LaneWaveResult,
+    coordination: LaneCoordinationReview,
+    execution_trace: InputTrace,
+    objective: TerminalObjectiveReview,
+}
+
+impl WindowDebriefSummary {
+    pub fn window(self) -> ScenarioWindow {
+        self.window
+    }
+
+    pub fn intent(self) -> LaneIntent {
+        self.intent
+    }
+
+    pub fn outcome(self) -> LaneOutcome {
+        self.outcome
+    }
+
+    pub fn player_health(self) -> LaneHealth {
+        self.player_health
+    }
+
+    pub fn player_position(self) -> LanePosition {
+        self.player_position
+    }
+
+    pub fn wave_result(self) -> LaneWaveResult {
+        self.wave_result
+    }
+
+    pub fn coordination(self) -> LaneCoordinationReview {
+        self.coordination
+    }
+
+    pub fn execution_trace(self) -> InputTrace {
+        self.execution_trace
+    }
+
+    pub fn objective(self) -> TerminalObjectiveReview {
+        self.objective
+    }
+
+    fn report(self) -> VisibleWindowDebriefSummary {
+        VisibleWindowDebriefSummary {
+            window: self.window,
+            intent: self.intent,
+            outcome: self.outcome,
+            player_health: self.player_health,
+            player_position: self.player_position,
+            wave_result: self.wave_result,
+            coordination: self.coordination,
+            objective: self.objective.disposition(),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct VisibleWindowDebriefSummary {
+    window: ScenarioWindow,
+    intent: LaneIntent,
+    outcome: LaneOutcome,
+    player_health: LaneHealth,
+    player_position: LanePosition,
+    wave_result: LaneWaveResult,
+    coordination: LaneCoordinationReview,
+    objective: ObjectiveDisposition,
+}
+
+impl VisibleWindowDebriefSummary {
+    pub fn window(self) -> ScenarioWindow {
+        self.window
+    }
+
+    pub fn intent(self) -> LaneIntent {
+        self.intent
+    }
+
+    pub fn outcome(self) -> LaneOutcome {
+        self.outcome
+    }
+
+    pub fn player_health(self) -> LaneHealth {
+        self.player_health
+    }
+
+    pub fn player_position(self) -> LanePosition {
+        self.player_position
+    }
+
+    pub fn wave_result(self) -> LaneWaveResult {
+        self.wave_result
+    }
+
+    pub fn coordination(self) -> LaneCoordinationReview {
+        self.coordination
+    }
+
+    pub fn objective(self) -> ObjectiveDisposition {
+        self.objective
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScenarioDebriefReport {
+    schema: &'static str,
+    windows: [VisibleWindowDebriefSummary; 2],
+    final_objective: ObjectiveDisposition,
+    attribution_limit: FinalDebriefAttributionLimit,
+}
+
+impl ScenarioDebriefReport {
+    pub fn schema(self) -> &'static str {
+        self.schema
+    }
+
+    pub fn windows(self) -> [VisibleWindowDebriefSummary; 2] {
+        self.windows
+    }
+
+    pub fn final_objective(self) -> ObjectiveDisposition {
+        self.final_objective
+    }
+
+    pub fn attribution_limit(self) -> FinalDebriefAttributionLimit {
+        self.attribution_limit
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ScenarioDebriefRecord {
+    replay_id: &'static str,
+    source_replay_id: &'static str,
+    source_terminal_state_hash: StateHash,
+    source_record_identities: [StateHash; 2],
+    windows: [WindowDebriefSummary; 2],
+    final_objective: ObjectiveDisposition,
+    attribution_limit: FinalDebriefAttributionLimit,
+    report: ScenarioDebriefReport,
+}
+
+impl ScenarioDebriefRecord {
+    pub fn replay_id(&self) -> &'static str {
+        self.replay_id
+    }
+
+    pub fn source_replay_id(&self) -> &'static str {
+        self.source_replay_id
+    }
+
+    pub fn source_terminal_state_hash(&self) -> StateHash {
+        self.source_terminal_state_hash
+    }
+
+    pub fn source_record_identities(&self) -> [StateHash; 2] {
+        self.source_record_identities
+    }
+
+    pub fn windows(&self) -> [WindowDebriefSummary; 2] {
+        self.windows
+    }
+
+    pub fn final_objective(&self) -> ObjectiveDisposition {
+        self.final_objective
+    }
+
+    pub fn attribution_limit(&self) -> FinalDebriefAttributionLimit {
+        self.attribution_limit
+    }
+
+    pub fn report(&self) -> ScenarioDebriefReport {
+        self.report
+    }
+
+    pub fn verify_replay(&self, history: &LaneScenarioHistory) -> Result<(), ScenarioDebriefError> {
+        let expected = build_scenario_debrief(history)?;
+        if *self != expected {
+            return Err(ScenarioDebriefError::ReplayMismatch);
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ScenarioDebriefError {
+    History(ScenarioError),
+    Objective(ObjectiveError),
+    IncompleteHistory,
+    ReplayMismatch,
+}
+
+pub fn build_scenario_debrief(
+    history: &LaneScenarioHistory,
+) -> Result<ScenarioDebriefRecord, ScenarioDebriefError> {
+    history
+        .verify_replay()
+        .map_err(ScenarioDebriefError::History)?;
+    if history.records().len() != 2 {
+        return Err(ScenarioDebriefError::IncompleteHistory);
+    }
+    let mut summaries = [
+        window_debrief_summary(&history.records()[0])?,
+        window_debrief_summary(&history.records()[1])?,
+    ];
+    summaries[0].window = ScenarioWindow::First;
+    summaries[1].window = ScenarioWindow::Second;
+    let final_objective = if summaries
+        .iter()
+        .all(|summary| summary.objective.disposition() == ObjectiveDisposition::GoalAchieved)
+    {
+        ObjectiveDisposition::GoalAchieved
+    } else {
+        ObjectiveDisposition::GoalMissed
+    };
+    let attribution_limit = FinalDebriefAttributionLimit::CommittedHistoryFactsOnly;
+    Ok(ScenarioDebriefRecord {
+        replay_id: M2_FINAL_DEBRIEF_REPLAY_ID,
+        source_replay_id: M2_TWO_WINDOW_REPLAY_ID,
+        source_terminal_state_hash: history
+            .terminal_state()
+            .map_err(ScenarioDebriefError::History)?
+            .hash(),
+        source_record_identities: [
+            lane_record_identity(history.records()[0].transition()),
+            lane_record_identity(history.records()[1].transition()),
+        ],
+        windows: summaries,
+        final_objective,
+        attribution_limit,
+        report: ScenarioDebriefReport {
+            schema: M2_FINAL_DEBRIEF_REPLAY_ID,
+            windows: [summaries[0].report(), summaries[1].report()],
+            final_objective,
+            attribution_limit,
+        },
+    })
+}
+
+fn window_debrief_summary(
+    record: &LaneScenarioRecord,
+) -> Result<WindowDebriefSummary, ScenarioDebriefError> {
+    let transition = record.transition();
+    let objective = review_lane_objective(ScenarioGoal::HoldLaneSpaceThroughWindow, transition)
+        .map_err(ScenarioDebriefError::Objective)?;
+    Ok(WindowDebriefSummary {
+        window: record.window,
+        intent: transition.command.intent,
+        outcome: transition.result.outcome,
+        player_health: transition.result.next_state.player().health(),
+        player_position: transition.result.next_state.player().position(),
+        wave_result: transition.inputs.execution.wave_result,
+        coordination: LaneCoordinationReview::NotApplicable,
+        execution_trace: transition.inputs.execution.trace,
+        objective: objective.review,
+    })
+}
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct BranchId(u8);
 
@@ -5068,5 +5339,67 @@ mod tests {
             .expect("second window");
         history.records[0].reopened_state = Some(initial);
         assert_eq!(history.verify_replay(), Err(ScenarioError::ReplayMismatch));
+    }
+
+    #[test]
+    fn final_debrief_replays_committed_window_facts_and_redacts_provenance() {
+        let build_history = || {
+            let initial = LaneSnapshot::initial();
+            let mut history = LaneScenarioHistory::new(initial).expect("valid scenario");
+            let (first_receipt, first_request) = request(&initial, LaneIntent::Contest);
+            history
+                .append(
+                    &first_receipt,
+                    &first_request,
+                    inputs(0, 1, LaneWaveResult::Advanced),
+                )
+                .expect("first window");
+            let reopened = history.current_state();
+            let (second_receipt, second_request) = request(&reopened, LaneIntent::Stabilize);
+            history
+                .append(
+                    &second_receipt,
+                    &second_request,
+                    inputs(0, 0, LaneWaveResult::Held),
+                )
+                .expect("second window");
+            history
+        };
+        let history = build_history();
+        let debrief = build_scenario_debrief(&history).expect("debrief");
+        assert_eq!(debrief.replay_id(), M2_FINAL_DEBRIEF_REPLAY_ID);
+        assert_eq!(debrief.source_replay_id(), M2_TWO_WINDOW_REPLAY_ID);
+        assert_eq!(debrief.windows()[0].window(), ScenarioWindow::First);
+        assert_eq!(debrief.windows()[0].intent(), LaneIntent::Contest);
+        assert_eq!(
+            debrief.windows()[0].objective().disposition(),
+            ObjectiveDisposition::GoalAchieved
+        );
+        assert_eq!(debrief.windows()[1].window(), ScenarioWindow::Second);
+        assert_eq!(debrief.windows()[1].intent(), LaneIntent::Stabilize);
+        assert_eq!(debrief.final_objective(), ObjectiveDisposition::GoalMissed);
+        assert_eq!(
+            debrief.attribution_limit(),
+            FinalDebriefAttributionLimit::CommittedHistoryFactsOnly
+        );
+        assert!(
+            !format!("{:?}", debrief.report())
+                .contains(&debrief.source_terminal_state_hash().value().to_string())
+        );
+        debrief.verify_replay(&history).expect("debrief replay");
+        assert_eq!(history.verify_replay(), Ok(history.current_state()));
+
+        let mut tampered = debrief.clone();
+        tampered.source_terminal_state_hash = StateHash::from_raw(0);
+        assert_eq!(
+            tampered.verify_replay(&history),
+            Err(ScenarioDebriefError::ReplayMismatch)
+        );
+
+        let incomplete = LaneScenarioHistory::new(LaneSnapshot::initial()).expect("valid");
+        assert_eq!(
+            build_scenario_debrief(&incomplete),
+            Err(ScenarioDebriefError::IncompleteHistory)
+        );
     }
 }

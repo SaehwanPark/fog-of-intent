@@ -315,7 +315,7 @@ a causal debrief.
 - [x] Implement coordination and execution as distinct resolutions.
 - [ ] Record direct, indirect, immediate, and delayed effects with provenance.
 - [ ] Define a terminal outcome that does not collapse evaluation to win/loss.
-- [ ] Produce immediate review and final debrief projections.
+- [x] Produce immediate review and final debrief projections.
 - [x] Support replay and a bounded counterfactual branch at a pivotal decision.
 - [x] Add scripted happy-path, risk-taking, and conservative-strategy fixtures.
 - [ ] Test hidden-state leakage and actor-visible report completeness.
@@ -417,6 +417,21 @@ does not establish strategy quality, balance, optimality, or human preference.
 This evidence establishes a bounded two-window composition. It does not
 establish variable pacing, recall, gank response, communication, or a complete
 playable lane scenario.
+
+### Current final-debrief evidence
+
+- [x] Build a versioned final debrief only from a replay-verified two-window
+  history, with two per-window intent/coordination/execution/objective summaries.
+- [x] Aggregate a final objective disposition without adding a new lane
+  outcome, state field, event/effect, or hidden-state score.
+- [x] Separate privileged provenance from a visible report that omits hashes,
+  receipts, policy internals, and uncommitted choices.
+- [x] Reject incomplete histories and tampered source identities, window
+  summaries, objective reviews, terminal hashes, final disposition, or report.
+
+This evidence establishes a deterministic committed-facts final debrief for
+two ordinary windows. It does not establish a complete scenario, pacing,
+communication, strategy quality, balance, or human experience.
 
 ### Deliverables
 

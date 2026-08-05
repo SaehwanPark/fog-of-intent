@@ -1,122 +1,120 @@
-# Simulation Design — M2 Bounded Two-Window Scenario Wrapper
+# Simulation Design — M2 Bounded Two-Window Final Debrief
 
 ## Goal and Boundary
 
-This slice composes exactly two sequential one-beat lane windows over the
-implemented `LaneSnapshot` transition. It adds no new lane mechanics. The
-first committed window produces the existing resolved result; one explicit
-host-owned reopen boundary prepares a second open window; the second commit
-finishes the bounded scenario history.
+This slice adds one final debrief projection over a completed
+`LaneScenarioHistory` containing exactly two existing ordinary lane records.
+It aggregates committed facts; it is not another transition, objective engine,
+belief update, or hidden-state research view.
 
 ```text
-open snapshot 0
-  -> existing observe/validate/transition
-  -> resolved result 0
-  -> reopen_lane_window(result 0)
-  -> open snapshot 1
-  -> existing observe/validate/transition
-  -> resolved result 1 / scenario terminal state
+verified two-window history
+  -> per-window intent/coordination/execution/objective summaries
+  -> final terminal-state summary
+  -> bounded visible ScenarioDebriefReport
 ```
 
-The existing one-window `LaneHistory`, `LaneBranch`,
-`CoordinatedLaneHistory`, replay IDs, `LaneSnapshot::hash()`, and
-`transition_lane` remain unchanged and independently valid. The new wrapper
-owns only the two-window sequence and the deterministic reopen boundary.
+The existing lane transition, window reopen, ordinary/coordinated history,
+branch, objective, fixture, and state-hash contracts remain unchanged. The
+final debrief cannot mutate history or infer facts that are not committed.
 
 ## Scope and Exclusions
 
 Included:
 
-- `m2-two-window-scenario-v1` identity;
-- a `LaneScenarioHistory` that accepts at most two sequential ordinary lane
-  records;
-- one `reopen_lane_window` operation from resolved result 0 to open window 1,
-  preserving player/opponent/wave/hidden-threat values and the incremented
-  turn while clearing only phase/terminal-window status;
-- append-only scenario records that retain each window's start state, base
-  transition record, and optional reopened state;
-- deterministic replay of both transitions and the reopen boundary;
-- a final terminal state after window 2, plus objective review of either
-  committed record through the existing objective API.
+- versioned `m2-two-window-final-debrief-v1` identity;
+- a debrief record derived only from a replay-verified two-window history;
+- two per-window summaries containing player intent, lane outcome, health/
+  position result, wave result, execution trace, and `NotApplicable`
+  coordination for this ordinary scenario wrapper;
+- per-window objective reviews using the existing goal/evaluation contract;
+- final terminal state hash, terminal outcome, goal dispositions, and an
+  attribution limit;
+- a visible debrief report that omits hidden opponent/jungle truth, source
+  receipts, private hashes, policy internals, and uncommitted choices;
+- deterministic replay/tamper verification of the debrief record.
 
-Excluded are variable-duration windows, automatic pacing, recall, gank
-response, new resources, communication, multiple allied proposals, scenario
-serialization, branching across scenario windows, merge/delete operations,
-CLI/MCP/GUI, and human-experience claims.
+Excluded are new mechanics, automatic pacing, recall/gank response,
+communication, coordinated records inside the multi-window wrapper, hidden
+state inspection, optimality/balance scoring, portable serialization, CLI/MCP/
+GUI, and human-experience claims.
 
-## Reopen Contract
-
-`reopen_lane_window(result)` accepts only the opaque committed
-`LaneTransitionResult`; it verifies the result hash/outcome against its
-resolved next state and then requires `phase == Resolved` with
-`terminal_outcome.is_some()`. It returns:
+## Typed Contract
 
 ```text
-LaneSnapshot::new(
-    same ruleset,
-    same turn,
-    Open,
-    same player/opponent/wave/jungle values,
-    None,
-)
-```
+WindowDebriefSummary {
+    window: First | Second,
+    intent: LaneIntent,
+    outcome: LaneOutcome,
+    player_health: LaneHealth,
+    player_position: LanePosition,
+    wave_result: LaneWaveResult,
+    coordination: NotApplicable,
+    execution_trace: InputTrace,
+    objective: TerminalObjectiveReview,
+}
 
-It does not call `transition_lane`, create randomness, or mutate the prior
-result. Its output hash is an explicit scenario-boundary state and is stored
-in the scenario record/replay stream. The raw snapshot helper is private; only
-the scenario wrapper may accept the open state as the next window's starting
-point.
-
-## History and Authority
-
-```text
-LaneScenarioRecord {
-    window: ScenarioWindow,
-    start_state: LaneSnapshot,
-    transition: LaneTransitionRecord,
-    reopened_state: Option<LaneSnapshot>,
+ScenarioDebrief {
+    replay_id: "m2-two-window-final-debrief-v1",
+    source_replay_id: "m2-two-window-scenario-v1",
+    source_terminal_state_hash: StateHash,
+    windows: [WindowDebriefSummary; 2],
+    final_objective: ObjectiveDisposition,
+    attribution_limit: CommittedHistoryFactsOnly,
 }
 ```
 
-Window 0 stores `reopened_state = Some(...)`; window 1 stores `None`. The
-wrapper rejects a third append, a non-open current state, an invalid initial
-state, or a record whose observation/command does not validate against the
-current window. It never accepts an actor action against the resolved window.
+The final objective is `GoalAchieved` only if both window objective reviews are
+achieved; otherwise it is `GoalMissed` for this bounded report. This is an
+explicit aggregation rule, not a new `LaneOutcome` or a global value score.
+The visible `ScenarioDebriefReport` includes window intents/outcomes,
+coordination-not-applicable, objective dispositions, final disposition, and the
+attribution limit, but not source hashes or private receipts.
 
-The scenario host can use existing ordinary lane records in this slice. The
-allied coordination and fixture APIs remain available for one-window cases;
-scenario-aware coordination is deferred until a versioned composition is
-needed.
+## Authority, Causality, and Evidence
 
-## Replay and Determinism
+`build_scenario_debrief(history)` first calls `history.verify_replay()` and
+requires exactly two records. It derives every summary from each committed
+`LaneScenarioRecord::transition()` and calls `review_lane_objective` for each
+record. It never reads opponent truth or changes the stored history.
 
-`LaneScenarioHistory::verify_replay` starts from the initial open snapshot. For
-each record it checks the window index and exact `start_state`, regenerates the
-player observation, validates the stored command, reruns `transition_lane`,
-compares the complete `LaneTransitionRecord`, and compares the stored reopen
-state when present. It then uses the reopened state as the next start. The
-terminal scenario state must equal the wrapper's current state.
+The debrief distinguishes:
 
-Changing a prior outcome, start-state phase, reopened state, command,
-observation, input trace, or terminal result is replay failure. Identical
-states/commands/inputs reproduce the same window results and hashes. The
-wrapper does not infer a second transition from runtime logs.
+- intent: the committed player strategic choice;
+- coordination: `NotApplicable` because this wrapper uses ordinary records;
+- execution: committed health/position/wave result and trace;
+- objective: existing per-window criterion/disposition;
+- final aggregation: a bounded report over those facts.
+
+No summary says an intent was optimal, that hidden state was known, or that a
+result generalizes beyond this two-window fixture.
+
+## Replay and Tamper Contract
+
+`ScenarioDebriefRecord` stores the source terminal state hash, source record
+identities, summaries, and final report. `verify_replay(history)` reruns the
+source history verification, regenerates both objective reviews and summaries,
+then compares the complete debrief record. Tampering with source identity,
+window order, intent/outcome, execution trace, objective review, terminal hash,
+final disposition, or report fails.
+
+The visible report does not expose the privileged debrief identity. Existing
+one-window, branch, coordination, objective, fixture, and two-window replay
+tests remain passing.
 
 ## Verification Contract
 
 Focused tests must cover:
 
-- valid reopen preserving all domain values while changing only window phase;
-- reject reopen from open/invalid states;
-- append first window, reopen, append second window, and reach terminal state;
-- reject third append and actions against the resolved final window;
-- preserve first-window outcome and objective facts across the reopen;
-- deterministic repeated two-window replay and unchanged base results/hashes;
-- tamper detection for window index, start state, reopened state, command,
-  observation, input traces, result, and terminal state;
-- existing one-window history, coordinated history, branch, fixture, and M1
-  replay tests remain passing.
+- debrief build only from a complete two-window history;
+- per-window attribution and objective preservation;
+- final achieved versus missed aggregation;
+- visible report hash/receipt redaction;
+- deterministic repeated build and unchanged history/current state;
+- reject incomplete history, tampered source record, window order, objective,
+  terminal hash, final disposition, or report;
+- preserve all existing M1/M2 replay and information-boundary tests.
 
-Evidence establishes only a two-window deterministic composition and replay
-boundary. It does not establish variable pacing, a complete lane scenario,
-strategy quality, balance, optimality, or human behavior.
+Evidence establishes only a deterministic, committed-facts final debrief for
+two ordinary windows. It does not establish a complete scenario, pacing,
+strategy quality, balance, optimality, trust, accessibility, or human behavior.
