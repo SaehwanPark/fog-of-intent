@@ -255,6 +255,21 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - One focused final-debrief test plus the prior forty-three tests pass, for
   forty-four Rust tests total.
 
+#### Delivered in the bounded Recall-intent follow-up
+
+- `LanerObservation` advertises `Stabilize`, `Contest`, and `Recall` to the
+  player while the allied proposal policy remains limited to its existing
+  two-intent candidate set.
+- Host validation rejects a Recall request when the current actor-visible
+  observation omits it, while current valid, stale, and resolved-window
+  behavior remains explicit.
+- `transition_lane` resolves Recall to `NearTower` with intent-attributed
+  position effects, preserves explicit wave/execution inputs, and retains the
+  ordinary `YieldedSpace` or `ForcedOut` outcome boundary.
+- Existing record identities, replay, branch, objective, and final-debrief
+  contracts remain unchanged; four focused Recall tests plus the prior
+  forty-four tests pass, for forty-eight Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
@@ -268,9 +283,10 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 
 #### Not Yet Done
 
-- The complete lane scenario still needs variable pacing, recall, gank
+- The complete lane scenario still needs variable pacing, gank
   response, richer resource abstractions, communication, and a broader causal
-  debrief surface; this follow-up covers only two fixed one-beat windows.
+  debrief surface; the Recall follow-up is only one bounded intent over the
+  existing fixed one-beat window contract.
 - CLI, MCP, full agent ecology, and human-experience evidence remain future
   M3/M4+ work; this diagnostic slice is not playable and makes no enjoyment,
   accessibility, trust, or behavioral-validity claim.

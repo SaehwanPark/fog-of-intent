@@ -3,32 +3,32 @@
 ## Requested Outcome
 
 Implement the next bounded M2 slice after the merged one-window lane, branch,
-allied coordination, objective, strategy-fixture, two-window, and debrief
-contracts: add one explicit low-risk `Recall` player intent to the existing
-one-window command/transition boundary. Keep allied proposals limited to their
-existing two-intent policy and preserve all replay identities.
+allied coordination, objective, strategy-fixture, and two-window contracts:
+add a final debrief projection over the committed two-window history. Keep
+intent, coordination, execution, objective, and evidence limits distinct; do
+not add new mechanics.
 
 ## Roadmap Milestone
 
-M2 — One-Lane Vertical Slice, bounded Recall-intent follow-up.
+M2 — One-Lane Vertical Slice, bounded final-debrief follow-up.
 
 ## Current Evidence
 
 - M1 is complete; the first M2 decision window, bounded branch, allied
   proposal/coordination overlay, terminal-objective review, three strategy
-  fixtures, two-window wrapper, and final debrief are merged on `main` through
-  `7491bca`; this branch advances the package from `0.1.10` to `0.1.11`,
-  pinned to Rust `1.96.0`,
+  fixtures, and two-window wrapper are merged on `main` through `9ef5b13`; this
+  branch advances the package from `0.1.9` to `0.1.10`, pinned to Rust `1.96.0`,
   with no dependencies.
 - The binary remains a placeholder and the M2 scenario is not yet playable.
 
 ## In Scope
 
-- Add `Recall` to the player-visible legal intent set and host validation.
-- Resolve Recall as a deterministic low-risk plan that moves the player near
-  tower, holds the wave, and preserves explicit execution inputs/provenance.
-- Preserve allied policy candidate bounds, deterministic replay, branch
-  compatibility, objective attribution, and final-debrief contracts.
+- Define one final two-window debrief with per-window records and objective
+  outcomes.
+- Preserve separate intent, coordination, execution, objective, and
+  committed-facts attribution, including first-window history.
+- Preserve actor-visible information limits, deterministic replay, branch
+  compatibility, and existing two-window authority.
 - Synchronize the M2 design, roadmap, SPEC, architecture, changelog, and domain
   QA evidence after verification.
 
@@ -36,8 +36,9 @@ M2 — One-Lane Vertical Slice, bounded Recall-intent follow-up.
 
 - No second decision window, full lane scenario, CLI, MCP, GUI, broad agent
   population, persistence codec, or general communication framework.
-- No variable pacing, gank mechanics, hidden-state score, optimality claim,
-  balance claim, or new lane mechanics beyond this bounded Recall plan.
+- No variable pacing, recall/gank mechanics, hidden-state score, optimality
+  claim, balance claim, or new lane mechanics beyond the existing bounded
+  transition.
 - No change to the placeholder binary or claim of a playable simulation.
 
 ## Project Boundaries Touched
@@ -48,15 +49,15 @@ M2 — One-Lane Vertical Slice, bounded Recall-intent follow-up.
 
 ## Source Files
 
-- `src/lane.rs` Recall intent and focused tests
+- `src/lane.rs` final-debrief projection and focused tests
 - existing M1 fixture tests remain unchanged
 - `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md`
 - `_workspace/01_simulation-design.md`, `_workspace/03_domain-qa.md`, and
-  immutable M2 final-debrief handoff snapshots
+  immutable M2 two-window handoff snapshots
 
 ## Expected Outputs
 
-- Recall legality, transition, objective attribution, and replay tests.
+- Final-debrief, per-window attribution, terminal-state, and replay tests.
 - Updated M2 checklist and SDD/domain handoff artifacts.
 - Passing local checks, one code-reviewer’s three-pass review, hosted CI, and a
   merged PR.
@@ -69,13 +70,13 @@ M2 — One-Lane Vertical Slice, bounded Recall-intent follow-up.
 - `python3 scripts/check_repository.py`
 - `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'`
 - `git diff --check`
-- Focused Recall-boundary, actor-observation, deterministic transition, and
-  replay tests.
+- Focused debrief-boundary, attribution, deterministic projection, and replay
+  tests.
 
 ## Evidence Limits and Open Questions
 
-- The slice establishes only one bounded Recall plan; it does not establish a
-  complete playable scenario, pacing, gank response, balance, optimality, or
+- The slice establishes only a two-window final-debrief projection; it does
+  not establish a complete playable scenario, pacing, balance, optimality, or
   human-experience evidence.
 - Portable serialization, migration, multi-window state, general communication,
   and broad agent-population claims remain deferred.

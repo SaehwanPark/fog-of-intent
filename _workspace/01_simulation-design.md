@@ -1,120 +1,77 @@
-# Simulation Design — M2 Bounded Two-Window Final Debrief
+# Simulation Design — M2 Bounded Recall Intent
 
 ## Goal and Boundary
 
-This slice adds one final debrief projection over a completed
-`LaneScenarioHistory` containing exactly two existing ordinary lane records.
-It aggregates committed facts; it is not another transition, objective engine,
-belief update, or hidden-state research view.
+This slice adds one player-facing `Recall` intent to the existing one-window
+lane contract. Recall is a strategic plan, not an immediate teleport or a new
+resource system. It is legal only through the same actor-valid observation,
+command, input, transition, history, branch, objective, and debrief paths.
+
+The allied proposal policy remains proposal-only and advertises only
+`Stabilize` and `Contest`; it does not learn or emit Recall in this slice.
+
+## Recall Contract
+
+`LanerObservation::available_intents()` exposes:
 
 ```text
-verified two-window history
-  -> per-window intent/coordination/execution/objective summaries
-  -> final terminal-state summary
-  -> bounded visible ScenarioDebriefReport
+[Stabilize, Contest, Recall]
 ```
 
-The existing lane transition, window reopen, ordinary/coordinated history,
-branch, objective, fixture, and state-hash contracts remain unchanged. The
-final debrief cannot mutate history or infer facts that are not committed.
+`Recall` commits for the current beat, moves the player to `NearTower`, holds
+the wave through the explicit `LaneWaveResult`, and sends no allied proposal or
+message. Execution damage remains an explicit input and is validated exactly
+as for other intents. A nonzero damage result can still make Recall an
+unfavorable legal action; Recall is low-risk by intent semantics, not a damage
+immunity.
 
-## Scope and Exclusions
+The transition outcome is `YieldedSpace` unless the explicit self damage
+reduces health to zero, which remains `ForcedOut`. Position change is caused by
+the intent, not fallback. Existing `Stabilize`/`Contest` event/effect ordering,
+hashing, replay, branch, objective, fixture, and debrief behavior is unchanged.
 
-Included:
+## Validation and Information
 
-- versioned `m2-two-window-final-debrief-v1` identity;
-- a debrief record derived only from a replay-verified two-window history;
-- two per-window summaries containing player intent, lane outcome, health/
-  position result, wave result, execution trace, and `NotApplicable`
-  coordination for this ordinary scenario wrapper;
-- per-window objective reviews using the existing goal/evaluation contract;
-- final terminal state hash, terminal outcome, goal dispositions, and an
-  attribution limit;
-- a visible debrief report that omits hidden opponent/jungle truth, source
-  receipts, private hashes, policy internals, and uncommitted choices;
-- deterministic replay/tamper verification of the debrief record.
+Host command validation rejects an intent not advertised by the current player
+observation. A stale observation or resolved window still fails before
+transition. The player sees no opponent health/posture, jungle threat, source
+hash, or execution result. Recall does not change the hidden-state boundary or
+create a new actor-visible fact.
 
-Excluded are new mechanics, automatic pacing, recall/gank response,
-communication, coordinated records inside the multi-window wrapper, hidden
-state inspection, optimality/balance scoring, portable serialization, CLI/MCP/
-GUI, and human-experience claims.
+`CounterProposal` remains limited to the existing `Stabilize`/`Contest` cover
+shapes. The allied scripted candidate set remains exactly two intents, so a
+Recall player request can be rejected or used as an ordinary player plan but
+cannot be silently accepted as an allied policy proposal.
 
-## Typed Contract
+## Replay, Branching, and Attribution
 
-```text
-WindowDebriefSummary {
-    window: First | Second,
-    intent: LaneIntent,
-    outcome: LaneOutcome,
-    player_health: LaneHealth,
-    player_position: LanePosition,
-    wave_result: LaneWaveResult,
-    coordination: NotApplicable,
-    execution_trace: InputTrace,
-    objective: TerminalObjectiveReview,
-}
+Existing `LaneHistory`, `LaneBranch`, `CoordinatedLaneHistory`,
+`LaneScenarioHistory`, objective reviews, and final debriefs store/replay
+Recall through their existing `LaneIntent` fields. No replay identity or state
+hash version changes. A branch may use Recall as an alternate intent only if
+the existing branch actor/observation/explicit-input guards pass.
 
-ScenarioDebrief {
-    replay_id: "m2-two-window-final-debrief-v1",
-    source_replay_id: "m2-two-window-scenario-v1",
-    source_terminal_state_hash: StateHash,
-    windows: [WindowDebriefSummary; 2],
-    final_objective: ObjectiveDisposition,
-    attribution_limit: CommittedHistoryFactsOnly,
-}
-```
-
-The final objective is `GoalAchieved` only if both window objective reviews are
-achieved; otherwise it is `GoalMissed` for this bounded report. This is an
-explicit aggregation rule, not a new `LaneOutcome` or a global value score.
-The visible `ScenarioDebriefReport` includes window intents/outcomes,
-coordination-not-applicable, objective dispositions, final disposition, and the
-attribution limit, but not source hashes or private receipts.
-
-## Authority, Causality, and Evidence
-
-`build_scenario_debrief(history)` first calls `history.verify_replay()` and
-requires exactly two records. It derives every summary from each committed
-`LaneScenarioRecord::transition()` and calls `review_lane_objective` for each
-record. It never reads opponent truth or changes the stored history.
-
-The debrief distinguishes:
-
-- intent: the committed player strategic choice;
-- coordination: `NotApplicable` because this wrapper uses ordinary records;
-- execution: committed health/position/wave result and trace;
-- objective: existing per-window criterion/disposition;
-- final aggregation: a bounded report over those facts.
-
-No summary says an intent was optimal, that hidden state was known, or that a
-result generalizes beyond this two-window fixture.
-
-## Replay and Tamper Contract
-
-`ScenarioDebriefRecord` stores the source terminal state hash, source record
-identities, summaries, and final report. `verify_replay(history)` reruns the
-source history verification, regenerates both objective reviews and summaries,
-then compares the complete debrief record. Tampering with source identity,
-window order, intent/outcome, execution trace, objective review, terminal hash,
-final disposition, or report fails.
-
-The visible report does not expose the privileged debrief identity. Existing
-one-window, branch, coordination, objective, fixture, and two-window replay
-tests remain passing.
+Debriefs report Recall as the committed intent and retain the distinction
+between an intentional position change, explicit execution damage, and
+`ForcedOut`. The objective may be missed because Recall yields space; no
+optimality or balance judgment is inferred.
 
 ## Verification Contract
 
 Focused tests must cover:
 
-- debrief build only from a complete two-window history;
-- per-window attribution and objective preservation;
-- final achieved versus missed aggregation;
-- visible report hash/receipt redaction;
-- deterministic repeated build and unchanged history/current state;
-- reject incomplete history, tampered source record, window order, objective,
-  terminal hash, final disposition, or report;
-- preserve all existing M1/M2 replay and information-boundary tests.
+- Recall appears in the player observation but not allied proposal candidates;
+- Recall command validation succeeds with a current observation and fails
+  when the observation omits Recall or is stale;
+- Recall moves to `NearTower`, holds the supplied wave result, and yields space
+  when health remains positive;
+- legal Recall with fatal explicit damage remains `ForcedOut`, not invalid;
+- deterministic output/hash/replay and existing branch/objective/debrief
+  preservation;
+- no hidden-state or source-hash leakage and no change to the allied policy
+  artifact;
+- existing M1/M2 tests remain passing.
 
-Evidence establishes only a deterministic, committed-facts final debrief for
-two ordinary windows. It does not establish a complete scenario, pacing,
-strategy quality, balance, optimality, trust, accessibility, or human behavior.
+Evidence establishes one bounded Recall plan and its existing authority/replay
+integration. It does not establish recall timing, resource restoration,
+variable pacing, gank response, strategy quality, balance, or human behavior.
