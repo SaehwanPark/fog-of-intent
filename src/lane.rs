@@ -14,13 +14,17 @@ use crate::kernel::{
 
 pub const M2_LANE_RULESET: RulesetId = RulesetId::new(2);
 pub const M2_OBSERVATION_SCHEMA: &str = "m2-lane-observation-v1";
+pub const M2_ALLIED_OBSERVATION_SCHEMA: &str = "m2-allied-proposal-observation-v1";
 pub const M2_REPLAY_ID: &str = "m2-one-lane-window-v1";
+pub const M2_COORDINATION_REPLAY_ID: &str = "m2-one-lane-coordination-v1";
+pub const SCRIPTED_ALLIED_PROFILE: &str = "scripted-allied-proposal-v1";
 const FNV_OFFSET_BASIS: u64 = 0xcbf29ce484222325;
 const MAX_LANE_HEALTH: u8 = 10;
 const MAX_WAVE_PRESSURE: u8 = 3;
 
 pub const PLAYER_LANER: ActorId = ActorId::new(1);
 pub const OPPONENT_LANER: ActorId = ActorId::new(2);
+pub const ALLIED_AUTONOMOUS_ACTOR: ActorId = ActorId::new(3);
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct LaneHealth(u8);
@@ -558,6 +562,800 @@ pub fn observe_player(
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct AlliedLaneObservation {
+    schema: &'static str,
+    observer: ActorId,
+    turn: Turn,
+    observation_id: ObservationId,
+    laner_health: LaneHealth,
+    laner_position: LanePosition,
+    wave_pressure: WavePressure,
+    opponent: OpponentReport,
+    jungle_threat: ThreatReport,
+    available_intents: [LaneIntent; 2],
+    window: LaneWindow,
+}
+
+impl AlliedLaneObservation {
+    pub fn schema(self) -> &'static str {
+        self.schema
+    }
+
+    pub fn observer(self) -> ActorId {
+        self.observer
+    }
+
+    pub fn turn(self) -> Turn {
+        self.turn
+    }
+
+    pub fn observation_id(self) -> ObservationId {
+        self.observation_id
+    }
+
+    pub fn laner_health(self) -> LaneHealth {
+        self.laner_health
+    }
+
+    pub fn laner_position(self) -> LanePosition {
+        self.laner_position
+    }
+
+    pub fn wave_pressure(self) -> WavePressure {
+        self.wave_pressure
+    }
+
+    pub fn opponent(self) -> OpponentReport {
+        self.opponent
+    }
+
+    pub fn jungle_threat(self) -> ThreatReport {
+        self.jungle_threat
+    }
+
+    pub fn available_intents(self) -> [LaneIntent; 2] {
+        self.available_intents
+    }
+
+    pub fn window(self) -> LaneWindow {
+        self.window
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct AlliedObservationReceipt {
+    observation: AlliedLaneObservation,
+    source_state_hash: StateHash,
+}
+
+impl fmt::Debug for AlliedObservationReceipt {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("AlliedObservationReceipt")
+            .field("observation", &self.observation)
+            .finish_non_exhaustive()
+    }
+}
+
+impl AlliedObservationReceipt {
+    pub fn observation(self) -> AlliedLaneObservation {
+        self.observation
+    }
+}
+
+pub fn observe_allied(
+    state: &LaneSnapshot,
+    observation_id: ObservationId,
+) -> AlliedObservationReceipt {
+    AlliedObservationReceipt {
+        observation: AlliedLaneObservation {
+            schema: M2_ALLIED_OBSERVATION_SCHEMA,
+            observer: ALLIED_AUTONOMOUS_ACTOR,
+            turn: state.turn(),
+            observation_id,
+            laner_health: state.player().health(),
+            laner_position: state.player().position(),
+            wave_pressure: state.wave().pressure(),
+            opponent: OpponentReport {
+                last_known_position: None,
+                last_seen_turn: None,
+                health: HiddenValue::Unknown,
+                posture: HiddenValue::Unknown,
+            },
+            jungle_threat: ThreatReport::Unknown,
+            available_intents: [LaneIntent::Stabilize, LaneIntent::Contest],
+            window: LaneWindow::OneBeat,
+        },
+        source_state_hash: state.hash(),
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct AlliedProfileIdentity {
+    profile_id: &'static str,
+    candidate_rule: &'static str,
+    evaluation_rule: &'static str,
+    selection_rule: &'static str,
+}
+
+impl AlliedProfileIdentity {
+    pub const fn scripted_v1() -> Self {
+        Self {
+            profile_id: SCRIPTED_ALLIED_PROFILE,
+            candidate_rule: "available-intents-v1",
+            evaluation_rule: "risk-wave-score-v1",
+            selection_rule: "max-score-stabilize-tie-v1",
+        }
+    }
+
+    pub fn profile_id(self) -> &'static str {
+        self.profile_id
+    }
+
+    pub fn candidate_rule(self) -> &'static str {
+        self.candidate_rule
+    }
+
+    pub fn evaluation_rule(self) -> &'static str {
+        self.evaluation_rule
+    }
+
+    pub fn selection_rule(self) -> &'static str {
+        self.selection_rule
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct AgentInputIdentity {
+    profile: AlliedProfileIdentity,
+    actor: ActorId,
+    ruleset: RulesetId,
+    observation_schema: &'static str,
+    turn: Turn,
+    observation_id: ObservationId,
+    visible_digest: StateHash,
+    policy_trace: InputTrace,
+}
+
+impl AgentInputIdentity {
+    pub fn profile(self) -> AlliedProfileIdentity {
+        self.profile
+    }
+
+    pub fn actor(self) -> ActorId {
+        self.actor
+    }
+
+    pub fn ruleset(self) -> RulesetId {
+        self.ruleset
+    }
+
+    pub fn observation_schema(self) -> &'static str {
+        self.observation_schema
+    }
+
+    pub fn turn(self) -> Turn {
+        self.turn
+    }
+
+    pub fn observation_id(self) -> ObservationId {
+        self.observation_id
+    }
+
+    pub fn visible_digest(self) -> StateHash {
+        self.visible_digest
+    }
+
+    pub fn policy_trace(self) -> InputTrace {
+        self.policy_trace
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct AlliedCandidate {
+    intent: LaneIntent,
+    score: i16,
+    reason: AlliedReasonCode,
+}
+
+impl AlliedCandidate {
+    pub fn intent(self) -> LaneIntent {
+        self.intent
+    }
+
+    pub fn score(self) -> i16 {
+        self.score
+    }
+
+    pub fn reason(self) -> AlliedReasonCode {
+        self.reason
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum AlliedReasonCode {
+    HealthRisk,
+    WavePressure,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ProposalId(u64);
+
+impl ProposalId {
+    pub fn value(self) -> u64 {
+        self.0
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct LaneIntentProposal {
+    id: ProposalId,
+    actor: ActorId,
+    profile: AlliedProfileIdentity,
+    input_identity: AgentInputIdentity,
+    candidates: [AlliedCandidate; 2],
+    selected_intent: LaneIntent,
+}
+
+impl LaneIntentProposal {
+    pub fn id(self) -> ProposalId {
+        self.id
+    }
+
+    pub fn actor(self) -> ActorId {
+        self.actor
+    }
+
+    pub fn profile(self) -> AlliedProfileIdentity {
+        self.profile
+    }
+
+    pub fn input_identity(self) -> AgentInputIdentity {
+        self.input_identity
+    }
+
+    pub fn candidates(self) -> [AlliedCandidate; 2] {
+        self.candidates
+    }
+
+    pub fn selected_intent(self) -> LaneIntent {
+        self.selected_intent
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum AlliedSupport {
+    AssistContest,
+    CoverStabilize,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum CoordinationCommitment {
+    UntilWindowEnd,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum SupportFocus {
+    OpponentAndWave,
+    Wave,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum SupportAbort {
+    IfPlayerYields,
+    IfPlayerHealthAtMost(u8),
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum SupportFallback {
+    HoldPosition,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct AlliedProposalOffer {
+    proposal: LaneIntentProposal,
+    target: ActorId,
+    support: AlliedSupport,
+    commitment: CoordinationCommitment,
+    focus: SupportFocus,
+    abort: SupportAbort,
+    fallback: SupportFallback,
+}
+
+impl AlliedProposalOffer {
+    pub fn proposal(self) -> LaneIntentProposal {
+        self.proposal
+    }
+
+    pub fn target(self) -> ActorId {
+        self.target
+    }
+
+    pub fn support(self) -> AlliedSupport {
+        self.support
+    }
+
+    pub fn commitment(self) -> CoordinationCommitment {
+        self.commitment
+    }
+
+    pub fn focus(self) -> SupportFocus {
+        self.focus
+    }
+
+    pub fn abort(self) -> SupportAbort {
+        self.abort
+    }
+
+    pub fn fallback(self) -> SupportFallback {
+        self.fallback
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct CoordinatedLanerObservation {
+    lane: LanerObservation,
+    allied_proposal: AlliedProposalOffer,
+}
+
+impl CoordinatedLanerObservation {
+    pub fn lane(self) -> LanerObservation {
+        self.lane
+    }
+
+    pub fn allied_proposal(self) -> AlliedProposalOffer {
+        self.allied_proposal
+    }
+}
+
+fn allied_visible_digest(observation: AlliedLaneObservation) -> StateHash {
+    let mut hash = FNV_OFFSET_BASIS;
+    hash = hash_bytes(hash, observation.schema.as_bytes());
+    hash = hash_bytes(hash, &[observation.observer.value()]);
+    hash = hash_bytes(hash, &observation.turn.value().to_le_bytes());
+    hash = hash_bytes(hash, &observation.observation_id.value().to_le_bytes());
+    hash = hash_bytes(hash, &[observation.laner_health.value()]);
+    hash = hash_bytes(hash, &[position_tag(observation.laner_position)]);
+    hash = hash_bytes(hash, &[observation.wave_pressure.value()]);
+    hash = hash_bytes(hash, &[intent_tag(observation.available_intents[0])]);
+    hash = hash_bytes(hash, &[intent_tag(observation.available_intents[1])]);
+    hash = hash_bytes(hash, &[0, 0, 0]);
+    StateHash::from_raw(hash)
+}
+
+pub fn allied_input_identity(
+    observation: AlliedLaneObservation,
+    policy_trace: InputTrace,
+) -> AgentInputIdentity {
+    AgentInputIdentity {
+        profile: AlliedProfileIdentity::scripted_v1(),
+        actor: observation.observer,
+        ruleset: M2_LANE_RULESET,
+        observation_schema: observation.schema,
+        turn: observation.turn,
+        observation_id: observation.observation_id,
+        visible_digest: allied_visible_digest(observation),
+        policy_trace,
+    }
+}
+
+pub fn scripted_allied_proposal(
+    observation: AlliedLaneObservation,
+    policy_trace: InputTrace,
+) -> Result<LaneIntentProposal, AlliedProposalError> {
+    let identity = allied_input_identity(observation, policy_trace);
+    if observation.schema != M2_ALLIED_OBSERVATION_SCHEMA
+        || observation.observer != ALLIED_AUTONOMOUS_ACTOR
+        || observation.window != LaneWindow::OneBeat
+        || observation.available_intents != [LaneIntent::Stabilize, LaneIntent::Contest]
+    {
+        return Err(AlliedProposalError::InvalidObservation);
+    }
+    let health_risk = (5i16 - i16::from(observation.laner_health.value())).max(0);
+    let stabilize_score = 2 * health_risk + (3 - i16::from(observation.wave_pressure.value()));
+    let contest_score = 2 * i16::from(observation.wave_pressure.value())
+        + (i16::from(observation.laner_health.value()) - 5).max(0);
+    let candidates = [
+        AlliedCandidate {
+            intent: LaneIntent::Stabilize,
+            score: stabilize_score,
+            reason: AlliedReasonCode::HealthRisk,
+        },
+        AlliedCandidate {
+            intent: LaneIntent::Contest,
+            score: contest_score,
+            reason: AlliedReasonCode::WavePressure,
+        },
+    ];
+    let selected_intent = if contest_score > stabilize_score {
+        LaneIntent::Contest
+    } else {
+        LaneIntent::Stabilize
+    };
+    let mut proposal_hash = FNV_OFFSET_BASIS;
+    proposal_hash = hash_bytes(
+        proposal_hash,
+        &identity.visible_digest.value().to_le_bytes(),
+    );
+    proposal_hash = hash_bytes(proposal_hash, &policy_trace.stream().value().to_le_bytes());
+    proposal_hash = hash_bytes(proposal_hash, &policy_trace.draw().value().to_le_bytes());
+    proposal_hash = hash_bytes(proposal_hash, &[intent_tag(selected_intent)]);
+    Ok(LaneIntentProposal {
+        id: ProposalId(proposal_hash),
+        actor: ALLIED_AUTONOMOUS_ACTOR,
+        profile: identity.profile,
+        input_identity: identity,
+        candidates,
+        selected_intent,
+    })
+}
+
+pub fn offer_allied_proposal(
+    proposal: LaneIntentProposal,
+) -> Result<AlliedProposalOffer, AlliedProposalError> {
+    if proposal.actor != ALLIED_AUTONOMOUS_ACTOR
+        || proposal.profile != AlliedProfileIdentity::scripted_v1()
+    {
+        return Err(AlliedProposalError::InvalidProposal);
+    }
+    let (support, focus, abort) = match proposal.selected_intent {
+        LaneIntent::Contest => (
+            AlliedSupport::AssistContest,
+            SupportFocus::OpponentAndWave,
+            SupportAbort::IfPlayerYields,
+        ),
+        LaneIntent::Stabilize => (
+            AlliedSupport::CoverStabilize,
+            SupportFocus::Wave,
+            SupportAbort::IfPlayerHealthAtMost(2),
+        ),
+    };
+    Ok(AlliedProposalOffer {
+        proposal,
+        target: PLAYER_LANER,
+        support,
+        commitment: CoordinationCommitment::UntilWindowEnd,
+        focus,
+        abort,
+        fallback: SupportFallback::HoldPosition,
+    })
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum AlliedProposalError {
+    InvalidObservation,
+    InvalidProposal,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum CounterProposal {
+    RequestIntent {
+        requested_intent: LaneIntent,
+        target: ActorId,
+        commitment: CoordinationCommitment,
+        focus: SupportFocus,
+        abort: SupportAbort,
+        fallback: SupportFallback,
+    },
+}
+
+impl CounterProposal {
+    pub fn requested_intent(self) -> LaneIntent {
+        match self {
+            Self::RequestIntent {
+                requested_intent, ..
+            } => requested_intent,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ProposalResponse {
+    Accept {
+        proposal_id: ProposalId,
+    },
+    Reject {
+        proposal_id: ProposalId,
+    },
+    Counter {
+        proposal_id: ProposalId,
+        counter: CounterProposal,
+    },
+}
+
+impl ProposalResponse {
+    pub fn proposal_id(self) -> ProposalId {
+        match self {
+            Self::Accept { proposal_id }
+            | Self::Reject { proposal_id }
+            | Self::Counter { proposal_id, .. } => proposal_id,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct CoordinatedLaneRequest {
+    intent: LaneIntentRequest,
+    response: ProposalResponse,
+}
+
+impl CoordinatedLaneRequest {
+    pub fn new(intent: LaneIntentRequest, response: ProposalResponse) -> Self {
+        Self { intent, response }
+    }
+
+    pub fn intent(self) -> LaneIntentRequest {
+        self.intent
+    }
+
+    pub fn response(self) -> ProposalResponse {
+        self.response
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum FollowThrough {
+    NotRequested,
+    AllyCommitted,
+    AllyDeclined,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct CoordinationResolutionInputs {
+    trace: InputTrace,
+    follow_through: FollowThrough,
+}
+
+impl CoordinationResolutionInputs {
+    pub fn new(trace: InputTrace, follow_through: FollowThrough) -> Self {
+        Self {
+            trace,
+            follow_through,
+        }
+    }
+
+    pub fn trace(self) -> InputTrace {
+        self.trace
+    }
+
+    pub fn follow_through(self) -> FollowThrough {
+        self.follow_through
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum CoordinationDisposition {
+    PlayerRejected,
+    AcceptedOffer,
+    AllyDeclined,
+    CounterAccepted,
+    CounterRejected,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct CoordinationResolution {
+    proposal_id: ProposalId,
+    response: ProposalResponse,
+    disposition: CoordinationDisposition,
+    support: Option<AlliedSupport>,
+    trace: InputTrace,
+}
+
+impl CoordinationResolution {
+    pub fn proposal_id(self) -> ProposalId {
+        self.proposal_id
+    }
+
+    pub fn response(self) -> ProposalResponse {
+        self.response
+    }
+
+    pub fn disposition(self) -> CoordinationDisposition {
+        self.disposition
+    }
+
+    pub fn support(self) -> Option<AlliedSupport> {
+        self.support
+    }
+
+    pub fn trace(self) -> InputTrace {
+        self.trace
+    }
+}
+
+pub fn resolve_coordination(
+    offer: &AlliedProposalOffer,
+    request: &CoordinatedLaneRequest,
+    inputs: &CoordinationResolutionInputs,
+) -> Result<CoordinationResolution, CoordinationError> {
+    let response = request.response;
+    if response.proposal_id() != offer.proposal.id {
+        return Err(CoordinationError::ResponseProposalMismatch);
+    }
+    let (disposition, support) = match response {
+        ProposalResponse::Reject { .. } => match inputs.follow_through {
+            FollowThrough::NotRequested => (CoordinationDisposition::PlayerRejected, None),
+            _ => return Err(CoordinationError::MalformedFollowThrough),
+        },
+        ProposalResponse::Accept { .. } => match inputs.follow_through {
+            FollowThrough::AllyCommitted => {
+                (CoordinationDisposition::AcceptedOffer, Some(offer.support))
+            }
+            FollowThrough::AllyDeclined => (CoordinationDisposition::AllyDeclined, None),
+            FollowThrough::NotRequested => return Err(CoordinationError::MalformedFollowThrough),
+        },
+        ProposalResponse::Counter { counter, .. } => match inputs.follow_through {
+            FollowThrough::AllyCommitted => (
+                CoordinationDisposition::CounterAccepted,
+                Some(counter_support(counter)),
+            ),
+            FollowThrough::AllyDeclined => (CoordinationDisposition::CounterRejected, None),
+            FollowThrough::NotRequested => return Err(CoordinationError::MalformedFollowThrough),
+        },
+    };
+    Ok(CoordinationResolution {
+        proposal_id: offer.proposal.id,
+        response,
+        disposition,
+        support,
+        trace: inputs.trace,
+    })
+}
+
+fn counter_support(counter: CounterProposal) -> AlliedSupport {
+    match counter {
+        CounterProposal::RequestIntent {
+            requested_intent: LaneIntent::Contest,
+            ..
+        } => AlliedSupport::AssistContest,
+        CounterProposal::RequestIntent {
+            requested_intent: LaneIntent::Stabilize,
+            ..
+        } => AlliedSupport::CoverStabilize,
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum CoordinationError {
+    StaleAlliedObservation,
+    InvalidAlliedObservation,
+    ProposalNotForWindow,
+    ProposalIdMismatch,
+    WrongProposer,
+    WrongTarget,
+    ResponseProposalMismatch,
+    AcceptIntentMismatch,
+    CounterIntentMismatch,
+    UnsupportedCounter,
+    DuplicateResponse,
+    MalformedFollowThrough,
+    CoordinationTraceMismatch,
+    PolicyInputMismatch,
+    LaneValidation(LaneValidationError),
+    LaneTransition(LaneTransitionError),
+    HistoryAlreadyHasRecord,
+    ReplayMismatch,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ValidatedCoordinatedRequest {
+    intent: ValidatedLaneIntent,
+    request: CoordinatedLaneRequest,
+}
+
+impl ValidatedCoordinatedRequest {
+    pub fn intent(self) -> ValidatedLaneIntent {
+        self.intent
+    }
+
+    pub fn request(self) -> CoordinatedLaneRequest {
+        self.request
+    }
+}
+
+pub fn validate_coordinated_request(
+    state: &LaneSnapshot,
+    player_receipt: &LaneObservationReceipt,
+    allied_receipt: &AlliedObservationReceipt,
+    offer: &AlliedProposalOffer,
+    request: &CoordinatedLaneRequest,
+    policy_trace: InputTrace,
+) -> Result<ValidatedCoordinatedRequest, CoordinationError> {
+    let allied_observation = allied_receipt.observation;
+    if allied_receipt.source_state_hash != state.hash()
+        || allied_observation.turn != state.turn
+        || allied_observation.schema != M2_ALLIED_OBSERVATION_SCHEMA
+    {
+        return Err(CoordinationError::StaleAlliedObservation);
+    }
+    if allied_observation.observer != ALLIED_AUTONOMOUS_ACTOR
+        || allied_observation.window != LaneWindow::OneBeat
+        || allied_observation.available_intents != [LaneIntent::Stabilize, LaneIntent::Contest]
+    {
+        return Err(CoordinationError::InvalidAlliedObservation);
+    }
+    let expected_proposal = scripted_allied_proposal(allied_observation, policy_trace)
+        .map_err(|_| CoordinationError::InvalidAlliedObservation)?;
+    let expected_offer = offer_allied_proposal(expected_proposal)
+        .map_err(|_| CoordinationError::InvalidAlliedObservation)?;
+    if *offer != expected_offer {
+        return Err(CoordinationError::ProposalNotForWindow);
+    }
+    if offer.proposal.id != request.response.proposal_id() {
+        return Err(CoordinationError::ProposalIdMismatch);
+    }
+    if offer.proposal.actor != ALLIED_AUTONOMOUS_ACTOR {
+        return Err(CoordinationError::WrongProposer);
+    }
+    if offer.target != PLAYER_LANER {
+        return Err(CoordinationError::WrongTarget);
+    }
+    let validated_intent = validate_lane_request(state, player_receipt, &request.intent)
+        .map_err(CoordinationError::LaneValidation)?;
+    match request.response {
+        ProposalResponse::Accept { .. }
+            if request.intent.intent != offer.proposal.selected_intent =>
+        {
+            return Err(CoordinationError::AcceptIntentMismatch);
+        }
+        ProposalResponse::Counter { counter, .. } => {
+            if counter_target(counter) != PLAYER_LANER
+                || counter_commitment(counter) != CoordinationCommitment::UntilWindowEnd
+                || counter_fallback(counter) != SupportFallback::HoldPosition
+                || counter.requested_intent() == offer.proposal.selected_intent
+                || counter.requested_intent() != request.intent.intent
+            {
+                return Err(CoordinationError::CounterIntentMismatch);
+            }
+            if !counter_shape_matches(counter) {
+                return Err(CoordinationError::UnsupportedCounter);
+            }
+        }
+        ProposalResponse::Reject { .. } | ProposalResponse::Accept { .. } => {}
+    }
+    Ok(ValidatedCoordinatedRequest {
+        intent: validated_intent,
+        request: *request,
+    })
+}
+
+fn counter_target(counter: CounterProposal) -> ActorId {
+    match counter {
+        CounterProposal::RequestIntent { target, .. } => target,
+    }
+}
+
+fn counter_commitment(counter: CounterProposal) -> CoordinationCommitment {
+    match counter {
+        CounterProposal::RequestIntent { commitment, .. } => commitment,
+    }
+}
+
+fn counter_fallback(counter: CounterProposal) -> SupportFallback {
+    match counter {
+        CounterProposal::RequestIntent { fallback, .. } => fallback,
+    }
+}
+
+fn counter_shape_matches(counter: CounterProposal) -> bool {
+    match counter {
+        CounterProposal::RequestIntent {
+            requested_intent: LaneIntent::Contest,
+            focus: SupportFocus::OpponentAndWave,
+            abort: SupportAbort::IfPlayerYields,
+            ..
+        }
+        | CounterProposal::RequestIntent {
+            requested_intent: LaneIntent::Stabilize,
+            focus: SupportFocus::Wave,
+            abort: SupportAbort::IfPlayerHealthAtMost(2),
+            ..
+        } => true,
+        CounterProposal::RequestIntent { .. } => false,
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum LaneIntent {
     Stabilize,
     Contest,
@@ -1027,6 +1825,229 @@ impl LaneTransitionResult {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum CoordinatedEvent {
+    ProposalOffered {
+        proposal_id: ProposalId,
+        proposer: ActorId,
+        target: ActorId,
+    },
+    ProposalResponded {
+        proposal_id: ProposalId,
+        response: ProposalResponse,
+    },
+    CoordinationResolved {
+        proposal_id: ProposalId,
+        disposition: CoordinationDisposition,
+        trace: InputTrace,
+    },
+    Lane(LaneEvent),
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum CoordinatedEffect {
+    SupportCommitted {
+        proposal_id: ProposalId,
+        proposer: ActorId,
+        target: ActorId,
+        support: AlliedSupport,
+        cause: InputTrace,
+    },
+    SupportUnavailable {
+        proposal_id: ProposalId,
+        disposition: CoordinationDisposition,
+        cause: InputTrace,
+    },
+    Lane(LaneEffect),
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum CoordinatedDecisionReview {
+    InformationConsistent,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum CoordinatedResponseReview {
+    Accepted,
+    Rejected,
+    Countered,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum CoordinatedExecutionReview {
+    ConditionalOnCoordination { trace: InputTrace },
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum CoordinatedLuckReview {
+    ExplicitExecutionInput { trace: InputTrace },
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct CoordinatedDebrief {
+    decision: CoordinatedDecisionReview,
+    response: CoordinatedResponseReview,
+    coordination: CoordinationDisposition,
+    execution: CoordinatedExecutionReview,
+    luck: CoordinatedLuckReview,
+}
+
+impl CoordinatedDebrief {
+    pub fn decision(self) -> CoordinatedDecisionReview {
+        self.decision
+    }
+
+    pub fn response(self) -> CoordinatedResponseReview {
+        self.response
+    }
+
+    pub fn coordination(self) -> CoordinationDisposition {
+        self.coordination
+    }
+
+    pub fn execution(self) -> CoordinatedExecutionReview {
+        self.execution
+    }
+
+    pub fn luck(self) -> CoordinatedLuckReview {
+        self.luck
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CoordinatedTransitionResult {
+    lane: LaneTransitionResult,
+    coordination: CoordinationResolution,
+    events: Vec<CoordinatedEvent>,
+    effects: Vec<CoordinatedEffect>,
+    debrief: CoordinatedDebrief,
+}
+
+impl CoordinatedTransitionResult {
+    pub fn lane(&self) -> &LaneTransitionResult {
+        &self.lane
+    }
+
+    pub fn coordination(&self) -> CoordinationResolution {
+        self.coordination
+    }
+
+    pub fn events(&self) -> &[CoordinatedEvent] {
+        &self.events
+    }
+
+    pub fn effects(&self) -> &[CoordinatedEffect] {
+        &self.effects
+    }
+
+    pub fn debrief(&self) -> CoordinatedDebrief {
+        self.debrief
+    }
+
+    pub fn next_state(&self) -> LaneSnapshot {
+        self.lane.next_state()
+    }
+
+    pub fn state_hash(&self) -> StateHash {
+        self.lane.state_hash()
+    }
+}
+
+fn response_review(response: ProposalResponse) -> CoordinatedResponseReview {
+    match response {
+        ProposalResponse::Accept { .. } => CoordinatedResponseReview::Accepted,
+        ProposalResponse::Reject { .. } => CoordinatedResponseReview::Rejected,
+        ProposalResponse::Counter { .. } => CoordinatedResponseReview::Countered,
+    }
+}
+
+pub fn coordinated_laner_observation(
+    player_receipt: &LaneObservationReceipt,
+    offer: AlliedProposalOffer,
+) -> CoordinatedLanerObservation {
+    CoordinatedLanerObservation {
+        lane: player_receipt.observation,
+        allied_proposal: offer,
+    }
+}
+
+pub fn resolve_coordinated_lane(
+    state: &LaneSnapshot,
+    player_receipt: &LaneObservationReceipt,
+    allied_receipt: &AlliedObservationReceipt,
+    offer: &AlliedProposalOffer,
+    request: &CoordinatedLaneRequest,
+    coordination_inputs: &CoordinationResolutionInputs,
+    lane_inputs: &LaneResolvedInputs,
+) -> Result<CoordinatedTransitionResult, CoordinationError> {
+    let validated = validate_coordinated_request(
+        state,
+        player_receipt,
+        allied_receipt,
+        offer,
+        request,
+        lane_inputs.policy(),
+    )?;
+    if lane_inputs.coordination() != coordination_inputs.trace() {
+        return Err(CoordinationError::CoordinationTraceMismatch);
+    }
+    let coordination = resolve_coordination(offer, request, coordination_inputs)?;
+    let lane = transition_lane(state, &validated.intent, lane_inputs)
+        .map_err(CoordinationError::LaneTransition)?;
+    let mut events = vec![
+        CoordinatedEvent::ProposalOffered {
+            proposal_id: offer.proposal.id,
+            proposer: offer.proposal.actor,
+            target: offer.target,
+        },
+        CoordinatedEvent::ProposalResponded {
+            proposal_id: offer.proposal.id,
+            response: request.response,
+        },
+        CoordinatedEvent::CoordinationResolved {
+            proposal_id: offer.proposal.id,
+            disposition: coordination.disposition,
+            trace: coordination.trace,
+        },
+    ];
+    events.extend(lane.events().iter().copied().map(CoordinatedEvent::Lane));
+    let mut effects = Vec::new();
+    if let Some(support) = coordination.support {
+        effects.push(CoordinatedEffect::SupportCommitted {
+            proposal_id: offer.proposal.id,
+            proposer: offer.proposal.actor,
+            target: offer.target,
+            support,
+            cause: coordination.trace,
+        });
+    } else {
+        effects.push(CoordinatedEffect::SupportUnavailable {
+            proposal_id: offer.proposal.id,
+            disposition: coordination.disposition,
+            cause: coordination.trace,
+        });
+    }
+    effects.extend(lane.effects().iter().copied().map(CoordinatedEffect::Lane));
+    let debrief = CoordinatedDebrief {
+        decision: CoordinatedDecisionReview::InformationConsistent,
+        response: response_review(request.response),
+        coordination: coordination.disposition,
+        execution: CoordinatedExecutionReview::ConditionalOnCoordination {
+            trace: lane_inputs.execution().trace(),
+        },
+        luck: CoordinatedLuckReview::ExplicitExecutionInput {
+            trace: lane_inputs.execution().trace(),
+        },
+    };
+    Ok(CoordinatedTransitionResult {
+        lane,
+        coordination,
+        events,
+        effects,
+        debrief,
+    })
+}
+
 pub fn transition_lane(
     state: &LaneSnapshot,
     command: &ValidatedLaneIntent,
@@ -1349,6 +2370,216 @@ pub enum LaneReplayError {
         expected: LaneSnapshot,
         actual: LaneSnapshot,
     },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CoordinatedLaneRecord {
+    replay_id: &'static str,
+    base_record_identity: StateHash,
+    player_observation: LanerObservation,
+    allied_observation: AlliedLaneObservation,
+    offer: AlliedProposalOffer,
+    request: CoordinatedLaneRequest,
+    coordination_inputs: CoordinationResolutionInputs,
+    resolution: CoordinationResolution,
+    base_record: LaneTransitionRecord,
+    result: CoordinatedTransitionResult,
+}
+
+impl CoordinatedLaneRecord {
+    pub fn replay_id(&self) -> &'static str {
+        self.replay_id
+    }
+
+    pub fn base_record_identity(&self) -> StateHash {
+        self.base_record_identity
+    }
+
+    pub fn player_observation(&self) -> LanerObservation {
+        self.player_observation
+    }
+
+    pub fn allied_observation(&self) -> AlliedLaneObservation {
+        self.allied_observation
+    }
+
+    pub fn offer(&self) -> AlliedProposalOffer {
+        self.offer
+    }
+
+    pub fn request(&self) -> CoordinatedLaneRequest {
+        self.request
+    }
+
+    pub fn coordination_inputs(&self) -> CoordinationResolutionInputs {
+        self.coordination_inputs
+    }
+
+    pub fn resolution(&self) -> CoordinationResolution {
+        self.resolution
+    }
+
+    pub fn base_record(&self) -> &LaneTransitionRecord {
+        &self.base_record
+    }
+
+    pub fn result(&self) -> &CoordinatedTransitionResult {
+        &self.result
+    }
+}
+
+pub struct CoordinatedLaneHistory {
+    initial_state: LaneSnapshot,
+    current_state: LaneSnapshot,
+    records: Vec<CoordinatedLaneRecord>,
+}
+
+impl CoordinatedLaneHistory {
+    pub fn new(initial_state: LaneSnapshot) -> Result<Self, CoordinationError> {
+        if !initial_state.is_valid_lane_state() || initial_state.phase != LanePhase::Open {
+            return Err(CoordinationError::InvalidAlliedObservation);
+        }
+        Ok(Self {
+            initial_state,
+            current_state: initial_state,
+            records: Vec::new(),
+        })
+    }
+
+    pub fn initial_state(&self) -> LaneSnapshot {
+        self.initial_state
+    }
+
+    pub fn current_state(&self) -> LaneSnapshot {
+        self.current_state
+    }
+
+    pub fn records(&self) -> &[CoordinatedLaneRecord] {
+        &self.records
+    }
+
+    pub fn append(
+        &mut self,
+        player_receipt: &LaneObservationReceipt,
+        allied_receipt: &AlliedObservationReceipt,
+        offer: &AlliedProposalOffer,
+        request: &CoordinatedLaneRequest,
+        coordination_inputs: CoordinationResolutionInputs,
+        lane_inputs: LaneResolvedInputs,
+    ) -> Result<CoordinatedTransitionResult, CoordinationError> {
+        if !self.records.is_empty() {
+            return Err(CoordinationError::HistoryAlreadyHasRecord);
+        }
+        let validated = validate_coordinated_request(
+            &self.current_state,
+            player_receipt,
+            allied_receipt,
+            offer,
+            request,
+            lane_inputs.policy(),
+        )?;
+        let prior_state_hash = self.current_state.hash();
+        let result = resolve_coordinated_lane(
+            &self.current_state,
+            player_receipt,
+            allied_receipt,
+            offer,
+            request,
+            &coordination_inputs,
+            &lane_inputs,
+        )?;
+        let base_record = LaneTransitionRecord {
+            observation: player_receipt.observation,
+            command: validated.intent.command,
+            inputs: lane_inputs,
+            prior_state_hash,
+            result: result.lane.clone(),
+        };
+        self.current_state = result.next_state();
+        self.records.push(CoordinatedLaneRecord {
+            replay_id: M2_COORDINATION_REPLAY_ID,
+            base_record_identity: lane_record_identity(&base_record),
+            player_observation: player_receipt.observation,
+            allied_observation: allied_receipt.observation,
+            offer: *offer,
+            request: *request,
+            coordination_inputs,
+            resolution: result.coordination,
+            base_record,
+            result: result.clone(),
+        });
+        Ok(result)
+    }
+
+    pub fn verify_replay(&self) -> Result<LaneSnapshot, CoordinationError> {
+        if self.records.len() > 1 {
+            return Err(CoordinationError::ReplayMismatch);
+        }
+        let mut state = self.initial_state;
+        for record in &self.records {
+            if record.replay_id != M2_COORDINATION_REPLAY_ID {
+                return Err(CoordinationError::ReplayMismatch);
+            }
+            if record.base_record.prior_state_hash != state.hash() {
+                return Err(CoordinationError::ReplayMismatch);
+            }
+            if lane_record_identity(&record.base_record) != record.base_record_identity {
+                return Err(CoordinationError::ReplayMismatch);
+            }
+            let player_receipt = observe_player(&state, record.base_record.command.observation_id);
+            let allied_receipt = observe_allied(&state, record.allied_observation.observation_id);
+            let proposal = scripted_allied_proposal(
+                allied_receipt.observation,
+                record.base_record.inputs.policy(),
+            )
+            .map_err(|_| CoordinationError::ReplayMismatch)?;
+            let offer =
+                offer_allied_proposal(proposal).map_err(|_| CoordinationError::ReplayMismatch)?;
+            if player_receipt.observation != record.player_observation
+                || allied_receipt.observation != record.allied_observation
+                || offer != record.offer
+            {
+                return Err(CoordinationError::ReplayMismatch);
+            }
+            let result = resolve_coordinated_lane(
+                &state,
+                &player_receipt,
+                &allied_receipt,
+                &offer,
+                &record.request,
+                &record.coordination_inputs,
+                &record.base_record.inputs,
+            )
+            .map_err(|_| CoordinationError::ReplayMismatch)?;
+            let validated = validate_coordinated_request(
+                &state,
+                &player_receipt,
+                &allied_receipt,
+                &offer,
+                &record.request,
+                record.base_record.inputs.policy(),
+            )
+            .map_err(|_| CoordinationError::ReplayMismatch)?;
+            let expected_base_record = LaneTransitionRecord {
+                observation: player_receipt.observation,
+                command: validated.intent.command,
+                inputs: record.base_record.inputs,
+                prior_state_hash: state.hash(),
+                result: result.lane.clone(),
+            };
+            if result != record.result
+                || result.coordination != record.resolution
+                || expected_base_record != record.base_record
+            {
+                return Err(CoordinationError::ReplayMismatch);
+            }
+            state = result.next_state();
+        }
+        if state != self.current_state {
+            return Err(CoordinationError::ReplayMismatch);
+        }
+        Ok(state)
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -2293,6 +3524,293 @@ mod tests {
         assert_eq!(
             tampered.verify_replay(&parent),
             Err(LaneBranchError::BranchReplayMismatch)
+        );
+    }
+
+    fn coordinated_offer(
+        state: &LaneSnapshot,
+        policy_trace: InputTrace,
+    ) -> (
+        LaneObservationReceipt,
+        AlliedObservationReceipt,
+        AlliedProposalOffer,
+    ) {
+        let player_receipt = observe_player(state, ObservationId::new(9));
+        let allied_receipt = observe_allied(state, ObservationId::new(9));
+        let proposal = scripted_allied_proposal(allied_receipt.observation(), policy_trace)
+            .expect("canonical proposal");
+        let offer = offer_allied_proposal(proposal).expect("canonical offer");
+        (player_receipt, allied_receipt, offer)
+    }
+
+    fn counter_to_stabilize(proposal_id: ProposalId) -> ProposalResponse {
+        ProposalResponse::Counter {
+            proposal_id,
+            counter: CounterProposal::RequestIntent {
+                requested_intent: LaneIntent::Stabilize,
+                target: PLAYER_LANER,
+                commitment: CoordinationCommitment::UntilWindowEnd,
+                focus: SupportFocus::Wave,
+                abort: SupportAbort::IfPlayerHealthAtMost(2),
+                fallback: SupportFallback::HoldPosition,
+            },
+        }
+    }
+
+    #[test]
+    fn allied_policy_is_visible_input_bound_and_hidden_state_invariant() {
+        let first = LaneSnapshot::initial();
+        let second = LaneSnapshot::new(
+            M2_LANE_RULESET,
+            first.turn(),
+            LanePhase::Open,
+            first.player(),
+            OpponentTruth::new(
+                OPPONENT_LANER,
+                LaneHealth::new(1).expect("bounded"),
+                LanePosition::FarSide,
+                OpponentPosture::Passive,
+            ),
+            first.wave(),
+            JungleThreatTruth::Absent,
+            None,
+        );
+        let first_receipt = observe_allied(&first, ObservationId::new(12));
+        let second_receipt = observe_allied(&second, ObservationId::new(12));
+        assert_eq!(first_receipt.observation(), second_receipt.observation());
+        let first_proposal =
+            scripted_allied_proposal(first_receipt.observation(), trace(3, 3)).expect("proposal");
+        let second_proposal =
+            scripted_allied_proposal(second_receipt.observation(), trace(3, 3)).expect("proposal");
+        assert_eq!(first_proposal, second_proposal);
+        assert_eq!(
+            first_proposal.profile().profile_id(),
+            SCRIPTED_ALLIED_PROFILE
+        );
+        assert_eq!(first_proposal.candidates()[0].score(), 2);
+        assert_eq!(first_proposal.candidates()[1].score(), 5);
+        assert_eq!(first_proposal.selected_intent(), LaneIntent::Contest);
+        assert_eq!(
+            offer_allied_proposal(first_proposal)
+                .expect("offer")
+                .support(),
+            AlliedSupport::AssistContest
+        );
+    }
+
+    #[test]
+    fn allied_policy_changes_only_with_declared_visible_features() {
+        let state = LaneSnapshot::new(
+            M2_LANE_RULESET,
+            Turn::new(0),
+            LanePhase::Open,
+            PlayerLaneState::new(
+                PLAYER_LANER,
+                LaneHealth::new(2).expect("bounded"),
+                LanePosition::Center,
+            ),
+            LaneSnapshot::initial().opponent(),
+            WaveState::new(WavePressure::new(3).expect("bounded")),
+            JungleThreatTruth::InLane,
+            None,
+        );
+        let receipt = observe_allied(&state, ObservationId::new(13));
+        let proposal =
+            scripted_allied_proposal(receipt.observation(), trace(3, 3)).expect("proposal");
+        assert_eq!(proposal.candidates()[0].score(), 6);
+        assert_eq!(proposal.candidates()[1].score(), 6);
+        assert_eq!(proposal.selected_intent(), LaneIntent::Stabilize);
+    }
+
+    #[test]
+    fn coordinated_accept_keeps_execution_and_state_in_the_base_lane_contract() {
+        let state = LaneSnapshot::initial();
+        let (player_receipt, allied_receipt, offer) = coordinated_offer(&state, trace(3, 3));
+        let request = CoordinatedLaneRequest::new(
+            LaneIntentRequest::new(PLAYER_LANER, ObservationId::new(9), LaneIntent::Contest),
+            ProposalResponse::Accept {
+                proposal_id: offer.proposal().id(),
+            },
+        );
+        let coordination_inputs =
+            CoordinationResolutionInputs::new(trace(4, 4), FollowThrough::AllyCommitted);
+        let lane_inputs = inputs(1, 2, LaneWaveResult::Advanced);
+        let coordinated = resolve_coordinated_lane(
+            &state,
+            &player_receipt,
+            &allied_receipt,
+            &offer,
+            &request,
+            &coordination_inputs,
+            &lane_inputs,
+        )
+        .expect("coordinated transition");
+        let validated = validate_lane_request(&state, &player_receipt, &request.intent())
+            .expect("base request");
+        let base = transition_lane(&state, &validated, &lane_inputs).expect("base transition");
+        assert_eq!(coordinated.next_state(), base.next_state());
+        assert_eq!(coordinated.state_hash(), base.state_hash());
+        assert_eq!(
+            coordinated.coordination().disposition(),
+            CoordinationDisposition::AcceptedOffer
+        );
+        assert!(matches!(
+            coordinated.events()[0],
+            CoordinatedEvent::ProposalOffered { .. }
+        ));
+        assert!(matches!(
+            coordinated.effects()[0],
+            CoordinatedEffect::SupportCommitted { .. }
+        ));
+        assert_eq!(
+            coordinated.debrief().execution(),
+            CoordinatedExecutionReview::ConditionalOnCoordination { trace: trace(5, 0) }
+        );
+    }
+
+    #[test]
+    fn coordination_maps_closed_responses_and_rejects_malformed_inputs() {
+        let state = LaneSnapshot::initial();
+        let (player_receipt, allied_receipt, offer) = coordinated_offer(&state, trace(3, 3));
+        let accepted = CoordinatedLaneRequest::new(
+            LaneIntentRequest::new(PLAYER_LANER, ObservationId::new(9), LaneIntent::Contest),
+            ProposalResponse::Accept {
+                proposal_id: offer.proposal().id(),
+            },
+        );
+        assert_eq!(
+            resolve_coordination(
+                &offer,
+                &accepted,
+                &CoordinationResolutionInputs::new(trace(4, 4), FollowThrough::AllyCommitted),
+            )
+            .expect("accepted")
+            .disposition(),
+            CoordinationDisposition::AcceptedOffer
+        );
+        assert_eq!(
+            resolve_coordination(
+                &offer,
+                &accepted,
+                &CoordinationResolutionInputs::new(trace(4, 4), FollowThrough::AllyDeclined),
+            )
+            .expect("declined")
+            .disposition(),
+            CoordinationDisposition::AllyDeclined
+        );
+        let rejected = CoordinatedLaneRequest::new(
+            accepted.intent(),
+            ProposalResponse::Reject {
+                proposal_id: offer.proposal().id(),
+            },
+        );
+        assert_eq!(
+            resolve_coordination(
+                &offer,
+                &rejected,
+                &CoordinationResolutionInputs::new(trace(4, 4), FollowThrough::NotRequested),
+            )
+            .expect("rejected")
+            .disposition(),
+            CoordinationDisposition::PlayerRejected
+        );
+        let counter = CoordinatedLaneRequest::new(
+            LaneIntentRequest::new(PLAYER_LANER, ObservationId::new(9), LaneIntent::Stabilize),
+            counter_to_stabilize(offer.proposal().id()),
+        );
+        assert_eq!(
+            resolve_coordination(
+                &offer,
+                &counter,
+                &CoordinationResolutionInputs::new(trace(4, 4), FollowThrough::AllyCommitted),
+            )
+            .expect("counter accepted")
+            .disposition(),
+            CoordinationDisposition::CounterAccepted
+        );
+        assert_eq!(
+            resolve_coordination(
+                &offer,
+                &counter,
+                &CoordinationResolutionInputs::new(trace(4, 4), FollowThrough::AllyDeclined),
+            )
+            .expect("counter declined")
+            .disposition(),
+            CoordinationDisposition::CounterRejected
+        );
+        let invalid_accept = CoordinatedLaneRequest::new(
+            LaneIntentRequest::new(PLAYER_LANER, ObservationId::new(9), LaneIntent::Stabilize),
+            ProposalResponse::Accept {
+                proposal_id: offer.proposal().id(),
+            },
+        );
+        assert_eq!(
+            validate_coordinated_request(
+                &state,
+                &player_receipt,
+                &allied_receipt,
+                &offer,
+                &invalid_accept,
+                trace(3, 3),
+            ),
+            Err(CoordinationError::AcceptIntentMismatch)
+        );
+        assert_eq!(
+            resolve_coordination(
+                &offer,
+                &accepted,
+                &CoordinationResolutionInputs::new(trace(4, 5), FollowThrough::NotRequested),
+            ),
+            Err(CoordinationError::MalformedFollowThrough)
+        );
+    }
+
+    #[test]
+    fn coordinated_history_replays_and_rejects_tampering() {
+        let state = LaneSnapshot::initial();
+        let (player_receipt, allied_receipt, offer) = coordinated_offer(&state, trace(3, 3));
+        let request = CoordinatedLaneRequest::new(
+            LaneIntentRequest::new(PLAYER_LANER, ObservationId::new(9), LaneIntent::Contest),
+            ProposalResponse::Reject {
+                proposal_id: offer.proposal().id(),
+            },
+        );
+        let mut history = CoordinatedLaneHistory::new(state).expect("valid initial state");
+        history
+            .append(
+                &player_receipt,
+                &allied_receipt,
+                &offer,
+                &request,
+                CoordinationResolutionInputs::new(trace(4, 4), FollowThrough::NotRequested),
+                inputs(1, 1, LaneWaveResult::Held),
+            )
+            .expect("append");
+        assert_eq!(history.records().len(), 1);
+        assert_eq!(history.records()[0].replay_id(), M2_COORDINATION_REPLAY_ID);
+        assert_eq!(history.verify_replay(), Ok(history.current_state()));
+        history.records[0].request = CoordinatedLaneRequest::new(
+            request.intent(),
+            ProposalResponse::Reject {
+                proposal_id: ProposalId(0),
+            },
+        );
+        assert_eq!(
+            history.verify_replay(),
+            Err(CoordinationError::ReplayMismatch)
+        );
+        history.records[0].request = request;
+        history.records[0].base_record.command = LaneIntentCommand::new(
+            PLAYER_LANER,
+            state.turn(),
+            M2_LANE_RULESET,
+            ObservationId::new(9),
+            StateHash::from_raw(0),
+            LaneIntent::Contest,
+        );
+        assert_eq!(
+            history.verify_replay(),
+            Err(CoordinationError::ReplayMismatch)
         );
     }
 }

@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs` | Placeholder `Hello, world!` binary |
-| Package | `Cargo.toml` | Version `0.1.5`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.6`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -352,6 +352,25 @@ scope items remain required for the complete one-lane milestone.
   malformed-parent, and tampered-branch inputs before accepting a result.
 - [x] Cover matched/regenerated replay, parent immutability, attribution
   limits, hidden-state boundaries, and branch tamper detection.
+
+### Current allied proposal and coordination evidence
+
+- [x] Project one proposal-only allied actor from an actor-valid observation
+  with explicit unknown opponent/threat reports and no true-state hash.
+- [x] Bind the scripted policy to versioned profile/input identities and
+  deterministic candidate scores, selection, and proposal identity.
+- [x] Present one typed support offer and validate accept, reject, or one
+  bounded counter against the existing player intent request.
+- [x] Resolve five closed response/follow-through outcomes from explicit host
+  coordination input without allowing policy output to mutate lane state.
+- [x] Compose coordination events/effects/debrief data around one unchanged
+  `transition_lane` result and preserve the authoritative state hash.
+- [x] Append and replay one coordinated record with tamper detection while
+  retaining the old `LaneHistory` and `LaneBranch` contracts.
+
+This evidence establishes a deterministic, modeled coordination boundary for
+one window. It does not establish communication quality, trust, balance,
+optimality, human behavior, or a playable multi-window scenario.
 
 ### Deliverables
 

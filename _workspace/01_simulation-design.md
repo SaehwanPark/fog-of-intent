@@ -1,461 +1,609 @@
-# Simulation Design — M2 Bounded Counterfactual Branch
+# Simulation Design — M2 One Allied Proposal at the One-Window Decision
 
 ## Goal and Roadmap Milestone
 
-This slice advances M2 — One-Lane Vertical Slice from the implemented
-`m2-one-lane-window-v1` diagnostic window to one bounded counterfactual at that
-window's pivotal decision. It is a host/research comparison artifact, not a
-second playable window and not a general branching framework.
+This is the next bounded M2 slice after the implemented window-1 lane contract
+and the record-0 counterfactual branch. It adds one allied autonomous proposal
+and one host-owned coordination resolution at the existing `Open -> Resolved`
+lane decision. It does not add another decision window or a general
+communication system.
 
-The branch must reuse the current `src/lane.rs` contract wherever possible:
-the existing `LaneSnapshot`, `LanerObservation`, `LaneObservationReceipt`,
-`LaneIntentRequest`, `LaneIntentCommand`, validation functions,
-`LaneResolvedInputs`, `transition_lane`, `LaneTransitionResult`,
-`LaneTransitionRecord`, `LaneHistory`, and `LaneDebrief` retain their meaning.
-The branch composes those values in a small `LaneBranch` envelope.
+The existing lane and branch contracts remain the base authority:
 
-The end-to-end boundary is:
+- `LaneSnapshot`, its fields, state hash, and `m2-lane-v1` ruleset do not
+  change;
+- `LaneIntentRequest`, `LaneIntentCommand`, `ValidatedLaneIntent`, and the
+  existing command validation remain the player command boundary;
+- `LaneResolvedInputs`, `transition_lane`, `LaneTransitionResult`,
+  `LaneTransitionRecord`, `LaneHistory`, and the existing lane events/effects
+  remain valid for a window with no allied proposal;
+- `m2-one-lane-window-v1` and `m2-one-lane-window-branch-v1` replay identities
+  remain valid for existing records and branches.
+
+The new path composes those values in a narrow coordination envelope:
 
 ```text
-verified parent LaneHistory with exactly one committed window
-  -> record 0 pre-transition snapshot and actor observation
-  -> alternate existing LaneIntentRequest
-  -> matched parent execution OR explicitly regenerated execution
-  -> existing host validation and transition
-  -> one LaneBranch result + branch replay identity + bounded comparison
+open LaneSnapshot
+  -> player LanerObservation + allied AlliedLaneObservation
+  -> one LaneIntentProposal and host support offer
+  -> player CoordinatedLanerObservation
+  -> CoordinatedLaneRequest { existing intent request + response }
+  -> host validation
+  -> explicit CoordinationResolutionInput
+  -> explicit existing LaneResolvedInputs for execution
+  -> existing transition_lane
+  -> CoordinatedTransitionResult and one-record coordinated replay
 ```
 
-The branch isolates one decision only. It does not continue the branch into a
-second observation, another command, or another transition.
+The policy proposal is an actor artifact, not a command or state mutation. The
+host presents it as one typed coordination offer. Coordination decides whether
+that offer is committed, declined, or countered; execution remains a separate
+already-resolved input. The canonical initial profile selects `Contest` and
+offers `AssistContest`; the player can contest and accept it, contest and
+reject it, or stabilize and counter with a bounded cover request.
 
 ## Slice Boundary and Non-Goals
 
-Included:
+Included is exactly one existing lane window with:
 
-- a parent `LaneHistory` containing one valid, replayable window-1 record;
-- a fixed branch point at record index `0`, immediately before the parent
-  command was evaluated, with the parent initial state still `Open`;
-- the same actor-valid `LanerObservation` that existed at the parent decision;
-- one alternate `LaneIntentRequest`, limited to the other existing intent
-  (`Stabilize` versus `Contest`);
-- one execution-selection mode: reuse the parent's exact execution input, or
-  use one new execution input supplied by the edge resolver with a stable
-  branch-scoped trace;
-- one branch transition using the existing lane transition and one
-  branch-local replay verification;
-- a bounded comparison that separates decision, execution condition, and luck
-  without claiming an optimal action or a full-scenario result.
+- the current player, opponent, wave, and hidden threat snapshot unchanged;
+- one ephemeral allied actor `ALLIED_AUTONOMOUS_ACTOR` whose persistent health,
+  position, resources, and policy population are not modeled;
+- one fixed, bounded autonomous proposal generated from an actor-valid allied
+  observation;
+- one actor-visible proposal report attached as a coordination overlay to the
+  existing player observation;
+- one player response: accept, reject, or one closed counter-proposal;
+- one host-owned coordination resolution with an explicit stable input trace;
+- one explicit execution input resolved after coordination, passed to the
+  existing deterministic lane transition;
+- one coordinated result, coordination-specific events/effects/debrief, and
+  one append-only in-memory coordinated record that replays the base lane
+  transition and coordination envelope.
 
-The parent and branch each have one resolved window. The branch has no new
-`LaneSnapshot` schema, no new actor, no new intent, and no new event/effect
-kind. Branch metadata is not authoritative world state and is not included in
-the lane state hash.
+The current two player strategies remain meaningful:
 
-Explicit exclusions are second-window mechanics, variable pacing, allied
-policy, communication, proposals, autonomous opponent policy, recall, gank
-response, CLI, MCP, GUI, persistence codecs, portable branch bundles, branch
-trees, arbitrary branch points, branch merge, general branching frameworks,
-and human-experience or balance claims.
+- `Contest + Accept(AssistSelectedIntent)` risks exposure but can receive allied
+  support for the wave/opponent;
+- `Stabilize + Reject` yields space deliberately and receives no support;
+- `Stabilize + Counter(RequestIntent)` asks for the corresponding lower-risk
+  or alternate allied cover plan.
+
+The counter is included to exercise the response contract; it is not a second
+allied policy. A host may resolve the counter as accepted or declined through
+the explicit coordination input. The policy artifact remains proposal-only;
+host presentation and player response are the new coordination integration.
+
+Explicitly excluded are a second window, variable pacing, allied movement or
+health state, multiple allied proposals, proposal queues, free-form messages,
+trust models, negotiation rounds, autonomous population behavior, opponent
+policy, recall, gank-response mechanics, CLI, MCP, GUI, persistence codecs,
+portable coordination bundles, branch support for coordinated records, merge
+or tree operations, and human-experience or behavioral-validity claims.
 
 ## Actors and Authority
 
-The ordinary actors remain unchanged: `PLAYER_LANER` is the only decision-maker;
-`OPPONENT_LANER` and `JungleThreatTruth` remain host-owned true-state fields
-with no policy interface. The branch is not an action available during
-ordinary play. A host-owned experiment/controller boundary requests a branch
-after the parent record is committed and verified.
+The ordinary actors are still `PLAYER_LANER` and the hidden `OPPONENT_LANER`;
+`JungleThreatTruth` remains a hidden field. `ALLIED_AUTONOMOUS_ACTOR` is a
+single proposal-only role, represented by its actor identity, observation,
+versioned policy artifact, and coordination outcome. It has no independently
+advancing world state and cannot create a `LaneIntentCommand`, close the
+window, resolve execution, or mutate history.
 
-The host owns:
-
-- the parent `LaneHistory` and its true snapshots;
-- the branch-point selection and parent replay verification;
-- the actor observation and its private source-state binding;
-- conversion of the alternate request into a host-created command;
-- the choice to match execution or accept an explicitly resolved regenerated
-  execution input;
-- branch identity, provenance, result comparison, and replay verification.
-
-The deterministic kernel still owns only validation and transition evaluation.
-It never discovers a branch, reads parent history by itself, generates a new
-draw, or mutates either history.
-
-The branch entry point should be a narrow composition function, conceptually:
+The allied policy is the bounded `scripted-allied-proposal-v1` profile from the
+agent-ecology contract. Candidate generation, evaluation, and selection are
+separate and transparent. It enumerates only the two advertised existing
+intents and uses:
 
 ```text
-branch_from_window(
-  parent: &LaneHistory,
-  alternate: &LaneIntentRequest,
-  execution: BranchExecutionSelection,
-) -> Result<LaneBranch, LaneBranchError>
+health_risk       = max(5 - laner_health, 0)
+stabilize_score   = 2 * health_risk + (3 - wave_pressure)
+contest_score     = 2 * wave_pressure + max(laner_health - 5, 0)
 ```
 
-It borrows the parent immutably. `LaneBranch` owns a copied branch record and
-metadata sufficient to verify it later; it does not own a mutable reference to
-or a mutation capability for the parent.
+Equal scores use the fixed conservative `Stabilize` tie-break. At the
+canonical visible `(health=8, wave=1)` observation, the policy selects
+`Contest` with score `5` over `Stabilize` with score `2`; low visible health
+favors `Stabilize`, and higher visible wave pressure favors `Contest`. The
+policy reads only `AlliedLaneObservation`, profile identity, and a bound input
+identity. It never reads opponent health, posture, current threat, true hashes,
+history, or research inspection.
+
+The host owns true state, both actor observations and the player overlay,
+proposal validity, response
+validity, coordination resolution, execution-input resolution, command
+validation, event/effect ordering, history/replay, and debrief projection. The
+transition remains a synchronous pure evaluator over the existing lane state,
+validated intent, and explicit lane execution input. It does not call the
+allied policy, resolve a proposal, or generate a draw.
 
 ## True State, Beliefs, Observations, and Reports
 
-The branch point is the parent record's `prior_state_hash` and corresponding
-initial `LaneSnapshot`. For the required one-record parent, this is exactly:
+`LaneSnapshot` remains exactly the existing typed `m2-lane-v1` snapshot. It
+contains no allied actor, proposal, response, coordination disposition, or
+branch metadata. The lane state hash therefore remains unchanged. A
+coordination record may explain why a particular execution input was supplied,
+but coordination metadata never becomes hidden state or a new hash field.
+
+The allied actor receives one new actor-valid projection:
 
 ```text
-parent.initial_state() == parent.records()[0].prior state
-parent.initial_state().phase() == LanePhase::Open
-parent.records()[0].observation() ==
-  observe_player(&parent.initial_state(), parent.records()[0].command().observation_id())
+AlliedLaneObservation {
+  schema: m2-allied-proposal-observation-v1,
+  observer: ALLIED_AUTONOMOUS_ACTOR,
+  turn: Turn,
+  observation_id: ObservationId,
+  laner_health: LaneHealth,
+  player_position: LanePosition,
+  wave_pressure: WavePressure,
+  opponent: OpponentReport,       // health/posture/current position unknown
+  jungle_threat: ThreatReport,     // Unknown
+  available_intents: [Stabilize, Contest],
+  window: OneBeat,
+}
 ```
 
-The snapshot remains the existing `m2-lane-v1` type: bounded player and
-opponent health, position, wave pressure, phase, hidden opponent posture,
-hidden jungle threat, and optional one-window outcome. The branch does not add
-branch ID, parent outcome, counterfactual status, or branch metadata to the
-snapshot. State hashes therefore remain hashes of authoritative lane state
-only, using the existing field order and `fnv1a64-le-v1` representation.
+The policy input identity also records the profile
+`scripted-allied-proposal-v1`, actor and ruleset identity, observation schema,
+turn, observation ID, canonical digest of the visible fields, and the existing
+`LaneResolvedInputs::policy()` trace. It excludes true-state hashes, hidden
+fields, execution values, and history.
 
-The branch reuses the recorded `LanerObservation` exactly. It contains the
-same player health/position, visible wave pressure, two available intents,
-`Unknown` opponent health/posture, `Unknown` jungle threat, one-beat window,
-schema `m2-lane-observation-v1`, and the same `ObservationId`. The branch must
-not create a new observation after the parent window or reveal:
+The player keeps the existing `LanerObservation` byte-for-byte as the base
+projection. The host adds a separate coordination overlay rather than adding
+proposal fields to the base observation:
 
-- the parent's command or outcome before the alternate request is accepted;
-- the true opponent health, posture, current position, or jungle threat;
-- the host source-state hash stored in `LaneObservationReceipt`;
-- matched or regenerated execution values before transition evaluation.
+```text
+CoordinatedLanerObservation {
+  lane: LanerObservation,          // existing schema and ObservationId
+  allied_proposal: AlliedProposalReport,
+}
+```
 
-The host reconstructs a private receipt from the branch-point snapshot and the
-recorded observation ID, then compares its actor-visible observation with the
-parent record. The receipt's source hash stays host-only. A branch result may
-be projected to the actor using the same redaction rules as window 1; a
-privileged research/controller inspection may see provenance and true hashes
-through a separately authorized surface, but that is not an actor observation
-or an ordinary policy input.
+`AlliedProposalReport` exposes the selected intent, proposal ID, proposer,
+target, bounded candidate scores/reason codes, profile identity, commitment,
+focus, abort condition, and fallback. These are the policy artifact and the
+host's typed support offer, not hidden state. It does not expose the ally's
+source-state hash, hidden state, execution input, or future execution result.
+The player can choose an intent and response from this overlay without
+knowing opponent truth.
 
-No new belief update or report wording is introduced. This branch compares
-what could have followed from the same information available at the pivotal
-decision; it does not pretend that the actor observed the parent outcome before
-choosing the alternate.
+The proposal ID is deterministically derived from the profile identity, agent
+input identity, selected intent, and one proposal ordinal. It changes when a
+versioned policy/input identity changes and is not a random value. The full
+`LaneIntentProposal` artifact and player-facing report are recorded in the
+coordination envelope so replay can prove what the player saw.
+
+No new belief update is inferred from acceptance or rejection. The player may
+believe the ally will follow through, but the committed coordination result
+records only the host resolution. Research inspection may see the true
+coordination input through a separate privileged projection; ordinary actor
+observations do not.
 
 ## Plans, Commands, and Validation
 
-The two existing `LaneIntent` variants and their plan semantics are unchanged:
+The existing player plans remain unchanged:
 
-- `Stabilize`: commit for the beat, focus on the wave, send `NoMessage`, have
-  no contest abort, and fall back to yielding space near the tower.
-- `Contest`: commit for the beat, focus on opponent and wave, send `NoMessage`,
-  abort when self damage reaches `2`, and fall back to yielding space near the
-  tower.
+- `Stabilize`: commit for this beat, focus on the wave, send no further
+  message, do not contest, and fall back to yielding space near the tower.
+- `Contest`: commit for this beat, focus on opponent and wave, send no further
+  message, abort on self damage at least `2`, and fall back near the tower.
 
-The alternate is still a normal actor-facing `LaneIntentRequest`. It must use
-the recorded observation ID and player actor, and its intent must differ from
-the parent record's intent. This makes the bounded branch a decision
-counterfactual rather than an arbitrary replay edit. The host then creates the
-same internal `LaneIntentCommand` shape already used by `validate_lane_request`:
-actor, current turn, `m2-lane-v1`, observation ID, host prior-state hash, and
-one closed intent variant.
-
-Branch validation occurs before transition evaluation:
-
-1. `parent.verify_replay()` succeeds, so the source history is not trusted
-   merely because it has a terminal snapshot;
-2. the parent has exactly one record, at index `0`, and its prior state is the
-   parent initial state with phase `Open`;
-3. the parent record's observation equals a fresh projection from that prior
-   state using the recorded observation ID;
-4. the alternate actor and observation ID match the recorded player observation;
-5. the alternate intent is different from the parent intent and is one of the
-   two existing variants;
-6. the existing `validate_lane_request` / `validate_lane_command` checks pass;
-7. the execution-selection contract below is satisfied.
-
-Branch-specific failures are typed separately from ordinary command and
-execution failures:
+The autonomous policy produces a closed, proposal-only artifact:
 
 ```text
-ParentNotReplayable
-ParentNotExactlyOneWindow
-InvalidBranchPoint
-ObservationMismatch
-NotAnAlternateIntent
-BranchActorMismatch
-BranchObservationMismatch
-NonExecutionInputsChanged
-InvalidBranchExecutionIdentity
-ParentExecutionUnavailable
-Validation(LaneValidationError)
-Transition(LaneTransitionError)
+LaneIntentProposal {
+  id: ProposalId,
+  actor: ALLIED_AUTONOMOUS_ACTOR,
+  profile_id: scripted-allied-proposal-v1,
+  input_identity: AgentInputIdentity,
+  candidates: [
+    { intent: Stabilize, score, reason_code },
+    { intent: Contest, score, reason_code },
+  ],
+  selected_intent: Contest | Stabilize,
+  selection_rule: max-score-stabilize-tie-v1,
+}
 ```
 
-No branch record is created for any failure. In particular, a wrong actor,
-stale observation, wrong turn/ruleset, stale host hash, or same-intent request
-is not a modeled unfavorable outcome. A valid alternate command paired with
-bad but bounded execution remains a legal branch result; malformed damage or
-wave inputs remain `LaneTransitionError` values and do not commit.
+The host turns the selected policy artifact into one bounded coordination offer
+without treating the policy result as acceptance or commitment:
+
+```text
+AlliedProposalOffer {
+  proposal: LaneIntentProposal,
+  target: PLAYER_LANER,
+  support: AssistSelectedIntent | CoverSelectedIntent,
+  commitment: UntilWindowEnd,
+  focus: OpponentAndWave | Wave,
+  abort: IfPlayerYields | IfPlayerHealthAtMost(2),
+  fallback: HoldPosition,
+}
+```
+
+`AssistSelectedIntent` is `AssistContest` when the policy selects `Contest`;
+`CoverSelectedIntent` is `CoverStabilize` when it selects `Stabilize`. The
+canonical initial policy therefore offers `AssistContest`, while low-health
+fixtures offer `CoverStabilize`. The offer is the only new coordination
+presentation type.
+
+The player response is a closed coordination message, not a second lane
+command:
+
+```text
+ProposalResponse::Accept { proposal_id }
+ProposalResponse::Reject { proposal_id }
+ProposalResponse::Counter {
+  proposal_id,
+  counter: CounterProposal::RequestIntent {
+    requested_intent: Stabilize | Contest,
+    target: PLAYER_LANER,
+    commitment: UntilWindowEnd,
+    focus: Wave | OpponentAndWave,
+    abort: IfPlayerHealthAtMost(2) | IfPlayerYields,
+    fallback: HoldPosition,
+  },
+}
+```
+
+The counter-proposal is the only counter shape. It may request the other
+existing intent and its corresponding bounded support plan; it does not create
+free-form negotiation. The response is presented as a coordination message in
+this slice, while the policy artifact itself remains a proposal-only result.
+
+The new request envelope preserves the existing intent request:
+
+```text
+CoordinatedLaneRequest {
+  intent: LaneIntentRequest,       // existing actor/observation/intent
+  response: ProposalResponse,
+}
+```
+
+Host validation checks, in order:
+
+1. the allied observation and proposal were generated for the current open
+   snapshot and the canonical one-proposal slot;
+2. the proposal ID, proposer, target, and plan match the recorded report;
+3. the embedded existing `LaneIntentRequest` passes the current lane request
+   actor and observation checks;
+4. `Accept` is allowed only when the embedded player intent equals the
+   proposal's `selected_intent`;
+5. `Counter(RequestIntent)` is allowed only when its requested intent equals
+   the embedded player intent and differs from the proposal's selected intent;
+6. `Reject` is allowed for either player intent;
+7. the response proposal ID matches exactly and there is only one response.
+
+Typed failures include `StaleAlliedObservation`, `ProposalNotForWindow`,
+`ProposalIdMismatch`, `WrongProposer`, `WrongTarget`,
+`ResponseProposalMismatch`, `AcceptIntentMismatch`,
+`CounterIntentMismatch`, `UnsupportedCounter`, `DuplicateResponse`, and the
+existing `LaneValidationError` values. They fail before coordination or lane
+transition and add no history record.
+
+An accepted proposal is not a guarantee of execution success. A valid
+`Accept` may resolve to `AllyDeclined`; a valid `Reject` may be followed by a
+good execution result. Those are modeled coordination/execution outcomes, not
+invalid commands.
 
 ## Resolved Inputs and Random Streams
 
-`LaneResolvedInputs` remains unchanged. The branch reuses its four existing
-non-execution traces exactly: environment, observation, policy, and
-coordination. There is no communication stream because the existing slice has
-no allied recipient and its plan metadata remains `NoMessage`.
-
-The branch adds only a selection envelope around the existing
-`LaneExecutionInputs`:
+The proposal and coordination boundaries resolve before `transition_lane`:
 
 ```text
-BranchExecutionSelection::MatchedParent {
-  source_record: 0,
+AlliedProposalInputs {
+  profile_id: scripted-allied-proposal-v1,
+  policy_trace: LaneResolvedInputs.policy(),
+  input_identity: AgentInputIdentity,
+  proposal: LaneIntentProposal,
 }
 
-BranchExecutionSelection::Regenerated {
-  branch_id: BranchId,                 // explicit, stable, 0..=127
-  execution: LaneExecutionInputs,      // already resolved at the edge
+CoordinationResolutionInputs {
+  coordination_trace: InputTrace,   // stream 7, draw 0 in the fixture
+  follow_through: NotRequested | AllyCommitted | AllyDeclined,
 }
 ```
 
-Matched execution copies the parent record's entire `LaneResolvedInputs`,
-including its exact execution values and `InputTrace`. If the parent used
-`InputTrace { stream: 5, draw: 0 }`, the branch uses that same identity; it does
-not relabel or resample it. This is a controlled comparison of the alternate
-intent under the same resolved outcome, not a claim that the physical outcome
-would necessarily be identical in an unmodeled world.
+The proposal policy does not sample randomness in this slice. Its profile and
+agent-input identity are nevertheless recorded, and the existing policy trace
+is part of that identity. `follow_through` is already resolved host input; the
+coordination resolver does not create an RNG or infer it from true state.
 
-Regenerated execution copies the parent's environment, observation, policy,
-and coordination traces and replaces only its `LaneExecutionInputs`. The edge
-resolver supplies the new bounded damage and wave result before the transition
-is called. The transition never creates or samples this value.
-
-For this one-window branch contract, regenerated execution must use the
-following stable trace namespace:
+The pure host-owned resolver is:
 
 ```text
-branch_execution_trace(branch_id) =
-  InputTrace { stream: StreamId(128 + branch_id), draw: DrawId(0) }
+resolve_coordination(
+  offer: &AlliedProposalOffer,
+  request: &CoordinatedLaneRequest,
+  inputs: &CoordinationResolutionInputs,
+) -> Result<CoordinationResolution, CoordinationError>
 ```
 
-`BranchId` is explicitly supplied by the host and is restricted to `0..=127`
-so the mapping is total for the current `u8` `StreamId`. The branch identity
-records the branch ID and resulting trace. Repeating the same branch identity
-with the same explicit execution value reproduces the same result. A future
-need for more branch IDs requires a versioned contract, not silent reuse.
+Its closed mapping is:
 
-The branch must reject regenerated inputs whose non-execution traces differ
-from the parent or whose execution trace is not the derived branch trace.
-Adding unrelated streams cannot alter the existing lane result. The branch
-does not implement an RNG, draw allocation service, or stream scheduler.
+| Player response | Required follow-through input | Resolution |
+| --- | --- | --- |
+| `Reject` | `NotRequested` | `PlayerRejected`, no support |
+| `Accept` | `AllyCommitted` | `AcceptedOffer`, with offer support |
+| `Accept` | `AllyDeclined` | `AllyDeclined`, no support |
+| `Counter(RequestIntent)` | `AllyCommitted` | `CounterAccepted`, with requested-intent support |
+| `Counter(RequestIntent)` | `AllyDeclined` | `CounterRejected`, no support |
+
+Any other pair is a typed malformed coordination input. The resolution stores
+the proposal ID, response, disposition, support plan or `None`, and
+coordination trace.
+
+The edge then resolves the existing `LaneResolvedInputs` execution payload
+under that explicit disposition. The four existing lane traces remain
+explicit; `LaneResolvedInputs::coordination()` must equal the coordination
+trace stored in `CoordinationResolutionInputs`. The final
+`LaneExecutionInputs` contains the existing self damage, opponent damage, wave
+result, and execution trace. Coordination can influence those resolved values
+at the edge—for example, accepted contest support may resolve to opponent
+damage `2` and `Advanced`, while a declined support may resolve to self damage
+`3` and `Lost`—but the transition never reconstructs that causal relationship.
+
+The coordinated record stores both coordination inputs and final execution
+inputs. Replaying with identical prior state, validated intent, proposal,
+coordination inputs, execution inputs, and ruleset is deterministic. Changing
+the coordination disposition or execution input is a new committed condition,
+not an implicit draw shift.
 
 ## Events, Effects, and Transition
 
-The branch invokes the unchanged transition boundary:
+The existing `transition_lane` remains the sole authority for lane state,
+health, wave, position, terminal outcome, lane events, lane effects, and the
+authoritative state hash. It is called once:
 
 ```text
-transition_lane(
-  branch_point_state,
-  validated_alternate,
-  branch_resolved_inputs,
-) -> LaneTransitionResult
+lane_result = transition_lane(
+  prior_snapshot,
+  validated_intent,
+  resolved_lane_inputs,
+)
 ```
 
-The existing deterministic steps remain authoritative: validate the exact
-snapshot binding and phase, validate damage and wave bounds, subtract health,
-apply wave movement, apply the intent/fallback position rule, classify
-`HeldSpace`, `YieldedSpace`, or `ForcedOut`, close the window, advance the turn,
-preserve hidden truth, and hash the next snapshot.
-
-The branch emits the existing `LaneEvent` and `LaneEffect` values in the same
-order. `IntentCommitted` names the alternate intent. Damage and wave effects
-retain `LaneEffectCause::Execution(trace)`, so matched branches retain the
-parent trace while regenerated branches carry the derived branch trace.
-`FallbackActivated`, `WindowResolved`, and all existing provenance rules are
-unchanged. No `BranchStarted` event is inserted into the authoritative lane
-transition, because branch provenance belongs to the branch envelope rather
-than the scenario state.
-
-The branch result's state hash is computed exactly as before and excludes
-branch ID, branch mode, parent hash, and comparison labels. A branch can
-therefore have the same next-state hash as its parent when the alternate
-intent and matched execution happen to produce the same state; the distinct
-branch replay identity still distinguishes the artifacts.
-
-The branch envelope records the parent relationship separately:
+The coordinated host wrapper composes the result with coordination facts; it
+does not add coordination metadata to `LaneSnapshot` or call a second lane
+transition:
 
 ```text
-LaneBranch {
-  identity: LaneBranchReplayIdentity,
-  execution_selection: BranchExecutionSelection,
-  record: LaneTransitionRecord,
+CoordinatedTransitionResult {
+  lane: LaneTransitionResult,
+  events: Vec<CoordinatedEvent>,
+  effects: Vec<CoordinatedEffect>,
+  debrief: CoordinatedDebrief,
 }
 ```
 
-The record's observation, host command, resolved inputs, prior hash, events,
-effects, debrief, next snapshot, and next hash are the same typed values used
-by `LaneHistory`. No second transition is allowed.
+The ordered event stream is:
+
+```text
+  ProposalOffered { proposal_id, proposer: ALLIED_AUTONOMOUS_ACTOR, target, plan }
+ProposalResponded { proposal_id, response }
+CoordinationResolved { proposal_id, disposition, trace }
+Lane(LaneEvent::IntentCommitted { ... })
+Lane(other existing LaneEvent values in existing order)
+```
+
+The existing `LaneEvent` values are not renamed or reordered. Coordination
+events are envelope-level facts that make proposal and resolution inspectable.
+
+Coordination effects are likewise a small envelope type:
+
+```text
+CoordinatedEffect::SupportCommitted {
+  proposal_id,
+  proposer: ALLIED_AUTONOMOUS_ACTOR,
+  target: PLAYER_LANER,
+  support: AssistContest | CoverStabilize,
+  cause: Coordination(coordination_trace),
+}
+CoordinatedEffect::SupportUnavailable {
+  proposal_id,
+  disposition: PlayerRejected | AllyDeclined | CounterRejected,
+  cause: Coordination(coordination_trace),
+}
+CoordinatedEffect::Lane(LaneEffect)
+```
+
+`SupportCommitted` is a semantic coordination effect, not a new persistent
+ally state. Any health, wave, or position change remains an existing
+`LaneEffect` caused by the explicit execution trace. The debrief can say that
+execution was resolved under committed support without mislabeling execution
+as a direct coordination state mutation.
+
+The next snapshot is exactly `lane_result.next_state()`: phase `Resolved`,
+one advanced turn, updated player/opponent health and position, updated wave,
+unchanged hidden threat truth, and existing `LaneOutcome`. The state hash is
+exactly `lane_result.state_hash()`.
 
 ## History, Replay, and Branching
 
-The branch boundary is the immutable prefix before parent record `0`. The
-parent must be a verified one-record `LaneHistory`:
+The existing no-proposal `LaneHistory` remains authoritative for old records.
+Add only a narrow one-record `CoordinatedLaneHistory` wrapper that owns:
 
 ```text
-parent initial state: Open lane snapshot
-parent record 0: original observation + original command + original inputs
-parent current state: Resolved lane snapshot
-```
-
-`LaneBranchReplayIdentity` is a versioned in-memory value:
-
-```text
-LaneBranchReplayIdentity {
-  replay_id: "m2-one-lane-window-branch-v1",
-  parent_replay_id: "m2-one-lane-window-v1",
-  parent_record_index: 0,
-  parent_initial_state_hash: StateHash,
-  parent_terminal_state_hash: StateHash,
-  parent_record_identity: StateHash, // command + observation/input identity
-  branch_id: BranchId,
-  alternate_intent: LaneIntent,
-  execution_mode: MatchedParent | Regenerated,
-  execution_trace: InputTrace,
+CoordinatedLaneRecord {
+  replay_id: "m2-one-lane-coordination-v1",
+  player_observation: LanerObservation,
+  allied_observation: AlliedLaneObservation,
+  allied_proposal: LaneIntentProposal,
+  proposal_report: AlliedProposalReport,
+  request: CoordinatedLaneRequest,
+  coordination_inputs: CoordinationResolutionInputs,
+  resolution: CoordinationResolution,
+  base_lane_record: LaneTransitionRecord,
+  coordinated_result: CoordinatedTransitionResult,
 }
 ```
 
-The parent terminal hash binds the branch to the verified parent artifact;
-the parent initial hash binds the exact branch point; and
-`parent_record_identity` hashes the parent command, prior hash, all five input
-traces, and resolved execution values. Branch identity is history metadata and
-is not included in `LaneSnapshot::hash()`.
+The base lane record is produced through the existing `LaneHistory::append`
+path with the existing `LaneResolvedInputs`; the coordinated wrapper stores
+the proposal and resolution sidecar and the composed result. This keeps the
+old lane record's prior hash, state hash, events, effects, and replay behavior
+unchanged. The coordinated history allows exactly one record and no delete or
+edit operation.
 
-`LaneBranch::verify_replay(parent)` must:
+`CoordinatedLaneHistory::verify_replay` must:
 
-1. verify the parent history and compare its current hash with
-   `parent_terminal_state_hash`;
-2. confirm the parent has one record at index `0` and that its prior hash and
-   observation identify the declared branch point;
-3. regenerate the actor observation from the parent initial state and compare
-   it with both the parent and branch records;
-4. validate the branch command with the existing lane validation boundary;
-5. re-derive the branch inputs according to matched or regenerated mode,
-   including exact neutral traces and the stable execution trace;
-6. rerun `transition_lane` from the parent initial state; and
-7. compare the stored branch record's observation, command, inputs, events,
-   effects, debrief, next snapshot, and state hash.
+1. verify the base one-record `LaneHistory` from its initial snapshot;
+2. regenerate the allied observation and deterministic proposal from the
+   actor-valid allied input boundary;
+3. compare the player base observation and proposal overlay with the recorded
+   reports;
+4. revalidate the embedded existing lane intent and response;
+5. rerun `resolve_coordination` with the exact stored resolution input;
+6. verify the lane input coordination trace matches the resolution trace;
+7. rerun the existing `transition_lane` once; and
+8. compare the coordinated events, effects, debrief, base result, next state,
+   and state hash.
 
-The verifier does not trust a branch terminal snapshot alone. It also rejects
-tampered parent hashes, branch mode, branch ID, execution trace, input values,
-command, observation, or result. Parent history remains byte-/value-equivalent
-before and after branch creation and continues to verify independently.
+The new coordinated replay identity is
+`m2-one-lane-coordination-v1`, with parent/base replay identity
+`m2-one-lane-window-v1`, proposal schema `m2-allied-proposal-observation-v1`,
+and policy profile `scripted-allied-proposal-v1`, using the existing hash
+representation. Proposal IDs, candidate scores/reasons, policy/input
+identities, coordination traces, responses, dispositions, and execution values
+are committed inputs; runtime logs are not replay authority.
 
-This is one branch value, not a branch tree. There is no API for deleting,
-merging, recursively branching, selecting arbitrary record indices, or
-continuing a branch. Persistence and external replay schema are deferred.
+Compatibility with the existing bounded branch is explicit:
+
+- old `LaneHistory` records with no coordination overlay continue to verify;
+- old `LaneBranch` artifacts continue to use
+  `m2-one-lane-window-branch-v1`, record-0 boundaries, matched/regenerated
+  execution identities, and their existing `parent_record_identity`;
+- branch metadata and coordination metadata do not enter the lane state hash;
+- `branch_from_window` must not silently discard a coordinated overlay. This
+  slice rejects a coordinated history as an input to the old branch API;
+  branching from a coordinated record requires a future versioned branch
+  identity that includes the proposal/response/resolution envelope.
+
+Thus the allied proposal slice preserves old replay compatibility without
+pretending that the old branch identity can prove a coordination-aware branch.
+No branch tree, merge, persistence format, or second transition is added here.
 
 ## Debrief and Causal Explanation
 
-The parent `LaneDebrief` and branch `LaneDebrief` retain the existing four-way
-separation:
-
-- `Decision`: whether the alternate intent was information-consistent with the
-  same recorded observation; it is not an optimality or hindsight score.
-- `Coordination`: `NotApplicable`, because the window has no allied actor or
-  message.
-- `Execution`: the actual damage, wave result, fallback activation, and trace
-  used by that transition.
-- `Luck`: whether the comparison matched the parent execution or used an
-  explicitly regenerated execution input.
-
-The branch adds a bounded comparison projection, not a new transition result:
+The existing `LaneDebrief` remains embedded and continues to describe the
+player intent, execution facts, fallback, coordination-not-applicable base
+view, and execution trace for the lane transition. The new
+`CoordinatedDebrief` adds the proposal/coordination attribution:
 
 ```text
-CounterfactualReview {
-  parent_outcome: LaneOutcome,
-  branch_outcome: LaneOutcome,
-  parent_intent: LaneIntent,
-  branch_intent: LaneIntent,
-  execution_relation: Matched | Regenerated,
-  decision_comparison: InformationConsistent,
-  coordination: NotApplicable,
-  attribution_limit: MatchedDecisionOnly | DecisionAndExecutionChanged,
+CoordinatedDebrief {
+  lane: LaneDebrief,
+  decision: IntentAndResponseInformationConsistent | Invalid,
+  proposal: Offered,
+  player_response: Accepted | Rejected | Countered,
+  coordination: PlayerRejected
+               | AcceptedOffer
+               | AllyDeclined
+               | CounterAccepted
+               | CounterRejected,
+  execution: ConditionalOnCoordination { execution_trace },
+  luck: ExplicitExecutionInput { execution_trace },
 }
 ```
 
-For `Matched`, a difference in outcome is attributable only to the changed
-intent under this fixed-input comparison. For `Regenerated`, the review must
-say that both decision and execution changed; it cannot attribute the outcome
-difference to the alternate intent alone. Neither mode estimates luck,
-declares a best action, reveals hidden opponent truth to the actor, or claims
-that the branch would have occurred in the actual run.
+Attribution rules are strict:
 
-The branch's immediate review uses the pre-decision observation and both
-committed one-window results. Its terminal review is the same one-window
-diagnostic projection; there is no cross-window or full-match debrief. Any
-research-only causal explanation of hidden truth must be clearly separated
-from the actor-visible review.
+- `Decision` assesses whether the player intent and response were valid from
+  the recorded `CoordinatedLanerObservation`; it does not inspect hidden
+  opponent truth or declare the response optimal.
+- `Coordination` reports whether the player rejected, the ally committed, or
+  the ally declined/counter-rejected. A valid acceptance followed by
+  `AllyDeclined` is a coordination failure, not a bad command.
+- `Execution` reports the explicit damage, wave result, fallback, and trace
+  resolved after coordination. It may say the result was conditioned on
+  committed support, but it does not infer an unrecorded causal bonus.
+- `Luck` identifies the committed execution input and coordination
+  follow-through identity. It does not estimate luck or compare a branch.
+
+The immediate review is emitted after this one transition. Its terminal review
+is still a one-window diagnostic, not a match debrief. There is no delayed
+effect or second observation. Player-facing review redacts hidden state and
+private policy/input details; privileged research review may inspect them only
+through an explicitly separate surface.
 
 ## Verification Contract
 
-The branch implementation must add focused tests while leaving existing
-window-1 tests unchanged:
+Focused tests must cover the coordinated path while retaining all existing
+window and branch tests:
 
-- **Boundary:** build the canonical one-record `LaneHistory` through the
-  existing append path; accept only branch point `0` and reject an empty,
-  multi-record, invalid, or unreplayable parent.
-- **Two strategies:** branch a parent `Contest` into `Stabilize` and a parent
-  `Stabilize` into `Contest`, proving both existing intents remain legal from
-  the same actor observation.
-- **Parent immutability:** snapshot parent records, current state, and terminal
-  hash; create and verify a branch; assert all parent values and replay results
-  are unchanged.
-- **Matched execution:** assert branch non-execution inputs, execution values,
-  and execution trace equal parent record `0`; assert the transition uses
-  existing event/effect types and the matched trace; verify the branch identity.
-- **Regenerated execution:** supply bounded new execution damage/wave values
-  with a valid `BranchId`; assert neutral traces match parent, the execution
-  trace is exactly `StreamId(128 + branch_id), DrawId(0)`, and the result is
-  deterministic across repeated runs.
-- **Input isolation:** change a neutral parent trace and reject it as a branch
-  input change; separately prove that matching all neutral traces while
-  changing only regenerated execution values changes only the expected
-  transition result and provenance.
-- **Validation:** reject wrong actor, stale observation ID, same-intent request,
-  parent hash mismatch, wrong branch point, invalid branch ID, non-derived
-  regenerated trace, and changed non-execution inputs before transition.
-- **Malformed execution versus failure:** reject damage above available health
-  and wave overflow/underflow as transition errors with no branch record;
-  accept bounded but unfavorable regenerated execution as a legal result.
-- **Hidden-state boundary:** assert that parent and branch use the identical
-  actor-visible observation and that branch metadata, parent hashes, execution
-  values, and hidden truth are absent from the actor projection.
-- **Determinism:** identical branch point, alternate command, execution
-  selection, parent history, and ruleset produce identical branch events,
-  effects, next state, debrief, and hash; branch identity does not perturb the
-  state hash.
-- **Replay:** verify matched and regenerated branches from the parent prefix;
-  reject tampered parent terminal hash, branch-point hash, branch command,
-  observation, mode, trace, input value, result, and terminal state.
-- **Debrief limits:** assert matched review reports `MatchedDecisionOnly`,
-  regenerated review reports `DecisionAndExecutionChanged`, coordination stays
-  `NotApplicable`, and neither review claims optimality or a full-scenario
-  result.
+- **Proposal generation:** from the canonical initial snapshot, generate the
+  `m2-allied-proposal-observation-v1` observation and the
+  `scripted-allied-proposal-v1` artifact with candidates `Stabilize=2`,
+  `Contest=5`, selected `Contest`, and one `AssistContest` offer; changing
+  hidden opponent health, posture, or threat while holding visible fields and
+  the agent input identity fixed does not change the policy artifact or report.
+- **Observation boundary:** assert the base `LanerObservation` is unchanged,
+  the player sees only the proposal overlay, and neither actor receives true
+  state, source hashes, policy scores, or execution values.
+- **Response examples:** accept with the selected `Contest`, reject with
+  `Contest`, and counter with `Stabilize`; assert proposal IDs, candidate
+  identity, and plan/intent compatibility.
+- **Coordination mapping:** prove the five response/follow-through mappings,
+  including accepted support, player rejection, ally decline, counter accept,
+  and counter rejection; resolution is deterministic and trace-attributed.
+- **Validation:** reject stale proposal, wrong proposer/target, mismatched
+  proposal ID, accept-plus-stabilize, counter-plus-contest, unsupported
+  counter, duplicate response, wrong actor, stale observation, and wrong turn
+  before coordination or lane transition; assert no record is committed.
+- **Malformed coordination input:** reject `AllyCommitted` for `Reject`,
+  `NotRequested` for `Accept` or `Counter`, mismatched coordination trace,
+  malformed proposal identity, and execution input outside existing lane
+  bounds. Keep these distinct from a valid ally decline or unfavorable result.
+- **Execution separation:** with the same valid response, accept two explicit
+  execution outcomes and prove coordination resolution is unchanged while
+  execution events/effects and state hash follow the supplied input. With
+  accepted versus declined support, record that the edge supplied different
+  execution values rather than deriving them in the transition.
+- **Events/effects:** assert canonical proposal, response, resolution, and
+  existing lane event ordering; assert support committed/unavailable effects
+  carry the coordination trace and lane effects retain their existing causes.
+- **State invariant:** the next state and authoritative hash equal the base
+  `transition_lane` result; no proposal or allied actor field enters
+  `LaneSnapshot::hash()`.
+- **Determinism and input isolation:** identical observations, proposal,
+  response, coordination inputs, lane inputs, and ruleset produce identical
+  coordinated events, effects, debrief, next state, and hash; unrelated
+  traces do not shift existing execution identities.
+- **Replay:** append and verify the one-record coordinated history; reject
+  tampered proposal, actor observation, response, coordination input,
+  disposition, execution input, base record, coordinated result, or terminal
+  hash. Verify old `LaneHistory` and old matched/regenerated `LaneBranch`
+  fixtures still replay unchanged.
+- **Debrief attribution:** distinguish player decision, proposal response,
+  coordination follow-through, execution, and explicit luck; assert no
+  optimality, full-scenario, or hidden-state claim is emitted.
+- **Strategy diversity:** show conservative `Stabilize + Reject/Counter` and
+  risk-taking `Contest + Accept/Reject` are both valid and can lead to
+  different modeled outcomes under explicit execution inputs.
 
-These tests establish deterministic software and modeled-causality properties
-only. They do not establish that counterfactual branches are understandable,
-enjoyable, balanced, accessible, human-like, or scientifically valid.
+These tests establish software and modeled coordination properties only. They
+do not establish broad agent behavior, human trust, enjoyment, accessibility,
+balance, or behavioral validity.
 
 ## Open Questions
 
-- Should the host allocate branch IDs from a per-parent counter or require the
-  caller to provide them? This design requires an explicit ID for reproducible
-  identity but does not choose an allocator.
-- Should a later branch review expose the parent command to the ordinary actor,
-  or remain a controller/research projection? This slice keeps it privileged
-  and actor-safe.
-- Is the reserved `StreamId(128..=255)` namespace sufficient for the eventual
-  scenario, or should a future version widen `InputTrace` before persistence?
-- Should matched execution reuse the four neutral input values as well as
-  their identities in a future branch with communication or allied policy?
-  This slice requires exact reuse and has no such actors.
-- When the next M2 slice is selected, should it add a second window after this
-  branch contract or add richer causal debrief fields first? Neither is
-  authorized here.
-- Portable branch serialization, migration, branch trees, and compatibility
-  policy remain deferred until the in-memory contract is proven stable.
+- Should a future player-facing surface display the proposal overlay as part of
+  the base observation schema, or preserve the separate overlay to keep old
+  observations and branches byte-compatible? This slice chooses the overlay.
+- Should an accepted support disposition constrain the execution resolver with
+  a formal effect envelope, or remain an explicit causal context as here until
+  a second scenario demonstrates the need? This slice keeps final execution
+  values authoritative and explicit.
+- Should the allied proposal policy later be owned by the M4 agent-ecology
+  contract, or remain scenario content with a profile version? This slice uses
+  one fixed policy and makes no population claim.
+- When branching from a coordination-aware record is authorized, should it
+  match/regenerate coordination inputs separately from execution inputs? A
+  future versioned branch identity must decide; the old branch API rejects
+  coordinated records here.
+- What original-setting vocabulary should replace `AssistContest`,
+  `CoverStabilize`, and `AllyDeclined`? The typed semantics are fixed before
+  presentation wording.
+- Portable proposal, coordination, and replay serialization remain deferred;
+  no CLI, MCP, persistence, or general communication framework is authorized
+  by this slice.

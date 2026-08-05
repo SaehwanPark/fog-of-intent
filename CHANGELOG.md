@@ -34,6 +34,27 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.6 — 2026-08-04
+
+### Added
+
+- A deterministic proposal-only allied actor projection with versioned
+  profile/input identities, bounded candidate scores, hidden-state-safe
+  observations, and stable proposal identity.
+- One host-owned support offer, accept/reject/counter response boundary, five
+  explicit coordination follow-through outcomes, coordination-attributed
+  events/effects/debrief data, and one-record coordinated replay with tamper
+  detection.
+- Focused policy, information-boundary, coordination, execution-separation,
+  state-hash, and coordinated-history tests while retaining the existing lane
+  window and counterfactual branch fixtures.
+
+### Changed
+
+- The package version advances to `0.1.6` for the one-window allied
+  proposal/coordination slice; the executable remains the documented
+  placeholder.
+
 ## 0.1.5 — 2026-08-04
 
 ### Added
