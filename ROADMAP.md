@@ -453,6 +453,25 @@ This evidence establishes one bounded last-known threat report. It does not
 establish complete vision, belief updates, gank response, variable pacing,
 communication, strategy quality, balance, or a complete playable lane scenario.
 
+### Current bounded gank-response evidence
+
+- [x] Advertise conditional `Withdraw` only when the current player observation
+  carries `LastKnown { region: RiverSide, ... }`; Unknown threat reports do not
+  authorize it.
+- [x] Resolve Withdraw through the existing one-beat transition to `NearTower`,
+  preserving explicit wave/damage/trace inputs and intent attribution without
+  activating Contest fallback.
+- [x] Reject stale, resolved-window, wrong-actor, malformed, and unsupported
+  Withdraw commands before transition evaluation.
+- [x] Replay Withdraw history and objective attribution while preserving the
+  allied policy's two-candidate Stabilize/Contest artifact and hidden current
+  InLane truth boundary.
+
+This evidence establishes one conditional Withdraw response. It does not
+establish automatic threat damage, complete vision/belief updates, variable
+pacing, communication, strategy quality, balance, or a complete playable lane
+scenario.
+
 ### Current final-debrief evidence
 
 - [x] Build a versioned final debrief only from a replay-verified two-window

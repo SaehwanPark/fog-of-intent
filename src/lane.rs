@@ -489,6 +489,7 @@ pub struct LanerObservation {
     opponent: OpponentReport,
     jungle_threat: ThreatReport,
     available_intents: [LaneIntent; 3],
+    available_threat_response: Option<LaneIntent>,
     window: LaneWindow,
 }
 
@@ -499,6 +500,13 @@ fn player_threat_report(state: &LaneSnapshot) -> ThreatReport {
             last_seen_turn: state.turn,
         },
         JungleThreatTruth::Absent | JungleThreatTruth::InLane => ThreatReport::Unknown,
+    }
+}
+
+fn player_threat_response(threat_report: ThreatReport) -> Option<LaneIntent> {
+    match threat_report {
+        ThreatReport::Unknown => None,
+        ThreatReport::LastKnown { .. } => Some(LaneIntent::Withdraw),
     }
 }
 
@@ -543,6 +551,10 @@ impl LanerObservation {
         self.available_intents
     }
 
+    pub fn available_threat_response(self) -> Option<LaneIntent> {
+        self.available_threat_response
+    }
+
     pub fn window(self) -> LaneWindow {
         self.window
     }
@@ -573,6 +585,7 @@ pub fn observe_player(
     state: &LaneSnapshot,
     observation_id: ObservationId,
 ) -> LaneObservationReceipt {
+    let jungle_threat = player_threat_report(state);
     LaneObservationReceipt {
         observation: LanerObservation {
             schema: M2_OBSERVATION_SCHEMA,
@@ -588,12 +601,13 @@ pub fn observe_player(
                 health: HiddenValue::Unknown,
                 posture: HiddenValue::Unknown,
             },
-            jungle_threat: player_threat_report(state),
+            jungle_threat,
             available_intents: [
                 LaneIntent::Stabilize,
                 LaneIntent::Contest,
                 LaneIntent::Recall,
             ],
+            available_threat_response: player_threat_response(jungle_threat),
             window: LaneWindow::OneBeat,
         },
         source_state_hash: state.hash(),
@@ -1048,7 +1062,9 @@ pub fn offer_allied_proposal(
             SupportFocus::Wave,
             SupportAbort::IfPlayerHealthAtMost(2),
         ),
-        LaneIntent::Recall => return Err(AlliedProposalError::InvalidProposal),
+        LaneIntent::Recall | LaneIntent::Withdraw => {
+            return Err(AlliedProposalError::InvalidProposal);
+        }
     };
     Ok(AlliedProposalOffer {
         proposal,
@@ -1256,6 +1272,10 @@ fn counter_support(counter: CounterProposal) -> Result<AlliedSupport, Coordinati
             requested_intent: LaneIntent::Recall,
             ..
         } => Err(CoordinationError::UnsupportedCounter),
+        CounterProposal::RequestIntent {
+            requested_intent: LaneIntent::Withdraw,
+            ..
+        } => Err(CoordinationError::UnsupportedCounter),
     }
 }
 
@@ -1404,6 +1424,7 @@ pub enum LaneIntent {
     Stabilize,
     Contest,
     Recall,
+    Withdraw,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -1568,7 +1589,9 @@ pub fn validate_lane_command(
     {
         return Err(LaneValidationError::StaleObservation);
     }
-    if !observation.available_intents.contains(&command.intent) {
+    if !observation.available_intents.contains(&command.intent)
+        && observation.available_threat_response != Some(command.intent)
+    {
         return Err(LaneValidationError::UnsupportedIntent);
     }
     if state.phase != LanePhase::Open {
@@ -2855,6 +2878,7 @@ pub fn transition_lane(
         LaneIntent::Contest if fallback_activated => LanePosition::NearTower,
         LaneIntent::Contest => LanePosition::Center,
         LaneIntent::Recall => LanePosition::NearTower,
+        LaneIntent::Withdraw => LanePosition::NearTower,
     };
     let outcome = if after_player_health == LaneHealth::zero() {
         LaneOutcome::ForcedOut
@@ -4213,6 +4237,7 @@ fn intent_tag(intent: LaneIntent) -> u8 {
         LaneIntent::Stabilize => 0,
         LaneIntent::Contest => 1,
         LaneIntent::Recall => 2,
+        LaneIntent::Withdraw => 3,
     }
 }
 
@@ -4259,6 +4284,20 @@ mod tests {
         let request =
             LaneIntentRequest::new(PLAYER_LANER, receipt.observation().observation_id(), intent);
         (receipt, request)
+    }
+
+    fn river_side_state() -> LaneSnapshot {
+        let state = LaneSnapshot::initial();
+        LaneSnapshot::new(
+            state.ruleset(),
+            state.turn(),
+            LanePhase::Open,
+            state.player(),
+            state.opponent(),
+            state.wave(),
+            JungleThreatTruth::RiverSide,
+            None,
+        )
     }
 
     #[test]
@@ -4511,6 +4550,100 @@ mod tests {
             .expect("recall objective review");
         assert_eq!(review.review().intent(), LaneIntent::Recall);
         assert_eq!(review.review().report().intent(), LaneIntent::Recall);
+        review
+            .verify_lane(record)
+            .expect("replayable objective review");
+    }
+
+    #[test]
+    fn withdraw_is_advertised_only_for_a_river_side_last_known_report() {
+        let unknown = LaneSnapshot::initial();
+        assert_eq!(
+            observe_player(&unknown, ObservationId::new(9))
+                .observation()
+                .available_threat_response(),
+            None
+        );
+
+        let river_side = river_side_state();
+        let observation = observe_player(&river_side, ObservationId::new(9)).observation();
+        assert_eq!(
+            observation.available_threat_response(),
+            Some(LaneIntent::Withdraw)
+        );
+        assert_eq!(
+            observation.available_intents(),
+            [
+                LaneIntent::Stabilize,
+                LaneIntent::Contest,
+                LaneIntent::Recall
+            ]
+        );
+    }
+
+    #[test]
+    fn withdraw_requires_current_last_known_threat_and_preserves_explicit_inputs() {
+        let unknown = LaneSnapshot::initial();
+        let (unknown_receipt, unknown_request) = request(&unknown, LaneIntent::Withdraw);
+        assert_eq!(
+            validate_lane_request(&unknown, &unknown_receipt, &unknown_request),
+            Err(LaneValidationError::UnsupportedIntent)
+        );
+
+        let river_side = river_side_state();
+        let (mut stale_receipt, stale_request) = request(&river_side, LaneIntent::Withdraw);
+        stale_receipt.source_state_hash = StateHash::from_raw(0);
+        assert!(matches!(
+            validate_lane_request(&river_side, &stale_receipt, &stale_request),
+            Err(LaneValidationError::StaleObservation)
+        ));
+
+        let (receipt, withdraw_request) = request(&river_side, LaneIntent::Withdraw);
+        let validated = validate_lane_request(&river_side, &receipt, &withdraw_request)
+            .expect("current last-known report authorizes withdraw");
+        let result = transition_lane(&river_side, &validated, &inputs(1, 2, LaneWaveResult::Lost))
+            .expect("withdraw transition");
+        assert_eq!(result.outcome(), LaneOutcome::YieldedSpace);
+        assert_eq!(
+            result.next_state().player().position(),
+            LanePosition::NearTower
+        );
+        assert_eq!(
+            result.next_state().player().health(),
+            LaneHealth::new(7).unwrap()
+        );
+        assert_eq!(
+            result.next_state().wave().pressure(),
+            WavePressure::new(0).unwrap()
+        );
+        assert_eq!(result.debrief().intent(), LaneIntent::Withdraw);
+        assert!(!result.debrief().fallback_activated());
+        assert!(result.effects().iter().any(|effect| matches!(
+            effect,
+            LaneEffect::PositionChanged {
+                cause: LaneEffectCause::Intent,
+                ..
+            }
+        )));
+    }
+
+    #[test]
+    fn withdraw_replays_and_preserves_objective_attribution() {
+        let state = river_side_state();
+        let (receipt, withdraw_request) = request(&state, LaneIntent::Withdraw);
+        let mut history = LaneHistory::new(state).expect("valid initial state");
+        history
+            .append(
+                &receipt,
+                &withdraw_request,
+                inputs(0, 0, LaneWaveResult::Held),
+            )
+            .expect("withdraw append");
+        assert_eq!(history.verify_replay(), Ok(history.current_state()));
+        let record = &history.records()[0];
+        let review = review_lane_objective(ScenarioGoal::HoldLaneSpaceThroughWindow, record)
+            .expect("withdraw objective review");
+        assert_eq!(review.review().intent(), LaneIntent::Withdraw);
         review
             .verify_lane(record)
             .expect("replayable objective review");

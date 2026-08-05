@@ -34,6 +34,22 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.13 — 2026-08-04
+
+### Added
+
+- A conditional player `Withdraw` response authorized only by a current
+  RiverSide last-known threat report, with deterministic NearTower movement and
+  explicit wave/execution preservation.
+- Withdraw availability, unknown/stale/resolved rejection, attribution,
+  unfavorable execution, replay, and objective tests while preserving the
+  allied two-intent policy boundary.
+
+### Changed
+
+- The package version advances to `0.1.13` for the bounded gank-response slice;
+  the executable remains the documented placeholder.
+
 ## 0.1.12 — 2026-08-04
 
 ### Added

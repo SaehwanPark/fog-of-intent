@@ -3,62 +3,67 @@
 ## Requested Outcome
 
 Implement the next bounded M2 slice after the merged one-window lane, branch,
-allied coordination, objective, strategy-fixture, two-window, debrief, and
-Recall contracts: add one explicit player-visible last-known jungle-threat
-report without exposing current hidden threat truth or adding a new transition
-mechanic. Preserve the existing player intent set, allied policy boundary, and
-replay identities.
+allied coordination, objective, strategy-fixture, two-window, debrief, Recall,
+and last-known threat-report contracts: add one conditional `Withdraw` gank
+response that is available only when the player sees the bounded RiverSide
+last-known threat report. Preserve the existing command, transition, replay,
+and hidden-state boundaries.
 
 ## Roadmap Milestone
 
-M2 — One-Lane Vertical Slice, bounded last-known threat-report follow-up.
+M2 — One-Lane Vertical Slice, bounded gank-response follow-up.
 
 ## Current Evidence
 
-- M1 and the prior M2 slices are merged on `main` through `20935a0`; this
-  branch advances the package from `0.1.11` to `0.1.12`, pinned to Rust
+- M1 and the prior M2 slices are merged on `main` through `e625304`; this
+  branch advances the package from `0.1.12` to `0.1.13`, pinned to Rust
   `1.96.0`, with no dependencies.
 - The binary remains a placeholder and the M2 scenario is not yet playable.
 
 ## In Scope
 
-- Add an actor-visible `LastKnown` jungle-threat report for the bounded
-  `RiverSide` truth case, including the observation turn.
-- Keep `Absent` and current `InLane` threat truth reported as `Unknown`; no
-  current hidden threat location or source state hash may cross the boundary.
-- Preserve the existing `Stabilize`/`Contest`/`Recall` player intents, allied
-  two-intent candidate policy, transition authority, and replay behavior.
-- Synchronize the M2 design, roadmap, SPEC, architecture, and domain-QA
-  handoff artifacts after verification.
+- Add `Withdraw` as a player command intent that is advertised only through a
+  current `LastKnown { region: RiverSide, ... }` observation.
+- Resolve Withdraw through the existing deterministic lane transition as a
+  one-beat NearTower response, preserving explicit wave/execution inputs and
+  intent attribution without activating Contest fallback.
+- Reject Withdraw for Unknown threat reports, stale observations, resolved
+  windows, wrong actors, and malformed command bindings.
+- Preserve the allied two-intent policy, existing player strategic intents,
+  state-hash inputs, replay identities, objective/debrief paths, and hidden
+  current InLane truth.
+- Synchronize the M2 design, roadmap, SPEC, architecture, changelog, and
+  domain-QA handoff artifacts after verification.
 
 ## Non-Goals
 
-- No gank-response intent, threat damage rule, variable pacing, vision system,
+- No automatic threat damage rule, full vision/belief system, variable pacing,
   communication, resource mechanic, CLI, MCP, GUI, or playable scenario.
-- No change to authoritative `LaneSnapshot` fields, transition outputs, state
-  hash inputs, or replay IDs.
-- No claim that a last-known report is current truth, complete vision, or a
-  model of human threat perception.
+- No policy-generated Withdraw proposal or counter shape; the allied policy
+  remains limited to Stabilize and Contest.
+- No claim that last-known information is current truth or that Withdraw is
+  optimal, balanced, or generally safe.
 
 ## Project Boundaries Touched
 
-- Actor-specific observation projection and explicit unknown/last-known wording.
-- Host-owned replay regeneration of the exact observation from committed state.
+- Actor-visible conditional intent availability and host validation.
+- Existing functional transition/replay boundary with no second authority.
 
 ## Source Files
 
-- `src/lane.rs` threat report type, player projection, and focused tests
-- `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`
+- `src/lane.rs` Withdraw intent availability, transition, and focused tests
+- `Cargo.toml`, `Cargo.lock`, `README.md`, `ROADMAP.md`, `SPEC.md`,
+  `ARCHITECTURE.md`, `CHANGELOG.md`
 - `_workspace/01_simulation-design.md`, `_workspace/03_domain-qa.md`, and
-  immutable Recall handoff snapshots
+  immutable last-known-threat handoff snapshots
 
 ## Expected Outputs
 
-- Last-known report API with RiverSide-only projection.
-- Tests for unknown current/absent threats, RiverSide last-known wording,
-  observation replay, and hidden-state/source-hash boundaries.
-- Passing local checks, one code-reviewer PR handoff, hosted CI, and a merged
-  PR with temporary branch cleanup.
+- Conditional Withdraw API and deterministic NearTower response behavior.
+- Tests for availability, unknown/stale/resolved rejection, explicit execution
+  preservation, attribution, and replay/objective compatibility.
+- Passing local checks, one-code-reviewer PR handoff, hosted CI, and merged PR
+  with temporary branch cleanup.
 
 ## Verification
 
@@ -71,8 +76,8 @@ M2 — One-Lane Vertical Slice, bounded last-known threat-report follow-up.
 
 ## Evidence Limits and Open Questions
 
-- The slice establishes only one bounded last-known report. It does not
-  establish vision completeness, threat timing, gank response, pacing,
-  balance, strategy quality, or human-experience evidence.
-- The next gank-response slice must define what an actor can act on without
-  treating the last-known report as current hidden truth.
+- The slice establishes one conditional Withdraw response only. It does not
+  establish complete vision, current threat tracking, automatic execution
+  outcomes, pacing, strategy quality, balance, or human-experience evidence.
+- Future gank-response work may add richer threat timing only after it can keep
+  last-known reports distinct from hidden current truth.
