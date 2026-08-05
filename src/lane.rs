@@ -343,6 +343,14 @@ impl LaneSnapshot {
         hash = hash_bytes(hash, &[outcome_tag(self.terminal_outcome)]);
         StateHash::from_raw(hash)
     }
+
+    fn is_valid_lane_state(self) -> bool {
+        self.ruleset == M2_LANE_RULESET
+            && self.player.id == PLAYER_LANER
+            && self.opponent.id == OPPONENT_LANER
+            && ((self.phase == LanePhase::Open && self.terminal_outcome.is_none())
+                || (self.phase == LanePhase::Resolved && self.terminal_outcome.is_some()))
+    }
 }
 
 fn phase_tag(phase: LanePhase) -> u8 {
@@ -499,7 +507,7 @@ impl LanerObservation {
     }
 }
 
-#[derive(Clone, Copy, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy)]
 pub struct LaneObservationReceipt {
     observation: LanerObservation,
     source_state_hash: StateHash,
@@ -703,11 +711,7 @@ pub fn validate_lane_command(
             actual: command.actor,
         });
     }
-    if state.player.id != PLAYER_LANER
-        || state.opponent.id != OPPONENT_LANER
-        || (state.phase == LanePhase::Open && state.terminal_outcome.is_some())
-        || (state.phase == LanePhase::Resolved && state.terminal_outcome.is_none())
-    {
+    if !state.is_valid_lane_state() {
         return Err(LaneValidationError::InvalidState);
     }
     let observation = receipt.observation;
@@ -1225,12 +1229,15 @@ pub struct LaneHistory {
 }
 
 impl LaneHistory {
-    pub fn new(initial_state: LaneSnapshot) -> Self {
-        Self {
+    pub fn new(initial_state: LaneSnapshot) -> Result<Self, LaneHistoryError> {
+        if !initial_state.is_valid_lane_state() {
+            return Err(LaneHistoryError::InvalidInitialState);
+        }
+        Ok(Self {
             initial_state,
             current_state: initial_state,
             records: Vec::new(),
-        }
+        })
     }
 
     pub fn initial_state(&self) -> LaneSnapshot {
@@ -1304,6 +1311,7 @@ impl LaneHistory {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum LaneHistoryError {
+    InvalidInitialState,
     Validation {
         index: usize,
         error: LaneValidationError,
@@ -1553,6 +1561,10 @@ mod tests {
             validate_lane_command(&invalid_state, &invalid_receipt, &invalid_command),
             Err(LaneValidationError::InvalidState)
         );
+        assert!(matches!(
+            LaneHistory::new(invalid_state),
+            Err(LaneHistoryError::InvalidInitialState)
+        ));
         let resolved = transition_lane(
             &state,
             &validate_lane_request(&state, &receipt, &request).expect("valid"),
@@ -1670,7 +1682,7 @@ mod tests {
     fn history_replays_the_committed_window() {
         let state = LaneSnapshot::initial();
         let (receipt, request) = request(&state, LaneIntent::Contest);
-        let mut history = LaneHistory::new(state);
+        let mut history = LaneHistory::new(state).expect("initial state is valid");
         history
             .append(&receipt, &request, inputs(1, 1, LaneWaveResult::Held))
             .expect("append");

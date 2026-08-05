@@ -306,9 +306,10 @@ the host-created `LaneIntentCommand`, prior true-state hash, exact
 `LaneResolvedInputs`, complete transition result, ruleset/scenario identity,
 and the next-state hash.
 
-Appending validates and evaluates exactly one record before mutating current
-history. An invalid command or malformed execution input leaves history
-unchanged. There is no delete or in-place edit operation. The replay verifier
+`LaneHistory::new` rejects an invalid initial snapshot. Appending validates and
+evaluates exactly one record before mutating current history. An invalid command
+or malformed execution input leaves history unchanged. There is no delete or
+in-place edit operation. The replay verifier
 starts from the initial snapshot and, for every record:
 
 - checks the recorded prior hash;

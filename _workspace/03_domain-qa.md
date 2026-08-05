@@ -55,8 +55,9 @@ declared stable field order and the existing FNV-1a little-endian representation
 `LaneHistory` stores the actor-visible observation, host command, prior hash,
 resolved inputs, complete result, and terminal state. Replay regenerates the
 observation, revalidates the command, reevaluates the inputs, compares the
-result, and checks the terminal snapshot. The M1 serialization fixtures remain
-unchanged; lane serialization is explicitly deferred.
+result, and checks the terminal snapshot. Invalid initial lane snapshots are
+rejected before an empty history can be replayed. The M1 serialization fixtures
+remain unchanged; lane serialization is explicitly deferred.
 
 ## Behavior and Playtest Findings
 
