@@ -409,6 +409,13 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Minion kills overflow exceeding maximum bounds (`MAX_LANE_MINION_KILLS`) fails before transition state mutation with `LaneExecutionError::MinionKillsOverflow`.
 - Three focused minion-kills-resource tests plus the prior seventy-eight tests pass, for eighty-one Rust tests total.
 
+#### Delivered in the bounded target-focus follow-up
+
+- `LaneTargetFocus` is a bounded player intent focus abstraction with default `Minions` and non-default record-identity hash binding (`LANE_TARGET_FOCUS_HASH_TAG`).
+- `LanerObservation` advertises available target focus options (`Minions`, `OpposingLaner`, `Tower`).
+- Transition evaluation emits direct-immediate `TargetFocusSelected` and `TargetFocusSet` events and effects, records target focus in `LaneDebrief`, and verifies replay through `LaneHistory`.
+- Three focused target-focus tests plus the prior eighty-four tests pass, for eighty-seven Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield

@@ -270,3 +270,121 @@
             ))
         ));
     }
+
+#[test]
+    fn target_focus_defaults_to_minions_and_replays() {
+        let state = LaneSnapshot::initial();
+        let (receipt, req) = request(&state, LaneIntent::Stabilize);
+        assert_eq!(req.target_focus(), LaneTargetFocus::Minions);
+        let validated = validate_lane_request(&state, &receipt, &req).expect("valid request");
+        assert_eq!(validated.command().target_focus(), LaneTargetFocus::Minions);
+
+        let result = transition_lane(&state, &validated, &inputs(0, 0, LaneWaveResult::Held))
+            .expect("transition");
+        assert_eq!(result.debrief().target_focus(), LaneTargetFocus::Minions);
+        assert!(result.events().iter().any(|e| matches!(
+            e,
+            LaneEvent::TargetFocusSelected {
+                focus: LaneTargetFocus::Minions,
+                ..
+            }
+        )));
+        assert!(result.effects().iter().any(|e| matches!(
+            e,
+            LaneEffect::TargetFocusSet {
+                focus: LaneTargetFocus::Minions,
+                ..
+            }
+        )));
+
+        let mut history = LaneHistory::new(state).expect("valid initial state");
+        history
+            .append(&receipt, &req, inputs(0, 0, LaneWaveResult::Held))
+            .expect("append");
+        assert_eq!(history.verify_replay(), Ok(history.current_state()));
+    }
+
+#[test]
+    fn target_focus_opposing_laner_and_tower_are_valid_and_bind_record_identity() {
+        let state = LaneSnapshot::initial();
+        let receipt = observe_player(&state, ObservationId::new(1));
+
+        let default_req = LaneIntentRequest::new_with_target_focus(
+            PLAYER_LANER,
+            receipt.observation().observation_id(),
+            LaneIntent::Contest,
+            LaneTargetFocus::Minions,
+        );
+        let laner_req = LaneIntentRequest::new_with_target_focus(
+            PLAYER_LANER,
+            receipt.observation().observation_id(),
+            LaneIntent::Contest,
+            LaneTargetFocus::OpposingLaner,
+        );
+        let tower_req = LaneIntentRequest::new_with_target_focus(
+            PLAYER_LANER,
+            receipt.observation().observation_id(),
+            LaneIntent::Contest,
+            LaneTargetFocus::Tower,
+        );
+
+        let default_val = validate_lane_request(&state, &receipt, &default_req).expect("valid");
+        let laner_val = validate_lane_request(&state, &receipt, &laner_req).expect("valid");
+        let tower_val = validate_lane_request(&state, &receipt, &tower_req).expect("valid");
+
+        let default_res = transition_lane(&state, &default_val, &inputs(0, 0, LaneWaveResult::Held))
+            .expect("default transition");
+        let laner_res = transition_lane(&state, &laner_val, &inputs(0, 0, LaneWaveResult::Held))
+            .expect("laner transition");
+        let tower_res = transition_lane(&state, &tower_val, &inputs(0, 0, LaneWaveResult::Held))
+            .expect("tower transition");
+
+        assert_eq!(default_res.debrief().target_focus(), LaneTargetFocus::Minions);
+        assert_eq!(laner_res.debrief().target_focus(), LaneTargetFocus::OpposingLaner);
+        assert_eq!(tower_res.debrief().target_focus(), LaneTargetFocus::Tower);
+
+        let mut h_default = LaneHistory::new(state).unwrap();
+        h_default
+            .append(&receipt, &default_req, inputs(0, 0, LaneWaveResult::Held))
+            .unwrap();
+
+        let mut h_laner = LaneHistory::new(state).unwrap();
+        h_laner
+            .append(&receipt, &laner_req, inputs(0, 0, LaneWaveResult::Held))
+            .unwrap();
+
+        let mut h_tower = LaneHistory::new(state).unwrap();
+        h_tower
+            .append(&receipt, &tower_req, inputs(0, 0, LaneWaveResult::Held))
+            .unwrap();
+
+        assert_ne!(
+            lane_record_identity(&h_default.records()[0]),
+            lane_record_identity(&h_laner.records()[0])
+        );
+        assert_ne!(
+            lane_record_identity(&h_default.records()[0]),
+            lane_record_identity(&h_tower.records()[0])
+        );
+        assert_ne!(
+            lane_record_identity(&h_laner.records()[0]),
+            lane_record_identity(&h_tower.records()[0])
+        );
+
+        assert_eq!(h_laner.verify_replay(), Ok(h_laner.current_state()));
+        assert_eq!(h_tower.verify_replay(), Ok(h_tower.current_state()));
+    }
+
+#[test]
+    fn laner_observation_advertises_available_target_focuses() {
+        let state = LaneSnapshot::initial();
+        let obs = observe_player(&state, ObservationId::new(42)).observation();
+        assert_eq!(
+            obs.available_target_focuses(),
+            [
+                LaneTargetFocus::Minions,
+                LaneTargetFocus::OpposingLaner,
+                LaneTargetFocus::Tower,
+            ]
+        );
+    }

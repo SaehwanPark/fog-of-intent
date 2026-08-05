@@ -17,6 +17,7 @@ pub(crate) const LANE_COOLDOWN_HASH_TAG: u8 = 0x43;
 pub(crate) const LANE_BOUNTY_HASH_TAG: u8 = 0x42;
 pub(crate) const LANE_LEVEL_HASH_TAG: u8 = 0x4c;
 pub(crate) const LANE_MINION_KILLS_HASH_TAG: u8 = 0x4b;
+pub(crate) const LANE_TARGET_FOCUS_HASH_TAG: u8 = 0x54;
 pub(crate) fn phase_tag(phase: LanePhase) -> u8 {
     match phase {
         LanePhase::Open => 0,
@@ -76,5 +77,13 @@ pub(crate) fn wave_result_tag(result: LaneWaveResult) -> u8 {
         LaneWaveResult::Advanced => 0,
         LaneWaveResult::Held => 1,
         LaneWaveResult::Lost => 2,
+    }
+}
+
+pub(crate) fn target_focus_tag(focus: LaneTargetFocus) -> u8 {
+    match focus {
+        LaneTargetFocus::Minions => 0,
+        LaneTargetFocus::OpposingLaner => 1,
+        LaneTargetFocus::Tower => 2,
     }
 }

@@ -410,6 +410,10 @@ pub(crate) fn lane_record_identity(record: &LaneTransitionRecord) -> StateHash {
         &record.command.host_prior_state_hash.value().to_le_bytes(),
     );
     hash = hash_bytes(hash, &[intent_tag(record.command.intent)]);
+    if record.command.target_focus != LaneTargetFocus::Minions {
+        hash = hash_bytes(hash, &[LANE_TARGET_FOCUS_HASH_TAG]);
+        hash = hash_bytes(hash, &[target_focus_tag(record.command.target_focus)]);
+    }
     hash = hash_bytes(hash, &record.prior_state_hash.value().to_le_bytes());
     for trace in [
         record.inputs.environment,
