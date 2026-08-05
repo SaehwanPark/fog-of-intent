@@ -506,3 +506,113 @@
             ]
         );
     }
+
+    #[test]
+    fn ping_signal_defaults_to_none_and_replays() {
+        let state = LaneSnapshot::initial();
+        let (receipt, request) = request(&state, LaneIntent::Stabilize);
+        assert_eq!(request.ping_signal(), LanePingSignal::None);
+        let validated = validate_lane_request(&state, &receipt, &request).expect("valid");
+        assert_eq!(validated.command().ping_signal(), LanePingSignal::None);
+
+        let result = transition_lane(&state, &validated, &inputs(0, 0, LaneWaveResult::Held))
+            .expect("transition");
+        assert_eq!(result.debrief().ping_signal(), LanePingSignal::None);
+        assert!(result.events().contains(&LaneEvent::PingSignalSelected {
+            actor: PLAYER_LANER,
+            ping_signal: LanePingSignal::None,
+        }));
+        assert!(result.effects().contains(&LaneEffect::PingSignalSet {
+            actor: PLAYER_LANER,
+            ping_signal: LanePingSignal::None,
+            cause: LaneEffectCause::Intent,
+            provenance: LaneEffectProvenance::direct_immediate(),
+        }));
+
+        let mut history = LaneHistory::new(state).unwrap();
+        history
+            .append(&receipt, &request, inputs(0, 0, LaneWaveResult::Held))
+            .unwrap();
+        assert_eq!(history.verify_replay(), Ok(history.current_state()));
+    }
+
+    #[test]
+    fn ping_signal_danger_on_my_way_assist_enemy_missing_are_valid_and_bind_record_identity() {
+        let state = LaneSnapshot::initial();
+        let receipt = observe_player(&state, ObservationId::new(1));
+        let default_req = LaneIntentRequest::new(PLAYER_LANER, ObservationId::new(1), LaneIntent::Stabilize);
+        let danger_req = LaneIntentRequest::new_with_ping_signal(
+            PLAYER_LANER,
+            ObservationId::new(1),
+            LaneIntent::Stabilize,
+            LanePingSignal::Danger,
+        );
+        let assist_req = LaneIntentRequest::new_with_ping_signal(
+            PLAYER_LANER,
+            ObservationId::new(1),
+            LaneIntent::Stabilize,
+            LanePingSignal::Assist,
+        );
+
+        let default_val = validate_lane_request(&state, &receipt, &default_req).expect("valid");
+        let danger_val = validate_lane_request(&state, &receipt, &danger_req).expect("valid");
+        let assist_val = validate_lane_request(&state, &receipt, &assist_req).expect("valid");
+
+        let default_res = transition_lane(&state, &default_val, &inputs(0, 0, LaneWaveResult::Held))
+            .expect("default transition");
+        let danger_res = transition_lane(&state, &danger_val, &inputs(0, 0, LaneWaveResult::Held))
+            .expect("danger transition");
+        let assist_res = transition_lane(&state, &assist_val, &inputs(0, 0, LaneWaveResult::Held))
+            .expect("assist transition");
+
+        assert_eq!(default_res.debrief().ping_signal(), LanePingSignal::None);
+        assert_eq!(danger_res.debrief().ping_signal(), LanePingSignal::Danger);
+        assert_eq!(assist_res.debrief().ping_signal(), LanePingSignal::Assist);
+
+        let mut h_default = LaneHistory::new(state).unwrap();
+        h_default
+            .append(&receipt, &default_req, inputs(0, 0, LaneWaveResult::Held))
+            .unwrap();
+
+        let mut h_danger = LaneHistory::new(state).unwrap();
+        h_danger
+            .append(&receipt, &danger_req, inputs(0, 0, LaneWaveResult::Held))
+            .unwrap();
+
+        let mut h_assist = LaneHistory::new(state).unwrap();
+        h_assist
+            .append(&receipt, &assist_req, inputs(0, 0, LaneWaveResult::Held))
+            .unwrap();
+
+        assert_ne!(
+            lane_record_identity(&h_default.records()[0]),
+            lane_record_identity(&h_danger.records()[0])
+        );
+        assert_ne!(
+            lane_record_identity(&h_default.records()[0]),
+            lane_record_identity(&h_assist.records()[0])
+        );
+        assert_ne!(
+            lane_record_identity(&h_danger.records()[0]),
+            lane_record_identity(&h_assist.records()[0])
+        );
+
+        assert_eq!(h_danger.verify_replay(), Ok(h_danger.current_state()));
+        assert_eq!(h_assist.verify_replay(), Ok(h_assist.current_state()));
+    }
+
+    #[test]
+    fn laner_observation_advertises_available_ping_signals() {
+        let state = LaneSnapshot::initial();
+        let obs = observe_player(&state, ObservationId::new(42)).observation();
+        assert_eq!(
+            obs.available_ping_signals(),
+            [
+                LanePingSignal::None,
+                LanePingSignal::Danger,
+                LanePingSignal::OnMyWay,
+                LanePingSignal::Assist,
+                LanePingSignal::EnemyMissing,
+            ]
+        );
+    }

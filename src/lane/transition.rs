@@ -315,6 +315,10 @@ pub enum LaneEvent {
         actor: ActorId,
         commitment: LaneCommitment,
     },
+    PingSignalSelected {
+        actor: ActorId,
+        ping_signal: LanePingSignal,
+    },
     PlayerDamaged {
         target: ActorId,
         amount: LaneDamage,
@@ -508,6 +512,12 @@ pub enum LaneEffect {
         cause: LaneEffectCause,
         provenance: LaneEffectProvenance,
     },
+    PingSignalSet {
+        actor: ActorId,
+        ping_signal: LanePingSignal,
+        cause: LaneEffectCause,
+        provenance: LaneEffectProvenance,
+    },
 }
 
 impl LaneEffect {
@@ -528,7 +538,8 @@ impl LaneEffect {
             | Self::DelayedEffectQueued { provenance, .. }
             | Self::DelayedEffectResolved { provenance, .. }
             | Self::TargetFocusSet { provenance, .. }
-            | Self::CommitmentSet { provenance, .. } => provenance,
+            | Self::CommitmentSet { provenance, .. }
+            | Self::PingSignalSet { provenance, .. } => provenance,
         }
     }
 }
@@ -620,6 +631,7 @@ pub struct LaneDebrief {
     pub(crate) intent: LaneIntent,
     pub(crate) target_focus: LaneTargetFocus,
     pub(crate) commitment: LaneCommitment,
+    pub(crate) ping_signal: LanePingSignal,
     pub(crate) self_damage: LaneDamage,
     pub(crate) mana_spent: LaneMana,
     pub(crate) gold_earned: LaneGold,
@@ -656,6 +668,10 @@ impl LaneDebrief {
 
     pub fn commitment(self) -> LaneCommitment {
         self.commitment
+    }
+
+    pub fn ping_signal(self) -> LanePingSignal {
+        self.ping_signal
     }
 
     pub fn self_damage(self) -> LaneDamage {
@@ -1152,6 +1168,10 @@ fn project_lane_events(
             actor: command.command.actor,
             commitment: command.command.commitment,
         },
+        LaneEvent::PingSignalSelected {
+            actor: command.command.actor,
+            ping_signal: command.command.ping_signal,
+        },
     ];
     if execution.self_damage != LaneDamage::zero() {
         events.push(LaneEvent::PlayerDamaged {
@@ -1290,6 +1310,12 @@ fn project_lane_effects(
         LaneEffect::CommitmentSet {
             actor: player.id,
             commitment: command.command.commitment,
+            cause: LaneEffectCause::Intent,
+            provenance: LaneEffectProvenance::direct_immediate(),
+        },
+        LaneEffect::PingSignalSet {
+            actor: player.id,
+            ping_signal: command.command.ping_signal,
             cause: LaneEffectCause::Intent,
             provenance: LaneEffectProvenance::direct_immediate(),
         },
@@ -1466,6 +1492,7 @@ pub fn transition_lane(
         intent: command.command.intent,
         target_focus: command.command.target_focus,
         commitment: command.command.commitment,
+        ping_signal: command.command.ping_signal,
         self_damage: execution.self_damage,
         mana_spent: execution.mana_spent,
         gold_earned: execution.gold_earned,

@@ -447,6 +447,13 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Ward overflow exceeding maximum bounds (`MAX_LANE_WARD`) fails before transition state mutation with `LaneExecutionError::WardOverflow`.
 - Three focused ward-resource tests plus the prior ninety-six tests pass, for ninety-nine Rust tests total.
 
+#### Delivered in the bounded ping-signal follow-up
+
+- `LanePingSignal` is a bounded player intent communication signal abstraction with `None` default and non-default record-identity hash binding (`LANE_PING_SIGNAL_HASH_TAG`).
+- `LanerObservation` advertises available ping signals (`None`, `Danger`, `OnMyWay`, `Assist`, `EnemyMissing`).
+- Transition evaluation emits direct-immediate `PingSignalSelected` and `PingSignalSet` events and effects, records ping signal in `LaneDebrief`, and verifies replay through `LaneHistory`.
+- Three focused ping-signal tests plus the prior ninety-nine tests pass, for 102 Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield

@@ -16,6 +16,7 @@ pub struct LaneIntentRequest {
     pub(crate) intent: LaneIntent,
     pub(crate) target_focus: LaneTargetFocus,
     pub(crate) commitment: LaneCommitment,
+    pub(crate) ping_signal: LanePingSignal,
 }
 
 impl LaneIntentRequest {
@@ -58,6 +59,22 @@ impl LaneIntentRequest {
         )
     }
 
+    pub fn new_with_ping_signal(
+        actor: ActorId,
+        observation_id: ObservationId,
+        intent: LaneIntent,
+        ping_signal: LanePingSignal,
+    ) -> Self {
+        Self::new_with_full_intent(
+            actor,
+            observation_id,
+            intent,
+            LaneTargetFocus::default_focus(),
+            LaneCommitment::default_commitment(),
+            ping_signal,
+        )
+    }
+
     pub fn new_with_focus_and_commitment(
         actor: ActorId,
         observation_id: ObservationId,
@@ -65,12 +82,31 @@ impl LaneIntentRequest {
         target_focus: LaneTargetFocus,
         commitment: LaneCommitment,
     ) -> Self {
+        Self::new_with_full_intent(
+            actor,
+            observation_id,
+            intent,
+            target_focus,
+            commitment,
+            LanePingSignal::default_signal(),
+        )
+    }
+
+    pub fn new_with_full_intent(
+        actor: ActorId,
+        observation_id: ObservationId,
+        intent: LaneIntent,
+        target_focus: LaneTargetFocus,
+        commitment: LaneCommitment,
+        ping_signal: LanePingSignal,
+    ) -> Self {
         Self {
             actor,
             observation_id,
             intent,
             target_focus,
             commitment,
+            ping_signal,
         }
     }
 
@@ -93,6 +129,10 @@ impl LaneIntentRequest {
     pub fn commitment(self) -> LaneCommitment {
         self.commitment
     }
+
+    pub fn ping_signal(self) -> LanePingSignal {
+        self.ping_signal
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -105,6 +145,7 @@ pub struct LaneIntentCommand {
     pub(crate) intent: LaneIntent,
     pub(crate) target_focus: LaneTargetFocus,
     pub(crate) commitment: LaneCommitment,
+    pub(crate) ping_signal: LanePingSignal,
 }
 
 impl LaneIntentCommand {
@@ -169,6 +210,28 @@ impl LaneIntentCommand {
         )
     }
 
+    pub fn new_with_ping_signal(
+        actor: ActorId,
+        turn: Turn,
+        ruleset: RulesetId,
+        observation_id: ObservationId,
+        host_prior_state_hash: StateHash,
+        intent: LaneIntent,
+        ping_signal: LanePingSignal,
+    ) -> Self {
+        Self::new_with_full_intent(
+            actor,
+            turn,
+            ruleset,
+            observation_id,
+            host_prior_state_hash,
+            intent,
+            LaneTargetFocus::default_focus(),
+            LaneCommitment::default_commitment(),
+            ping_signal,
+        )
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn new_with_focus_and_commitment(
         actor: ActorId,
@@ -180,6 +243,31 @@ impl LaneIntentCommand {
         target_focus: LaneTargetFocus,
         commitment: LaneCommitment,
     ) -> Self {
+        Self::new_with_full_intent(
+            actor,
+            turn,
+            ruleset,
+            observation_id,
+            host_prior_state_hash,
+            intent,
+            target_focus,
+            commitment,
+            LanePingSignal::default_signal(),
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_full_intent(
+        actor: ActorId,
+        turn: Turn,
+        ruleset: RulesetId,
+        observation_id: ObservationId,
+        host_prior_state_hash: StateHash,
+        intent: LaneIntent,
+        target_focus: LaneTargetFocus,
+        commitment: LaneCommitment,
+        ping_signal: LanePingSignal,
+    ) -> Self {
         Self {
             actor,
             turn,
@@ -189,6 +277,7 @@ impl LaneIntentCommand {
             intent,
             target_focus,
             commitment,
+            ping_signal,
         }
     }
 
@@ -222,6 +311,10 @@ impl LaneIntentCommand {
 
     pub fn commitment(self) -> LaneCommitment {
         self.commitment
+    }
+
+    pub fn ping_signal(self) -> LanePingSignal {
+        self.ping_signal
     }
 }
 
