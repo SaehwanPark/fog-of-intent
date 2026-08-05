@@ -25,12 +25,14 @@ const MAX_LANE_GOLD: u8 = 20;
 const MAX_LANE_EXPERIENCE: u8 = 50;
 const MAX_LANE_COOLDOWN: u8 = 10;
 const MAX_LANE_BOUNTY: u8 = 100;
+const MAX_LANE_LEVEL: u8 = 18;
 const MAX_WAVE_PRESSURE: u8 = 3;
 const LANE_MANA_HASH_TAG: u8 = 0x4d;
 const LANE_GOLD_HASH_TAG: u8 = 0x47;
 const LANE_EXPERIENCE_HASH_TAG: u8 = 0x45;
 const LANE_COOLDOWN_HASH_TAG: u8 = 0x43;
 const LANE_BOUNTY_HASH_TAG: u8 = 0x42;
+const LANE_LEVEL_HASH_TAG: u8 = 0x4c;
 
 pub const PLAYER_LANER: ActorId = ActorId::new(1);
 pub const OPPONENT_LANER: ActorId = ActorId::new(2);
@@ -249,6 +251,47 @@ impl LaneBounty {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct LaneLevel(u8);
+
+impl LaneLevel {
+    pub fn new(value: u8) -> Result<Self, LaneBoundsError> {
+        if value <= MAX_LANE_LEVEL {
+            Ok(Self(value))
+        } else {
+            Err(LaneBoundsError {
+                value,
+                maximum: MAX_LANE_LEVEL,
+            })
+        }
+    }
+
+    pub const fn initial() -> Self {
+        Self(1)
+    }
+
+    pub const fn zero() -> Self {
+        Self(0)
+    }
+
+    pub fn value(self) -> u8 {
+        self.0
+    }
+
+    fn add(self, amount: Self) -> Option<Self> {
+        let total = (self.0 as u16) + (amount.0 as u16);
+        if total <= MAX_LANE_LEVEL as u16 {
+            Some(Self(total as u8))
+        } else {
+            None
+        }
+    }
+
+    pub fn subtract(self, amount: Self) -> Option<Self> {
+        self.0.checked_sub(amount.0).map(Self)
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct LaneDamage(u8);
 
 impl LaneDamage {
@@ -357,6 +400,7 @@ pub struct PlayerLaneState {
     experience: LaneExperience,
     cooldown: LaneCooldown,
     bounty: LaneBounty,
+    level: LaneLevel,
     position: LanePosition,
 }
 
@@ -435,6 +479,31 @@ impl PlayerLaneState {
         bounty: LaneBounty,
         position: LanePosition,
     ) -> Self {
+        Self::new_with_entire_state(
+            id,
+            health,
+            mana,
+            gold,
+            experience,
+            cooldown,
+            bounty,
+            LaneLevel::initial(),
+            position,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_entire_state(
+        id: ActorId,
+        health: LaneHealth,
+        mana: LaneMana,
+        gold: LaneGold,
+        experience: LaneExperience,
+        cooldown: LaneCooldown,
+        bounty: LaneBounty,
+        level: LaneLevel,
+        position: LanePosition,
+    ) -> Self {
         Self {
             id,
             health,
@@ -443,6 +512,7 @@ impl PlayerLaneState {
             experience,
             cooldown,
             bounty,
+            level,
             position,
         }
     }
@@ -473,6 +543,10 @@ impl PlayerLaneState {
 
     pub fn bounty(self) -> LaneBounty {
         self.bounty
+    }
+
+    pub fn level(self) -> LaneLevel {
+        self.level
     }
 
     pub fn position(self) -> LanePosition {
@@ -689,6 +763,9 @@ impl LaneSnapshot {
         if self.player.bounty() != LaneBounty::zero() {
             hash = hash_bytes(hash, &[LANE_BOUNTY_HASH_TAG, self.player.bounty().value()]);
         }
+        if self.player.level() != LaneLevel::initial() {
+            hash = hash_bytes(hash, &[LANE_LEVEL_HASH_TAG, self.player.level().value()]);
+        }
         hash = hash_bytes(hash, &[position_tag(self.player.position())]);
         hash = hash_bytes(
             hash,
@@ -871,6 +948,7 @@ pub struct LanerObservation {
     self_experience: LaneExperience,
     self_cooldown: LaneCooldown,
     self_bounty: LaneBounty,
+    self_level: LaneLevel,
     self_position: LanePosition,
     wave_pressure: WavePressure,
     opponent: OpponentReport,
@@ -949,6 +1027,10 @@ impl LanerObservation {
         self.self_bounty
     }
 
+    pub fn self_level(self) -> LaneLevel {
+        self.self_level
+    }
+
     pub fn self_position(self) -> LanePosition {
         self.self_position
     }
@@ -1016,6 +1098,7 @@ pub fn observe_player(
             self_experience: state.player().experience(),
             self_cooldown: state.player().cooldown(),
             self_bounty: state.player().bounty(),
+            self_level: state.player().level(),
             self_position: state.player().position(),
             wave_pressure: state.wave().pressure(),
             opponent: player_opponent_report(state),
@@ -1045,6 +1128,7 @@ pub struct AlliedLaneObservation {
     laner_experience: LaneExperience,
     laner_cooldown: LaneCooldown,
     laner_bounty: LaneBounty,
+    laner_level: LaneLevel,
     laner_position: LanePosition,
     wave_pressure: WavePressure,
     opponent: OpponentReport,
@@ -1092,6 +1176,10 @@ impl AlliedLaneObservation {
 
     pub fn laner_bounty(self) -> LaneBounty {
         self.laner_bounty
+    }
+
+    pub fn laner_level(self) -> LaneLevel {
+        self.laner_level
     }
 
     pub fn laner_position(self) -> LanePosition {
@@ -1156,6 +1244,7 @@ pub fn observe_allied(
             laner_experience: state.player().experience(),
             laner_cooldown: state.player().cooldown(),
             laner_bounty: state.player().bounty(),
+            laner_level: state.player().level(),
             laner_position: state.player().position(),
             wave_pressure: state.wave().pressure(),
             opponent: OpponentReport::unknown(),
@@ -1437,6 +1526,12 @@ fn allied_visible_digest(observation: AlliedLaneObservation) -> StateHash {
         hash = hash_bytes(
             hash,
             &[LANE_BOUNTY_HASH_TAG, observation.laner_bounty.value()],
+        );
+    }
+    if observation.laner_level != LaneLevel::initial() {
+        hash = hash_bytes(
+            hash,
+            &[LANE_LEVEL_HASH_TAG, observation.laner_level.value()],
         );
     }
     hash = hash_bytes(hash, &[position_tag(observation.laner_position)]);
@@ -2127,6 +2222,7 @@ pub struct LaneExecutionInputs {
     experience_gained: LaneExperience,
     cooldown_set: LaneCooldown,
     bounty_earned: LaneBounty,
+    level_gained: LaneLevel,
 }
 
 impl LaneExecutionInputs {
@@ -2146,6 +2242,7 @@ impl LaneExecutionInputs {
             experience_gained: LaneExperience::zero(),
             cooldown_set: LaneCooldown::zero(),
             bounty_earned: LaneBounty::zero(),
+            level_gained: LaneLevel::zero(),
         }
     }
 
@@ -2171,6 +2268,11 @@ impl LaneExecutionInputs {
 
     pub fn with_bounty_earned(mut self, bounty_earned: LaneBounty) -> Self {
         self.bounty_earned = bounty_earned;
+        self
+    }
+
+    pub fn with_level_gained(mut self, level_gained: LaneLevel) -> Self {
+        self.level_gained = level_gained;
         self
     }
 
@@ -2208,6 +2310,10 @@ impl LaneExecutionInputs {
 
     pub fn bounty_earned(self) -> LaneBounty {
         self.bounty_earned
+    }
+
+    pub fn level_gained(self) -> LaneLevel {
+        self.level_gained
     }
 }
 
@@ -2358,6 +2464,11 @@ pub enum LaneEvent {
         amount: LaneBounty,
         trace: InputTrace,
     },
+    LevelGained {
+        actor: ActorId,
+        amount: LaneLevel,
+        trace: InputTrace,
+    },
     WaveResolved {
         before: WavePressure,
         after: WavePressure,
@@ -2422,6 +2533,13 @@ pub enum LaneEffect {
         cause: LaneEffectCause,
         provenance: LaneEffectProvenance,
     },
+    LevelChanged {
+        actor: ActorId,
+        before: LaneLevel,
+        after: LaneLevel,
+        cause: LaneEffectCause,
+        provenance: LaneEffectProvenance,
+    },
     PositionChanged {
         actor: ActorId,
         before: LanePosition,
@@ -2441,6 +2559,7 @@ impl LaneEffect {
             | Self::ExperienceChanged { provenance, .. }
             | Self::CooldownChanged { provenance, .. }
             | Self::BountyChanged { provenance, .. }
+            | Self::LevelChanged { provenance, .. }
             | Self::PositionChanged { provenance, .. } => provenance,
         }
     }
@@ -2486,6 +2605,10 @@ pub enum LaneExecutionError {
         earned: LaneBounty,
         current: LaneBounty,
     },
+    LevelOverflow {
+        gained: LaneLevel,
+        current: LaneLevel,
+    },
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -2520,6 +2643,7 @@ pub struct LaneDebrief {
     experience_gained: LaneExperience,
     cooldown_set: LaneCooldown,
     bounty_earned: LaneBounty,
+    level_gained: LaneLevel,
     wave_result: LaneWaveResult,
     fallback_activated: bool,
     execution_trace: InputTrace,
@@ -2560,6 +2684,10 @@ impl LaneDebrief {
 
     pub fn bounty_earned(self) -> LaneBounty {
         self.bounty_earned
+    }
+
+    pub fn level_gained(self) -> LaneLevel {
+        self.level_gained
     }
 
     pub fn wave_result(self) -> LaneWaveResult {
@@ -3626,6 +3754,16 @@ pub fn transition_lane(
                     current: player.bounty,
                 },
             ))?;
+    let after_player_level =
+        player
+            .level
+            .add(execution.level_gained)
+            .ok_or(LaneTransitionError::Execution(
+                LaneExecutionError::LevelOverflow {
+                    gained: execution.level_gained,
+                    current: player.level,
+                },
+            ))?;
     let after_wave = match execution.wave_result {
         LaneWaveResult::Advanced => state.wave.pressure.advance(),
         LaneWaveResult::Held => Ok(state.wave.pressure),
@@ -3662,7 +3800,7 @@ pub fn transition_lane(
         .value()
         .checked_add(state.window.beats())
         .ok_or(LaneTransitionError::TurnOverflow)?;
-    let next_player = PlayerLaneState::new_with_full_state(
+    let next_player = PlayerLaneState::new_with_entire_state(
         player.id,
         after_player_health,
         after_player_mana,
@@ -3670,6 +3808,7 @@ pub fn transition_lane(
         after_player_experience,
         after_player_cooldown,
         after_player_bounty,
+        after_player_level,
         after_position,
     );
     let next_opponent = OpponentTruth::new(
@@ -3801,6 +3940,20 @@ pub fn transition_lane(
             provenance: LaneEffectProvenance::direct_immediate(),
         });
     }
+    if execution.level_gained != LaneLevel::zero() {
+        events.push(LaneEvent::LevelGained {
+            actor: player.id,
+            amount: execution.level_gained,
+            trace,
+        });
+        effects.push(LaneEffect::LevelChanged {
+            actor: player.id,
+            before: player.level,
+            after: after_player_level,
+            cause: LaneEffectCause::Execution(trace),
+            provenance: LaneEffectProvenance::direct_immediate(),
+        });
+    }
     events.push(LaneEvent::WaveResolved {
         before: state.wave.pressure,
         after: after_wave,
@@ -3850,6 +4003,7 @@ pub fn transition_lane(
         experience_gained: execution.experience_gained,
         cooldown_set: execution.cooldown_set,
         bounty_earned: execution.bounty_earned,
+        level_gained: execution.level_gained,
         wave_result: execution.wave_result,
         fallback_activated,
         execution_trace: trace,
@@ -5148,6 +5302,7 @@ fn lane_record_identity(record: &LaneTransitionRecord) -> StateHash {
     hash = hash_bytes(hash, &[record.inputs.execution.experience_gained.value()]);
     hash = hash_bytes(hash, &[record.inputs.execution.cooldown_set.value()]);
     hash = hash_bytes(hash, &[record.inputs.execution.bounty_earned.value()]);
+    hash = hash_bytes(hash, &[record.inputs.execution.level_gained.value()]);
     hash = hash_bytes(
         hash,
         &[wave_result_tag(record.inputs.execution.wave_result)],
@@ -7450,6 +7605,77 @@ mod tests {
             transition_lane(&state, &validated, &overflow_inputs),
             Err(LaneTransitionError::Execution(
                 LaneExecutionError::BountyOverflow { .. }
+            ))
+        ));
+    }
+
+    #[test]
+    fn level_is_bounded_and_default_initial() {
+        assert_eq!(LaneLevel::initial().value(), 1);
+        assert_eq!(LaneLevel::zero().value(), 0);
+        assert_eq!(LaneLevel::new(18).unwrap().value(), 18);
+        assert!(LaneLevel::new(19).is_err());
+    }
+
+    #[test]
+    fn level_gained_is_direct_immediate_and_replayable() {
+        let state = LaneSnapshot::initial();
+        assert_eq!(state.player().level(), LaneLevel::initial());
+
+        let (receipt, request) = request(&state, LaneIntent::Contest);
+        let validated = validate_lane_request(&state, &receipt, &request).expect("valid");
+        let mut level_inputs = inputs(1, 2, LaneWaveResult::Held);
+        level_inputs.execution = level_inputs
+            .execution
+            .with_level_gained(LaneLevel::new(2).unwrap());
+
+        let result = transition_lane(&state, &validated, &level_inputs).expect("valid transition");
+        assert_eq!(
+            result.next_state().player().level(),
+            LaneLevel::new(3).unwrap()
+        );
+        let player_obs = observe_player(&result.next_state(), ObservationId::new(2)).observation();
+        let allied_obs = observe_allied(&result.next_state(), ObservationId::new(2)).observation();
+        assert_eq!(player_obs.self_level(), LaneLevel::new(3).unwrap());
+        assert_eq!(allied_obs.laner_level(), LaneLevel::new(3).unwrap());
+        assert_eq!(result.debrief().level_gained(), LaneLevel::new(2).unwrap());
+
+        assert!(result.events().iter().any(|e| matches!(
+            e,
+            LaneEvent::LevelGained { amount, .. } if *amount == LaneLevel::new(2).unwrap()
+        )));
+        assert!(result.effects().iter().any(|e| matches!(
+            e,
+            LaneEffect::LevelChanged {
+                before,
+                after,
+                provenance,
+                ..
+            } if *before == LaneLevel::initial()
+                && *after == LaneLevel::new(3).unwrap()
+                && provenance.relation() == LaneEffectRelation::Direct
+                && provenance.timing() == LaneEffectTiming::Immediate
+        )));
+
+        let mut history = LaneHistory::new(state).expect("valid history");
+        history
+            .append(&receipt, &request, level_inputs)
+            .expect("append level execution");
+        assert_eq!(history.verify_replay(), Ok(history.current_state()));
+    }
+
+    #[test]
+    fn level_overflow_is_rejected() {
+        let state = LaneSnapshot::initial();
+        let (receipt, request) = request(&state, LaneIntent::Contest);
+        let validated = validate_lane_request(&state, &receipt, &request).expect("valid");
+        let mut overflow_inputs = inputs(1, 2, LaneWaveResult::Held);
+        overflow_inputs.execution.level_gained = LaneLevel(18);
+
+        assert!(matches!(
+            transition_lane(&state, &validated, &overflow_inputs),
+            Err(LaneTransitionError::Execution(
+                LaneExecutionError::LevelOverflow { .. }
             ))
         ));
     }
