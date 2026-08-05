@@ -361,6 +361,14 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - `Yield` records replay and verify through `LaneHistory` and `TerminalObjectiveReview`.
 - Three focused `Yield` tests plus the prior sixty-two tests pass, for sixty-three Rust tests total.
 
+#### Delivered in the bounded gold-resource follow-up
+
+- `LaneGold` is a bounded player resource with a zero default and non-zero state-hash and allied visible-digest tags (`LANE_GOLD_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` expose player gold without exposing opponent gold.
+- `LaneExecutionInputs` supports gold-earning resolution during execution with direct-immediate `GoldEarned`/`GoldChanged` events and effects, debrief recording, and `LaneRecordIdentity` integration.
+- Gold overflow exceeding maximum bounds (`MAX_LANE_GOLD`) fails before transition state mutation with `LaneExecutionError::GoldOverflow`.
+- Three focused gold-resource tests plus the prior sixty-three tests pass, for sixty-six Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
