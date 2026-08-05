@@ -23,10 +23,12 @@ const MAX_LANE_HEALTH: u8 = 10;
 const MAX_LANE_MANA: u8 = 6;
 const MAX_LANE_GOLD: u8 = 20;
 const MAX_LANE_EXPERIENCE: u8 = 50;
+const MAX_LANE_COOLDOWN: u8 = 10;
 const MAX_WAVE_PRESSURE: u8 = 3;
 const LANE_MANA_HASH_TAG: u8 = 0x4d;
 const LANE_GOLD_HASH_TAG: u8 = 0x47;
 const LANE_EXPERIENCE_HASH_TAG: u8 = 0x45;
+const LANE_COOLDOWN_HASH_TAG: u8 = 0x43;
 
 pub const PLAYER_LANER: ActorId = ActorId::new(1);
 pub const OPPONENT_LANER: ActorId = ActorId::new(2);
@@ -167,6 +169,47 @@ impl LaneExperience {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct LaneCooldown(u8);
+
+impl LaneCooldown {
+    pub fn new(value: u8) -> Result<Self, LaneBoundsError> {
+        if value <= MAX_LANE_COOLDOWN {
+            Ok(Self(value))
+        } else {
+            Err(LaneBoundsError {
+                value,
+                maximum: MAX_LANE_COOLDOWN,
+            })
+        }
+    }
+
+    pub const fn zero() -> Self {
+        Self(0)
+    }
+
+    pub fn value(self) -> u8 {
+        self.0
+    }
+
+    pub fn tick(self, beats: u32) -> Self {
+        Self(self.0.saturating_sub(beats as u8))
+    }
+
+    fn add(self, amount: Self) -> Option<Self> {
+        let total = (self.0 as u16) + (amount.0 as u16);
+        if total <= MAX_LANE_COOLDOWN as u16 {
+            Some(Self(total as u8))
+        } else {
+            None
+        }
+    }
+
+    pub fn subtract(self, amount: Self) -> Option<Self> {
+        self.0.checked_sub(amount.0).map(Self)
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct LaneDamage(u8);
 
 impl LaneDamage {
@@ -273,6 +316,7 @@ pub struct PlayerLaneState {
     mana: LaneMana,
     gold: LaneGold,
     experience: LaneExperience,
+    cooldown: LaneCooldown,
     position: LanePosition,
 }
 
@@ -308,12 +352,33 @@ impl PlayerLaneState {
         experience: LaneExperience,
         position: LanePosition,
     ) -> Self {
+        Self::new_with_complete_state(
+            id,
+            health,
+            mana,
+            gold,
+            experience,
+            LaneCooldown::zero(),
+            position,
+        )
+    }
+
+    pub fn new_with_complete_state(
+        id: ActorId,
+        health: LaneHealth,
+        mana: LaneMana,
+        gold: LaneGold,
+        experience: LaneExperience,
+        cooldown: LaneCooldown,
+        position: LanePosition,
+    ) -> Self {
         Self {
             id,
             health,
             mana,
             gold,
             experience,
+            cooldown,
             position,
         }
     }
@@ -336,6 +401,10 @@ impl PlayerLaneState {
 
     pub fn experience(self) -> LaneExperience {
         self.experience
+    }
+
+    pub fn cooldown(self) -> LaneCooldown {
+        self.cooldown
     }
 
     pub fn position(self) -> LanePosition {
@@ -543,6 +612,12 @@ impl LaneSnapshot {
                 &[LANE_EXPERIENCE_HASH_TAG, self.player.experience().value()],
             );
         }
+        if self.player.cooldown() != LaneCooldown::zero() {
+            hash = hash_bytes(
+                hash,
+                &[LANE_COOLDOWN_HASH_TAG, self.player.cooldown().value()],
+            );
+        }
         hash = hash_bytes(hash, &[position_tag(self.player.position())]);
         hash = hash_bytes(
             hash,
@@ -723,6 +798,7 @@ pub struct LanerObservation {
     self_mana: LaneMana,
     self_gold: LaneGold,
     self_experience: LaneExperience,
+    self_cooldown: LaneCooldown,
     self_position: LanePosition,
     wave_pressure: WavePressure,
     opponent: OpponentReport,
@@ -793,6 +869,10 @@ impl LanerObservation {
         self.self_experience
     }
 
+    pub fn self_cooldown(self) -> LaneCooldown {
+        self.self_cooldown
+    }
+
     pub fn self_position(self) -> LanePosition {
         self.self_position
     }
@@ -858,6 +938,7 @@ pub fn observe_player(
             self_mana: state.player().mana(),
             self_gold: state.player().gold(),
             self_experience: state.player().experience(),
+            self_cooldown: state.player().cooldown(),
             self_position: state.player().position(),
             wave_pressure: state.wave().pressure(),
             opponent: player_opponent_report(state),
@@ -885,6 +966,7 @@ pub struct AlliedLaneObservation {
     laner_mana: LaneMana,
     laner_gold: LaneGold,
     laner_experience: LaneExperience,
+    laner_cooldown: LaneCooldown,
     laner_position: LanePosition,
     wave_pressure: WavePressure,
     opponent: OpponentReport,
@@ -924,6 +1006,10 @@ impl AlliedLaneObservation {
 
     pub fn laner_experience(self) -> LaneExperience {
         self.laner_experience
+    }
+
+    pub fn laner_cooldown(self) -> LaneCooldown {
+        self.laner_cooldown
     }
 
     pub fn laner_position(self) -> LanePosition {
@@ -986,6 +1072,7 @@ pub fn observe_allied(
             laner_mana: state.player().mana(),
             laner_gold: state.player().gold(),
             laner_experience: state.player().experience(),
+            laner_cooldown: state.player().cooldown(),
             laner_position: state.player().position(),
             wave_pressure: state.wave().pressure(),
             opponent: OpponentReport::unknown(),
@@ -1255,6 +1342,12 @@ fn allied_visible_digest(observation: AlliedLaneObservation) -> StateHash {
                 LANE_EXPERIENCE_HASH_TAG,
                 observation.laner_experience.value(),
             ],
+        );
+    }
+    if observation.laner_cooldown != LaneCooldown::zero() {
+        hash = hash_bytes(
+            hash,
+            &[LANE_COOLDOWN_HASH_TAG, observation.laner_cooldown.value()],
         );
     }
     hash = hash_bytes(hash, &[position_tag(observation.laner_position)]);
@@ -1943,6 +2036,7 @@ pub struct LaneExecutionInputs {
     mana_spent: LaneMana,
     gold_earned: LaneGold,
     experience_gained: LaneExperience,
+    cooldown_set: LaneCooldown,
 }
 
 impl LaneExecutionInputs {
@@ -1960,6 +2054,7 @@ impl LaneExecutionInputs {
             mana_spent: LaneMana::zero(),
             gold_earned: LaneGold::zero(),
             experience_gained: LaneExperience::zero(),
+            cooldown_set: LaneCooldown::zero(),
         }
     }
 
@@ -1975,6 +2070,11 @@ impl LaneExecutionInputs {
 
     pub fn with_experience_gained(mut self, experience_gained: LaneExperience) -> Self {
         self.experience_gained = experience_gained;
+        self
+    }
+
+    pub fn with_cooldown_set(mut self, cooldown_set: LaneCooldown) -> Self {
+        self.cooldown_set = cooldown_set;
         self
     }
 
@@ -2004,6 +2104,10 @@ impl LaneExecutionInputs {
 
     pub fn experience_gained(self) -> LaneExperience {
         self.experience_gained
+    }
+
+    pub fn cooldown_set(self) -> LaneCooldown {
+        self.cooldown_set
     }
 }
 
@@ -2139,6 +2243,16 @@ pub enum LaneEvent {
         amount: LaneExperience,
         trace: InputTrace,
     },
+    CooldownTicked {
+        actor: ActorId,
+        amount: u32,
+        trace: InputTrace,
+    },
+    CooldownSet {
+        actor: ActorId,
+        amount: LaneCooldown,
+        trace: InputTrace,
+    },
     WaveResolved {
         before: WavePressure,
         after: WavePressure,
@@ -2189,6 +2303,13 @@ pub enum LaneEffect {
         cause: LaneEffectCause,
         provenance: LaneEffectProvenance,
     },
+    CooldownChanged {
+        actor: ActorId,
+        before: LaneCooldown,
+        after: LaneCooldown,
+        cause: LaneEffectCause,
+        provenance: LaneEffectProvenance,
+    },
     PositionChanged {
         actor: ActorId,
         before: LanePosition,
@@ -2206,6 +2327,7 @@ impl LaneEffect {
             | Self::ManaChanged { provenance, .. }
             | Self::GoldChanged { provenance, .. }
             | Self::ExperienceChanged { provenance, .. }
+            | Self::CooldownChanged { provenance, .. }
             | Self::PositionChanged { provenance, .. } => provenance,
         }
     }
@@ -2243,6 +2365,10 @@ pub enum LaneExecutionError {
         gained: LaneExperience,
         current: LaneExperience,
     },
+    CooldownOverflow {
+        set: LaneCooldown,
+        current: LaneCooldown,
+    },
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -2275,6 +2401,7 @@ pub struct LaneDebrief {
     mana_spent: LaneMana,
     gold_earned: LaneGold,
     experience_gained: LaneExperience,
+    cooldown_set: LaneCooldown,
     wave_result: LaneWaveResult,
     fallback_activated: bool,
     execution_trace: InputTrace,
@@ -2307,6 +2434,10 @@ impl LaneDebrief {
 
     pub fn experience_gained(self) -> LaneExperience {
         self.experience_gained
+    }
+
+    pub fn cooldown_set(self) -> LaneCooldown {
+        self.cooldown_set
     }
 
     pub fn wave_result(self) -> LaneWaveResult {
@@ -3353,6 +3484,16 @@ pub fn transition_lane(
             current: player.experience,
         }),
     )?;
+    let ticked_cooldown = player.cooldown.tick(state.window.beats());
+    let after_player_cooldown =
+        ticked_cooldown
+            .add(execution.cooldown_set)
+            .ok_or(LaneTransitionError::Execution(
+                LaneExecutionError::CooldownOverflow {
+                    set: execution.cooldown_set,
+                    current: ticked_cooldown,
+                },
+            ))?;
     let after_wave = match execution.wave_result {
         LaneWaveResult::Advanced => state.wave.pressure.advance(),
         LaneWaveResult::Held => Ok(state.wave.pressure),
@@ -3389,12 +3530,13 @@ pub fn transition_lane(
         .value()
         .checked_add(state.window.beats())
         .ok_or(LaneTransitionError::TurnOverflow)?;
-    let next_player = PlayerLaneState::new_with_all_resources(
+    let next_player = PlayerLaneState::new_with_complete_state(
         player.id,
         after_player_health,
         after_player_mana,
         after_player_gold,
         after_player_experience,
+        after_player_cooldown,
         after_position,
     );
     let next_opponent = OpponentTruth::new(
@@ -3490,6 +3632,28 @@ pub fn transition_lane(
             provenance: LaneEffectProvenance::direct_immediate(),
         });
     }
+    if after_player_cooldown != player.cooldown {
+        if execution.cooldown_set != LaneCooldown::zero() {
+            events.push(LaneEvent::CooldownSet {
+                actor: player.id,
+                amount: execution.cooldown_set,
+                trace,
+            });
+        } else {
+            events.push(LaneEvent::CooldownTicked {
+                actor: player.id,
+                amount: state.window.beats(),
+                trace,
+            });
+        }
+        effects.push(LaneEffect::CooldownChanged {
+            actor: player.id,
+            before: player.cooldown,
+            after: after_player_cooldown,
+            cause: LaneEffectCause::Execution(trace),
+            provenance: LaneEffectProvenance::direct_immediate(),
+        });
+    }
     events.push(LaneEvent::WaveResolved {
         before: state.wave.pressure,
         after: after_wave,
@@ -3537,6 +3701,7 @@ pub fn transition_lane(
         mana_spent: execution.mana_spent,
         gold_earned: execution.gold_earned,
         experience_gained: execution.experience_gained,
+        cooldown_set: execution.cooldown_set,
         wave_result: execution.wave_result,
         fallback_activated,
         execution_trace: trace,
@@ -4832,6 +4997,8 @@ fn lane_record_identity(record: &LaneTransitionRecord) -> StateHash {
     hash = hash_bytes(hash, &[record.inputs.execution.opponent_damage.value()]);
     hash = hash_bytes(hash, &[record.inputs.execution.mana_spent.value()]);
     hash = hash_bytes(hash, &[record.inputs.execution.gold_earned.value()]);
+    hash = hash_bytes(hash, &[record.inputs.execution.experience_gained.value()]);
+    hash = hash_bytes(hash, &[record.inputs.execution.cooldown_set.value()]);
     hash = hash_bytes(
         hash,
         &[wave_result_tag(record.inputs.execution.wave_result)],
@@ -6980,6 +7147,87 @@ mod tests {
             transition_lane(&state, &validated, &overflow_inputs),
             Err(LaneTransitionError::Execution(
                 LaneExecutionError::ExperienceOverflow { .. }
+            ))
+        ));
+    }
+
+    #[test]
+    fn cooldown_is_bounded_and_default_zero() {
+        assert_eq!(LaneCooldown::zero().value(), 0);
+        assert_eq!(LaneCooldown::new(10).unwrap().value(), 10);
+        assert!(LaneCooldown::new(11).is_err());
+        let cd = LaneCooldown::new(3).unwrap();
+        assert_eq!(cd.tick(1).value(), 2);
+        assert_eq!(cd.tick(5).value(), 0);
+        assert_eq!(
+            cd.add(LaneCooldown::new(7).unwrap()),
+            Some(LaneCooldown::new(10).unwrap())
+        );
+        assert_eq!(cd.add(LaneCooldown::new(8).unwrap()), None);
+    }
+
+    #[test]
+    fn cooldown_set_is_direct_immediate_and_replayable() {
+        let state = LaneSnapshot::initial();
+        assert_eq!(state.player().cooldown(), LaneCooldown::zero());
+
+        let (receipt, request) = request(&state, LaneIntent::Contest);
+        let validated = validate_lane_request(&state, &receipt, &request).expect("valid");
+        let mut cd_inputs = inputs(1, 2, LaneWaveResult::Held);
+        cd_inputs.execution = cd_inputs
+            .execution
+            .with_cooldown_set(LaneCooldown::new(3).unwrap());
+
+        let result = transition_lane(&state, &validated, &cd_inputs).expect("valid transition");
+        assert_eq!(
+            result.next_state().player().cooldown(),
+            LaneCooldown::new(3).unwrap()
+        );
+        let player_obs = observe_player(&result.next_state(), ObservationId::new(2)).observation();
+        let allied_obs = observe_allied(&result.next_state(), ObservationId::new(2)).observation();
+        assert_eq!(player_obs.self_cooldown(), LaneCooldown::new(3).unwrap());
+        assert_eq!(allied_obs.laner_cooldown(), LaneCooldown::new(3).unwrap());
+        assert_eq!(
+            result.debrief().cooldown_set(),
+            LaneCooldown::new(3).unwrap()
+        );
+
+        assert!(result.events().iter().any(|e| matches!(
+            e,
+            LaneEvent::CooldownSet { amount, .. } if *amount == LaneCooldown::new(3).unwrap()
+        )));
+        assert!(result.effects().iter().any(|e| matches!(
+            e,
+            LaneEffect::CooldownChanged {
+                before,
+                after,
+                provenance,
+                ..
+            } if *before == LaneCooldown::zero()
+                && *after == LaneCooldown::new(3).unwrap()
+                && provenance.relation() == LaneEffectRelation::Direct
+                && provenance.timing() == LaneEffectTiming::Immediate
+        )));
+
+        let mut history = LaneHistory::new(state).expect("valid history");
+        history
+            .append(&receipt, &request, cd_inputs)
+            .expect("append cd execution");
+        assert_eq!(history.verify_replay(), Ok(history.current_state()));
+    }
+
+    #[test]
+    fn cooldown_overflow_is_rejected() {
+        let state = LaneSnapshot::initial();
+        let (receipt, request) = request(&state, LaneIntent::Contest);
+        let validated = validate_lane_request(&state, &receipt, &request).expect("valid");
+        let mut overflow_inputs = inputs(1, 2, LaneWaveResult::Held);
+        overflow_inputs.execution.cooldown_set = LaneCooldown(11);
+
+        assert!(matches!(
+            transition_lane(&state, &validated, &overflow_inputs),
+            Err(LaneTransitionError::Execution(
+                LaneExecutionError::CooldownOverflow { .. }
             ))
         ));
     }
