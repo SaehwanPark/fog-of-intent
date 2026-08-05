@@ -227,6 +227,20 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - One focused strategy-fixture test plus the prior forty tests pass, for
   forty-one Rust tests total.
 
+#### Delivered in the bounded two-window scenario follow-up
+
+- `LaneScenarioHistory` composes two sequential ordinary lane records under
+  `m2-two-window-scenario-v1` while preserving the one-window transition,
+  branch, coordination, and objective identities.
+- `reopen_lane_window` accepts only a valid resolved result, preserves its
+  domain values and advanced turn, and deterministically clears only the
+  per-window phase/outcome status for the next open window.
+- Scenario replay stores and compares exact window start states, complete base
+  records, reopened state, terminal state, and tamper-sensitive sequencing;
+  third append and invalid reopen cases fail.
+- Two focused scenario tests plus the prior forty-one tests pass, for
+  forty-three Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
@@ -240,10 +254,9 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 
 #### Not Yet Done
 
-- The complete lane scenario still needs multiple windows, variable pacing,
-  recall, gank response, richer resource abstractions, communication, and a
-  full causal debrief surface; these follow-ups model only one fixed allied
-  proposal, coordination, terminal-objective, and strategy-fixture boundary.
+- The complete lane scenario still needs variable pacing, recall, gank
+  response, richer resource abstractions, communication, and a full causal
+  debrief surface; this follow-up composes only two fixed one-beat windows.
 - CLI, MCP, full agent ecology, and human-experience evidence remain future
   M3/M4+ work; this diagnostic slice is not playable and makes no enjoyment,
   accessibility, trust, or behavioral-validity claim.

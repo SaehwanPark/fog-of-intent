@@ -34,6 +34,22 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.9 — 2026-08-04
+
+### Added
+
+- A bounded `m2-two-window-scenario-v1` history that composes two existing
+  one-beat lane transitions, reopens only a valid resolved first window, and
+  stores exact sequence/reopen state for replay.
+- Two-window append, terminal-state, invalid-reopen, third-window, and replay
+  tamper tests while retaining all existing one-window, branch, coordination,
+  objective, and strategy-fixture contracts.
+
+### Changed
+
+- The package version advances to `0.1.9` for the bounded two-window scenario
+  slice; the executable remains the documented placeholder.
+
 ## 0.1.8 — 2026-08-04
 
 ### Added

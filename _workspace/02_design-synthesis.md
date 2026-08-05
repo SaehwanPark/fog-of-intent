@@ -1,35 +1,37 @@
-# Design Synthesis — M2 Matched-Input Strategy Fixtures
+# Design Synthesis — M2 Bounded Two-Window Scenario Wrapper
 
 ## Decision
 
-Add three explicit diagnostic fixture descriptors over the existing one-window
-lane, allied-coordination, and terminal-objective contracts:
-`HappyPath`, `RiskTaking`, and `Conservative`. They are immutable, matched-input
-bundles, not an additional policy engine or scenario runtime.
+Compose two existing one-window lane transitions with one explicit deterministic
+reopen boundary. The base transition and all prior one-window/branch/
+coordination/objective identities stay unchanged. `LaneScenarioHistory` owns
+only sequence state, per-window start-state evidence, and the reopen boundary.
 
-The production path remains host-owned: fixture construction selects explicit
-inputs, existing validation and transition APIs commit the one record, and the
-existing objective review classifies the committed result. No fixture bypasses
-actor-visible observations, proposal-ID binding, coordination validation,
-execution separation, replay, or state hashing.
+The public reopen boundary accepts the opaque committed transition result,
+verifies its state hash/outcome consistency, then copies valid player,
+opponent, wave, and hidden-threat values into an `Open` snapshot at the already
+advanced turn and clears the per-window terminal outcome. The wrapper records
+this state and requires it as the second window's starting point. The second
+result remains resolved and is the two-window terminal state.
 
-## Resolved Cases
+## Resolved Contract
 
-- Happy path: `Contest` + accepted support, self damage `0`, opponent damage
-  `2`, wave `Advanced` -> `HeldSpace` and `GoalAchieved`.
-- Risk-taking: `Contest` + rejected support, self damage `3`, opponent damage
-  `0`, wave `Lost` -> legal `YieldedSpace` and `GoalMissed`.
-- Conservative: `Stabilize` + rejected support, no damage, wave `Held` ->
-  deliberate `YieldedSpace` and `GoalMissed`.
+`m2-two-window-scenario-v1` accepts at most `First` and `Second` records. Each
+record stores its exact start state and complete `LaneTransitionRecord`; the
+first additionally stores the reopened state. Replay regenerates observations,
+validates commands, reruns the base transition, reconstructs the reopen state,
+and compares all stored values. A third append, resolved current window, bad
+reopen state, or tampered record fails.
 
-Each response uses the proposal ID generated from the canonical allied actor
-input. The fixture runner appends through `CoordinatedLaneHistory`, then derives
-`ObjectiveReviewRecord`; expected outcomes are checks, never transition
-inputs.
+The wrapper uses ordinary player records in this slice. Existing allied
+coordination, objective, fixture, and branch APIs remain valid; a future
+version can compose coordination across multiple windows once that boundary
+has a demonstrated need.
 
 ## Evidence and Limits
 
-Tests establish exact fixture reproducibility, distinct declared input/output
-cases, replay, validation, state/hash preservation, and legal-unfavorable
-behavior. They do not establish strategy quality, balance, optimality, human
-preference, enjoyment, accessibility, trust, or behavioral validity.
+Tests cover valid reopen invariants, two sequential commits, terminal state,
+objective preservation, third-window rejection, repeated replay, and reopen
+tamper detection. This establishes a deterministic two-window composition only;
+variable pacing, recall, gank response, communication, a complete scenario,
+strategy quality, balance, and human evidence remain open.

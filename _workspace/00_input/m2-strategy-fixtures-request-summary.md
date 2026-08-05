@@ -3,31 +3,32 @@
 ## Requested Outcome
 
 Implement the next bounded M2 slice after the merged one-window lane, branch,
-allied coordination, objective, and strategy-fixture contracts: add a
-two-window scenario wrapper with an explicit deterministic reopen boundary and
-append-only replay. Keep the existing one-window transition and branch
-identities unchanged.
+allied coordination, and objective contracts: add three explicit matched-input
+diagnostic strategy fixtures (happy-path, risk-taking, conservative) over the
+existing one-window mechanics. Keep fixture content separate from simulation
+authority and do not add a second window yet.
 
 ## Roadmap Milestone
 
-M2 — One-Lane Vertical Slice, bounded two-window scenario follow-up.
+M2 — One-Lane Vertical Slice, strategy-fixture follow-up.
 
 ## Current Evidence
 
 - M1 is complete; the first M2 decision window, bounded branch, allied
-  proposal/coordination overlay, terminal-objective review, and three strategy
-  fixtures are merged on `main` through `9d0e353`; this branch advances the
-  package from `0.1.8` to `0.1.9`, pinned to Rust `1.96.0`,
+  proposal/coordination overlay, and terminal-objective review are merged on
+  `main` through `31836e0`; this branch advances the package from `0.1.7` to
+  `0.1.8`, pinned to Rust `1.96.0`,
   with no dependencies.
 - The binary remains a placeholder and the M2 scenario is not yet playable.
 
 ## In Scope
 
-- Define a bounded two-window scenario history over existing lane records.
-- Reopen the resolved first window through one explicit host-owned deterministic
-  boundary before accepting the second window.
+- Define three named strategy fixtures: happy-path, risk-taking, and
+  conservative.
+- Bind each fixture to explicit player intent/response and resolved execution
+  inputs, then evaluate the existing terminal objective.
 - Preserve actor-visible information limits, deterministic replay, branch
-  compatibility, and existing coordination/debrief attribution.
+  compatibility, and the existing coordination/debrief attribution.
 - Synchronize the M2 design, roadmap, SPEC, architecture, changelog, and domain
   QA evidence after verification.
 
@@ -35,9 +36,8 @@ M2 — One-Lane Vertical Slice, bounded two-window scenario follow-up.
 
 - No second decision window, full lane scenario, CLI, MCP, GUI, broad agent
   population, persistence codec, or general communication framework.
-- No variable pacing, recall/gank mechanics, hidden-state strategy score,
-  optimality claim, balance claim, or new lane mechanics beyond the existing
-  bounded transition.
+- No hidden-state strategy score, optimality claim, balance claim, or new
+  mechanics beyond the existing bounded projection.
 - No change to the placeholder binary or claim of a playable simulation.
 
 ## Project Boundaries Touched
@@ -48,16 +48,15 @@ M2 — One-Lane Vertical Slice, bounded two-window scenario follow-up.
 
 ## Source Files
 
-- `src/lane.rs` two-window scenario history and focused tests
+- `src/lane.rs` fixture descriptors and focused tests
 - existing M1 fixture tests remain unchanged
 - `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md`
 - `_workspace/01_simulation-design.md`, `_workspace/03_domain-qa.md`, and
-  immutable M2 strategy-fixture handoff snapshots
+  immutable M2 objective handoff snapshots
 
 ## Expected Outputs
 
-- Two-window reopen, append, deterministic transition, objective, and replay
-  tests.
+- Happy-path, risk-taking, conservative, objective, and replay tests.
 - Updated M2 checklist and SDD/domain handoff artifacts.
 - Passing local checks, one code-reviewer’s three-pass review, hosted CI, and a
   merged PR.
@@ -70,13 +69,13 @@ M2 — One-Lane Vertical Slice, bounded two-window scenario follow-up.
 - `python3 scripts/check_repository.py`
 - `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'`
 - `git diff --check`
-- Focused window-boundary, actor-observation, deterministic transition, and
-  replay tests.
+- Focused fixture-boundary, objective attribution, deterministic projection,
+  and replay tests.
 
 ## Evidence Limits and Open Questions
 
-- The slice establishes only a two-window diagnostic wrapper; it does not
-  establish a complete playable scenario, pacing, balance, optimality, or
+- The slice establishes only three one-window matched-input fixture cases; it
+  does not establish a playable scenario, balance, optimality, or
   human-experience evidence.
 - Portable serialization, migration, multi-window state, general communication,
   and broad agent-population claims remain deferred.
