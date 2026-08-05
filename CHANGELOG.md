@@ -34,6 +34,16 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.27 — 2026-08-05
+
+### Added
+
+- A bounded `LaneCommitment` player intent commitment abstraction with default `Standard`, explicit `Cautious` and `Aggressive` commitment options, observation advertising, request/command integration, state/record identity hash binding for non-default commitment, direct-immediate `CommitmentSelected`/`CommitmentSet` events and effects, debrief recording, and replay verification.
+
+### Changed
+
+- The package version advances to `0.1.27` for the bounded intent-commitment slice; commitment-based stat scaling and complete scenario mechanics remain deferred and the executable remains the documented placeholder.
+
 ## 0.1.26 — 2026-08-05
 
 ### Added

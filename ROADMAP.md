@@ -610,6 +610,14 @@ This evidence establishes one bounded minion kills resource. It does not establi
 
 This evidence establishes one bounded intent focus abstraction. It does not establish multi-actor focus target switching or a complete playable lane scenario.
 
+### Current bounded commitment evidence
+
+- [x] Add bounded `LaneCommitment` to player intent requests and commands with `Standard` default and non-default record-identity hash binding.
+- [x] Expose available commitment options in player observations.
+- [x] Emit direct-immediate `CommitmentSelected`/`CommitmentSet` events and effects during transition evaluation, with debrief recording and replay verification.
+
+This evidence establishes one bounded intent commitment abstraction. It does not establish commitment-based stat scaling or a complete playable lane scenario.
+
 ### Current final-debrief evidence
 
 - [x] Build a versioned final debrief only from a replay-verified two-window

@@ -414,6 +414,10 @@ pub(crate) fn lane_record_identity(record: &LaneTransitionRecord) -> StateHash {
         hash = hash_bytes(hash, &[LANE_TARGET_FOCUS_HASH_TAG]);
         hash = hash_bytes(hash, &[target_focus_tag(record.command.target_focus)]);
     }
+    if record.command.commitment != LaneCommitment::Standard {
+        hash = hash_bytes(hash, &[LANE_COMMITMENT_HASH_TAG]);
+        hash = hash_bytes(hash, &[commitment_tag(record.command.commitment)]);
+    }
     hash = hash_bytes(hash, &record.prior_state_hash.value().to_le_bytes());
     for trace in [
         record.inputs.environment,

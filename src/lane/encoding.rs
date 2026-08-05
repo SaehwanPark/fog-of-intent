@@ -18,6 +18,7 @@ pub(crate) const LANE_BOUNTY_HASH_TAG: u8 = 0x42;
 pub(crate) const LANE_LEVEL_HASH_TAG: u8 = 0x4c;
 pub(crate) const LANE_MINION_KILLS_HASH_TAG: u8 = 0x4b;
 pub(crate) const LANE_TARGET_FOCUS_HASH_TAG: u8 = 0x54;
+pub(crate) const LANE_COMMITMENT_HASH_TAG: u8 = 0x56;
 pub(crate) fn phase_tag(phase: LanePhase) -> u8 {
     match phase {
         LanePhase::Open => 0,
@@ -85,5 +86,13 @@ pub(crate) fn target_focus_tag(focus: LaneTargetFocus) -> u8 {
         LaneTargetFocus::Minions => 0,
         LaneTargetFocus::OpposingLaner => 1,
         LaneTargetFocus::Tower => 2,
+    }
+}
+
+pub(crate) fn commitment_tag(commitment: LaneCommitment) -> u8 {
+    match commitment {
+        LaneCommitment::Standard => 0,
+        LaneCommitment::Cautious => 1,
+        LaneCommitment::Aggressive => 2,
     }
 }

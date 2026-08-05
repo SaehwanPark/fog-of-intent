@@ -260,6 +260,10 @@ pub enum LaneEvent {
         actor: ActorId,
         focus: LaneTargetFocus,
     },
+    CommitmentSelected {
+        actor: ActorId,
+        commitment: LaneCommitment,
+    },
     PlayerDamaged {
         target: ActorId,
         amount: LaneDamage,
@@ -401,6 +405,12 @@ pub enum LaneEffect {
         cause: LaneEffectCause,
         provenance: LaneEffectProvenance,
     },
+    CommitmentSet {
+        actor: ActorId,
+        commitment: LaneCommitment,
+        cause: LaneEffectCause,
+        provenance: LaneEffectProvenance,
+    },
 }
 
 impl LaneEffect {
@@ -416,7 +426,8 @@ impl LaneEffect {
             | Self::LevelChanged { provenance, .. }
             | Self::MinionKillsChanged { provenance, .. }
             | Self::PositionChanged { provenance, .. }
-            | Self::TargetFocusSet { provenance, .. } => provenance,
+            | Self::TargetFocusSet { provenance, .. }
+            | Self::CommitmentSet { provenance, .. } => provenance,
         }
     }
 }
@@ -498,6 +509,7 @@ pub struct LaneDebrief {
     pub(crate) coordination: LaneCoordinationReview,
     pub(crate) intent: LaneIntent,
     pub(crate) target_focus: LaneTargetFocus,
+    pub(crate) commitment: LaneCommitment,
     pub(crate) self_damage: LaneDamage,
     pub(crate) mana_spent: LaneMana,
     pub(crate) gold_earned: LaneGold,
@@ -526,6 +538,10 @@ impl LaneDebrief {
 
     pub fn target_focus(self) -> LaneTargetFocus {
         self.target_focus
+    }
+
+    pub fn commitment(self) -> LaneCommitment {
+        self.commitment
     }
 
     pub fn self_damage(self) -> LaneDamage {
@@ -951,6 +967,10 @@ fn project_lane_events(
             actor: command.command.actor,
             focus: command.command.target_focus,
         },
+        LaneEvent::CommitmentSelected {
+            actor: command.command.actor,
+            commitment: command.command.commitment,
+        },
     ];
     if execution.self_damage != LaneDamage::zero() {
         events.push(LaneEvent::PlayerDamaged {
@@ -1049,12 +1069,20 @@ fn project_lane_effects(
     let player = state.player;
     let opponent = state.opponent;
     let next_player = next_state.player;
-    let mut effects = vec![LaneEffect::TargetFocusSet {
-        actor: player.id,
-        focus: command.command.target_focus,
-        cause: LaneEffectCause::Intent,
-        provenance: LaneEffectProvenance::direct_immediate(),
-    }];
+    let mut effects = vec![
+        LaneEffect::TargetFocusSet {
+            actor: player.id,
+            focus: command.command.target_focus,
+            cause: LaneEffectCause::Intent,
+            provenance: LaneEffectProvenance::direct_immediate(),
+        },
+        LaneEffect::CommitmentSet {
+            actor: player.id,
+            commitment: command.command.commitment,
+            cause: LaneEffectCause::Intent,
+            provenance: LaneEffectProvenance::direct_immediate(),
+        },
+    ];
     if execution.self_damage != LaneDamage::zero() {
         effects.push(LaneEffect::HealthChanged {
             actor: player.id,
@@ -1208,6 +1236,7 @@ pub fn transition_lane(
         coordination: LaneCoordinationReview::NotApplicable,
         intent: command.command.intent,
         target_focus: command.command.target_focus,
+        commitment: command.command.commitment,
         self_damage: execution.self_damage,
         mana_spent: execution.mana_spent,
         gold_earned: execution.gold_earned,
