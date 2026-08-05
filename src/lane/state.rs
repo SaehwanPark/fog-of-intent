@@ -43,6 +43,7 @@ pub(crate) struct PlayerResources {
     pub(crate) level: LaneLevel,
     pub(crate) minion_kills: LaneMinionKills,
     pub(crate) shield: LaneShield,
+    pub(crate) ward: LaneWard,
 }
 
 impl PlayerResources {
@@ -56,6 +57,7 @@ impl PlayerResources {
             level: LaneLevel::initial(),
             minion_kills: LaneMinionKills::zero(),
             shield: LaneShield::zero(),
+            ward: LaneWard::zero(),
         }
     }
 
@@ -96,6 +98,7 @@ pub struct PlayerLaneState {
     pub(crate) level: LaneLevel,
     pub(crate) minion_kills: LaneMinionKills,
     pub(crate) shield: LaneShield,
+    pub(crate) ward: LaneWard,
     pub(crate) position: LanePosition,
 }
 
@@ -117,6 +120,7 @@ impl PlayerLaneState {
             level: resources.level,
             minion_kills: resources.minion_kills,
             shield: resources.shield,
+            ward: resources.ward,
             position,
         }
     }
@@ -131,6 +135,7 @@ impl PlayerLaneState {
             level: self.level,
             minion_kills: self.minion_kills,
             shield: self.shield,
+            ward: self.ward,
         }
     }
 
@@ -282,6 +287,7 @@ impl PlayerLaneState {
                 level,
                 minion_kills,
                 shield: LaneShield::zero(),
+                ward: LaneWard::zero(),
             },
             position,
         )
@@ -325,6 +331,10 @@ impl PlayerLaneState {
 
     pub fn shield(self) -> LaneShield {
         self.shield
+    }
+
+    pub fn ward(self) -> LaneWard {
+        self.ward
     }
 
     pub fn position(self) -> LanePosition {
@@ -657,6 +667,9 @@ impl LaneSnapshot {
         }
         if self.player.shield() != LaneShield::zero() {
             hash = hash_bytes(hash, &[LANE_SHIELD_HASH_TAG, self.player.shield().value()]);
+        }
+        if self.player.ward() != LaneWard::zero() {
+            hash = hash_bytes(hash, &[LANE_WARD_HASH_TAG, self.player.ward().value()]);
         }
         hash = hash_bytes(hash, &[position_tag(self.player.position())]);
         hash = hash_bytes(

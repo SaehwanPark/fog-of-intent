@@ -21,6 +21,7 @@ pub struct LaneExecutionInputs {
     pub(crate) level_gained: LaneLevel,
     pub(crate) minion_kills_gained: LaneMinionKills,
     pub(crate) shield_gained: LaneShield,
+    pub(crate) ward_gained: LaneWard,
     pub(crate) delayed_effect: Option<LaneDelayedEffect>,
 }
 
@@ -44,6 +45,7 @@ impl LaneExecutionInputs {
             level_gained: LaneLevel::zero(),
             minion_kills_gained: LaneMinionKills::zero(),
             shield_gained: LaneShield::zero(),
+            ward_gained: LaneWard::zero(),
             delayed_effect: None,
         }
     }
@@ -97,6 +99,11 @@ impl LaneExecutionInputs {
         self
     }
 
+    pub fn with_ward_gained(mut self, ward_gained: LaneWard) -> Self {
+        self.ward_gained = ward_gained;
+        self
+    }
+
     pub fn trace(self) -> InputTrace {
         self.trace
     }
@@ -144,6 +151,10 @@ impl LaneExecutionInputs {
     pub fn shield_gained(self) -> LaneShield {
         self.shield_gained
     }
+
+    pub fn ward_gained(self) -> LaneWard {
+        self.ward_gained
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -156,6 +167,7 @@ struct ResourceExecutionDeltas {
     level_gained: LaneLevel,
     minion_kills_gained: LaneMinionKills,
     shield_gained: LaneShield,
+    ward_gained: LaneWard,
 }
 
 impl ResourceExecutionDeltas {
@@ -169,6 +181,7 @@ impl ResourceExecutionDeltas {
             level_gained: execution.level_gained,
             minion_kills_gained: execution.minion_kills_gained,
             shield_gained: execution.shield_gained,
+            ward_gained: execution.ward_gained,
         }
     }
 }
@@ -357,6 +370,11 @@ pub enum LaneEvent {
         amount: LaneShield,
         trace: InputTrace,
     },
+    WardGained {
+        actor: ActorId,
+        amount: LaneWard,
+        trace: InputTrace,
+    },
     DelayedEffectQueued {
         actor: ActorId,
         effect: LaneDelayedEffect,
@@ -452,6 +470,13 @@ pub enum LaneEffect {
         cause: LaneEffectCause,
         provenance: LaneEffectProvenance,
     },
+    WardChanged {
+        actor: ActorId,
+        before: LaneWard,
+        after: LaneWard,
+        cause: LaneEffectCause,
+        provenance: LaneEffectProvenance,
+    },
     PositionChanged {
         actor: ActorId,
         before: LanePosition,
@@ -498,6 +523,7 @@ impl LaneEffect {
             | Self::LevelChanged { provenance, .. }
             | Self::MinionKillsChanged { provenance, .. }
             | Self::ShieldChanged { provenance, .. }
+            | Self::WardChanged { provenance, .. }
             | Self::PositionChanged { provenance, .. }
             | Self::DelayedEffectQueued { provenance, .. }
             | Self::DelayedEffectResolved { provenance, .. }
@@ -559,6 +585,10 @@ pub enum LaneExecutionError {
         gained: LaneShield,
         current: LaneShield,
     },
+    WardOverflow {
+        gained: LaneWard,
+        current: LaneWard,
+    },
     DelayedEffectOverflow,
 }
 
@@ -599,6 +629,7 @@ pub struct LaneDebrief {
     pub(crate) level_gained: LaneLevel,
     pub(crate) minion_kills_gained: LaneMinionKills,
     pub(crate) shield_gained: LaneShield,
+    pub(crate) ward_gained: LaneWard,
     pub(crate) wave_result: LaneWaveResult,
     pub(crate) fallback_activated: bool,
     pub(crate) delayed_effects_queued: u8,
@@ -661,6 +692,10 @@ impl LaneDebrief {
 
     pub fn shield_gained(self) -> LaneShield {
         self.shield_gained
+    }
+
+    pub fn ward_gained(self) -> LaneWard {
+        self.ward_gained
     }
 
     pub fn wave_result(self) -> LaneWaveResult {
@@ -929,6 +964,13 @@ fn apply_player_resources(
                 gained: deltas.shield_gained,
                 current: before.shield,
             })?;
+    let ward = before
+        .ward
+        .add(deltas.ward_gained)
+        .ok_or(LaneExecutionError::WardOverflow {
+            gained: deltas.ward_gained,
+            current: before.ward,
+        })?;
     Ok(PlayerResources {
         mana,
         gold,
@@ -938,6 +980,7 @@ fn apply_player_resources(
         level,
         minion_kills,
         shield,
+        ward,
     })
 }
 
@@ -1188,6 +1231,13 @@ fn project_lane_events(
             trace,
         });
     }
+    if execution.ward_gained != LaneWard::zero() {
+        events.push(LaneEvent::WardGained {
+            actor: player.id,
+            amount: execution.ward_gained,
+            trace,
+        });
+    }
     if let Some(queued) = resolved.delayed_effect_queued {
         events.push(LaneEvent::DelayedEffectQueued {
             actor: player.id,
@@ -1334,6 +1384,15 @@ fn project_lane_effects(
             provenance: LaneEffectProvenance::direct_immediate(),
         });
     }
+    if execution.ward_gained != LaneWard::zero() {
+        effects.push(LaneEffect::WardChanged {
+            actor: player.id,
+            before: player.ward,
+            after: next_player.ward,
+            cause: LaneEffectCause::Execution(trace),
+            provenance: LaneEffectProvenance::direct_immediate(),
+        });
+    }
     if let Some(queued) = resolved.delayed_effect_queued {
         effects.push(LaneEffect::DelayedEffectQueued {
             actor: player.id,
@@ -1416,6 +1475,7 @@ pub fn transition_lane(
         level_gained: execution.level_gained,
         minion_kills_gained: execution.minion_kills_gained,
         shield_gained: execution.shield_gained,
+        ward_gained: execution.ward_gained,
         wave_result: execution.wave_result,
         fallback_activated: resolved.fallback_activated,
         delayed_effects_queued: if resolved.delayed_effect_queued.is_some() {

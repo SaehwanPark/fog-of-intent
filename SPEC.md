@@ -439,6 +439,14 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Shield overflow exceeding maximum bounds (`MAX_LANE_SHIELD`) fails before transition state mutation with `LaneExecutionError::ShieldOverflow`.
 - Three focused shield-resource tests plus the prior ninety-three tests pass, for ninety-six Rust tests total.
 
+#### Delivered in the bounded ward-resource follow-up
+
+- `LaneWard` is a bounded player vision ward resource with a zero default and non-zero state-hash and allied visible-digest tags (`LANE_WARD_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` expose player ward count (`self_ward`, `laner_ward`) without exposing opponent ward count.
+- `LaneExecutionInputs` supports `ward_gained` resolution during execution with direct-immediate `WardGained`/`WardChanged` events and effects, debrief recording, and `LaneRecordIdentity` integration.
+- Ward overflow exceeding maximum bounds (`MAX_LANE_WARD`) fails before transition state mutation with `LaneExecutionError::WardOverflow`.
+- Three focused ward-resource tests plus the prior ninety-six tests pass, for ninety-nine Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield

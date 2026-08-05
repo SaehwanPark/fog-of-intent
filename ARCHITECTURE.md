@@ -1,6 +1,6 @@
 # Architecture
 
-**Last reviewed:** 2026-08-04
+**Last reviewed:** 2026-08-05
 **Status:** Partially verified — M1 kernel and fixture codec are implemented;
 M2 scenario architecture remains a bounded target under construction, with the
 first internal lane decision window, bounded branch, one-window allied
@@ -8,8 +8,8 @@ proposal/coordination overlay, terminal-objective projection, matched-input
 strategy fixtures, bounded two-window wrapper, final debrief projection, one
 bounded player-facing Recall intent, a bounded last-known threat report, a
 conditional Withdraw response, one bounded TwoBeats duration, bounded
-direct/indirect immediate effect provenance, one bounded player mana resource,
-and one bounded player-only opponent last-known report implemented
+direct/indirect immediate effect provenance, and bounded player resources
+(mana, gold, experience, cooldown, bounty, level, minion kills, shield, and ward) implemented
 
 ## Overview
 
