@@ -385,6 +385,14 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Cooldown overflow exceeding maximum bounds (`MAX_LANE_COOLDOWN`) fails before transition state mutation with `LaneExecutionError::CooldownOverflow`.
 - Three focused cooldown-resource tests plus the prior sixty-nine tests pass, for seventy-two Rust tests total.
 
+#### Delivered in the bounded bounty-resource follow-up
+
+- `LaneBounty` is a bounded player resource with a zero default and non-zero state-hash and allied visible-digest tags (`LANE_BOUNTY_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` expose player bounty without exposing opponent bounty.
+- `LaneExecutionInputs` supports explicit `bounty_earned` resolution during execution with direct-immediate `BountyEarned`/`BountyChanged` events and effects, debrief recording, and `LaneRecordIdentity` integration.
+- Bounty overflow exceeding maximum bounds (`MAX_LANE_BOUNTY`) fails before transition state mutation with `LaneExecutionError::BountyOverflow`.
+- Three focused bounty-resource tests plus the prior seventy-two tests pass, for seventy-five Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
