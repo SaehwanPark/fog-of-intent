@@ -36,7 +36,8 @@ sequencing or checklist differs from this file, this file governs current work.
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
-| Simulation, CLI, MCP, replay, research, GUI | No implementation evidence | Not implemented |
+| Internal kernel/replay fixture | `src/kernel.rs`, `src/serialization.rs` | M1 complete; not playable |
+| Scenario, CLI, MCP, research, GUI | No implementation evidence | Not implemented |
 
 ## Milestone Map
 

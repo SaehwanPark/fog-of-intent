@@ -13,8 +13,12 @@ bounded implementation slice is one actor-valid lane decision window.
 - `ARCHITECTURE.md` — current implementation boundary and M2 target status.
 - `CHANGELOG.md` — contributor-facing milestone promotion.
 - `_workspace/00_input/request-summary.md` — current M2 request framing.
-- `_workspace/03_domain-qa.md` — prior M1 domain-QA pass remains the evidence
-  for the promoted kernel/codec slice.
+- `_workspace/00_input/m1-request-summary.md` — immutable M1 request framing
+  preserved for the prior domain-QA record.
+- `_workspace/final/handoff.md` — this durable continuation handoff.
+
+The existing `_workspace/03_domain-qa.md` is reviewed evidence, not a changed
+file in this handoff.
 
 ## Verification
 
