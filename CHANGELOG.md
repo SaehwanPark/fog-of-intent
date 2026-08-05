@@ -34,6 +34,17 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.18 — 2026-08-05
+
+### Added
+
+- A bounded player-facing `Yield` intent in `LanerObservation` and `transition_lane`, resolving deterministically to `NearTower` with zero damage and zero mana spent.
+- Yield availability, execution validation, mana-spend rejection, replay, and objective-review tests while preserving existing intent tags and state-hash contracts.
+
+### Changed
+
+- The package version advances to `0.1.18` for the bounded Yield-intent slice; the executable remains the documented placeholder.
+
 ## 0.1.17 — 2026-08-04
 
 ### Added

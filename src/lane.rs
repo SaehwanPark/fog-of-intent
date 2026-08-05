@@ -605,7 +605,7 @@ pub struct LanerObservation {
     wave_pressure: WavePressure,
     opponent: OpponentReport,
     jungle_threat: ThreatReport,
-    available_intents: [LaneIntent; 3],
+    available_intents: [LaneIntent; 4],
     available_threat_response: Option<LaneIntent>,
     window: LaneWindow,
 }
@@ -679,7 +679,7 @@ impl LanerObservation {
         self.jungle_threat
     }
 
-    pub fn available_intents(self) -> [LaneIntent; 3] {
+    pub fn available_intents(self) -> [LaneIntent; 4] {
         self.available_intents
     }
 
@@ -733,6 +733,7 @@ pub fn observe_player(
             available_intents: [
                 LaneIntent::Stabilize,
                 LaneIntent::Contest,
+                LaneIntent::Yield,
                 LaneIntent::Recall,
             ],
             available_threat_response: player_threat_response(jungle_threat),
@@ -1203,7 +1204,7 @@ pub fn offer_allied_proposal(
             SupportFocus::Wave,
             SupportAbort::IfPlayerHealthAtMost(2),
         ),
-        LaneIntent::Recall | LaneIntent::Withdraw => {
+        LaneIntent::Yield | LaneIntent::Recall | LaneIntent::Withdraw => {
             return Err(AlliedProposalError::InvalidProposal);
         }
     };
@@ -1410,11 +1411,7 @@ fn counter_support(counter: CounterProposal) -> Result<AlliedSupport, Coordinati
             ..
         } => Ok(AlliedSupport::CoverStabilize),
         CounterProposal::RequestIntent {
-            requested_intent: LaneIntent::Recall,
-            ..
-        } => Err(CoordinationError::UnsupportedCounter),
-        CounterProposal::RequestIntent {
-            requested_intent: LaneIntent::Withdraw,
+            requested_intent: LaneIntent::Yield | LaneIntent::Recall | LaneIntent::Withdraw,
             ..
         } => Err(CoordinationError::UnsupportedCounter),
     }
@@ -1567,6 +1564,7 @@ fn counter_shape_matches(counter: CounterProposal) -> bool {
 pub enum LaneIntent {
     Stabilize,
     Contest,
+    Yield,
     Recall,
     Withdraw,
 }
@@ -3137,6 +3135,7 @@ pub fn transition_lane(
         LaneIntent::Stabilize => LanePosition::NearTower,
         LaneIntent::Contest if fallback_activated => LanePosition::NearTower,
         LaneIntent::Contest => LanePosition::Center,
+        LaneIntent::Yield => LanePosition::NearTower,
         LaneIntent::Recall => LanePosition::NearTower,
         LaneIntent::Withdraw => LanePosition::NearTower,
     };
@@ -4575,6 +4574,7 @@ fn intent_tag(intent: LaneIntent) -> u8 {
         LaneIntent::Contest => 1,
         LaneIntent::Recall => 2,
         LaneIntent::Withdraw => 3,
+        LaneIntent::Yield => 4,
     }
 }
 
@@ -4877,6 +4877,7 @@ mod tests {
             [
                 LaneIntent::Stabilize,
                 LaneIntent::Contest,
+                LaneIntent::Yield,
                 LaneIntent::Recall
             ]
         );
@@ -4915,6 +4916,7 @@ mod tests {
         receipt.observation.available_intents = [
             LaneIntent::Stabilize,
             LaneIntent::Contest,
+            LaneIntent::Stabilize,
             LaneIntent::Stabilize,
         ];
         assert_eq!(
@@ -5004,6 +5006,7 @@ mod tests {
             [
                 LaneIntent::Stabilize,
                 LaneIntent::Contest,
+                LaneIntent::Yield,
                 LaneIntent::Recall
             ]
         );
@@ -6479,5 +6482,65 @@ mod tests {
             build_scenario_debrief(&incomplete),
             Err(ScenarioDebriefError::IncompleteHistory)
         );
+    }
+
+    #[test]
+    fn yield_is_player_legal_and_resolves_to_near_tower() {
+        let state = LaneSnapshot::initial();
+        let (receipt, yield_request) = request(&state, LaneIntent::Yield);
+        let validated = validate_lane_request(&state, &receipt, &yield_request)
+            .expect("yield is legal for the player");
+        let result = transition_lane(&state, &validated, &inputs(0, 0, LaneWaveResult::Held))
+            .expect("yield transition");
+        assert_eq!(result.outcome(), LaneOutcome::YieldedSpace);
+        assert_eq!(
+            result.next_state().player().position(),
+            LanePosition::NearTower
+        );
+        assert_eq!(result.debrief().intent(), LaneIntent::Yield);
+        assert!(result.effects().iter().any(|effect| matches!(
+            effect,
+            LaneEffect::PositionChanged {
+                cause: LaneEffectCause::Intent,
+                ..
+            }
+        )));
+    }
+
+    #[test]
+    fn yield_replays_and_preserves_objective_attribution() {
+        let state = LaneSnapshot::initial();
+        let (receipt, yield_request) = request(&state, LaneIntent::Yield);
+        let mut history = LaneHistory::new(state).expect("valid initial state");
+        history
+            .append(&receipt, &yield_request, inputs(0, 0, LaneWaveResult::Held))
+            .expect("yield append");
+        assert_eq!(history.verify_replay(), Ok(history.current_state()));
+        let record = &history.records()[0];
+        let review = review_lane_objective(ScenarioGoal::HoldLaneSpaceThroughWindow, record)
+            .expect("yield objective review");
+        assert_eq!(review.review().intent(), LaneIntent::Yield);
+        assert_eq!(review.review().report().intent(), LaneIntent::Yield);
+        review
+            .verify_lane(record)
+            .expect("replayable objective review");
+    }
+
+    #[test]
+    fn yield_rejects_mana_spend() {
+        let state = LaneSnapshot::initial();
+        let (receipt, yield_request) = request(&state, LaneIntent::Yield);
+        let validated = validate_lane_request(&state, &receipt, &yield_request).expect("valid");
+        let mut invalid_inputs = inputs(0, 0, LaneWaveResult::Held);
+        invalid_inputs.execution.mana_spent = LaneMana::new(1).unwrap();
+        assert!(matches!(
+            transition_lane(&state, &validated, &invalid_inputs),
+            Err(LaneTransitionError::Execution(
+                LaneExecutionError::ManaSpentWithoutContest {
+                    intent: LaneIntent::Yield,
+                    ..
+                }
+            ))
+        ));
     }
 }
