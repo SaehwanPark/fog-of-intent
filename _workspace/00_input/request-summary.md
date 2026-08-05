@@ -2,67 +2,60 @@
 
 ## Requested Outcome
 
-Implement the next bounded M1 slice after the deterministic kernel merge:
-versioned snapshot/history serialization with fixtures and exhaustive
-bounds/conservation property-style checks. Review and merge it independently
-before selecting another slice.
+Implement the first bounded M2 lane decision-window slice after the completed
+M1 kernel and fixture merge. Keep the work small enough to prove one typed lane
+state, one actor-valid observation, one host-validated intent command, explicit
+execution input, deterministic transition output, and replay identity before
+adding the rest of the scenario.
 
 ## Roadmap Milestone
 
-M1 — Deterministic Simulation Kernel, serialization and property-check follow-up.
+M2 — One-Lane Vertical Slice, first decision-window boundary.
 
 ## Current Evidence
 
-- PR #5 merged the typed kernel fixture to `main` as `4424ea4` after hosted CI
-  run `30959271361` passed.
-- The package is version `0.1.2` at slice start and will become `0.1.3` for this
-  code-bearing change; it remains pinned to Rust `1.96.0` with no dependencies.
-- The remaining active M1 checklist items are versioned snapshot/history
-  serialization and property-style bounds/conservation tests.
+- PR #6 merged the versioned replay fixture codecs to `main` as `c5d7a9d` after
+  the prior M1 implementation and codec checks passed.
+- M1 is now promoted to complete in `ROADMAP.md` and `SPEC.md`; the package is
+  version `0.1.3`, remains pinned to Rust `1.96.0`, and has no dependencies.
+- The binary remains a placeholder and the M2 scenario is not yet playable.
 
 ## In Scope
 
-- Add version constants for snapshot schema, history schema, and the current
-  state-hash representation.
-- Add a strict, dependency-free canonical text codec for `WorldState` snapshots
-  and append-only `History` records.
-- Include ruleset identity, schema/hash versions, commands, resolved input
-  category identities, prior hashes, events, effects, next state, and next hash.
-- Reject unsupported versions, unknown/duplicate/missing fields, malformed
-  values, tampered hashes/results, and invalid history ordering through typed
-  serialization errors.
-- Add checked-in versioned snapshot/history fixtures and round-trip/tamper tests.
-- Add exhaustive finite checks over every bounded spend/yield pair for energy
-  bounds, conservation, and score/yield invariants.
-- Synchronize the M1 design, roadmap, SPEC, architecture, changelog, and domain
+- Add the smallest lane state and actor-specific observation contract needed for
+  one deterministic decision window.
+- Add one host-validated intent command with explicit execution resolution and
+  visible event/effect output, preserving the existing kernel invariants.
+- Add replay-backed fixtures and focused tests for state/output determinism,
+  invalid command rejection, hidden-state omission, and legal unfavorable
+  execution.
+- Synchronize the M2 design, roadmap, SPEC, architecture, changelog, and domain
   QA evidence after verification.
 
 ## Non-Goals
 
-- No JSON/Serde dependency, migration framework, external persistence service,
-  scenario/lane mechanics, CLI, MCP, GUI, or arbitrary scripting format.
-- No compatibility promise beyond the explicit `1.0.0` fixture format.
+- No full lane scenario, CLI, MCP, GUI, autonomous policy population, branching,
+  or arbitrary scripting format.
 - No change to the placeholder binary or claim of a playable simulation.
 
 ## Project Boundaries Touched
 
-- Compatibility rules in `docs/COMPATIBILITY.md`.
 - Host-owned history/replay authority from ADR-0001.
-- Functional core boundary: serialization is a typed edge codec; replay and
-  transition semantics remain owned by the kernel.
+- Functional core boundary: lane observation and intent remain typed domain
+  contracts; replay and transition semantics remain owned by the kernel.
 
 ## Source Files
 
-- `src/kernel.rs`, `src/lib.rs`, and new `src/serialization.rs`
-- `tests/fixtures/` versioned text fixtures
+- `src/kernel.rs`, `src/lib.rs`, and the new M2 lane/observation modules
+- `tests/fixtures/` versioned text fixtures and focused M2 tests
 - `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md`
 - `_workspace/01_simulation-design.md`, `_workspace/03_domain-qa.md`
 
 ## Expected Outputs
 
-- Canonical snapshot/history serializer and parser with typed errors.
+- Typed lane snapshot, actor-visible observation, and one intent transition.
 - Versioned checked-in fixtures and focused tests.
-- Updated M1 checklist and SDD/domain handoff artifacts.
+- Updated M2 checklist and SDD/domain handoff artifacts.
 - Passing local checks, one code-reviewer’s three-pass review, hosted CI, and a
   merged PR.
 
@@ -74,13 +67,11 @@ M1 — Deterministic Simulation Kernel, serialization and property-check follow-
 - `python3 scripts/check_repository.py`
 - `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'`
 - `git diff --check`
-- Round-trip and rejection tests for both fixture formats.
+- Focused observation, command, transition, and replay tests.
 
 ## Evidence Limits and Open Questions
 
-- The codec establishes a local versioned fixture contract, not external
-  backward compatibility or a migration policy.
-- A future scenario may add scenario identifiers and richer event/effect forms;
-  this format must not be generalized ahead of demonstrated need.
-- Property-style checks are finite exhaustive tests over the current bounded
-  domain, not a claim of formal verification.
+- The M2 slice establishes only the first lane decision-window boundary; it does
+  not establish a playable scenario or human-experience evidence.
+- Scenario-specific serialization and migration policy remain deferred until
+  the lane contract proves stable.
