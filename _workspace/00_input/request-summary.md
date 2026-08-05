@@ -2,51 +2,51 @@
 
 ## Requested Outcome
 
-Implement the next bounded M2 slice after the merged one-window lane contract:
-support one counterfactual branch at the pivotal decision, with explicit policy
-for reusing or regenerating execution inputs, parent immutability, and replay
-identity. Keep the branch local to the existing one-window history contract.
+Implement the next bounded M2 slice after the merged one-window lane and branch
+contracts: add one allied autonomous proposal and a host-owned coordination
+resolution at the same decision window. Keep the proposal observation-bound and
+the coordination/execution split explicit; do not add a second window yet.
 
 ## Roadmap Milestone
 
-M2 — One-Lane Vertical Slice, bounded counterfactual branch follow-up.
+M2 — One-Lane Vertical Slice, allied proposal and coordination follow-up.
 
 ## Current Evidence
 
 - PR #6 merged the versioned replay fixture codecs to `main` as `c5d7a9d` after
   the prior M1 implementation and codec checks passed.
-- M1 is complete and the first M2 decision-window slice is merged on `main` as
-  `986958c`; this branch advances the package from `0.1.4` to `0.1.5`, pinned
-  to Rust `1.96.0`, with no
-  dependencies.
+- M1 is complete; the first M2 decision window and bounded branch are merged on
+  `main` through `3b7899b`; this branch advances the package from `0.1.5` to
+  `0.1.6`, pinned to Rust `1.96.0`, with no dependencies.
 - The binary remains a placeholder and the M2 scenario is not yet playable.
 
 ## In Scope
 
-- Add a bounded branch from the immutable initial record boundary of the
-  existing one-window lane history.
-- Define matched-input and regenerated-input branch policies with stable trace
-  identities and separate replay identities.
-- Add branch replay and parent-immutability tests while preserving the existing
-  observation, intent, transition, and debrief contracts.
+- Add one allied autonomous actor that submits an observation-bound proposal for
+  the current window.
+- Add typed proposal acceptance/rejection or counter-proposal coordination,
+  resolved separately from the existing mechanical execution inputs.
+- Preserve actor-visible information limits, deterministic replay, branch
+  compatibility, and current one-window debrief attribution.
 - Synchronize the M2 design, roadmap, SPEC, architecture, changelog, and domain
   QA evidence after verification.
 
 ## Non-Goals
 
-- No second decision window, full lane scenario, CLI, MCP, GUI, autonomous
-  policy population, persistence codec, or general branching framework.
+- No second decision window, full lane scenario, CLI, MCP, GUI, broad agent
+  population, persistence codec, or general communication framework.
 - No change to the placeholder binary or claim of a playable simulation.
 
 ## Project Boundaries Touched
 
 - Host-owned history/replay authority from ADR-0001.
-- Functional core boundary: branch policy is explicit data at the history edge;
-  observation, transition, and replay semantics remain host/kernel-owned.
+- Functional core boundary: proposal policy is observation-bound at the edge;
+  coordination and transition semantics remain host/kernel-owned.
 
 ## Source Files
 
-- `src/lane.rs` history/branch contracts and focused tests
+- `src/lane.rs` proposal/coordination contracts and focused tests
+- new `_workspace/01_agent-ecology-design.md` bounded-policy contract
 - existing M1 fixture tests remain unchanged
 - `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md`
 - `_workspace/01_simulation-design.md`, `_workspace/03_domain-qa.md`, and
@@ -54,7 +54,7 @@ M2 — One-Lane Vertical Slice, bounded counterfactual branch follow-up.
 
 ## Expected Outputs
 
-- Bounded branch policy, branch history, and focused replay tests.
+- Allied proposal, coordination resolution, and matched-input replay tests.
 - Updated M2 checklist and SDD/domain handoff artifacts.
 - Passing local checks, one code-reviewer’s three-pass review, hosted CI, and a
   merged PR.
@@ -67,11 +67,13 @@ M2 — One-Lane Vertical Slice, bounded counterfactual branch follow-up.
 - `python3 scripts/check_repository.py`
 - `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'`
 - `git diff --check`
-- Focused branch, input-policy, parent-immutability, and replay tests.
+- Focused observation-bound policy, coordination, deterministic transition,
+  and replay tests.
 
 ## Evidence Limits and Open Questions
 
-- The branch establishes only a local one-window counterfactual contract; it
-  does not establish a playable scenario, balance, or human-experience evidence.
-- Portable branch serialization, migration, multi-window state, and general
-  branch graphs remain deferred.
+- The slice establishes only a one-window allied coordination contract; it does
+  not establish a playable scenario, balanced behavior, or human-experience
+  evidence.
+- Portable serialization, migration, multi-window state, general communication,
+  and broad agent-population claims remain deferred.

@@ -177,6 +177,26 @@ exists. Planned proposal or roadmap text is never implementation evidence.
   matched/regenerated branches, parent immutability, invalid selection,
   branch identity, replay tamper, and causal-review limits.
 
+#### Delivered in the allied proposal and coordination follow-up
+
+- `observe_allied` projects one proposal-only allied actor from visible lane
+  fields and explicit unknown reports; hidden truth, source hashes, history,
+  and execution values remain outside the actor input.
+- `scripted-allied-proposal-v1` records profile/input identities, bounded
+  candidate scores, stable selection, and deterministic proposal identity;
+  matched hidden-state substitutions produce the same artifact.
+- `AlliedProposalOffer`, `ProposalResponse`, and
+  `CoordinationResolutionInputs` define one host-owned support offer and the
+  accept/reject/counter boundary without turning policy output into a command.
+- `resolve_coordinated_lane` emits coordination envelope events/effects and a
+  causal debrief around one unchanged `transition_lane` result; proposal and
+  coordination metadata do not enter `LaneSnapshot::hash()`.
+- `CoordinatedLaneHistory` appends and replays one sidecar record with tamper
+  detection while existing no-proposal history and branch replay remain
+  valid.
+- Five focused coordination/policy/history tests plus the prior thirty-two
+  tests pass, for thirty-seven Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
@@ -191,10 +211,11 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 #### Not Yet Done
 
 - The complete lane scenario still needs multiple windows, variable pacing,
-  recall, gank response, allied autonomous behavior, communication, richer
-  resource abstractions, and a full causal debrief surface.
-- CLI, MCP, agent ecology, and human-experience evidence remain future M3/M4+
-  work; this diagnostic slice is not playable and makes no enjoyment,
+  recall, gank response, richer resource abstractions, communication, and a
+  full causal debrief surface; this follow-up models only one fixed allied
+  proposal and coordination boundary.
+- CLI, MCP, full agent ecology, and human-experience evidence remain future
+  M3/M4+ work; this diagnostic slice is not playable and makes no enjoyment,
   accessibility, trust, or behavioral-validity claim.
 
 ## Future
