@@ -438,6 +438,7 @@ pub(crate) fn lane_record_identity(record: &LaneTransitionRecord) -> StateHash {
     hash = hash_bytes(hash, &[record.inputs.execution.bounty_earned.value()]);
     hash = hash_bytes(hash, &[record.inputs.execution.level_gained.value()]);
     hash = hash_bytes(hash, &[record.inputs.execution.minion_kills_gained.value()]);
+    hash = hash_bytes(hash, &[record.inputs.execution.shield_gained.value()]);
     hash = hash_bytes(
         hash,
         &[wave_result_tag(record.inputs.execution.wave_result)],

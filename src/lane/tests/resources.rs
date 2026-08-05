@@ -591,3 +591,129 @@
         ));
     }
 
+    #[test]
+    fn shield_is_bounded_and_default_zero() {
+        let player = PlayerLaneState::new(PLAYER_LANER, LaneHealth::new(8).unwrap(), LanePosition::Center);
+        assert_eq!(player.shield(), LaneShield::zero());
+        assert_eq!(player.shield().value(), 0);
+
+        let valid = LaneShield::new(25).expect("valid shield");
+        assert_eq!(valid.value(), 25);
+
+        let overflow = LaneShield::new(MAX_LANE_SHIELD + 1);
+        assert_eq!(
+            overflow,
+            Err(LaneBoundsError {
+                value: MAX_LANE_SHIELD + 1,
+                maximum: MAX_LANE_SHIELD,
+            })
+        );
+    }
+
+    #[test]
+    fn shield_gained_is_direct_immediate_and_replayable() {
+        let state = LaneSnapshot::initial();
+        let obs = observe_player(&state, ObservationId::new(1));
+        assert_eq!(obs.observation().self_shield(), LaneShield::zero());
+
+        let allied_obs = observe_allied(&state, ObservationId::new(1));
+        assert_eq!(allied_obs.observation().laner_shield(), LaneShield::zero());
+
+        let (receipt, req) = request(&state, LaneIntent::Stabilize);
+        let validated = validate_lane_request(&state, &receipt, &req).expect("valid");
+
+        let shield = LaneShield::new(15).expect("valid shield");
+        let mut resolved_inputs = inputs(1, 1, LaneWaveResult::Held);
+        resolved_inputs.execution = resolved_inputs.execution.with_shield_gained(shield);
+
+        let result = transition_lane(&state, &validated, &resolved_inputs).expect("transition");
+        let next = result.next_state();
+        assert_eq!(next.player().shield(), shield);
+        assert_eq!(result.debrief().shield_gained(), shield);
+
+        assert!(result.events().iter().any(|e| matches!(
+            e,
+            LaneEvent::ShieldGained { actor, amount, .. }
+                if *actor == PLAYER_LANER && *amount == shield
+        )));
+
+        assert!(result.effects().iter().any(|e| matches!(
+            e,
+            LaneEffect::ShieldChanged {
+                actor,
+                before,
+                after,
+                provenance,
+                ..
+            } if *actor == PLAYER_LANER
+                && *before == LaneShield::zero()
+                && *after == shield
+                && provenance.relation() == LaneEffectRelation::Direct
+                && provenance.timing() == LaneEffectTiming::Immediate
+        )));
+
+        let mut history = LaneHistory::new(state).expect("valid history");
+        history.append(&receipt, &req, resolved_inputs).expect("append");
+        assert_eq!(history.verify_replay(), Ok(next));
+    }
+
+    #[test]
+    fn shield_overflow_is_rejected() {
+        let player = PlayerLaneState::new_with_absolute_state(
+            PLAYER_LANER,
+            LaneHealth::new(8).unwrap(),
+            LaneMana::full(),
+            LaneGold::zero(),
+            LaneExperience::zero(),
+            LaneCooldown::zero(),
+            LaneBounty::zero(),
+            LaneLevel::initial(),
+            LaneMinionKills::zero(),
+            LanePosition::Center,
+        );
+        let state = LaneSnapshot::new_with_window(
+            M2_LANE_RULESET,
+            Turn::new(1),
+            LaneWindow::OneBeat,
+            LanePhase::Open,
+            player,
+            OpponentTruth::new(
+                OPPONENT_LANER,
+                LaneHealth::new(8).unwrap(),
+                LanePosition::Center,
+                OpponentPosture::Passive,
+            ),
+            WaveState::new(WavePressure::new(1).unwrap()),
+            JungleThreatTruth::Absent,
+            None,
+        );
+
+        let (receipt, req) = request(&state, LaneIntent::Stabilize);
+        let validated = validate_lane_request(&state, &receipt, &req).expect("valid");
+
+        let shield = LaneShield::new(MAX_LANE_SHIELD).expect("max shield");
+        let mut overflow_inputs = inputs(1, 1, LaneWaveResult::Held);
+        overflow_inputs.execution = overflow_inputs.execution.with_shield_gained(shield);
+
+        let overflow_inputs = overflow_inputs.with_mana_spent(LaneMana::zero());
+
+        // First transition to get state with MAX_LANE_SHIELD
+        let result = transition_lane(&state, &validated, &overflow_inputs).expect("transition 1");
+        let full_shield_state = reopen_lane_window(&result).expect("reopen");
+
+        let (rec2, req2) = request(&full_shield_state, LaneIntent::Stabilize);
+        let val2 = validate_lane_request(&full_shield_state, &rec2, &req2).expect("valid");
+
+        let mut overflow_inputs_2 = inputs(1, 1, LaneWaveResult::Held);
+        overflow_inputs_2.execution = overflow_inputs_2
+            .execution
+            .with_shield_gained(LaneShield::new(1).unwrap());
+
+        assert!(matches!(
+            transition_lane(&full_shield_state, &val2, &overflow_inputs_2),
+            Err(LaneTransitionError::Execution(
+                LaneExecutionError::ShieldOverflow { .. }
+            ))
+        ));
+    }
+

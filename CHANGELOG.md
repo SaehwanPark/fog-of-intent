@@ -34,6 +34,19 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.29 — 2026-08-05
+
+### Added
+
+- A bounded `LaneShield` player defensive shield resource with zero default and `LANE_SHIELD_HASH_TAG` state-hash binding.
+- `LanerObservation` and `AlliedLaneObservation` exposure for player shield (`self_shield`, `laner_shield`) while hiding opponent shield.
+- `LaneExecutionInputs` support for explicit `shield_gained` resolution during execution with direct-immediate `ShieldGained`/`ShieldChanged` events and effects, debrief recording (`shield_gained`), and `LaneRecordIdentity` integration.
+- `LaneExecutionError::ShieldOverflow` error when gaining shield beyond `MAX_LANE_SHIELD` (50).
+
+### Changed
+
+- The package version advances to `0.1.29` for the bounded shield-resource slice; complete scenario mechanics remain deferred and the executable remains the documented placeholder.
+
 ## 0.1.28 — 2026-08-05
 
 ### Added

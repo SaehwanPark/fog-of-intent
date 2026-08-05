@@ -431,6 +431,14 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Overflowing the delayed-effect queue fails before state mutation with `LaneExecutionError::DelayedEffectOverflow`.
 - Three focused delayed-effect tests plus the prior ninety tests pass, for ninety-three Rust tests total.
 
+#### Delivered in the bounded shield-resource follow-up
+
+- `LaneShield` is a bounded player defensive shield resource with a zero default and non-zero state-hash and allied visible-digest tags (`LANE_SHIELD_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` expose player shield (`self_shield`, `laner_shield`) without exposing opponent shield.
+- `LaneExecutionInputs` supports `shield_gained` resolution during execution with direct-immediate `ShieldGained`/`ShieldChanged` events and effects, debrief recording, and `LaneRecordIdentity` integration.
+- Shield overflow exceeding maximum bounds (`MAX_LANE_SHIELD`) fails before transition state mutation with `LaneExecutionError::ShieldOverflow`.
+- Three focused shield-resource tests plus the prior ninety-three tests pass, for ninety-six Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield

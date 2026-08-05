@@ -20,6 +20,7 @@ pub struct LaneExecutionInputs {
     pub(crate) bounty_earned: LaneBounty,
     pub(crate) level_gained: LaneLevel,
     pub(crate) minion_kills_gained: LaneMinionKills,
+    pub(crate) shield_gained: LaneShield,
     pub(crate) delayed_effect: Option<LaneDelayedEffect>,
 }
 
@@ -42,6 +43,7 @@ impl LaneExecutionInputs {
             bounty_earned: LaneBounty::zero(),
             level_gained: LaneLevel::zero(),
             minion_kills_gained: LaneMinionKills::zero(),
+            shield_gained: LaneShield::zero(),
             delayed_effect: None,
         }
     }
@@ -90,6 +92,11 @@ impl LaneExecutionInputs {
         self
     }
 
+    pub fn with_shield_gained(mut self, shield_gained: LaneShield) -> Self {
+        self.shield_gained = shield_gained;
+        self
+    }
+
     pub fn trace(self) -> InputTrace {
         self.trace
     }
@@ -133,6 +140,10 @@ impl LaneExecutionInputs {
     pub fn minion_kills_gained(self) -> LaneMinionKills {
         self.minion_kills_gained
     }
+
+    pub fn shield_gained(self) -> LaneShield {
+        self.shield_gained
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -144,6 +155,7 @@ struct ResourceExecutionDeltas {
     bounty_earned: LaneBounty,
     level_gained: LaneLevel,
     minion_kills_gained: LaneMinionKills,
+    shield_gained: LaneShield,
 }
 
 impl ResourceExecutionDeltas {
@@ -156,6 +168,7 @@ impl ResourceExecutionDeltas {
             bounty_earned: execution.bounty_earned,
             level_gained: execution.level_gained,
             minion_kills_gained: execution.minion_kills_gained,
+            shield_gained: execution.shield_gained,
         }
     }
 }
@@ -339,6 +352,11 @@ pub enum LaneEvent {
         amount: LaneMinionKills,
         trace: InputTrace,
     },
+    ShieldGained {
+        actor: ActorId,
+        amount: LaneShield,
+        trace: InputTrace,
+    },
     DelayedEffectQueued {
         actor: ActorId,
         effect: LaneDelayedEffect,
@@ -427,6 +445,13 @@ pub enum LaneEffect {
         cause: LaneEffectCause,
         provenance: LaneEffectProvenance,
     },
+    ShieldChanged {
+        actor: ActorId,
+        before: LaneShield,
+        after: LaneShield,
+        cause: LaneEffectCause,
+        provenance: LaneEffectProvenance,
+    },
     PositionChanged {
         actor: ActorId,
         before: LanePosition,
@@ -472,6 +497,7 @@ impl LaneEffect {
             | Self::BountyChanged { provenance, .. }
             | Self::LevelChanged { provenance, .. }
             | Self::MinionKillsChanged { provenance, .. }
+            | Self::ShieldChanged { provenance, .. }
             | Self::PositionChanged { provenance, .. }
             | Self::DelayedEffectQueued { provenance, .. }
             | Self::DelayedEffectResolved { provenance, .. }
@@ -529,6 +555,10 @@ pub enum LaneExecutionError {
         gained: LaneMinionKills,
         current: LaneMinionKills,
     },
+    ShieldOverflow {
+        gained: LaneShield,
+        current: LaneShield,
+    },
     DelayedEffectOverflow,
 }
 
@@ -568,6 +598,7 @@ pub struct LaneDebrief {
     pub(crate) bounty_earned: LaneBounty,
     pub(crate) level_gained: LaneLevel,
     pub(crate) minion_kills_gained: LaneMinionKills,
+    pub(crate) shield_gained: LaneShield,
     pub(crate) wave_result: LaneWaveResult,
     pub(crate) fallback_activated: bool,
     pub(crate) delayed_effects_queued: u8,
@@ -626,6 +657,10 @@ impl LaneDebrief {
 
     pub fn minion_kills_gained(self) -> LaneMinionKills {
         self.minion_kills_gained
+    }
+
+    pub fn shield_gained(self) -> LaneShield {
+        self.shield_gained
     }
 
     pub fn wave_result(self) -> LaneWaveResult {
@@ -886,6 +921,14 @@ fn apply_player_resources(
             current: before.minion_kills,
         },
     )?;
+    let shield =
+        before
+            .shield
+            .add(deltas.shield_gained)
+            .ok_or(LaneExecutionError::ShieldOverflow {
+                gained: deltas.shield_gained,
+                current: before.shield,
+            })?;
     Ok(PlayerResources {
         mana,
         gold,
@@ -894,6 +937,7 @@ fn apply_player_resources(
         bounty,
         level,
         minion_kills,
+        shield,
     })
 }
 
@@ -1010,16 +1054,10 @@ fn resolve_lane_execution(
         .value()
         .checked_add(state.window.beats())
         .ok_or(LaneTransitionError::TurnOverflow)?;
-    let next_player = PlayerLaneState::new_with_absolute_state(
+    let next_player = PlayerLaneState::from_resources(
         player.id,
         after_player_health,
-        after_resources.mana,
-        after_resources.gold,
-        after_resources.experience,
-        after_resources.cooldown,
-        after_resources.bounty,
-        after_resources.level,
-        after_resources.minion_kills,
+        after_resources,
         after_position,
     );
     let next_opponent = OpponentTruth::new(
@@ -1140,6 +1178,13 @@ fn project_lane_events(
         events.push(LaneEvent::MinionKillsGained {
             actor: player.id,
             amount: execution.minion_kills_gained,
+            trace,
+        });
+    }
+    if execution.shield_gained != LaneShield::zero() {
+        events.push(LaneEvent::ShieldGained {
+            actor: player.id,
+            amount: execution.shield_gained,
             trace,
         });
     }
@@ -1280,6 +1325,15 @@ fn project_lane_effects(
             provenance: LaneEffectProvenance::direct_immediate(),
         });
     }
+    if execution.shield_gained != LaneShield::zero() {
+        effects.push(LaneEffect::ShieldChanged {
+            actor: player.id,
+            before: player.shield,
+            after: next_player.shield,
+            cause: LaneEffectCause::Execution(trace),
+            provenance: LaneEffectProvenance::direct_immediate(),
+        });
+    }
     if let Some(queued) = resolved.delayed_effect_queued {
         effects.push(LaneEffect::DelayedEffectQueued {
             actor: player.id,
@@ -1361,6 +1415,7 @@ pub fn transition_lane(
         bounty_earned: execution.bounty_earned,
         level_gained: execution.level_gained,
         minion_kills_gained: execution.minion_kills_gained,
+        shield_gained: execution.shield_gained,
         wave_result: execution.wave_result,
         fallback_activated: resolved.fallback_activated,
         delayed_effects_queued: if resolved.delayed_effect_queued.is_some() {
