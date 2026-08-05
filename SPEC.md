@@ -241,6 +241,20 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Two focused scenario tests plus the prior forty-one tests pass, for
   forty-three Rust tests total.
 
+#### Delivered in the bounded final-debrief follow-up
+
+- `build_scenario_debrief` requires a replay-verified two-window history and
+  derives two per-window intent/coordination/execution/objective summaries plus
+  a final committed-facts objective disposition.
+- `ScenarioDebriefRecord` preserves source replay/record identities and
+  terminal hash for privileged verification without changing scenario state,
+  lane outcomes, events, or effects.
+- `ScenarioDebriefReport` uses a separate redacted window-summary type and
+  omits source hashes, receipts, full objective identities, policy internals,
+  and uncommitted choices.
+- One focused final-debrief test plus the prior forty-three tests pass, for
+  forty-four Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
@@ -255,8 +269,8 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 #### Not Yet Done
 
 - The complete lane scenario still needs variable pacing, recall, gank
-  response, richer resource abstractions, communication, and a full causal
-  debrief surface; this follow-up composes only two fixed one-beat windows.
+  response, richer resource abstractions, communication, and a broader causal
+  debrief surface; this follow-up covers only two fixed one-beat windows.
 - CLI, MCP, full agent ecology, and human-experience evidence remain future
   M3/M4+ work; this diagnostic slice is not playable and makes no enjoyment,
   accessibility, trust, or behavioral-validity claim.

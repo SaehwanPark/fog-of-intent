@@ -34,6 +34,22 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.10 — 2026-08-04
+
+### Added
+
+- A committed-facts `m2-two-window-final-debrief-v1` projection with per-window
+  intent/coordination/execution/objective summaries, final objective
+  aggregation, privileged source provenance, and a redacted visible report.
+- Final-debrief replay, incomplete-history, tamper, and provenance-redaction
+  tests while retaining all existing M2 window, branch, coordination,
+  objective, fixture, and two-window tests.
+
+### Changed
+
+- The package version advances to `0.1.10` for the bounded final-debrief
+  slice; the executable remains the documented placeholder.
+
 ## 0.1.9 — 2026-08-04
 
 ### Added
