@@ -8,8 +8,8 @@ proposal/coordination overlay, terminal-objective projection, matched-input
 strategy fixtures, bounded two-window wrapper, final debrief projection, one
 bounded player-facing Recall intent, a bounded last-known threat report, a
 conditional Withdraw response, one bounded TwoBeats duration, bounded
-direct/indirect immediate effect provenance, and one bounded player mana
-resource implemented
+direct/indirect immediate effect provenance, one bounded player mana resource,
+and one bounded player-only opponent last-known report implemented
 
 ## Overview
 
@@ -137,6 +137,10 @@ The current player-lane state also carries a bounded mana value. Full mana is
 the compatibility default; Contest-only resolved spending is applied by the
 same transition authority, while player and allied projections expose only the
 authorized player-laner value.
+
+The player projection also applies one fixed FarSide opponent sighting rule;
+health/posture and allied opponent reports remain hidden, and complete vision
+or belief state has not been added.
 
 ## Consequential Type Boundaries
 
@@ -269,8 +273,9 @@ and an architecture update or ADR when it changes a consequential boundary.
 - The M2 window, one bounded branch, allied proposal/coordination overlay, one
   terminal-objective review, three strategy fixtures, two-window wrapper, and
   bounded Recall intent, last-known threat report, conditional Withdraw
-  response, and bounded mana resource remain bounded: no communication system,
-  complete vision/belief model, automatic threat damage, adaptive pacing,
+  response, bounded mana resource, and bounded opponent last-known report remain
+  bounded: no communication system, complete vision/belief model, automatic
+  threat damage, adaptive pacing,
   manual tick semantics, cooldowns, gold, experience, resource restoration,
   external scenario serialization, branch tree, or broader debrief surface is
   implemented.

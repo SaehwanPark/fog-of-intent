@@ -4,62 +4,49 @@
 
 pass
 
-This QA covers the bounded player-laner mana resource, actor-visible
-projections, Contest-only spending, transition effects, and replay authority.
-It does not promote cooldowns, gold, experience, regeneration, abilities,
-complete vision, communication, a playable host, human experience,
-accessibility, trust, legal clearance, or research validity.
+This QA covers one fixed player-only FarSide opponent sighting over the
+existing report, observation receipt, transition, and replay authority. It
+does not promote complete vision, belief updates, memory, communication,
+automatic threat timing, cooldowns, gold, experience, a playable host, human
+experience, accessibility, trust, legal clearance, or research validity.
 
 ## Reviewed Inputs
 
 - `_workspace/00_input/request-summary.md`
 - `_workspace/01_simulation-design.md`
 - `_workspace/02_design-synthesis.md`
-- `_workspace/00_input/m2-effect-provenance-request-summary.md`,
-  `_workspace/01-simulation-design-m2-effect-provenance.md`,
-  `_workspace/03-domain-qa-m2-effect-provenance.md`, and
-  `_workspace/final/m2-effect-provenance-handoff.md` as immutable prior-slice
-  evidence
-- `_workspace/00_input/m2-variable-window-request-summary.md`,
-  `_workspace/01-simulation-design-m2-variable-window.md`,
-  `_workspace/03-domain-qa-m2-variable-window.md`, and
-  `_workspace/final/m2-variable-window-handoff.md` as immutable earlier
+- `_workspace/00_input/m2-mana-resource-request-summary.md`,
+  `_workspace/01-simulation-design-m2-mana-resource.md`,
+  `_workspace/03-domain-qa-m2-mana-resource.md`, and
+  `_workspace/final/m2-mana-resource-handoff.md` as immutable prior-slice
   evidence
 - `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `README.md`, and `CHANGELOG.md`
 - `src/lane.rs`, `src/kernel.rs`, `src/lib.rs`, and focused test output
 
 ## Scope and Authority Findings
 
-`LaneMana` is bounded at six and full mana is the compatibility default. The
-host owns the true value; only `transition_lane` applies explicit Contest
-spending. Stabilize, Recall, and Withdraw spends, plus spends above
-availability, fail before any state mutation.
-
-The player observation exposes self mana and the allied observation exposes the
-same team-visible laner mana. No opponent mana or hidden-state field is added.
-The allied policy binds non-full mana into its visible digest and applies a
-small declared risk score without changing its two-candidate contract.
+The FarSide rule is a deterministic projection over true opponent position. It
+does not add vision state, a belief store, a command, a transition branch, or
+an alternate authority. Center and NearTower remain Unknown. Player health and
+posture remain hidden, and the allied observation remains Unknown for all
+opponent positions.
 
 ## Replay and Information Findings
 
-The transition stores the reduced mana in the next snapshot, emits ordered
-`ManaSpent`/`ManaChanged` attribution, and records `mana_spent` in the debrief.
-Lane record identity includes the spend. Matched-parent branching clears a
-Contest-only spend for a non-Contest alternate and records that normalization
-in branch identity and review attribution. History replay regenerates the same
-explicit spend, event/effect, state hash, and terminal snapshot. Full no-spend
-paths retain the prior hash bytes.
+The player report is captured in the existing observation receipt and replayed
+from the same state/turn. Hidden health/posture substitutions at the same
+FarSide position produce equal player observations. FarSide history replay
+regenerates the same report and unchanged transition/state hash behavior.
 
 ## Required Fixes
 
-None for the declared bounded mana-resource slice.
+None for the declared bounded opponent-report slice.
 
 ## Residual Risks
 
-- Cooldowns, gold, experience, regeneration, abilities, complete resource
-  economy, and automatic resource timing remain unimplemented.
-- Portable serialization, communication, and broader presentation remain
-  deferred.
+- Complete vision, beliefs, memory expiration, communication, and automatic
+  threat timing remain unimplemented.
+- Portable serialization and broader presentation remain deferred.
 - The repository remains an internal non-playable fixture; no human-experience,
   accessibility, trust, balance, or strategy-quality claim is supported.
 
@@ -67,7 +54,7 @@ None for the declared bounded mana-resource slice.
 
 - `cargo +1.96.0 fmt --check`
 - `cargo +1.96.0 clippy --all-targets --all-features -- -D warnings`
-- `cargo +1.96.0 test --locked` — 59 tests passed: 19 M1 and 40 M2 tests.
+- `cargo +1.96.0 test --locked` — 60 tests passed: 19 M1 and 41 M2 tests.
 - `python3 scripts/check_repository.py`
 - `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'`
 - `git diff --check`

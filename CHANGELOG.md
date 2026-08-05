@@ -34,6 +34,21 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.17 — 2026-08-04
+
+### Added
+
+- A bounded player-only opponent report: hidden `FarSide` truth projects as a
+  current-turn `LastKnown` position while Center/NearTower remain Unknown.
+- FarSide report, hidden health/posture, allied uncertainty, and history-replay
+  coverage without changing lane state, transition inputs, or hashes.
+
+### Changed
+
+- The package version advances to `0.1.17` for the bounded opponent
+  last-known-report slice; complete vision and belief updates remain deferred
+  and the executable remains the documented placeholder.
+
 ## 0.1.16 — 2026-08-04
 
 ### Added

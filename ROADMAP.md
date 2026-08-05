@@ -522,6 +522,21 @@ This evidence establishes one bounded mana resource and one Contest spend path.
 It does not establish cooldowns, gold, experience, regeneration, abilities,
 resource economy balance, communication, or a complete playable lane scenario.
 
+### Current bounded opponent last-known-report evidence
+
+- [x] Project only hidden opponent `FarSide` as a player-facing
+  `LastKnown { position, last_seen_turn }` report.
+- [x] Keep hidden opponent Center/NearTower positions, health, and posture
+  unknown; keep the allied opponent report unknown for all positions.
+- [x] Preserve the existing observation receipt/state-hash binding without
+  adding report state, transition inputs, events, effects, or commands.
+- [x] Replay a FarSide observation through unchanged transition authority and
+  cover visible/hidden projection boundaries.
+
+This evidence establishes one player-only opponent sighting rule. It does not
+establish complete vision, belief updates, memory decay, communication,
+automatic threat timing, strategy quality, or a complete playable lane scenario.
+
 ### Current final-debrief evidence
 
 - [x] Build a versioned final debrief only from a replay-verified two-window
