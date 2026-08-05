@@ -34,6 +34,22 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.11 — 2026-08-04
+
+### Added
+
+- A bounded player-facing `Recall` intent in the existing one-window lane
+  command and transition contract, with explicit NearTower movement, wave and
+  execution preservation, and ordinary YieldedSpace/ForcedOut outcomes.
+- Recall legality, observation-boundary, attribution, and unfavorable
+  execution tests while preserving the allied policy's two-intent candidate
+  set and existing replay identities.
+
+### Changed
+
+- The package version advances to `0.1.11` for the bounded Recall-intent
+  slice; the executable remains the documented placeholder.
+
 ## 0.1.10 — 2026-08-04
 
 ### Added

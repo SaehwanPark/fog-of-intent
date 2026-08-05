@@ -463,7 +463,7 @@ pub struct LanerObservation {
     wave_pressure: WavePressure,
     opponent: OpponentReport,
     jungle_threat: ThreatReport,
-    available_intents: [LaneIntent; 2],
+    available_intents: [LaneIntent; 3],
     window: LaneWindow,
 }
 
@@ -504,7 +504,7 @@ impl LanerObservation {
         self.jungle_threat
     }
 
-    pub fn available_intents(self) -> [LaneIntent; 2] {
+    pub fn available_intents(self) -> [LaneIntent; 3] {
         self.available_intents
     }
 
@@ -554,7 +554,11 @@ pub fn observe_player(
                 posture: HiddenValue::Unknown,
             },
             jungle_threat: ThreatReport::Unknown,
-            available_intents: [LaneIntent::Stabilize, LaneIntent::Contest],
+            available_intents: [
+                LaneIntent::Stabilize,
+                LaneIntent::Contest,
+                LaneIntent::Recall,
+            ],
             window: LaneWindow::OneBeat,
         },
         source_state_hash: state.hash(),
@@ -1009,6 +1013,7 @@ pub fn offer_allied_proposal(
             SupportFocus::Wave,
             SupportAbort::IfPlayerHealthAtMost(2),
         ),
+        LaneIntent::Recall => return Err(AlliedProposalError::InvalidProposal),
     };
     Ok(AlliedProposalOffer {
         proposal,
@@ -1187,7 +1192,7 @@ pub fn resolve_coordination(
         ProposalResponse::Counter { counter, .. } => match inputs.follow_through {
             FollowThrough::AllyCommitted => (
                 CoordinationDisposition::CounterAccepted,
-                Some(counter_support(counter)),
+                Some(counter_support(counter)?),
             ),
             FollowThrough::AllyDeclined => (CoordinationDisposition::CounterRejected, None),
             FollowThrough::NotRequested => return Err(CoordinationError::MalformedFollowThrough),
@@ -1202,16 +1207,20 @@ pub fn resolve_coordination(
     })
 }
 
-fn counter_support(counter: CounterProposal) -> AlliedSupport {
+fn counter_support(counter: CounterProposal) -> Result<AlliedSupport, CoordinationError> {
     match counter {
         CounterProposal::RequestIntent {
             requested_intent: LaneIntent::Contest,
             ..
-        } => AlliedSupport::AssistContest,
+        } => Ok(AlliedSupport::AssistContest),
         CounterProposal::RequestIntent {
             requested_intent: LaneIntent::Stabilize,
             ..
-        } => AlliedSupport::CoverStabilize,
+        } => Ok(AlliedSupport::CoverStabilize),
+        CounterProposal::RequestIntent {
+            requested_intent: LaneIntent::Recall,
+            ..
+        } => Err(CoordinationError::UnsupportedCounter),
     }
 }
 
@@ -1359,6 +1368,7 @@ fn counter_shape_matches(counter: CounterProposal) -> bool {
 pub enum LaneIntent {
     Stabilize,
     Contest,
+    Recall,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -1522,6 +1532,9 @@ pub fn validate_lane_command(
         || receipt.source_state_hash != state.hash()
     {
         return Err(LaneValidationError::StaleObservation);
+    }
+    if !observation.available_intents.contains(&command.intent) {
+        return Err(LaneValidationError::UnsupportedIntent);
     }
     if state.phase != LanePhase::Open {
         return Err(LaneValidationError::WindowAlreadyResolved);
@@ -2806,6 +2819,7 @@ pub fn transition_lane(
         LaneIntent::Stabilize => LanePosition::NearTower,
         LaneIntent::Contest if fallback_activated => LanePosition::NearTower,
         LaneIntent::Contest => LanePosition::Center,
+        LaneIntent::Recall => LanePosition::NearTower,
     };
     let outcome = if after_player_health == LaneHealth::zero() {
         LaneOutcome::ForcedOut
@@ -4163,6 +4177,7 @@ fn intent_tag(intent: LaneIntent) -> u8 {
     match intent {
         LaneIntent::Stabilize => 0,
         LaneIntent::Contest => 1,
+        LaneIntent::Recall => 2,
     }
 }
 
@@ -4272,6 +4287,121 @@ mod tests {
             contest_result.next_state().player().position(),
             LanePosition::Center
         );
+    }
+
+    #[test]
+    fn recall_is_player_legal_but_not_an_allied_policy_candidate() {
+        let state = LaneSnapshot::initial();
+        let player_observation = observe_player(&state, ObservationId::new(9)).observation();
+        assert_eq!(
+            player_observation.available_intents(),
+            [
+                LaneIntent::Stabilize,
+                LaneIntent::Contest,
+                LaneIntent::Recall
+            ]
+        );
+        let allied_observation = observe_allied(&state, ObservationId::new(9)).observation();
+        let proposal = scripted_allied_proposal(allied_observation, trace(3, 3))
+            .expect("allied policy should accept its observation");
+        assert_eq!(
+            proposal.candidates().map(AlliedCandidate::intent),
+            [LaneIntent::Stabilize, LaneIntent::Contest]
+        );
+
+        let (receipt, recall_request) = request(&state, LaneIntent::Recall);
+        let validated = validate_lane_request(&state, &receipt, &recall_request)
+            .expect("recall is legal for the player");
+        let result = transition_lane(&state, &validated, &inputs(0, 0, LaneWaveResult::Held))
+            .expect("recall transition");
+        assert_eq!(result.outcome(), LaneOutcome::YieldedSpace);
+        assert_eq!(
+            result.next_state().player().position(),
+            LanePosition::NearTower
+        );
+        assert_eq!(result.debrief().intent(), LaneIntent::Recall);
+        assert!(result.effects().iter().any(|effect| matches!(
+            effect,
+            LaneEffect::PositionChanged {
+                cause: LaneEffectCause::Intent,
+                ..
+            }
+        )));
+    }
+
+    #[test]
+    fn recall_requires_the_current_observation_to_advertise_it() {
+        let state = LaneSnapshot::initial();
+        let (mut receipt, recall_request) = request(&state, LaneIntent::Recall);
+        receipt.observation.available_intents = [
+            LaneIntent::Stabilize,
+            LaneIntent::Contest,
+            LaneIntent::Stabilize,
+        ];
+        assert_eq!(
+            validate_lane_request(&state, &receipt, &recall_request),
+            Err(LaneValidationError::UnsupportedIntent)
+        );
+
+        let (mut stale_receipt, stale_request) = request(&state, LaneIntent::Recall);
+        stale_receipt.source_state_hash = StateHash::from_raw(0);
+        assert!(matches!(
+            validate_lane_request(&state, &stale_receipt, &stale_request),
+            Err(LaneValidationError::StaleObservation)
+        ));
+
+        let (current_receipt, current_request) = request(&state, LaneIntent::Recall);
+        let validated =
+            validate_lane_request(&state, &current_receipt, &current_request).expect("valid");
+        let resolved = transition_lane(&state, &validated, &inputs(0, 0, LaneWaveResult::Held))
+            .expect("transition");
+        let resolved_receipt = observe_player(&resolved.next_state(), ObservationId::new(9));
+        assert_eq!(
+            validate_lane_request(&resolved.next_state(), &resolved_receipt, &current_request),
+            Err(LaneValidationError::WindowAlreadyResolved)
+        );
+    }
+
+    #[test]
+    fn recall_can_be_unfavorable_without_becoming_a_fallback() {
+        let state = LaneSnapshot::initial();
+        let (receipt, recall_request) = request(&state, LaneIntent::Recall);
+        let validated =
+            validate_lane_request(&state, &receipt, &recall_request).expect("recall is legal");
+        let result = transition_lane(&state, &validated, &inputs(8, 0, LaneWaveResult::Held))
+            .expect("fatal recall execution remains legal");
+        assert_eq!(result.outcome(), LaneOutcome::ForcedOut);
+        assert_eq!(result.debrief().intent(), LaneIntent::Recall);
+        assert!(!result.debrief().fallback_activated());
+        assert!(
+            !result
+                .events()
+                .iter()
+                .any(|event| matches!(event, LaneEvent::FallbackActivated { .. }))
+        );
+    }
+
+    #[test]
+    fn recall_replays_and_preserves_objective_attribution() {
+        let state = LaneSnapshot::initial();
+        let (receipt, recall_request) = request(&state, LaneIntent::Recall);
+        let mut history = LaneHistory::new(state).expect("valid initial state");
+        history
+            .append(
+                &receipt,
+                &recall_request,
+                inputs(0, 0, LaneWaveResult::Held),
+            )
+            .expect("recall append");
+        assert_eq!(history.verify_replay(), Ok(history.current_state()));
+        let record = &history.records()[0];
+        let review = review_lane_objective(ScenarioGoal::HoldLaneSpaceThroughWindow, record)
+            .expect("recall objective review");
+        assert_eq!(review.review().intent(), LaneIntent::Recall);
+        assert_eq!(review.review().report().intent(), LaneIntent::Recall);
+        review
+            .verify_lane(record)
+            .expect("replayable objective review");
     }
 
     #[test]

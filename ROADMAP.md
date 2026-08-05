@@ -288,7 +288,7 @@ Start with one deterministic lane decision window rather than the full
 scenario: a typed lane snapshot, a host-owned observation for the human laner,
 one legal intent command, explicit resolved execution input, and a replayable
 transition that records a visible outcome without exposing latent opponent
-state. Hold, pressure, and recall remain planned follow-up actions until this
+state. Hold and pressure remain planned follow-up actions until this
 boundary is verified.
 
 ### Outcome
@@ -327,8 +327,9 @@ a causal debrief.
   position, phase, hidden opponent truth, and hidden jungle-threat truth.
 - [x] Project a player-laner observation with explicit unknown reports and no
   latent opponent or threat values.
-- [x] Validate `Stabilize` and `Contest` through one host-created intent
-  command, including actor, turn, ruleset, observation, and prior-hash guards.
+- [x] Validate `Stabilize`, `Contest`, and bounded `Recall` through one
+  host-created intent command, including actor, turn, ruleset, observation,
+  advertised-intent, and prior-hash guards.
 - [x] Resolve one deterministic window from explicit execution damage and wave
   inputs, with ordered events, attributed effects, outcome, and hash.
 - [x] Commit and replay one append-only lane history record while preserving
@@ -415,8 +416,25 @@ does not establish strategy quality, balance, optimality, or human preference.
   the first-window objective and prior one-window/coordination/fixture tests.
 
 This evidence establishes a bounded two-window composition. It does not
-establish variable pacing, recall, gank response, communication, or a complete
-playable lane scenario.
+establish variable pacing, gank response, communication, or a complete playable
+lane scenario.
+
+### Current bounded Recall-intent evidence
+
+- [x] Advertise `Recall` only in the player-laner observation while preserving
+  the allied policy's two-candidate `Stabilize`/`Contest` contract.
+- [x] Validate Recall only when the current actor-visible observation advertises
+  it; omitted, stale, and resolved-window requests remain rejected.
+- [x] Resolve Recall deterministically to `NearTower` with explicit wave and
+  execution inputs, intent-attributed position effects, and ordinary
+  `YieldedSpace`/`ForcedOut` outcomes.
+- [x] Preserve existing record identities, replay, branch, objective, and final
+  debrief paths; add focused legality, observation-boundary, attribution, and
+  unfavorable-execution tests.
+
+This evidence establishes one bounded Recall plan. It does not establish recall
+timing, resource restoration, variable pacing, gank response, communication,
+strategy quality, balance, or a complete playable lane scenario.
 
 ### Current final-debrief evidence
 
