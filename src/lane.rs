@@ -541,6 +541,15 @@ pub struct OpponentReport {
 }
 
 impl OpponentReport {
+    fn unknown() -> Self {
+        Self {
+            last_known_position: None,
+            last_seen_turn: None,
+            health: HiddenValue::Unknown,
+            posture: HiddenValue::Unknown,
+        }
+    }
+
     pub fn last_known_position(self) -> Option<LanePosition> {
         self.last_known_position
     }
@@ -599,6 +608,17 @@ pub struct LanerObservation {
     available_intents: [LaneIntent; 3],
     available_threat_response: Option<LaneIntent>,
     window: LaneWindow,
+}
+
+fn player_opponent_report(state: &LaneSnapshot) -> OpponentReport {
+    match state.opponent.position {
+        LanePosition::FarSide => OpponentReport {
+            last_known_position: Some(LanePosition::FarSide),
+            last_seen_turn: Some(state.turn),
+            ..OpponentReport::unknown()
+        },
+        LanePosition::NearTower | LanePosition::Center => OpponentReport::unknown(),
+    }
 }
 
 fn player_threat_report(state: &LaneSnapshot) -> ThreatReport {
@@ -708,12 +728,7 @@ pub fn observe_player(
             self_mana: state.player().mana(),
             self_position: state.player().position(),
             wave_pressure: state.wave().pressure(),
-            opponent: OpponentReport {
-                last_known_position: None,
-                last_seen_turn: None,
-                health: HiddenValue::Unknown,
-                posture: HiddenValue::Unknown,
-            },
+            opponent: player_opponent_report(state),
             jungle_threat,
             available_intents: [
                 LaneIntent::Stabilize,
@@ -828,12 +843,7 @@ pub fn observe_allied(
             laner_mana: state.player().mana(),
             laner_position: state.player().position(),
             wave_pressure: state.wave().pressure(),
-            opponent: OpponentReport {
-                last_known_position: None,
-                last_seen_turn: None,
-                health: HiddenValue::Unknown,
-                posture: HiddenValue::Unknown,
-            },
+            opponent: OpponentReport::unknown(),
             jungle_threat: ThreatReport::Unknown,
             available_intents: [LaneIntent::Stabilize, LaneIntent::Contest],
             window: state.window(),
@@ -4660,12 +4670,88 @@ mod tests {
             JungleThreatTruth::Absent,
             None,
         );
-        let first_observation = observe_player(&first, ObservationId::new(1)).observation();
         let second_observation = observe_player(&second, ObservationId::new(1)).observation();
-        assert_eq!(first_observation, second_observation);
-        assert_eq!(first_observation.opponent().health(), HiddenValue::Unknown);
-        assert_eq!(first_observation.opponent().posture(), HiddenValue::Unknown);
-        assert_eq!(first_observation.jungle_threat(), ThreatReport::Unknown);
+        assert_eq!(
+            observe_player(&first, ObservationId::new(1))
+                .observation()
+                .opponent()
+                .last_known_position(),
+            None
+        );
+        assert_eq!(
+            second_observation.opponent().last_known_position(),
+            Some(LanePosition::FarSide)
+        );
+        assert_eq!(second_observation.opponent().health(), HiddenValue::Unknown);
+        assert_eq!(
+            second_observation.opponent().posture(),
+            HiddenValue::Unknown
+        );
+        assert_eq!(second_observation.jungle_threat(), ThreatReport::Unknown);
+
+        let same_report_different_hidden_state = LaneSnapshot::new(
+            M2_LANE_RULESET,
+            second.turn(),
+            LanePhase::Open,
+            second.player(),
+            OpponentTruth::new(
+                OPPONENT_LANER,
+                LaneHealth::new(9).expect("bounded"),
+                LanePosition::FarSide,
+                OpponentPosture::Aggressive,
+            ),
+            second.wave(),
+            second.jungle_threat(),
+            None,
+        );
+        assert_eq!(
+            second_observation,
+            observe_player(&same_report_different_hidden_state, ObservationId::new(1))
+                .observation()
+        );
+    }
+
+    #[test]
+    fn far_side_opponent_report_replays_and_remains_allied_unknown() {
+        let initial = LaneSnapshot::initial();
+        let state = LaneSnapshot::new(
+            initial.ruleset(),
+            Turn::new(2),
+            LanePhase::Open,
+            initial.player(),
+            OpponentTruth::new(
+                OPPONENT_LANER,
+                initial.opponent().health(),
+                LanePosition::FarSide,
+                initial.opponent().posture(),
+            ),
+            initial.wave(),
+            initial.jungle_threat(),
+            None,
+        );
+        let player_observation = observe_player(&state, ObservationId::new(12)).observation();
+        assert_eq!(
+            player_observation.opponent().last_known_position(),
+            Some(LanePosition::FarSide)
+        );
+        assert_eq!(
+            player_observation.opponent().last_seen_turn(),
+            Some(Turn::new(2))
+        );
+        let allied_observation = observe_allied(&state, ObservationId::new(12)).observation();
+        assert_eq!(allied_observation.opponent().last_known_position(), None);
+        assert_eq!(allied_observation.opponent().last_seen_turn(), None);
+
+        let (receipt, request) = request(&state, LaneIntent::Stabilize);
+        let mut history = LaneHistory::new(state).expect("valid initial state");
+        history
+            .append(&receipt, &request, inputs(0, 0, LaneWaveResult::Held))
+            .expect("append");
+        assert_eq!(
+            history.records()[0].observation().opponent(),
+            player_observation.opponent()
+        );
+        assert_eq!(history.verify_replay(), Ok(history.current_state()));
     }
 
     #[test]

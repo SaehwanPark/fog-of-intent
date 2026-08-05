@@ -341,6 +341,17 @@ exists. Planned proposal or roadmap text is never implementation evidence.
   fifty-nine Rust tests total; no-spend defaults retain the prior hash
   representation and history replay verifies spent-resource results.
 
+#### Delivered in the bounded opponent last-known-report follow-up
+
+- A fixed player projection maps hidden opponent `FarSide` to
+  `LastKnown { position: FarSide, last_seen_turn }`; Center and NearTower stay
+  Unknown.
+- Player health/posture remain hidden, allied opponent reports remain Unknown,
+  and no state/hash/transition/event/effect/command contract changes.
+- One focused FarSide report/replay test plus the prior fifty-nine tests pass,
+  for sixty Rust tests total; different hidden health/posture values at the
+  same visible FarSide position produce the same player observation.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
@@ -357,8 +368,9 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - The complete lane scenario still needs complete vision/belief updates,
   adaptive pacing, richer resource abstractions, communication, automatic
   threat/execution timing, delayed effects, causal completeness, cooldown/gold/
-  experience systems, and a broader debrief surface; the mana follow-up is one
-  bounded resource and does not implement a complete economy or ability model.
+  experience systems, memory/communication-aware reports, and a broader
+  debrief surface; the opponent-report follow-up is one fixed sighting rule and
+  does not implement complete vision or beliefs.
 - CLI, MCP, full agent ecology, and human-experience evidence remain future
   M3/M4+ work; this diagnostic slice is not playable and makes no enjoyment,
   accessibility, trust, or behavioral-validity claim.
