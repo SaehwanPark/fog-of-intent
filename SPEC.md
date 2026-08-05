@@ -393,6 +393,14 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Bounty overflow exceeding maximum bounds (`MAX_LANE_BOUNTY`) fails before transition state mutation with `LaneExecutionError::BountyOverflow`.
 - Three focused bounty-resource tests plus the prior seventy-two tests pass, for seventy-five Rust tests total.
 
+#### Delivered in the bounded level-resource follow-up
+
+- `LaneLevel` is a bounded player resource with an initial default of 1 and non-initial state-hash and allied visible-digest tags (`LANE_LEVEL_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` expose player level (`self_level`, `laner_level`) without exposing opponent level.
+- `LaneExecutionInputs` supports explicit `level_gained` resolution during execution with direct-immediate `LevelGained`/`LevelChanged` events and effects, debrief recording, and `LaneRecordIdentity` integration.
+- Level overflow exceeding maximum bounds (`MAX_LANE_LEVEL`) fails before transition state mutation with `LaneExecutionError::LevelOverflow`.
+- Three focused level-resource tests plus the prior seventy-five tests pass, for seventy-eight Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield

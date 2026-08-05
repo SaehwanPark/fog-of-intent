@@ -584,6 +584,15 @@ This evidence establishes one bounded cooldown resource. It does not establish c
 
 This evidence establishes one bounded bounty resource. It does not establish complete bounty system scaling, multi-actor kills, or a complete playable lane scenario.
 
+### Current bounded level-resource evidence
+
+- [x] Add bounded `LaneLevel` to player state with initial default 1 and non-initial state-hash binding.
+- [x] Expose `LaneLevel` in player and allied observations without exposing opponent level.
+- [x] Resolve explicit `level_gained` during execution with direct-immediate `LevelGained`/`LevelChanged` events and effects, debrief recording, and replay verification.
+- [x] Reject level overflow exceeding maximum bounds before transition evaluation.
+
+This evidence establishes one bounded level resource. It does not establish complete leveling curves, ability point trees, or a complete playable lane scenario.
+
 ### Current final-debrief evidence
 
 - [x] Build a versioned final debrief only from a replay-verified two-window
