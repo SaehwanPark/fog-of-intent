@@ -34,6 +34,16 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.24 — 2026-08-05
+
+### Added
+
+- A bounded `LaneMinionKills` player resource abstraction with zero default, player and allied observation projections, state/digest hash binding for non-zero minion kills, execution `minion_kills_gained` resolution, direct-immediate `MinionKillsGained`/`MinionKillsChanged` events and effects, debrief recording, replay, and overflow error handling.
+
+### Changed
+
+- The package version advances to `0.1.24` for the bounded minion-kills-resource slice; minion wave spawn timing and last-hitting mechanics remain deferred and the executable remains the documented placeholder.
+
 ## 0.1.23 — 2026-08-05
 
 ### Added

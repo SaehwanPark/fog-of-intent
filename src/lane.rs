@@ -26,6 +26,7 @@ const MAX_LANE_EXPERIENCE: u8 = 50;
 const MAX_LANE_COOLDOWN: u8 = 10;
 const MAX_LANE_BOUNTY: u8 = 100;
 const MAX_LANE_LEVEL: u8 = 18;
+const MAX_LANE_MINION_KILLS: u8 = 200;
 const MAX_WAVE_PRESSURE: u8 = 3;
 const LANE_MANA_HASH_TAG: u8 = 0x4d;
 const LANE_GOLD_HASH_TAG: u8 = 0x47;
@@ -33,6 +34,7 @@ const LANE_EXPERIENCE_HASH_TAG: u8 = 0x45;
 const LANE_COOLDOWN_HASH_TAG: u8 = 0x43;
 const LANE_BOUNTY_HASH_TAG: u8 = 0x42;
 const LANE_LEVEL_HASH_TAG: u8 = 0x4c;
+const LANE_MINION_KILLS_HASH_TAG: u8 = 0x4b;
 
 pub const PLAYER_LANER: ActorId = ActorId::new(1);
 pub const OPPONENT_LANER: ActorId = ActorId::new(2);
@@ -292,6 +294,43 @@ impl LaneLevel {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct LaneMinionKills(u8);
+
+impl LaneMinionKills {
+    pub fn new(value: u8) -> Result<Self, LaneBoundsError> {
+        if value <= MAX_LANE_MINION_KILLS {
+            Ok(Self(value))
+        } else {
+            Err(LaneBoundsError {
+                value,
+                maximum: MAX_LANE_MINION_KILLS,
+            })
+        }
+    }
+
+    pub fn zero() -> Self {
+        Self(0)
+    }
+
+    pub fn value(self) -> u8 {
+        self.0
+    }
+
+    fn add(self, amount: Self) -> Option<Self> {
+        let total = (self.0 as u16) + (amount.0 as u16);
+        if total <= MAX_LANE_MINION_KILLS as u16 {
+            Some(Self(total as u8))
+        } else {
+            None
+        }
+    }
+
+    pub fn subtract(self, amount: Self) -> Option<Self> {
+        self.0.checked_sub(amount.0).map(Self)
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct LaneDamage(u8);
 
 impl LaneDamage {
@@ -401,6 +440,7 @@ pub struct PlayerLaneState {
     cooldown: LaneCooldown,
     bounty: LaneBounty,
     level: LaneLevel,
+    minion_kills: LaneMinionKills,
     position: LanePosition,
 }
 
@@ -504,6 +544,33 @@ impl PlayerLaneState {
         level: LaneLevel,
         position: LanePosition,
     ) -> Self {
+        Self::new_with_absolute_state(
+            id,
+            health,
+            mana,
+            gold,
+            experience,
+            cooldown,
+            bounty,
+            level,
+            LaneMinionKills::zero(),
+            position,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_absolute_state(
+        id: ActorId,
+        health: LaneHealth,
+        mana: LaneMana,
+        gold: LaneGold,
+        experience: LaneExperience,
+        cooldown: LaneCooldown,
+        bounty: LaneBounty,
+        level: LaneLevel,
+        minion_kills: LaneMinionKills,
+        position: LanePosition,
+    ) -> Self {
         Self {
             id,
             health,
@@ -513,6 +580,7 @@ impl PlayerLaneState {
             cooldown,
             bounty,
             level,
+            minion_kills,
             position,
         }
     }
@@ -547,6 +615,10 @@ impl PlayerLaneState {
 
     pub fn level(self) -> LaneLevel {
         self.level
+    }
+
+    pub fn minion_kills(self) -> LaneMinionKills {
+        self.minion_kills
     }
 
     pub fn position(self) -> LanePosition {
@@ -766,6 +838,15 @@ impl LaneSnapshot {
         if self.player.level() != LaneLevel::initial() {
             hash = hash_bytes(hash, &[LANE_LEVEL_HASH_TAG, self.player.level().value()]);
         }
+        if self.player.minion_kills() != LaneMinionKills::zero() {
+            hash = hash_bytes(
+                hash,
+                &[
+                    LANE_MINION_KILLS_HASH_TAG,
+                    self.player.minion_kills().value(),
+                ],
+            );
+        }
         hash = hash_bytes(hash, &[position_tag(self.player.position())]);
         hash = hash_bytes(
             hash,
@@ -949,6 +1030,7 @@ pub struct LanerObservation {
     self_cooldown: LaneCooldown,
     self_bounty: LaneBounty,
     self_level: LaneLevel,
+    self_minion_kills: LaneMinionKills,
     self_position: LanePosition,
     wave_pressure: WavePressure,
     opponent: OpponentReport,
@@ -1031,6 +1113,10 @@ impl LanerObservation {
         self.self_level
     }
 
+    pub fn self_minion_kills(self) -> LaneMinionKills {
+        self.self_minion_kills
+    }
+
     pub fn self_position(self) -> LanePosition {
         self.self_position
     }
@@ -1099,6 +1185,7 @@ pub fn observe_player(
             self_cooldown: state.player().cooldown(),
             self_bounty: state.player().bounty(),
             self_level: state.player().level(),
+            self_minion_kills: state.player().minion_kills(),
             self_position: state.player().position(),
             wave_pressure: state.wave().pressure(),
             opponent: player_opponent_report(state),
@@ -1129,6 +1216,7 @@ pub struct AlliedLaneObservation {
     laner_cooldown: LaneCooldown,
     laner_bounty: LaneBounty,
     laner_level: LaneLevel,
+    laner_minion_kills: LaneMinionKills,
     laner_position: LanePosition,
     wave_pressure: WavePressure,
     opponent: OpponentReport,
@@ -1180,6 +1268,10 @@ impl AlliedLaneObservation {
 
     pub fn laner_level(self) -> LaneLevel {
         self.laner_level
+    }
+
+    pub fn laner_minion_kills(self) -> LaneMinionKills {
+        self.laner_minion_kills
     }
 
     pub fn laner_position(self) -> LanePosition {
@@ -1245,6 +1337,7 @@ pub fn observe_allied(
             laner_cooldown: state.player().cooldown(),
             laner_bounty: state.player().bounty(),
             laner_level: state.player().level(),
+            laner_minion_kills: state.player().minion_kills(),
             laner_position: state.player().position(),
             wave_pressure: state.wave().pressure(),
             opponent: OpponentReport::unknown(),
@@ -1532,6 +1625,15 @@ fn allied_visible_digest(observation: AlliedLaneObservation) -> StateHash {
         hash = hash_bytes(
             hash,
             &[LANE_LEVEL_HASH_TAG, observation.laner_level.value()],
+        );
+    }
+    if observation.laner_minion_kills != LaneMinionKills::zero() {
+        hash = hash_bytes(
+            hash,
+            &[
+                LANE_MINION_KILLS_HASH_TAG,
+                observation.laner_minion_kills.value(),
+            ],
         );
     }
     hash = hash_bytes(hash, &[position_tag(observation.laner_position)]);
@@ -2223,6 +2325,7 @@ pub struct LaneExecutionInputs {
     cooldown_set: LaneCooldown,
     bounty_earned: LaneBounty,
     level_gained: LaneLevel,
+    minion_kills_gained: LaneMinionKills,
 }
 
 impl LaneExecutionInputs {
@@ -2243,6 +2346,7 @@ impl LaneExecutionInputs {
             cooldown_set: LaneCooldown::zero(),
             bounty_earned: LaneBounty::zero(),
             level_gained: LaneLevel::zero(),
+            minion_kills_gained: LaneMinionKills::zero(),
         }
     }
 
@@ -2273,6 +2377,11 @@ impl LaneExecutionInputs {
 
     pub fn with_level_gained(mut self, level_gained: LaneLevel) -> Self {
         self.level_gained = level_gained;
+        self
+    }
+
+    pub fn with_minion_kills_gained(mut self, minion_kills_gained: LaneMinionKills) -> Self {
+        self.minion_kills_gained = minion_kills_gained;
         self
     }
 
@@ -2314,6 +2423,10 @@ impl LaneExecutionInputs {
 
     pub fn level_gained(self) -> LaneLevel {
         self.level_gained
+    }
+
+    pub fn minion_kills_gained(self) -> LaneMinionKills {
+        self.minion_kills_gained
     }
 }
 
@@ -2469,6 +2582,11 @@ pub enum LaneEvent {
         amount: LaneLevel,
         trace: InputTrace,
     },
+    MinionKillsGained {
+        actor: ActorId,
+        amount: LaneMinionKills,
+        trace: InputTrace,
+    },
     WaveResolved {
         before: WavePressure,
         after: WavePressure,
@@ -2540,6 +2658,13 @@ pub enum LaneEffect {
         cause: LaneEffectCause,
         provenance: LaneEffectProvenance,
     },
+    MinionKillsChanged {
+        actor: ActorId,
+        before: LaneMinionKills,
+        after: LaneMinionKills,
+        cause: LaneEffectCause,
+        provenance: LaneEffectProvenance,
+    },
     PositionChanged {
         actor: ActorId,
         before: LanePosition,
@@ -2560,6 +2685,7 @@ impl LaneEffect {
             | Self::CooldownChanged { provenance, .. }
             | Self::BountyChanged { provenance, .. }
             | Self::LevelChanged { provenance, .. }
+            | Self::MinionKillsChanged { provenance, .. }
             | Self::PositionChanged { provenance, .. } => provenance,
         }
     }
@@ -2609,6 +2735,10 @@ pub enum LaneExecutionError {
         gained: LaneLevel,
         current: LaneLevel,
     },
+    MinionKillsOverflow {
+        gained: LaneMinionKills,
+        current: LaneMinionKills,
+    },
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -2644,6 +2774,7 @@ pub struct LaneDebrief {
     cooldown_set: LaneCooldown,
     bounty_earned: LaneBounty,
     level_gained: LaneLevel,
+    minion_kills_gained: LaneMinionKills,
     wave_result: LaneWaveResult,
     fallback_activated: bool,
     execution_trace: InputTrace,
@@ -2688,6 +2819,10 @@ impl LaneDebrief {
 
     pub fn level_gained(self) -> LaneLevel {
         self.level_gained
+    }
+
+    pub fn minion_kills_gained(self) -> LaneMinionKills {
+        self.minion_kills_gained
     }
 
     pub fn wave_result(self) -> LaneWaveResult {
@@ -3764,6 +3899,15 @@ pub fn transition_lane(
                     current: player.level,
                 },
             ))?;
+    let after_player_minion_kills = player
+        .minion_kills
+        .add(execution.minion_kills_gained)
+        .ok_or(LaneTransitionError::Execution(
+            LaneExecutionError::MinionKillsOverflow {
+                gained: execution.minion_kills_gained,
+                current: player.minion_kills,
+            },
+        ))?;
     let after_wave = match execution.wave_result {
         LaneWaveResult::Advanced => state.wave.pressure.advance(),
         LaneWaveResult::Held => Ok(state.wave.pressure),
@@ -3800,7 +3944,7 @@ pub fn transition_lane(
         .value()
         .checked_add(state.window.beats())
         .ok_or(LaneTransitionError::TurnOverflow)?;
-    let next_player = PlayerLaneState::new_with_entire_state(
+    let next_player = PlayerLaneState::new_with_absolute_state(
         player.id,
         after_player_health,
         after_player_mana,
@@ -3809,6 +3953,7 @@ pub fn transition_lane(
         after_player_cooldown,
         after_player_bounty,
         after_player_level,
+        after_player_minion_kills,
         after_position,
     );
     let next_opponent = OpponentTruth::new(
@@ -3954,6 +4099,20 @@ pub fn transition_lane(
             provenance: LaneEffectProvenance::direct_immediate(),
         });
     }
+    if execution.minion_kills_gained != LaneMinionKills::zero() {
+        events.push(LaneEvent::MinionKillsGained {
+            actor: player.id,
+            amount: execution.minion_kills_gained,
+            trace,
+        });
+        effects.push(LaneEffect::MinionKillsChanged {
+            actor: player.id,
+            before: player.minion_kills,
+            after: after_player_minion_kills,
+            cause: LaneEffectCause::Execution(trace),
+            provenance: LaneEffectProvenance::direct_immediate(),
+        });
+    }
     events.push(LaneEvent::WaveResolved {
         before: state.wave.pressure,
         after: after_wave,
@@ -4004,6 +4163,7 @@ pub fn transition_lane(
         cooldown_set: execution.cooldown_set,
         bounty_earned: execution.bounty_earned,
         level_gained: execution.level_gained,
+        minion_kills_gained: execution.minion_kills_gained,
         wave_result: execution.wave_result,
         fallback_activated,
         execution_trace: trace,
@@ -5303,6 +5463,7 @@ fn lane_record_identity(record: &LaneTransitionRecord) -> StateHash {
     hash = hash_bytes(hash, &[record.inputs.execution.cooldown_set.value()]);
     hash = hash_bytes(hash, &[record.inputs.execution.bounty_earned.value()]);
     hash = hash_bytes(hash, &[record.inputs.execution.level_gained.value()]);
+    hash = hash_bytes(hash, &[record.inputs.execution.minion_kills_gained.value()]);
     hash = hash_bytes(
         hash,
         &[wave_result_tag(record.inputs.execution.wave_result)],
@@ -7676,6 +7837,85 @@ mod tests {
             transition_lane(&state, &validated, &overflow_inputs),
             Err(LaneTransitionError::Execution(
                 LaneExecutionError::LevelOverflow { .. }
+            ))
+        ));
+    }
+
+    #[test]
+    fn minion_kills_is_bounded_and_default_zero() {
+        assert_eq!(LaneMinionKills::zero().value(), 0);
+        assert_eq!(LaneMinionKills::new(200).unwrap().value(), 200);
+        assert!(LaneMinionKills::new(201).is_err());
+    }
+
+    #[test]
+    fn minion_kills_gained_is_direct_immediate_and_replayable() {
+        let state = LaneSnapshot::initial();
+        assert_eq!(state.player().minion_kills(), LaneMinionKills::zero());
+
+        let (receipt, req) = request(&state, LaneIntent::Contest);
+        let validated = validate_lane_request(&state, &receipt, &req).expect("valid");
+        let mut mk_inputs = inputs(1, 2, LaneWaveResult::Held);
+        mk_inputs.execution = mk_inputs
+            .execution
+            .with_minion_kills_gained(LaneMinionKills::new(12).unwrap());
+
+        let result = transition_lane(&state, &validated, &mk_inputs).expect("valid transition");
+        assert_eq!(
+            result.next_state().player().minion_kills(),
+            LaneMinionKills::new(12).unwrap()
+        );
+        let player_obs = observe_player(&result.next_state(), ObservationId::new(2)).observation();
+        let allied_obs = observe_allied(&result.next_state(), ObservationId::new(2)).observation();
+        assert_eq!(
+            player_obs.self_minion_kills(),
+            LaneMinionKills::new(12).unwrap()
+        );
+        assert_eq!(
+            allied_obs.laner_minion_kills(),
+            LaneMinionKills::new(12).unwrap()
+        );
+        assert_eq!(
+            result.debrief().minion_kills_gained(),
+            LaneMinionKills::new(12).unwrap()
+        );
+
+        assert!(result.events().iter().any(|e| matches!(
+            e,
+            LaneEvent::MinionKillsGained { amount, .. } if *amount == LaneMinionKills::new(12).unwrap()
+        )));
+        assert!(result.effects().iter().any(|e| matches!(
+            e,
+            LaneEffect::MinionKillsChanged {
+                before,
+                after,
+                provenance,
+                ..
+            } if *before == LaneMinionKills::zero()
+                && *after == LaneMinionKills::new(12).unwrap()
+                && provenance.relation() == LaneEffectRelation::Direct
+                && provenance.timing() == LaneEffectTiming::Immediate
+        )));
+
+        let mut history = LaneHistory::new(state).expect("valid history");
+        history
+            .append(&receipt, &req, mk_inputs)
+            .expect("append minion kills execution");
+        assert_eq!(history.verify_replay(), Ok(history.current_state()));
+    }
+
+    #[test]
+    fn minion_kills_overflow_is_rejected() {
+        let state = LaneSnapshot::initial();
+        let (receipt, req) = request(&state, LaneIntent::Contest);
+        let validated = validate_lane_request(&state, &receipt, &req).expect("valid");
+        let mut overflow_inputs = inputs(1, 2, LaneWaveResult::Held);
+        overflow_inputs.execution.minion_kills_gained = LaneMinionKills(201);
+
+        assert!(matches!(
+            transition_lane(&state, &validated, &overflow_inputs),
+            Err(LaneTransitionError::Execution(
+                LaneExecutionError::MinionKillsOverflow { .. }
             ))
         ));
     }

@@ -401,6 +401,14 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Level overflow exceeding maximum bounds (`MAX_LANE_LEVEL`) fails before transition state mutation with `LaneExecutionError::LevelOverflow`.
 - Three focused level-resource tests plus the prior seventy-five tests pass, for seventy-eight Rust tests total.
 
+#### Delivered in the bounded minion-kills-resource follow-up
+
+- `LaneMinionKills` is a bounded player resource with a zero default and non-zero state-hash and allied visible-digest tags (`LANE_MINION_KILLS_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` expose player minion kills (`self_minion_kills`, `laner_minion_kills`) without exposing opponent minion kills.
+- `LaneExecutionInputs` supports explicit `minion_kills_gained` resolution during execution with direct-immediate `MinionKillsGained`/`MinionKillsChanged` events and effects, debrief recording, and `LaneRecordIdentity` integration.
+- Minion kills overflow exceeding maximum bounds (`MAX_LANE_MINION_KILLS`) fails before transition state mutation with `LaneExecutionError::MinionKillsOverflow`.
+- Three focused minion-kills-resource tests plus the prior seventy-eight tests pass, for eighty-one Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
