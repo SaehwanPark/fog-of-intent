@@ -499,10 +499,19 @@ impl LanerObservation {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
 pub struct LaneObservationReceipt {
     observation: LanerObservation,
     source_state_hash: StateHash,
+}
+
+impl fmt::Debug for LaneObservationReceipt {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("LaneObservationReceipt")
+            .field("observation", &self.observation)
+            .finish_non_exhaustive()
+    }
 }
 
 impl LaneObservationReceipt {
@@ -662,6 +671,7 @@ pub enum LaneValidationError {
         expected: StateHash,
         actual: StateHash,
     },
+    InvalidState,
     WindowAlreadyResolved,
     UnsupportedIntent,
 }
@@ -693,6 +703,13 @@ pub fn validate_lane_command(
             actual: command.actor,
         });
     }
+    if state.player.id != PLAYER_LANER
+        || state.opponent.id != OPPONENT_LANER
+        || (state.phase == LanePhase::Open && state.terminal_outcome.is_some())
+        || (state.phase == LanePhase::Resolved && state.terminal_outcome.is_none())
+    {
+        return Err(LaneValidationError::InvalidState);
+    }
     let observation = receipt.observation;
     if observation.observer != command.actor
         || observation.observation_id != command.observation_id
@@ -705,6 +722,12 @@ pub fn validate_lane_command(
     if state.phase != LanePhase::Open {
         return Err(LaneValidationError::WindowAlreadyResolved);
     }
+    if command.turn != state.turn {
+        return Err(LaneValidationError::WrongTurn {
+            expected: state.turn,
+            actual: command.turn,
+        });
+    }
     if command.ruleset != M2_LANE_RULESET {
         return Err(LaneValidationError::WrongRuleset {
             expected: M2_LANE_RULESET,
@@ -715,12 +738,6 @@ pub fn validate_lane_command(
         return Err(LaneValidationError::WrongRuleset {
             expected: M2_LANE_RULESET,
             actual: state.ruleset,
-        });
-    }
-    if command.turn != state.turn {
-        return Err(LaneValidationError::WrongTurn {
-            expected: state.turn,
-            actual: command.turn,
         });
     }
     let actual_hash = state.hash();
@@ -1389,6 +1406,15 @@ mod tests {
     }
 
     #[test]
+    fn receipt_debug_does_not_reveal_the_host_state_hash() {
+        let state = LaneSnapshot::initial();
+        let receipt = observe_player(&state, ObservationId::new(1));
+        let debug = format!("{receipt:?}");
+        assert!(!debug.contains("source_state_hash"));
+        assert!(!debug.contains(&state.hash().value().to_string()));
+    }
+
+    #[test]
     fn both_intents_are_legal_and_produce_distinct_positions() {
         let state = LaneSnapshot::initial();
         let (stabilize_receipt, stabilize_request) = request(&state, LaneIntent::Stabilize);
@@ -1485,6 +1511,48 @@ mod tests {
             validate_lane_command(&state, &receipt, &stale_hash),
             Err(LaneValidationError::StateHashMismatch { .. })
         ));
+        let both_wrong = LaneIntentCommand::new(
+            PLAYER_LANER,
+            Turn::new(1),
+            RulesetId::new(99),
+            request.observation_id(),
+            state.hash(),
+            request.intent(),
+        );
+        assert_eq!(
+            validate_lane_command(&state, &receipt, &both_wrong),
+            Err(LaneValidationError::WrongTurn {
+                expected: state.turn(),
+                actual: Turn::new(1),
+            })
+        );
+        let invalid_state = LaneSnapshot::new(
+            M2_LANE_RULESET,
+            state.turn(),
+            LanePhase::Open,
+            PlayerLaneState::new(
+                ActorId::new(8),
+                state.player().health(),
+                state.player().position(),
+            ),
+            state.opponent(),
+            state.wave(),
+            state.jungle_threat(),
+            None,
+        );
+        let invalid_receipt = observe_player(&invalid_state, request.observation_id());
+        let invalid_command = LaneIntentCommand::new(
+            PLAYER_LANER,
+            invalid_state.turn(),
+            M2_LANE_RULESET,
+            request.observation_id(),
+            invalid_state.hash(),
+            request.intent(),
+        );
+        assert_eq!(
+            validate_lane_command(&invalid_state, &invalid_receipt, &invalid_command),
+            Err(LaneValidationError::InvalidState)
+        );
         let resolved = transition_lane(
             &state,
             &validate_lane_request(&state, &receipt, &request).expect("valid"),

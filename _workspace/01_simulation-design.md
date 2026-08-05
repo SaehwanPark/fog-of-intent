@@ -195,10 +195,12 @@ Host validation checks, in order:
 5. the intent is one of the two closed variants.
 
 Failures are typed as `WrongActor`, `WrongTurn`, `WrongRuleset`,
-`StaleObservation`, `StateHashMismatch`, `WindowAlreadyResolved`, or
-`UnsupportedIntent`. They produce no transition, events, effects, or history
-record. A valid command does not promise a favorable result: a `Contest` with
-bad resolved execution remains a legal command.
+`StaleObservation`, `StateHashMismatch`, `InvalidState`,
+`WindowAlreadyResolved`, or `UnsupportedIntent`. Turn validation precedes
+ruleset validation for host-created commands. They produce no transition,
+events, effects, or history record. A valid command does not promise a
+favorable result: a `Contest` with bad resolved execution remains a legal
+command.
 
 `LaneExecutionInputs` are validated separately at the transition boundary.
 Damage may not exceed the corresponding prior health; wave resolution must be

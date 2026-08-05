@@ -101,7 +101,7 @@ None for the declared first M2 slice.
 
 - `cargo +1.96.0 fmt --check`
 - `cargo +1.96.0 clippy --all-targets --all-features -- -D warnings`
-- `cargo +1.96.0 test --locked` — 27 tests passed: 19 M1 and 8 M2 lane tests.
+- `cargo +1.96.0 test --locked` — 28 tests passed: 19 M1 and 9 M2 lane tests.
 - `python3 scripts/check_repository.py`
 - `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'`
 - `git diff --check`

@@ -156,7 +156,7 @@ exists. Planned proposal or roadmap text is never implementation evidence.
   effects, produces a one-window debrief, and computes the next-state hash.
 - `LaneHistory` commits one append-only record and verifies its observation,
   command, resolved inputs, result, and terminal snapshot through replay.
-- Eight focused lane tests plus the nineteen M1 tests pass, covering the
+- Nine focused lane tests plus the nineteen M1 tests pass, covering the
   information boundary, both legal intents, an unfavorable fallback outcome,
   malformed execution, validation, determinism, stream isolation, and replay.
 

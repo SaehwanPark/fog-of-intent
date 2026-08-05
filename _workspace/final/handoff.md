@@ -12,7 +12,7 @@ M2 remains active because the complete one-lane scenario is not yet built.
   helper visibility for the lane module.
 - `src/lib.rs` — exports the lane module.
 - `src/lane.rs` — typed lane state, observation, intent validation, transition,
-  debrief data, history/replay, and eight focused tests.
+  debrief data, history/replay, and nine focused tests.
 - `README.md`, `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` —
   synchronized M2 current-state and checklist evidence.
 - `_workspace/00_input/request-summary.md` — completed M2 slice framing.
@@ -26,7 +26,7 @@ M2 remains active because the complete one-lane scenario is not yet built.
 
 - `cargo +1.96.0 fmt --check`
 - `cargo +1.96.0 clippy --all-targets --all-features -- -D warnings`
-- `cargo +1.96.0 test --locked` — 27 tests passed.
+- `cargo +1.96.0 test --locked` — 28 tests passed.
 - `python3 scripts/check_repository.py`
 - `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'`
 - `git diff --check`
