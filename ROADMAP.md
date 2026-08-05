@@ -310,7 +310,7 @@ a causal debrief.
 - [ ] Define variable-duration decision windows and automatic-advance conditions.
 - [ ] Define intent, commitment, target/focus, communication, abort conditions,
   and fallback behavior.
-- [ ] Implement hold, pressure/trade, yield, recall, and gank-response decisions
+- [x] Implement hold, pressure/trade, yield, recall, and gank-response decisions
   only where they create real tradeoffs.
 - [x] Implement coordination and execution as distinct resolutions.
 - [ ] Record direct, indirect, immediate, and delayed effects with provenance.
@@ -536,6 +536,17 @@ resource economy balance, communication, or a complete playable lane scenario.
 This evidence establishes one player-only opponent sighting rule. It does not
 establish complete vision, belief updates, memory decay, communication,
 automatic threat timing, strategy quality, or a complete playable lane scenario.
+
+### Current bounded Yield-intent evidence
+
+- [x] Advertise `Yield` in player observation alongside Stabilize, Contest, and Recall.
+- [x] Resolve Yield deterministically to `NearTower` with zero damage and zero mana spent, producing outcome `YieldedSpace` and emitting intent-attributed position effects.
+- [x] Reject mana spending for Yield during execution validation.
+- [x] Replay Yield history and preserve objective attribution in focused tests.
+
+This evidence establishes one bounded Yield plan. It does not establish complete
+vision, belief updates, variable pacing, communication, strategy quality, balance,
+or a complete playable lane scenario.
 
 ### Current final-debrief evidence
 

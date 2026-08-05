@@ -352,6 +352,15 @@ exists. Planned proposal or roadmap text is never implementation evidence.
   for sixty Rust tests total; different hidden health/posture values at the
   same visible FarSide position produce the same player observation.
 
+#### Delivered in the bounded Yield-intent follow-up
+
+- `LaneIntent::Yield` is advertised in `LanerObservation` alongside `Stabilize`, `Contest`, and `Recall`.
+- `validate_lane_request` validates host-created `Yield` commands.
+- `transition_lane` resolves `Yield` to `NearTower` with zero damage and zero mana spent, producing outcome `YieldedSpace` and emitting intent-attributed position effects.
+- Spending mana with `Yield` returns `ManaSpentWithoutContest` execution error.
+- `Yield` records replay and verify through `LaneHistory` and `TerminalObjectiveReview`.
+- Three focused `Yield` tests plus the prior sixty-two tests pass, for sixty-three Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
