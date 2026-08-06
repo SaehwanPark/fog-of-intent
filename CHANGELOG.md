@@ -34,6 +34,15 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.41 — 2026-08-06
+
+### Added
+
+- Added `LaneRune` bounded player consumable resource abstraction (maximum 5, zero default, `LANE_RUNE_HASH_TAG` state-hash binding).
+- Exposed `self_rune` in `LanerObservation` and `laner_rune` in `AlliedLaneObservation`.
+- Supported `rune_gained` and `rune_spent` resolution during execution with direct-immediate `RuneGained`/`RuneSpent`/`RuneChanged` events and effects, debrief recording, and replay verification.
+- Rejection of rune overflow (`RuneOverflow`) or spending without available runes (`InsufficientRune`) before state mutation.
+
 ## 0.1.40 — 2026-08-05
 
 ### Added
