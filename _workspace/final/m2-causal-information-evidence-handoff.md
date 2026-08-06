@@ -2,9 +2,10 @@
 
 ## Outcome
 
-Promoted four evidence-backed M2 checklist items: effect provenance, non-binary
-terminal outcome, hidden-state/report completeness tests, and complete-replay
-inspection.
+Promoted three evidence-backed M2 checklist items: non-binary terminal outcome,
+hidden-state/report completeness tests, and complete-replay inspection. Effect
+provenance remains partial because queued delayed effects do not retain an
+originating trace.
 
 ## Changes
 
@@ -18,5 +19,6 @@ Full locked Rust/repository checks pass. Domain QA status is `pass`; see
 
 ## Limits and Next Slice
 
-Vision/belief updates and variable-duration automatic advance remain unchecked;
-this evidence does not promote M2 or establish a playable scenario.
+Origin-trace linkage for delayed effects, vision/belief updates, and
+variable-duration automatic advance remain unchecked; this evidence does not
+promote M2 or establish a playable scenario.

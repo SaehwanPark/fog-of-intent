@@ -2,7 +2,7 @@
 
 ## Status
 
-`pass` for bounded evidence reconciliation only.
+`pass` after narrowing the provenance claim to the verified current contract.
 
 ## Reviewed Inputs
 
@@ -13,7 +13,9 @@
 
 ## Findings
 
-- Effect relation/timing, cause, and trace remain explicit and replayable.
+- Effect relation/timing and current-resolution trace remain explicit and
+  replayable; queued delayed effects still lack origin-trace linkage and remain
+  an unchecked implementation item.
 - Lane outcome/objective review is not collapsed into a binary win/loss claim.
 - Actor-visible reports are redacted and complete for the bounded roster/report
   contract; hidden-state equality and receipt privacy are tested.
@@ -26,9 +28,10 @@ None.
 
 ## Residual Risks
 
-Vision/belief updates, variable-duration automatic advance, communication
-transport, and a playable scenario remain incomplete. No human-experience or
-behavioral-validity claim follows from these tests.
+Origin-trace linkage for queued delayed effects, vision/belief updates,
+variable-duration automatic advance, communication transport, and a playable
+scenario remain incomplete. No human-experience or behavioral-validity claim
+follows from these tests.
 
 ## Verification Evidence
 

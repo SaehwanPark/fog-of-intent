@@ -8,8 +8,8 @@ v2 transition without adding mechanics.
 ## Contracts Reviewed
 
 - Effects carry `Direct`/`Indirect` relation and `Immediate`/`Delayed` timing,
-  plus cause and input trace attribution. The delayed queue resolves in
-  deterministic window order.
+  plus current-resolution cause/trace attribution. The delayed queue resolves
+  in deterministic window order but does not yet retain an originating trace.
 - `LaneOutcome` (`HeldSpace`, `YieldedSpace`, `ForcedOut`) and the objective
   projection remain distinct from binary win/loss scoring.
 - Player/allied observations expose actor-authorized reports and roster roles,
@@ -21,8 +21,9 @@ v2 transition without adding mechanics.
 
 ## Non-Goals
 
-Vision/belief updates, automatic pacing, communication transport, and a full
-playable scenario remain deferred.
+Origin-trace linkage for queued delayed effects, vision/belief updates,
+automatic pacing, communication transport, and a full playable scenario remain
+deferred.
 
 ## Verification Contract
 
