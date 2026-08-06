@@ -40,6 +40,8 @@ pub struct LaneExecutionInputs {
     pub(crate) rune_spent: LaneRune,
     pub(crate) sigil_gained: LaneSigil,
     pub(crate) sigil_spent: LaneSigil,
+    pub(crate) talisman_gained: LaneTalisman,
+    pub(crate) talisman_spent: LaneTalisman,
     pub(crate) delayed_effect: Option<LaneDelayedEffect>,
 }
 
@@ -82,6 +84,8 @@ impl LaneExecutionInputs {
             rune_spent: LaneRune::zero(),
             sigil_gained: LaneSigil::zero(),
             sigil_spent: LaneSigil::zero(),
+            talisman_gained: LaneTalisman::zero(),
+            talisman_spent: LaneTalisman::zero(),
             delayed_effect: None,
         }
     }
@@ -230,6 +234,16 @@ impl LaneExecutionInputs {
         self
     }
 
+    pub fn with_talisman_gained(mut self, talisman_gained: LaneTalisman) -> Self {
+        self.talisman_gained = talisman_gained;
+        self
+    }
+
+    pub fn with_talisman_spent(mut self, talisman_spent: LaneTalisman) -> Self {
+        self.talisman_spent = talisman_spent;
+        self
+    }
+
     pub fn trace(self) -> InputTrace {
         self.trace
     }
@@ -353,6 +367,14 @@ impl LaneExecutionInputs {
     pub fn sigil_spent(self) -> LaneSigil {
         self.sigil_spent
     }
+
+    pub fn talisman_gained(self) -> LaneTalisman {
+        self.talisman_gained
+    }
+
+    pub fn talisman_spent(self) -> LaneTalisman {
+        self.talisman_spent
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -384,6 +406,8 @@ struct ResourceExecutionDeltas {
     rune_spent: LaneRune,
     sigil_gained: LaneSigil,
     sigil_spent: LaneSigil,
+    talisman_gained: LaneTalisman,
+    talisman_spent: LaneTalisman,
 }
 
 impl ResourceExecutionDeltas {
@@ -416,6 +440,8 @@ impl ResourceExecutionDeltas {
             rune_spent: execution.rune_spent,
             sigil_gained: execution.sigil_gained,
             sigil_spent: execution.sigil_spent,
+            talisman_gained: execution.talisman_gained,
+            talisman_spent: execution.talisman_spent,
         }
     }
 }
@@ -723,6 +749,16 @@ pub enum LaneEvent {
         amount: LaneSigil,
         trace: InputTrace,
     },
+    TalismanGained {
+        actor: ActorId,
+        amount: LaneTalisman,
+        trace: InputTrace,
+    },
+    TalismanSpent {
+        actor: ActorId,
+        amount: LaneTalisman,
+        trace: InputTrace,
+    },
     DelayedEffectQueued {
         actor: ActorId,
         effect: LaneDelayedEffect,
@@ -888,6 +924,13 @@ pub enum LaneEffect {
         cause: LaneEffectCause,
         provenance: LaneEffectProvenance,
     },
+    TalismanChanged {
+        actor: ActorId,
+        before: LaneTalisman,
+        after: LaneTalisman,
+        cause: LaneEffectCause,
+        provenance: LaneEffectProvenance,
+    },
     PositionChanged {
         actor: ActorId,
         before: LanePosition,
@@ -962,6 +1005,7 @@ impl LaneEffect {
             | Self::TomeChanged { provenance, .. }
             | Self::RuneChanged { provenance, .. }
             | Self::SigilChanged { provenance, .. }
+            | Self::TalismanChanged { provenance, .. }
             | Self::PositionChanged { provenance, .. }
             | Self::DelayedEffectQueued { provenance, .. }
             | Self::DelayedEffectResolved { provenance, .. }
@@ -1102,6 +1146,14 @@ pub enum LaneExecutionError {
         spent: LaneSigil,
         available: LaneSigil,
     },
+    TalismanOverflow {
+        gained: LaneTalisman,
+        current: LaneTalisman,
+    },
+    InsufficientTalisman {
+        spent: LaneTalisman,
+        available: LaneTalisman,
+    },
     DelayedEffectOverflow,
 }
 
@@ -1164,6 +1216,8 @@ pub struct LaneDebrief {
     pub(crate) rune_spent: LaneRune,
     pub(crate) sigil_gained: LaneSigil,
     pub(crate) sigil_spent: LaneSigil,
+    pub(crate) talisman_gained: LaneTalisman,
+    pub(crate) talisman_spent: LaneTalisman,
     pub(crate) wave_result: LaneWaveResult,
     pub(crate) fallback_activated: bool,
     pub(crate) delayed_effects_queued: u8,
@@ -1314,6 +1368,14 @@ impl LaneDebrief {
 
     pub fn sigil_spent(self) -> LaneSigil {
         self.sigil_spent
+    }
+
+    pub fn talisman_gained(self) -> LaneTalisman {
+        self.talisman_gained
+    }
+
+    pub fn talisman_spent(self) -> LaneTalisman {
+        self.talisman_spent
     }
 
     pub fn wave_result(self) -> LaneWaveResult {
@@ -1715,6 +1777,18 @@ fn apply_player_resources(
                 gained: deltas.sigil_gained,
                 current: after_spend_sigil,
             })?;
+    let after_spend_talisman = before.talisman.subtract(deltas.talisman_spent).ok_or(
+        LaneExecutionError::InsufficientTalisman {
+            spent: deltas.talisman_spent,
+            available: before.talisman,
+        },
+    )?;
+    let talisman = after_spend_talisman.add(deltas.talisman_gained).ok_or(
+        LaneExecutionError::TalismanOverflow {
+            gained: deltas.talisman_gained,
+            current: after_spend_talisman,
+        },
+    )?;
     Ok(PlayerResources {
         mana,
         gold,
@@ -1734,6 +1808,7 @@ fn apply_player_resources(
         tome,
         rune,
         sigil,
+        talisman,
     })
 }
 
@@ -2141,6 +2216,20 @@ fn project_lane_events(
             trace,
         });
     }
+    if execution.talisman_gained != LaneTalisman::zero() {
+        events.push(LaneEvent::TalismanGained {
+            actor: player.id,
+            amount: execution.talisman_gained,
+            trace,
+        });
+    }
+    if execution.talisman_spent != LaneTalisman::zero() {
+        events.push(LaneEvent::TalismanSpent {
+            actor: player.id,
+            amount: execution.talisman_spent,
+            trace,
+        });
+    }
     if let Some(queued) = resolved.delayed_effect_queued {
         events.push(LaneEvent::DelayedEffectQueued {
             actor: player.id,
@@ -2401,6 +2490,15 @@ fn project_lane_effects(
             provenance: LaneEffectProvenance::direct_immediate(),
         });
     }
+    if next_player.talisman != player.talisman {
+        effects.push(LaneEffect::TalismanChanged {
+            actor: player.id,
+            before: player.talisman,
+            after: next_player.talisman,
+            cause: LaneEffectCause::Execution(trace),
+            provenance: LaneEffectProvenance::direct_immediate(),
+        });
+    }
     if let Some(queued) = resolved.delayed_effect_queued {
         effects.push(LaneEffect::DelayedEffectQueued {
             actor: player.id,
@@ -2505,6 +2603,8 @@ pub fn transition_lane(
         rune_spent: execution.rune_spent,
         sigil_gained: execution.sigil_gained,
         sigil_spent: execution.sigil_spent,
+        talisman_gained: execution.talisman_gained,
+        talisman_spent: execution.talisman_spent,
         wave_result: execution.wave_result,
         fallback_activated: resolved.fallback_activated,
         delayed_effects_queued: if resolved.delayed_effect_queued.is_some() {

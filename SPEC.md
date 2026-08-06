@@ -532,6 +532,22 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Rune overflow exceeding maximum bounds (`MAX_LANE_RUNE`) or spending without available runes fails before transition state mutation with `LaneExecutionError::RuneOverflow` or `LaneExecutionError::InsufficientRune`.
 - Three focused rune-resource tests plus the prior 129 tests pass, for 132 Rust tests total.
 
+#### Delivered in the bounded sigil-resource follow-up
+
+- `LaneSigil` is a bounded player consumable resource with zero default and non-zero state-hash and allied visible-digest tags (`LANE_SIGIL_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` expose player sigil count (`self_sigil`, `laner_sigil`) without exposing opponent sigil count.
+- `LaneExecutionInputs` supports `sigil_gained` and `sigil_spent` resolution during execution with direct-immediate `SigilGained`/`SigilSpent`/`SigilChanged` events and effects, debrief recording, and `LaneRecordIdentity` integration.
+- Sigil overflow exceeding maximum bounds (`MAX_LANE_SIGIL`) or spending without available sigils fails before transition state mutation with `LaneExecutionError::SigilOverflow` or `LaneExecutionError::InsufficientSigil`.
+- Three focused sigil-resource tests plus the prior 132 tests pass, for 135 Rust tests total.
+
+#### Delivered in the bounded talisman-resource follow-up
+
+- `LaneTalisman` is a bounded player consumable resource with zero default and non-zero state-hash and allied visible-digest tags (`LANE_TALISMAN_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` expose player talisman count (`self_talisman`, `laner_talisman`) without exposing opponent talisman count.
+- `LaneExecutionInputs` supports `talisman_gained` and `talisman_spent` resolution during execution with direct-immediate `TalismanGained`/`TalismanSpent`/`TalismanChanged` events and effects, debrief recording, and `LaneRecordIdentity` integration.
+- Talisman overflow exceeding maximum bounds (`MAX_LANE_TALISMAN`) or spending without available talismans fails before transition state mutation with `LaneExecutionError::TalismanOverflow` or `LaneExecutionError::InsufficientTalisman`.
+- Three focused talisman-resource tests plus the prior 135 tests pass, for 138 Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
