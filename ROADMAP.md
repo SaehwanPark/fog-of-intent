@@ -3,7 +3,7 @@
 **Document role:** Canonical milestone order, scope, and promotion gates
 **Status:** Active
 **Current milestone:** M2 — One-Lane Vertical Slice
-**Last reviewed:** 2026-08-04
+**Last reviewed:** 2026-08-06
 
 This document is the authoritative execution roadmap. The project proposal
 explains the broader vision and preserves the original roadmap concept; when its
@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs` | Placeholder `Hello, world!` binary |
-| Package | `Cargo.toml` | Version `0.1.30`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.52`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -321,7 +321,13 @@ a causal debrief.
 - [ ] Test hidden-state leakage and actor-visible report completeness.
 - [ ] Inspect every transition in at least one complete replay manually.
 
-### Current bounded slice evidence
+> The bounded-slice, branch, coordination, objective, strategy, scenario,
+> intent, report, window, effect, and retained-resource evidence sections below
+> preserve the experimental M2 v1 history. The v2 correction near the end of
+> this evidence block is the current internal contract; the older entries are
+> not release or M2-exit claims.
+
+### Historical M2 v1 bounded slice evidence (retired)
 
 - [x] Define one typed lane snapshot with bounded health, wave pressure,
   position, phase, hidden opponent truth, and hidden jungle-threat truth.
@@ -342,7 +348,7 @@ a causal debrief.
 This evidence promotes only the bounded M2 diagnostic slice. The unchecked
 scope items remain required for the complete one-lane milestone.
 
-### Current bounded branch evidence
+### Historical M2 v1 bounded branch evidence (retired)
 
 - [x] Branch only from the verified record-0 prefix before the original window,
   preserving the parent history and its replay result.
@@ -355,7 +361,7 @@ scope items remain required for the complete one-lane milestone.
 - [x] Cover matched/regenerated replay, parent immutability, attribution
   limits, hidden-state boundaries, and branch tamper detection.
 
-### Current allied proposal and coordination evidence
+### Historical M2 v1 allied proposal and coordination evidence (retired)
 
 - [x] Project one proposal-only allied actor from an actor-valid observation
   with explicit unknown opponent/threat reports and no true-state hash.
@@ -374,7 +380,7 @@ This evidence establishes a deterministic, modeled coordination boundary for
 one window. It does not establish communication quality, trust, balance,
 optimality, human behavior, or a playable multi-window scenario.
 
-### Current scenario-goal and terminal-objective evidence
+### Historical M2 v1 scenario-goal and terminal-objective evidence (retired)
 
 - [x] Define the bounded `HoldLaneSpaceThroughWindow` scenario goal without
   changing authoritative lane state or mechanics.
@@ -391,7 +397,7 @@ This evidence establishes one deterministic terminal-objective projection. It
 does not establish a complete scenario, optimality, balance, or human
 experience.
 
-### Current strategy-fixture evidence
+### Historical M2 v1 strategy-fixture evidence (retired)
 
 - [x] Define named `HappyPath`, `RiskTaking`, and `Conservative` matched-input
   bundles over the existing observation, coordination, execution, and
@@ -404,7 +410,7 @@ experience.
 This evidence establishes three deterministic modeled cases for one window. It
 does not establish strategy quality, balance, optimality, or human preference.
 
-### Current bounded two-window scenario evidence
+### Historical M2 v1 bounded two-window scenario evidence (retired)
 
 - [x] Compose two sequential one-beat lane records under a versioned scenario
   replay identity without changing the existing transition or branch IDs.
@@ -420,7 +426,7 @@ This evidence establishes a bounded two-window composition. It does not
 establish variable pacing, gank response, communication, or a complete playable
 lane scenario.
 
-### Current bounded Recall-intent evidence
+### Historical M2 v1 bounded Recall-intent evidence (retired)
 
 - [x] Advertise `Recall` only in the player-laner observation while preserving
   the allied policy's two-candidate `Stabilize`/`Contest` contract.
@@ -437,7 +443,7 @@ This evidence establishes one bounded Recall plan. It does not establish recall
 timing, resource restoration, variable pacing, gank response, communication,
 strategy quality, balance, or a complete playable lane scenario.
 
-### Current bounded last-known threat-report evidence
+### Historical M2 v1 bounded last-known threat-report evidence (retired)
 
 - [x] Project only the bounded `RiverSide` threat case as
   `LastKnown { region, last_seen_turn }` in the player observation.
@@ -453,7 +459,7 @@ This evidence establishes one bounded last-known threat report. It does not
 establish complete vision, belief updates, gank response, variable pacing,
 communication, strategy quality, balance, or a complete playable lane scenario.
 
-### Current bounded gank-response evidence
+### Historical M2 v1 bounded gank-response evidence (retired)
 
 - [x] Advertise conditional `Withdraw` only when the current player observation
   carries `LastKnown { region: RiverSide, ... }`; Unknown threat reports do not
@@ -472,7 +478,7 @@ establish automatic threat damage, complete vision/belief updates, variable
 pacing, communication, strategy quality, balance, or a complete playable lane
 scenario.
 
-### Current bounded variable-duration-window evidence
+### Historical M2 v1 bounded variable-duration-window evidence (retired)
 
 - [x] Add `LaneWindow::TwoBeats` as explicit snapshot state while retaining
   `OneBeat` as the compatibility default.
@@ -488,7 +494,7 @@ adaptive pacing, a manual tick command, automatic execution outcomes,
 communication, strategy quality, balance, or a complete playable lane
 scenario.
 
-### Current bounded effect-provenance evidence
+### Historical M2 v1 effect-provenance evidence (retired)
 
 - [x] Label all currently emitted lane effects as direct or indirect without
   replacing their existing cause/trace attribution.
@@ -499,12 +505,12 @@ scenario.
 - [x] Verify explicit and fallback mappings, no delayed emission, and replay
   preservation without changing lane-state hashes or transition authority.
 
-This evidence establishes provenance labels for current immediate effects only.
-It does not establish delayed effects, causal completeness, adaptive pacing,
-automatic execution outcomes, communication, strategy quality, balance, or a
-complete playable lane scenario.
+This historical evidence establishes provenance labels for the retired
+immediate-effects slice only. It does not establish delayed effects, causal
+completeness, adaptive pacing, automatic execution outcomes, communication,
+strategy quality, balance, or a complete playable lane scenario.
 
-### Current bounded mana-resource evidence
+### Historical M2 v1 bounded mana-resource evidence (retired)
 
 - [x] Add bounded `LaneMana` to the player-laner state with a full-resource
   default and a tagged non-full state-hash representation.
@@ -522,7 +528,7 @@ This evidence establishes one bounded mana resource and one Contest spend path.
 It does not establish cooldowns, gold, experience, regeneration, abilities,
 resource economy balance, communication, or a complete playable lane scenario.
 
-### Current bounded opponent last-known-report evidence
+### Historical M2 v1 bounded opponent last-known-report evidence (retired)
 
 - [x] Project only hidden opponent `FarSide` as a player-facing
   `LastKnown { position, last_seen_turn }` report.
@@ -537,7 +543,7 @@ This evidence establishes one player-only opponent sighting rule. It does not
 establish complete vision, belief updates, memory decay, communication,
 automatic threat timing, strategy quality, or a complete playable lane scenario.
 
-### Current bounded Yield-intent evidence
+### Historical M2 v1 bounded Yield-intent evidence (retired)
 
 - [x] Advertise `Yield` in player observation alongside Stabilize, Contest, and Recall.
 - [x] Resolve Yield deterministically to `NearTower` with zero damage and zero mana spent, producing outcome `YieldedSpace` and emitting intent-attributed position effects.
@@ -548,7 +554,7 @@ This evidence establishes one bounded Yield plan. It does not establish complete
 vision, belief updates, variable pacing, communication, strategy quality, balance,
 or a complete playable lane scenario.
 
-### Current bounded gold-resource evidence
+### Historical M2 v1 bounded gold-resource evidence (retired)
 
 - [x] Add bounded `LaneGold` to player state with zero default and non-zero state-hash binding.
 - [x] Expose `LaneGold` in player and allied observations without exposing opponent gold.
@@ -557,7 +563,7 @@ or a complete playable lane scenario.
 
 This evidence establishes one bounded gold resource. It does not establish items, gold-driven scaling, experience, cooldowns, or a complete playable lane scenario.
 
-### Current bounded experience-resource evidence
+### Historical M2 v1 bounded experience-resource evidence (retired)
 
 - [x] Add bounded `LaneExperience` to player state with zero default and non-zero state-hash binding.
 - [x] Expose `LaneExperience` in player and allied observations without exposing opponent experience.
@@ -566,7 +572,7 @@ This evidence establishes one bounded gold resource. It does not establish items
 
 This evidence establishes one bounded experience resource. It does not establish leveling curves, ability unlocks, cooldowns, or a complete playable lane scenario.
 
-### Current bounded cooldown-resource evidence
+### Historical M2 v1 bounded cooldown-resource evidence (retired)
 
 - [x] Add bounded `LaneCooldown` to player state with zero default and non-zero state-hash binding.
 - [x] Expose `LaneCooldown` in player and allied observations without exposing opponent cooldown.
@@ -575,7 +581,27 @@ This evidence establishes one bounded experience resource. It does not establish
 
 This evidence establishes one bounded cooldown resource. It does not establish complete ability catalogs, item active cooldowns, or a complete playable lane scenario.
 
-### Current bounded bounty-resource evidence
+### Current M2 v2 contract correction
+
+- [x] Replace the separate player-resource fields with one `LaneResources`
+  aggregate and one `LaneResourceInputs` execution aggregate for mana, gold,
+  experience, and cooldown, while retaining health as a direct lane field.
+- [x] Replace correlated phase/outcome storage with `LaneStatus` and reject
+  zero-delay effects through `LaneDelay`.
+- [x] Keep direct/indirect and immediate/delayed effect provenance explicit;
+  tick and resolve the bounded delayed-effect queue in transition order.
+- [x] Version current M2 ruleset, observation, replay, profile, strategy, and
+  base-record identities as v2; verify those identities during replay and
+  branching.
+- [x] Keep the M1 ruleset, codec, fixtures, hashes, and external behavior
+  unchanged.
+
+The following older resource-slice notes are retained as historical evidence
+only. Bounty, level, minion kills, shield, ward, and the sixteen experimental
+consumables are retired from the current M2 surface and are not M2 exit
+criteria.
+
+### Historical M2 v1 bounty-resource evidence (retired)
 
 - [x] Add bounded `LaneBounty` to player state with zero default and non-zero state-hash binding.
 - [x] Expose `LaneBounty` in player and allied observations without exposing opponent bounty.
@@ -584,7 +610,7 @@ This evidence establishes one bounded cooldown resource. It does not establish c
 
 This evidence establishes one bounded bounty resource. It does not establish complete bounty system scaling, multi-actor kills, or a complete playable lane scenario.
 
-### Current bounded level-resource evidence
+### Historical M2 v1 level-resource evidence (retired)
 
 - [x] Add bounded `LaneLevel` to player state with initial default 1 and non-initial state-hash binding.
 - [x] Expose `LaneLevel` in player and allied observations without exposing opponent level.
@@ -593,7 +619,7 @@ This evidence establishes one bounded bounty resource. It does not establish com
 
 This evidence establishes one bounded level resource. It does not establish complete leveling curves, ability point trees, or a complete playable lane scenario.
 
-### Current bounded minion-kills-resource evidence
+### Historical M2 v1 minion-kills-resource evidence (retired)
 
 - [x] Add bounded `LaneMinionKills` to player state with zero default and non-zero state-hash binding.
 - [x] Expose `LaneMinionKills` in player and allied observations without exposing opponent minion kills.
@@ -634,7 +660,7 @@ This evidence establishes one bounded intent abort condition abstraction. It doe
 
 This evidence establishes one bounded intent fallback behavior abstraction. It does not establish complete contingency evaluation or a complete playable lane scenario.
 
-### Current bounded shield-resource evidence
+### Historical M2 v1 shield-resource evidence (retired)
 
 - [x] Add bounded `LaneShield` to player state with zero default and non-zero state-hash binding.
 - [x] Expose `LaneShield` in player and allied observations without exposing opponent shield.
@@ -643,7 +669,7 @@ This evidence establishes one bounded intent fallback behavior abstraction. It d
 
 This evidence establishes one bounded defensive shield resource. It does not establish complete shield degradation, absorption mechanics, or a complete playable lane scenario.
 
-### Current bounded ward-resource evidence
+### Historical M2 v1 ward-resource evidence (retired)
 
 - [x] Add bounded `LaneWard` to player state with zero default and non-zero state-hash binding.
 - [x] Expose `LaneWard` in player and allied observations without exposing opponent ward count.
@@ -652,7 +678,7 @@ This evidence establishes one bounded defensive shield resource. It does not est
 
 This evidence establishes one bounded vision ward resource. It does not establish map ward placement locations, vision radius calculations, or a complete playable lane scenario.
 
-### Current bounded flask-resource evidence
+### Historical M2 v1 flask-resource evidence (retired)
 
 - [x] Add bounded `LaneFlask` to player state with zero default and non-zero state-hash binding (`LANE_FLASK_HASH_TAG`).
 - [x] Expose `LaneFlask` in player (`self_flask`) and allied (`laner_flask`) observations without exposing opponent flask count.
@@ -661,7 +687,7 @@ This evidence establishes one bounded vision ward resource. It does not establis
 
 This evidence establishes one bounded flask consumable resource. It does not establish complete consumable item active usage or a complete playable lane scenario.
 
-### Current bounded incense-resource evidence
+### Historical M2 v1 incense-resource evidence (retired)
 
 - [x] Add bounded `LaneIncense` to player state with zero default and non-zero state-hash binding (`LANE_INCENSE_HASH_TAG`).
 - [x] Expose `LaneIncense` in player (`self_incense`) and allied (`laner_incense`) observations without exposing opponent incense count.
@@ -670,7 +696,7 @@ This evidence establishes one bounded flask consumable resource. It does not est
 
 This evidence establishes one bounded incense consumable resource. It does not establish complete consumable item active usage or a complete playable lane scenario.
 
-### Current bounded poultice-resource evidence
+### Historical M2 v1 poultice-resource evidence (retired)
 
 - [x] Add bounded `LanePoultice` to player state with zero default and non-zero state-hash binding (`LANE_POULTICE_HASH_TAG`).
 - [x] Expose `LanePoultice` in player (`self_poultice`) and allied (`laner_poultice`) observations without exposing opponent poultice count.

@@ -1,81 +1,135 @@
-# Simulation Design — M2 Bounded Opponent Last-Known Report
+# Simulation Design — M2 v2 Contract Remediation
 
-## Goal and Roadmap Milestone
+**Status:** Current internal design contract
+**Date:** 2026-08-06
+**Scope:** Versioned, dependency-free one-lane diagnostic kernel
 
-Fill one bounded actor-information gap in the M2 lane slice by making a single
-opponent-position sighting visible to the player through the existing report
-type. This is a read-model projection only; no new true-state, belief-state,
-command, or transition mechanic is added.
+This design records the contract implemented by the v2 remediation. It does
+not promote M2 to a playable scenario and does not authorize CLI, MCP,
+persistence, tuning, a catalog, or human-experience claims.
 
-## Slice Boundary and Non-Goals
+## State and lifecycle
 
-The fixed projection rule is intentionally narrow: a player observation made
-while the hidden opponent truth is `FarSide` reports
-`LastKnown { position: FarSide, last_seen_turn: state.turn() }`. `Center` and
-`NearTower` report `Unknown`. Health and posture remain `HiddenValue::Unknown`.
-The allied observation remains Unknown for all opponent positions, preserving
-its existing proposal-only information boundary.
+`LaneSnapshot` is the only authoritative M2 state. It contains ruleset `3`,
+turn, one- or two-beat window, player and opponent lane facts, wave pressure,
+hidden jungle-threat truth, and a bounded delayed-effect queue. The player
+contains health, position, and one `LaneResources` aggregate:
 
-## Actors and Authority
+```text
+LaneResources {
+  mana: LaneMana,
+  gold: LaneGold,
+  experience: LaneExperience,
+  cooldown: LaneCooldown,
+}
+```
 
-The host owns true opponent position and constructs the player observation. The
-projection function is synchronous and deterministic. No actor may infer
-unreported health, posture, state hashes, or current-location certainty from
-the report. `transition_lane` remains the only state transition authority.
+Lifecycle is represented by `LaneStatus::Open` or
+`LaneStatus::Resolved(LaneOutcome)`. There is no separate outcome option, so
+an open snapshot cannot carry a terminal outcome. Histories and scenario
+wrappers accept only a valid open initial snapshot.
 
-## True State, Beliefs, Observations, and Reports
+`LaneDelay` is a non-zero value object. A delayed effect stores it rather than
+an unconstrained integer; queue capacity remains four. Existing effects tick
+by the selected window beats, resolve when their delay is exhausted, and are
+then projected in committed order. A newly queued effect is never resolved in
+the same transition.
 
-`OpponentTruth.position` is true state. `OpponentReport.last_known_position`
-and `last_seen_turn` are report fields, not a claim that the opponent is still
-there. The player receives the bounded FarSide report; the allied actor keeps
-its explicit Unknown report. Existing threat reporting and all mana/resource
-projections remain unchanged.
+## Actor-visible observations
 
-## Plans, Commands, and Validation
+`observe_player` produces `m2-lane-observation-v2`. It includes the player’s
+health, retained resource aggregate, position, wave pressure, window, legal
+intent metadata, and explicitly reported opponent/threat information. Hidden
+opponent health/posture and current threat truth remain absent. The allied
+projection uses `m2-allied-proposal-observation-v2`, exposes only the authorized
+laner retained resources, and keeps opponent/threat reports unknown.
 
-No command or legal intent changes. Observation receipt source hashes and
-existing validation guards remain identical. A stale or tampered report is
-rejected through the existing observation receipt/state-hash binding rather
-than by adding report-specific command logic.
+Observation receipts bind an observation to the source state hash privately at
+the host boundary. The actor-visible value does not reveal that hash.
 
-## Resolved Inputs and Random Streams
+## Commands and resolved inputs
 
-No resolved input or random stream changes. The report derives only from the
-existing authoritative snapshot at observation time. Repeated observations
-from equivalent state and observation ID are equal.
+Intent and coordination types remain separate from execution. A validated
+`LaneIntentCommand` is host-created from the current observation and exact
+prior-state hash. `LaneResolvedInputs` carries independent environment,
+observation, policy, coordination, and execution traces. Execution contains
+damage, wave result, a `LaneResourceInputs` aggregate, and at most one delayed
+effect:
 
-## Events, Effects, and Transition
+```text
+LaneResourceInputs {
+  mana_spent: LaneMana,
+  gold_earned: LaneGold,
+  experience_gained: LaneExperience,
+  cooldown_set: LaneCooldown,
+}
+```
 
-No event, effect, next-state field, state hash, or transition behavior changes.
-Only `observe_player` maps the bounded FarSide truth into the existing report
-projection. The report contains no opponent health, posture, full snapshot, or
-privileged receipt data.
+Mana spending is legal only for `Contest`; bounds and overflow are checked
+before state mutation. Cooldown ticking uses the full `u32` beat count and
+saturates at zero.
 
-## History, Replay, and Branching
+## Authoritative transition ordering
 
-History continues to store the observation captured for the committed record.
-Replay regenerates the same FarSide report, validates the same command, and
-reruns the unchanged transition. Branch, coordination, objective, scenario,
-debrief, and resource identities remain unchanged.
+For a valid open snapshot and validated command, `transition_lane` evaluates in
+this order:
 
-## Debrief and Causal Explanation
+1. bind validation to the exact snapshot and reject a non-open status;
+2. reject damage that exceeds either actor’s health;
+3. validate and apply the retained resource aggregate, including cooldown tick;
+4. resolve wave pressure and subtract direct damage;
+5. tick the existing delayed queue in order and apply resolved effects;
+6. enqueue the new non-zero delayed effect, failing closed on queue overflow;
+7. derive fallback, position, outcome, and the next turn;
+8. construct `LaneStatus::Resolved(outcome)` and the next snapshot;
+9. project ordered events, attributed effects, and the v2 debrief from the
+   single resolved result; and
+10. return the next-state hash.
 
-No debrief field changes. The report is actor-visible context, not a causal
-effect or decision-quality score. Future debrief work may compare what was
-reported at decision time, but this slice makes no completeness or quality
-claim.
+The transition is synchronous, deterministic, and receives no I/O, clock,
+randomness, or hidden actor state.
 
-## Verification Contract
+## Replay and branching identity
 
-Focused tests cover FarSide last-known projection, Center/NearTower unknown
-projection, hidden health/posture and allied uncertainty, observation equality,
-and FarSide history replay with unchanged transition/state hash behavior.
-Existing hidden-state, determinism, branch, coordination, objective, scenario,
-debrief, mana, and effect-provenance tests remain passing.
+Current identities are versioned: the numeric M2 ruleset is `3`; player/allied
+observations, one-window coordination, two-window scenario, final debrief,
+branch, allied profile, and named strategy fixtures use v2 identifiers. The
+objective schema and hold-lane goal remain v1 because their shapes and semantics
+are unchanged.
 
-## Open Questions
+Every `LaneTransitionRecord` stores `m2-one-lane-window-v2`, and
+`lane_record_identity` hashes that replay ID before the command, input traces,
+execution values (including delayed-effect inputs), and prior-state hash.
+History, coordination, scenario, objective, and branch verification reject a
+missing, old, or tampered identity. Branches reuse
+or regenerate explicit execution inputs and keep their own v2 branch identity;
+they never alter the parent history.
 
-- Whether future vision should model current sightings separately from
-  last-known reports or keep one redacted report vocabulary.
-- How belief updates, memory expiration, and communication should compose with
-  the report without leaking host truth.
+M2 v1 identifiers are retired without migration. They were internal
+experimental slices with no release, tag, external codec, or supported
+artifact; old inputs must fail closed. M1 ruleset `1`, codec `1.0.0`, fixture
+files, hashes, and replay behavior are outside this change.
+
+## Debrief and exclusions
+
+One-window and final-debrief projections use committed events, effects,
+resource deltas, intent, coordination, objective, and replay facts. Reports
+omit private receipts, source hashes, hidden state, policy internals, and
+uncommitted choices. The debrief distinguishes direct/indirect and
+immediate/delayed provenance without claiming decision quality or optimality.
+
+Explicitly excluded from v2 are bounty, level, minion kills, shield, ward, and
+the sixteen experimental consumables (potion, elixir, trinket, relic, charm,
+scroll, tome, rune, sigil, talisman, amulet, phial, flask, incense, salve, and
+poultice), plus a complete scenario, automatic threat timing, richer vision or
+belief updates, item catalog, external serialization, CLI/MCP, persistence,
+additional dependencies, and gameplay tuning.
+
+## Contract evidence
+
+The v2 tests cover retained bounds and contest-only mana, large cooldown ticks,
+non-zero delayed effects and queue overflow, open/resolved lifecycle,
+versioned hashes and record identity, actor-visible redaction, hidden-state
+invariance, ordinary/coordinated/scenario/branch/objective/strategy/debrief
+replay, and fail-closed identity tampering. The complete M2 exit criteria
+remain unchecked in the canonical roadmap.

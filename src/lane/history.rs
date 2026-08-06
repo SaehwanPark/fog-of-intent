@@ -2,6 +2,7 @@ use super::*;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LaneTransitionRecord {
+    pub(crate) replay_id: &'static str,
     pub(crate) observation: LanerObservation,
     pub(crate) command: LaneIntentCommand,
     pub(crate) inputs: LaneResolvedInputs,
@@ -10,6 +11,10 @@ pub struct LaneTransitionRecord {
 }
 
 impl LaneTransitionRecord {
+    pub fn replay_id(&self) -> &'static str {
+        self.replay_id
+    }
+
     pub fn observation(&self) -> LanerObservation {
         self.observation
     }
@@ -39,7 +44,7 @@ pub struct LaneHistory {
 
 impl LaneHistory {
     pub fn new(initial_state: LaneSnapshot) -> Result<Self, LaneHistoryError> {
-        if !initial_state.is_valid_lane_state() {
+        if !initial_state.is_valid_lane_state() || initial_state.phase() != LanePhase::Open {
             return Err(LaneHistoryError::InvalidInitialState);
         }
         Ok(Self {
@@ -75,6 +80,7 @@ impl LaneHistory {
             .map_err(|error| LaneHistoryError::Transition { index, error })?;
         self.current_state = result.next_state();
         self.records.push(LaneTransitionRecord {
+            replay_id: M2_REPLAY_ID,
             observation: receipt.observation,
             command: validated.command,
             inputs,
@@ -87,6 +93,9 @@ impl LaneHistory {
     pub fn verify_replay(&self) -> Result<LaneSnapshot, LaneReplayError> {
         let mut state = self.initial_state;
         for (index, record) in self.records.iter().enumerate() {
+            if record.replay_id != M2_REPLAY_ID {
+                return Err(LaneReplayError::ReplayIdMismatch { index });
+            }
             let actual_prior_hash = state.hash();
             if record.prior_state_hash != actual_prior_hash {
                 return Err(LaneReplayError::PriorHashMismatch {
@@ -137,6 +146,9 @@ pub enum LaneReplayError {
         index: usize,
         expected: StateHash,
         actual: StateHash,
+    },
+    ReplayIdMismatch {
+        index: usize,
     },
     ObservationMismatch {
         index: usize,
@@ -222,7 +234,7 @@ pub struct CoordinatedLaneHistory {
 
 impl CoordinatedLaneHistory {
     pub fn new(initial_state: LaneSnapshot) -> Result<Self, CoordinationError> {
-        if !initial_state.is_valid_lane_state() || initial_state.phase != LanePhase::Open {
+        if !initial_state.is_valid_lane_state() || initial_state.phase() != LanePhase::Open {
             return Err(CoordinationError::InvalidAlliedObservation);
         }
         Ok(Self {
@@ -275,6 +287,7 @@ impl CoordinatedLaneHistory {
             &lane_inputs,
         )?;
         let base_record = LaneTransitionRecord {
+            replay_id: M2_REPLAY_ID,
             observation: player_receipt.observation,
             command: validated.intent.command,
             inputs: lane_inputs,
@@ -304,6 +317,9 @@ impl CoordinatedLaneHistory {
         let mut state = self.initial_state;
         for record in &self.records {
             if record.replay_id != M2_COORDINATION_REPLAY_ID {
+                return Err(CoordinationError::ReplayMismatch);
+            }
+            if record.base_record.replay_id != M2_REPLAY_ID {
                 return Err(CoordinationError::ReplayMismatch);
             }
             if record.base_record.prior_state_hash != state.hash() {
@@ -347,6 +363,7 @@ impl CoordinatedLaneHistory {
             )
             .map_err(|_| CoordinationError::ReplayMismatch)?;
             let expected_base_record = LaneTransitionRecord {
+                replay_id: M2_REPLAY_ID,
                 observation: player_receipt.observation,
                 command: validated.intent.command,
                 inputs: record.base_record.inputs,

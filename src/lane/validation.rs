@@ -74,7 +74,7 @@ pub fn validate_lane_command(
     {
         return Err(LaneValidationError::UnsupportedIntent);
     }
-    if state.phase != LanePhase::Open {
+    if state.phase() != LanePhase::Open {
         return Err(LaneValidationError::WindowAlreadyResolved);
     }
     if command.turn != state.turn {

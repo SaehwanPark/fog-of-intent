@@ -1,6 +1,6 @@
 use super::*;
 
-pub const M2_TWO_WINDOW_REPLAY_ID: &str = "m2-two-window-scenario-v1";
+pub const M2_TWO_WINDOW_REPLAY_ID: &str = "m2-two-window-scenario-v2";
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ScenarioWindow {
@@ -53,7 +53,7 @@ pub struct LaneScenarioHistory {
 
 impl LaneScenarioHistory {
     pub fn new(initial_state: LaneSnapshot) -> Result<Self, ScenarioError> {
-        if !initial_state.is_valid_lane_state() || initial_state.phase != LanePhase::Open {
+        if !initial_state.is_valid_lane_state() || initial_state.phase() != LanePhase::Open {
             return Err(ScenarioError::InvalidInitialState);
         }
         Ok(Self {
@@ -96,7 +96,7 @@ impl LaneScenarioHistory {
         let index = self.records.len();
         let window = ScenarioWindow::from_index(index).ok_or(ScenarioError::ScenarioComplete)?;
         let start_state = self.current_state;
-        if start_state.phase != LanePhase::Open {
+        if start_state.phase() != LanePhase::Open {
             return Err(ScenarioError::WindowNotOpen);
         }
         let validated = validate_lane_request(&start_state, receipt, request)
@@ -113,6 +113,7 @@ impl LaneScenarioHistory {
             window,
             start_state,
             transition: LaneTransitionRecord {
+                replay_id: M2_REPLAY_ID,
                 observation: receipt.observation,
                 command: validated.command,
                 inputs,
@@ -149,6 +150,7 @@ impl LaneScenarioHistory {
                 None
             };
             let expected_record = LaneTransitionRecord {
+                replay_id: M2_REPLAY_ID,
                 observation: receipt.observation,
                 command: validated.command,
                 inputs: record.transition.inputs,
@@ -184,8 +186,8 @@ pub(crate) fn reopen_resolved_snapshot(
     resolved: &LaneSnapshot,
 ) -> Result<LaneSnapshot, ScenarioError> {
     if !resolved.is_valid_lane_state()
-        || resolved.phase != LanePhase::Resolved
-        || resolved.terminal_outcome.is_none()
+        || resolved.phase() != LanePhase::Resolved
+        || resolved.terminal_outcome().is_none()
     {
         return Err(ScenarioError::InvalidReopenState);
     }
@@ -193,13 +195,12 @@ pub(crate) fn reopen_resolved_snapshot(
         resolved.ruleset,
         resolved.turn,
         resolved.window,
-        LanePhase::Open,
+        LaneStatus::Open,
         resolved.player,
         resolved.opponent,
         resolved.wave,
         resolved.jungle_threat,
         resolved.delayed_effects,
-        None,
     ))
 }
 
@@ -221,7 +222,7 @@ pub enum ScenarioError {
     ReplayMismatch,
 }
 
-pub const M2_FINAL_DEBRIEF_REPLAY_ID: &str = "m2-two-window-final-debrief-v1";
+pub const M2_FINAL_DEBRIEF_REPLAY_ID: &str = "m2-two-window-final-debrief-v2";
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum FinalDebriefAttributionLimit {

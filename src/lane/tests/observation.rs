@@ -4,7 +4,7 @@
         let second = LaneSnapshot::new(
             M2_LANE_RULESET,
             first.turn(),
-            LanePhase::Open,
+            LaneStatus::Open,
             first.player(),
             OpponentTruth::new(
                 OPPONENT_LANER,
@@ -14,7 +14,6 @@
             ),
             first.wave(),
             JungleThreatTruth::Absent,
-            None,
         );
         let second_observation = observe_player(&second, ObservationId::new(1)).observation();
         assert_eq!(
@@ -38,7 +37,7 @@
         let same_report_different_hidden_state = LaneSnapshot::new(
             M2_LANE_RULESET,
             second.turn(),
-            LanePhase::Open,
+            LaneStatus::Open,
             second.player(),
             OpponentTruth::new(
                 OPPONENT_LANER,
@@ -48,7 +47,6 @@
             ),
             second.wave(),
             second.jungle_threat(),
-            None,
         );
         assert_eq!(
             second_observation,
@@ -63,7 +61,7 @@
         let state = LaneSnapshot::new(
             initial.ruleset(),
             Turn::new(2),
-            LanePhase::Open,
+            LaneStatus::Open,
             initial.player(),
             OpponentTruth::new(
                 OPPONENT_LANER,
@@ -73,7 +71,6 @@
             ),
             initial.wave(),
             initial.jungle_threat(),
-            None,
         );
         let player_observation = observe_player(&state, ObservationId::new(12)).observation();
         assert_eq!(
@@ -106,12 +103,11 @@
         let river_side = LaneSnapshot::new(
             state.ruleset(),
             Turn::new(3),
-            LanePhase::Open,
+            LaneStatus::Open,
             state.player(),
             state.opponent(),
             state.wave(),
             JungleThreatTruth::RiverSide,
-            None,
         );
         let river_observation = observe_player(&river_side, ObservationId::new(1)).observation();
         assert_eq!(
@@ -142,10 +138,11 @@
         let initial = LaneSnapshot::new(
             M2_LANE_RULESET,
             Turn::new(0),
-            LanePhase::Open,
+            LaneStatus::Open,
             PlayerLaneState::new(
                 PLAYER_LANER,
                 LaneHealth::new(8).expect("bounded"),
+                LaneResources::initial(),
                 LanePosition::Center,
             ),
             OpponentTruth::new(
@@ -156,7 +153,6 @@
             ),
             WaveState::new(WavePressure::new(1).expect("bounded")),
             JungleThreatTruth::RiverSide,
-            None,
         );
         let (receipt, request) = request(&initial, LaneIntent::Contest);
         assert_eq!(

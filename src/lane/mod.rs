@@ -15,10 +15,13 @@ use crate::kernel::{
 mod branch;
 mod coordination;
 mod encoding;
+mod evaluation;
 mod history;
 mod intent;
 mod objective;
 mod observation;
+mod projection;
+mod result;
 mod scenario;
 mod state;
 mod transition;

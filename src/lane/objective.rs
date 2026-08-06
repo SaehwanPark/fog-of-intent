@@ -402,9 +402,9 @@ pub enum StrategyFixtureId {
 impl StrategyFixtureId {
     pub fn id(self) -> &'static str {
         match self {
-            Self::HappyPath => "m2-strategy-happy-path-v1",
-            Self::RiskTaking => "m2-strategy-risk-taking-v1",
-            Self::Conservative => "m2-strategy-conservative-v1",
+            Self::HappyPath => "m2-strategy-happy-path-v2",
+            Self::RiskTaking => "m2-strategy-risk-taking-v2",
+            Self::Conservative => "m2-strategy-conservative-v2",
         }
     }
 }
@@ -594,6 +594,9 @@ pub fn review_lane_objective(
     goal: ScenarioGoal,
     record: &LaneTransitionRecord,
 ) -> Result<ObjectiveReviewRecord, ObjectiveError> {
+    if record.replay_id() != M2_REPLAY_ID {
+        return Err(ObjectiveError::UnsupportedReplayId);
+    }
     let inputs = objective_inputs_from_lane_record(record, M2_REPLAY_ID);
     let review = evaluate_terminal_objective(goal, &inputs)?;
     Ok(ObjectiveReviewRecord {
@@ -609,6 +612,11 @@ pub fn review_coordinated_objective(
     goal: ScenarioGoal,
     record: &CoordinatedLaneRecord,
 ) -> Result<ObjectiveReviewRecord, ObjectiveError> {
+    if record.replay_id() != M2_COORDINATION_REPLAY_ID
+        || record.base_record().replay_id() != M2_REPLAY_ID
+    {
+        return Err(ObjectiveError::UnsupportedReplayId);
+    }
     let inputs = objective_inputs_from_lane_record(record.base_record(), M2_COORDINATION_REPLAY_ID)
         .with_coordination(ObjectiveCoordination::Resolved(
             record.result().coordination().disposition(),
@@ -625,6 +633,9 @@ pub fn review_coordinated_objective(
 
 impl ObjectiveReviewRecord {
     pub fn verify_lane(&self, record: &LaneTransitionRecord) -> Result<(), ObjectiveError> {
+        if record.replay_id() != M2_REPLAY_ID {
+            return Err(ObjectiveError::UnsupportedReplayId);
+        }
         let expected_inputs = objective_inputs_from_lane_record(record, M2_REPLAY_ID);
         let expected = evaluate_terminal_objective(self.goal, &expected_inputs)?;
         if self.source_replay_id != M2_REPLAY_ID
@@ -638,6 +649,11 @@ impl ObjectiveReviewRecord {
     }
 
     pub fn verify_coordinated(&self, record: &CoordinatedLaneRecord) -> Result<(), ObjectiveError> {
+        if record.replay_id() != M2_COORDINATION_REPLAY_ID
+            || record.base_record().replay_id() != M2_REPLAY_ID
+        {
+            return Err(ObjectiveError::UnsupportedReplayId);
+        }
         if lane_record_identity(record.base_record()) != record.base_record_identity() {
             return Err(ObjectiveError::ReviewMismatch);
         }

@@ -51,6 +51,9 @@
         assert_eq!(history.current_state().phase(), LanePhase::Resolved);
         assert_eq!(history.terminal_state(), Ok(history.current_state()));
         history.verify_replay().expect("scenario replay");
+        history.replay_id = "m2-two-window-scenario-v1";
+        assert_eq!(history.verify_replay(), Err(ScenarioError::ReplayMismatch));
+        history.replay_id = M2_TWO_WINDOW_REPLAY_ID;
         assert_eq!(
             review_lane_objective(
                 ScenarioGoal::HoldLaneSpaceThroughWindow,
@@ -145,6 +148,12 @@
         assert_eq!(history.verify_replay(), Ok(history.current_state()));
 
         let mut tampered = debrief.clone();
+        tampered.replay_id = "m2-two-window-final-debrief-v1";
+        assert_eq!(
+            tampered.verify_replay(&history),
+            Err(ScenarioDebriefError::ReplayMismatch)
+        );
+        tampered.replay_id = M2_FINAL_DEBRIEF_REPLAY_ID;
         tampered.source_terminal_state_hash = StateHash::from_raw(0);
         assert_eq!(
             tampered.verify_replay(&history),

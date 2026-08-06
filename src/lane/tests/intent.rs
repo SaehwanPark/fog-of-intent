@@ -259,7 +259,9 @@
         let (receipt, yield_request) = request(&state, LaneIntent::Yield);
         let validated = validate_lane_request(&state, &receipt, &yield_request).expect("valid");
         let mut invalid_inputs = inputs(0, 0, LaneWaveResult::Held);
-        invalid_inputs.execution.mana_spent = LaneMana::new(1).unwrap();
+        invalid_inputs.execution = invalid_inputs
+            .execution
+            .with_mana_spent(LaneMana::new(1).unwrap());
         assert!(matches!(
             transition_lane(&state, &validated, &invalid_inputs),
             Err(LaneTransitionError::Execution(
