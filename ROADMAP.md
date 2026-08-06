@@ -670,14 +670,14 @@ This evidence establishes one bounded flask consumable resource. It does not est
 
 This evidence establishes one bounded incense consumable resource. It does not establish complete consumable item active usage or a complete playable lane scenario.
 
-### Current bounded salve-resource evidence
+### Current bounded poultice-resource evidence
 
-- [x] Add bounded `LaneSalve` to player state with zero default and non-zero state-hash binding (`LANE_SALVE_HASH_TAG`).
-- [x] Expose `LaneSalve` in player (`self_salve`) and allied (`laner_salve`) observations without exposing opponent salve count.
-- [x] Resolve explicit `salve_gained` and `salve_spent` during execution with direct-immediate `SalveGained`/`SalveSpent`/`SalveChanged` events and effects, debrief recording, and replay verification.
-- [x] Reject salve overflow exceeding maximum bounds (`MAX_LANE_SALVE`) or spending without available salves (`InsufficientSalve`) before transition evaluation.
+- [x] Add bounded `LanePoultice` to player state with zero default and non-zero state-hash binding (`LANE_POULTICE_HASH_TAG`).
+- [x] Expose `LanePoultice` in player (`self_poultice`) and allied (`laner_poultice`) observations without exposing opponent poultice count.
+- [x] Resolve explicit `poultice_gained` and `poultice_spent` during execution with direct-immediate `PoulticeGained`/`PoulticeSpent`/`PoulticeChanged` events and effects, debrief recording, and replay verification.
+- [x] Reject poultice overflow exceeding maximum bounds (`MAX_LANE_POULTICE`) or spending without available poultices (`InsufficientPoultice`) before transition evaluation.
 
-This evidence establishes one bounded salve consumable resource. It does not establish complete consumable item active usage or a complete playable lane scenario.
+This evidence establishes one bounded poultice consumable resource. It does not establish complete consumable item active usage or a complete playable lane scenario.
 
 ### Current final-debrief evidence
 

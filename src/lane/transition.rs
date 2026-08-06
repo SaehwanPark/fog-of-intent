@@ -52,6 +52,8 @@ pub struct LaneExecutionInputs {
     pub(crate) incense_spent: LaneIncense,
     pub(crate) salve_gained: LaneSalve,
     pub(crate) salve_spent: LaneSalve,
+    pub(crate) poultice_gained: LanePoultice,
+    pub(crate) poultice_spent: LanePoultice,
     pub(crate) delayed_effect: Option<LaneDelayedEffect>,
 }
 
@@ -106,6 +108,8 @@ impl LaneExecutionInputs {
             incense_spent: LaneIncense::zero(),
             salve_gained: LaneSalve::zero(),
             salve_spent: LaneSalve::zero(),
+            poultice_gained: LanePoultice::zero(),
+            poultice_spent: LanePoultice::zero(),
             delayed_effect: None,
         }
     }
@@ -314,6 +318,16 @@ impl LaneExecutionInputs {
         self
     }
 
+    pub fn with_poultice_gained(mut self, poultice_gained: LanePoultice) -> Self {
+        self.poultice_gained = poultice_gained;
+        self
+    }
+
+    pub fn with_poultice_spent(mut self, poultice_spent: LanePoultice) -> Self {
+        self.poultice_spent = poultice_spent;
+        self
+    }
+
     pub fn trace(self) -> InputTrace {
         self.trace
     }
@@ -485,6 +499,14 @@ impl LaneExecutionInputs {
     pub fn salve_spent(self) -> LaneSalve {
         self.salve_spent
     }
+
+    pub fn poultice_gained(self) -> LanePoultice {
+        self.poultice_gained
+    }
+
+    pub fn poultice_spent(self) -> LanePoultice {
+        self.poultice_spent
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -528,6 +550,8 @@ struct ResourceExecutionDeltas {
     incense_spent: LaneIncense,
     salve_gained: LaneSalve,
     salve_spent: LaneSalve,
+    poultice_gained: LanePoultice,
+    poultice_spent: LanePoultice,
 }
 
 impl ResourceExecutionDeltas {
@@ -572,6 +596,8 @@ impl ResourceExecutionDeltas {
             incense_spent: execution.incense_spent,
             salve_gained: execution.salve_gained,
             salve_spent: execution.salve_spent,
+            poultice_gained: execution.poultice_gained,
+            poultice_spent: execution.poultice_spent,
         }
     }
 }
@@ -939,6 +965,16 @@ pub enum LaneEvent {
         amount: LaneSalve,
         trace: InputTrace,
     },
+    PoulticeGained {
+        actor: ActorId,
+        amount: LanePoultice,
+        trace: InputTrace,
+    },
+    PoulticeSpent {
+        actor: ActorId,
+        amount: LanePoultice,
+        trace: InputTrace,
+    },
     DelayedEffectQueued {
         actor: ActorId,
         effect: LaneDelayedEffect,
@@ -1146,6 +1182,13 @@ pub enum LaneEffect {
         cause: LaneEffectCause,
         provenance: LaneEffectProvenance,
     },
+    PoulticeChanged {
+        actor: ActorId,
+        before: LanePoultice,
+        after: LanePoultice,
+        cause: LaneEffectCause,
+        provenance: LaneEffectProvenance,
+    },
     PositionChanged {
         actor: ActorId,
         before: LanePosition,
@@ -1226,6 +1269,7 @@ impl LaneEffect {
             | Self::FlaskChanged { provenance, .. }
             | Self::IncenseChanged { provenance, .. }
             | Self::SalveChanged { provenance, .. }
+            | Self::PoulticeChanged { provenance, .. }
             | Self::PositionChanged { provenance, .. }
             | Self::DelayedEffectQueued { provenance, .. }
             | Self::DelayedEffectResolved { provenance, .. }
@@ -1414,6 +1458,14 @@ pub enum LaneExecutionError {
         spent: LaneSalve,
         available: LaneSalve,
     },
+    PoulticeOverflow {
+        gained: LanePoultice,
+        current: LanePoultice,
+    },
+    InsufficientPoultice {
+        spent: LanePoultice,
+        available: LanePoultice,
+    },
     DelayedEffectOverflow,
 }
 
@@ -1488,6 +1540,8 @@ pub struct LaneDebrief {
     pub(crate) incense_spent: LaneIncense,
     pub(crate) salve_gained: LaneSalve,
     pub(crate) salve_spent: LaneSalve,
+    pub(crate) poultice_gained: LanePoultice,
+    pub(crate) poultice_spent: LanePoultice,
     pub(crate) wave_result: LaneWaveResult,
     pub(crate) fallback_activated: bool,
     pub(crate) delayed_effects_queued: u8,
@@ -1686,6 +1740,14 @@ impl LaneDebrief {
 
     pub fn salve_spent(self) -> LaneSalve {
         self.salve_spent
+    }
+
+    pub fn poultice_gained(self) -> LanePoultice {
+        self.poultice_gained
+    }
+
+    pub fn poultice_spent(self) -> LanePoultice {
+        self.poultice_spent
     }
 
     pub fn wave_result(self) -> LaneWaveResult {
@@ -2169,6 +2231,18 @@ fn apply_player_resources(
                 gained: deltas.salve_gained,
                 current: after_spend_salve,
             })?;
+    let after_spend_poultice = before.poultice.subtract(deltas.poultice_spent).ok_or(
+        LaneExecutionError::InsufficientPoultice {
+            spent: deltas.poultice_spent,
+            available: before.poultice,
+        },
+    )?;
+    let poultice = after_spend_poultice.add(deltas.poultice_gained).ok_or(
+        LaneExecutionError::PoulticeOverflow {
+            gained: deltas.poultice_gained,
+            current: after_spend_poultice,
+        },
+    )?;
     Ok(PlayerResources {
         mana,
         gold,
@@ -2194,6 +2268,7 @@ fn apply_player_resources(
         flask,
         incense,
         salve,
+        poultice,
     })
 }
 
@@ -2685,6 +2760,20 @@ fn project_lane_events(
             trace,
         });
     }
+    if execution.poultice_gained != LanePoultice::zero() {
+        events.push(LaneEvent::PoulticeGained {
+            actor: player.id,
+            amount: execution.poultice_gained,
+            trace,
+        });
+    }
+    if execution.poultice_spent != LanePoultice::zero() {
+        events.push(LaneEvent::PoulticeSpent {
+            actor: player.id,
+            amount: execution.poultice_spent,
+            trace,
+        });
+    }
     if let Some(queued) = resolved.delayed_effect_queued {
         events.push(LaneEvent::DelayedEffectQueued {
             actor: player.id,
@@ -2999,6 +3088,15 @@ fn project_lane_effects(
             provenance: LaneEffectProvenance::direct_immediate(),
         });
     }
+    if next_player.poultice != player.poultice {
+        effects.push(LaneEffect::PoulticeChanged {
+            actor: player.id,
+            before: player.poultice,
+            after: next_player.poultice,
+            cause: LaneEffectCause::Execution(trace),
+            provenance: LaneEffectProvenance::direct_immediate(),
+        });
+    }
     if let Some(queued) = resolved.delayed_effect_queued {
         effects.push(LaneEffect::DelayedEffectQueued {
             actor: player.id,
@@ -3115,6 +3213,8 @@ pub fn transition_lane(
         incense_spent: execution.incense_spent,
         salve_gained: execution.salve_gained,
         salve_spent: execution.salve_spent,
+        poultice_gained: execution.poultice_gained,
+        poultice_spent: execution.poultice_spent,
         wave_result: execution.wave_result,
         fallback_activated: resolved.fallback_activated,
         delayed_effects_queued: if resolved.delayed_effect_queued.is_some() {

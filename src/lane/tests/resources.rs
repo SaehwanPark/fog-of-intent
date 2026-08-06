@@ -2607,6 +2607,115 @@
         ));
     }
 
+    #[test]
+    fn poultice_is_bounded_and_default_zero() {
+        let state = LaneSnapshot::initial();
+        assert_eq!(state.player().poultice(), LanePoultice::zero());
+        let obs = observe_player(&state, ObservationId::new(100)).observation();
+        assert_eq!(obs.self_poultice(), LanePoultice::zero());
+        let allied = observe_allied(&state, ObservationId::new(101)).observation();
+        assert_eq!(allied.laner_poultice(), LanePoultice::zero());
+
+        assert!(LanePoultice::new(MAX_LANE_POULTICE).is_ok());
+        assert!(LanePoultice::new(MAX_LANE_POULTICE + 1).is_err());
+    }
+
+    #[test]
+    fn poultice_gained_and_spent_are_direct_immediate_and_replayable() {
+        let state = LaneSnapshot::initial();
+        let (receipt, req) = request(&state, LaneIntent::Stabilize);
+        let validated = validate_lane_request(&state, &receipt, &req).expect("valid");
+
+        let poultice_gained = LanePoultice::new(3).expect("3 poultices");
+        let mut inputs_w1 = inputs(1, 1, LaneWaveResult::Held);
+        inputs_w1.execution = inputs_w1.execution.with_poultice_gained(poultice_gained);
+        let inputs_w1 = inputs_w1.with_mana_spent(LaneMana::zero());
+
+        let result = transition_lane(&state, &validated, &inputs_w1).expect("valid transition");
+        assert_eq!(result.next_state().player().poultice(), poultice_gained);
+        assert_eq!(result.debrief().poultice_spent(), LanePoultice::zero());
+        assert_eq!(result.debrief().poultice_gained(), poultice_gained);
+
+        assert!(result.events().iter().any(|e| matches!(
+            e,
+            LaneEvent::PoulticeGained { amount, .. } if *amount == poultice_gained
+        )));
+        assert!(result.effects().iter().any(|ef| matches!(
+            ef,
+            LaneEffect::PoulticeChanged { before, after, provenance, .. }
+                if *before == LanePoultice::zero()
+                    && *after == poultice_gained
+                    && *provenance == LaneEffectProvenance::direct_immediate()
+        )));
+
+        let state2 = reopen_lane_window(&result).expect("reopen");
+        let (receipt2, req2) = request(&state2, LaneIntent::Stabilize);
+        let val2 = validate_lane_request(&state2, &receipt2, &req2).expect("valid 2");
+
+        let poultice_spent = LanePoultice::new(2).expect("2 poultices");
+        let mut inputs_w2 = inputs(1, 1, LaneWaveResult::Held);
+        inputs_w2.execution = inputs_w2.execution.with_poultice_spent(poultice_spent);
+        let inputs_w2 = inputs_w2.with_mana_spent(LaneMana::zero());
+
+        let result2 = transition_lane(&state2, &val2, &inputs_w2).expect("valid transition 2");
+        assert_eq!(result2.next_state().player().poultice(), LanePoultice::new(1).unwrap());
+        assert_eq!(result2.debrief().poultice_spent(), poultice_spent);
+
+        assert!(result2.events().iter().any(|e| matches!(
+            e,
+            LaneEvent::PoulticeSpent { amount, .. } if *amount == poultice_spent
+        )));
+
+        let mut history = LaneHistory::new(state).expect("valid history");
+        history.append(&receipt, &req, inputs_w1).expect("append 1");
+        assert_eq!(history.verify_replay(), Ok(result.next_state()));
+    }
+
+    #[test]
+    fn poultice_overflow_and_insufficient_are_rejected() {
+        let state = LaneSnapshot::initial();
+        let (receipt, req) = request(&state, LaneIntent::Stabilize);
+        let validated = validate_lane_request(&state, &receipt, &req).expect("valid");
+
+        let mut insufficient_inputs = inputs(1, 1, LaneWaveResult::Held);
+        insufficient_inputs.execution = insufficient_inputs
+            .execution
+            .with_poultice_spent(LanePoultice::new(1).unwrap());
+        let insufficient_inputs = insufficient_inputs.with_mana_spent(LaneMana::zero());
+
+        assert!(matches!(
+            transition_lane(&state, &validated, &insufficient_inputs),
+            Err(LaneTransitionError::Execution(
+                LaneExecutionError::InsufficientPoultice { .. }
+            ))
+        ));
+
+        let mut gain_max_inputs = inputs(1, 1, LaneWaveResult::Held);
+        gain_max_inputs.execution = gain_max_inputs
+            .execution
+            .with_poultice_gained(LanePoultice::new(MAX_LANE_POULTICE).unwrap());
+        let gain_max_inputs = gain_max_inputs.with_mana_spent(LaneMana::zero());
+
+        let res1 = transition_lane(&state, &validated, &gain_max_inputs).expect("transition max");
+        let max_poultice_state = reopen_lane_window(&res1).expect("reopen");
+
+        let (rec2, req2) = request(&max_poultice_state, LaneIntent::Stabilize);
+        let val2 = validate_lane_request(&max_poultice_state, &rec2, &req2).expect("valid");
+
+        let mut overflow_inputs_2 = inputs(1, 1, LaneWaveResult::Held);
+        overflow_inputs_2.execution = overflow_inputs_2
+            .execution
+            .with_poultice_gained(LanePoultice::new(1).unwrap());
+        let overflow_inputs_2 = overflow_inputs_2.with_mana_spent(LaneMana::zero());
+
+        assert!(matches!(
+            transition_lane(&max_poultice_state, &val2, &overflow_inputs_2),
+            Err(LaneTransitionError::Execution(
+                LaneExecutionError::PoulticeOverflow { .. }
+            ))
+        ));
+    }
+
 
 
 
