@@ -34,6 +34,15 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.43 — 2026-08-06
+
+### Added
+
+- Added `LaneTalisman` bounded player consumable resource abstraction (maximum 5, zero default, `LANE_TALISMAN_HASH_TAG` state-hash binding).
+- Exposed `self_talisman` in `LanerObservation` and `laner_talisman` in `AlliedLaneObservation`.
+- Supported `talisman_gained` and `talisman_spent` resolution during execution with direct-immediate `TalismanGained`/`TalismanSpent`/`TalismanChanged` events and effects, debrief recording, and replay verification.
+- Rejection of talisman overflow (`TalismanOverflow`) or spending without available talismans (`InsufficientTalisman`) before state mutation.
+
 ## 0.1.42 — 2026-08-06
 
 ### Added
