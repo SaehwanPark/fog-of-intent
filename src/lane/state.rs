@@ -56,6 +56,7 @@ pub(crate) struct PlayerResources {
     pub(crate) talisman: LaneTalisman,
     pub(crate) amulet: LaneAmulet,
     pub(crate) phial: LanePhial,
+    pub(crate) flask: LaneFlask,
 }
 
 impl PlayerResources {
@@ -82,6 +83,7 @@ impl PlayerResources {
             talisman: LaneTalisman::zero(),
             amulet: LaneAmulet::zero(),
             phial: LanePhial::zero(),
+            flask: LaneFlask::zero(),
         }
     }
 
@@ -135,6 +137,7 @@ pub struct PlayerLaneState {
     pub(crate) talisman: LaneTalisman,
     pub(crate) amulet: LaneAmulet,
     pub(crate) phial: LanePhial,
+    pub(crate) flask: LaneFlask,
     pub(crate) position: LanePosition,
 }
 
@@ -169,6 +172,7 @@ impl PlayerLaneState {
             talisman: resources.talisman,
             amulet: resources.amulet,
             phial: resources.phial,
+            flask: resources.flask,
             position,
         }
     }
@@ -196,6 +200,7 @@ impl PlayerLaneState {
             talisman: self.talisman,
             amulet: self.amulet,
             phial: self.phial,
+            flask: self.flask,
         }
     }
 
@@ -360,6 +365,7 @@ impl PlayerLaneState {
                 talisman: LaneTalisman::zero(),
                 amulet: LaneAmulet::zero(),
                 phial: LanePhial::zero(),
+                flask: LaneFlask::zero(),
             },
             position,
         )
@@ -455,6 +461,10 @@ impl PlayerLaneState {
 
     pub fn phial(self) -> LanePhial {
         self.phial
+    }
+
+    pub fn flask(self) -> LaneFlask {
+        self.flask
     }
 
     pub fn position(self) -> LanePosition {
@@ -832,6 +842,9 @@ impl LaneSnapshot {
         }
         if self.player.phial() != LanePhial::zero() {
             hash = hash_bytes(hash, &[LANE_PHIAL_HASH_TAG, self.player.phial().value()]);
+        }
+        if self.player.flask() != LaneFlask::zero() {
+            hash = hash_bytes(hash, &[LANE_FLASK_HASH_TAG, self.player.flask().value()]);
         }
         hash = hash_bytes(hash, &[position_tag(self.player.position())]);
         hash = hash_bytes(

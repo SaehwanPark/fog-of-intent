@@ -652,6 +652,15 @@ This evidence establishes one bounded defensive shield resource. It does not est
 
 This evidence establishes one bounded vision ward resource. It does not establish map ward placement locations, vision radius calculations, or a complete playable lane scenario.
 
+### Current bounded flask-resource evidence
+
+- [x] Add bounded `LaneFlask` to player state with zero default and non-zero state-hash binding (`LANE_FLASK_HASH_TAG`).
+- [x] Expose `LaneFlask` in player (`self_flask`) and allied (`laner_flask`) observations without exposing opponent flask count.
+- [x] Resolve explicit `flask_gained` and `flask_spent` during execution with direct-immediate `FlaskGained`/`FlaskSpent`/`FlaskChanged` events and effects, debrief recording, and replay verification.
+- [x] Reject flask overflow exceeding maximum bounds (`MAX_LANE_FLASK`) or spending without available flasks (`InsufficientFlask`) before transition evaluation.
+
+This evidence establishes one bounded flask consumable resource. It does not establish complete consumable item active usage or a complete playable lane scenario.
+
 ### Current final-debrief evidence
 
 - [x] Build a versioned final debrief only from a replay-verified two-window

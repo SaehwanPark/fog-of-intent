@@ -2272,6 +2272,119 @@
         ));
     }
 
+    #[test]
+    fn flask_is_bounded_and_default_zero() {
+        let state = LaneSnapshot::initial();
+        assert_eq!(state.player().flask(), LaneFlask::zero());
+        assert_eq!(state.player().flask().value(), 0);
+
+        let obs = observe_player(&state, ObservationId::new(1)).observation();
+        assert_eq!(obs.self_flask(), LaneFlask::zero());
+
+        let allied = observe_allied(&state, ObservationId::new(1)).observation();
+        assert_eq!(allied.laner_flask(), LaneFlask::zero());
+
+        assert!(LaneFlask::new(MAX_LANE_FLASK).is_ok());
+        assert!(LaneFlask::new(MAX_LANE_FLASK + 1).is_err());
+    }
+
+    #[test]
+    fn flask_gained_and_spent_are_direct_immediate_and_replayable() {
+        let state = LaneSnapshot::initial();
+        let (receipt, req) = request(&state, LaneIntent::Stabilize);
+        let validated = validate_lane_request(&state, &receipt, &req).expect("valid");
+
+        let flask_gained = LaneFlask::new(3).expect("3 flasks");
+        let mut inputs_w1 = inputs(1, 1, LaneWaveResult::Held);
+        inputs_w1.execution = inputs_w1.execution.with_flask_gained(flask_gained);
+        let inputs_w1 = inputs_w1.with_mana_spent(LaneMana::zero());
+
+        let result = transition_lane(&state, &validated, &inputs_w1).expect("transition 1");
+        assert_eq!(result.next_state().player().flask(), flask_gained);
+        assert_eq!(result.debrief().flask_gained(), flask_gained);
+        assert_eq!(result.debrief().flask_spent(), LaneFlask::zero());
+
+        assert!(result.events().iter().any(|e| matches!(
+            e,
+            LaneEvent::FlaskGained { amount, .. } if *amount == flask_gained
+        )));
+        assert!(result.effects().iter().any(|e| matches!(
+            e,
+            LaneEffect::FlaskChanged { before, after, provenance, .. }
+                if *before == LaneFlask::zero()
+                    && *after == flask_gained
+                    && provenance.relation() == LaneEffectRelation::Direct
+                    && provenance.timing() == LaneEffectTiming::Immediate
+        )));
+
+        let state_w2 = reopen_lane_window(&result).expect("reopen");
+        let (rec2, req2) = request(&state_w2, LaneIntent::Stabilize);
+        let val2 = validate_lane_request(&state_w2, &rec2, &req2).expect("valid 2");
+
+        let flask_spent = LaneFlask::new(2).expect("2 flasks");
+        let mut inputs_w2 = inputs(1, 1, LaneWaveResult::Held);
+        inputs_w2.execution = inputs_w2.execution.with_flask_spent(flask_spent);
+        let inputs_w2 = inputs_w2.with_mana_spent(LaneMana::zero());
+
+        let result2 = transition_lane(&state_w2, &val2, &inputs_w2).expect("transition 2");
+        assert_eq!(result2.next_state().player().flask(), LaneFlask::new(1).unwrap());
+        assert_eq!(result2.debrief().flask_spent(), flask_spent);
+
+        assert!(result2.events().iter().any(|e| matches!(
+            e,
+            LaneEvent::FlaskSpent { amount, .. } if *amount == flask_spent
+        )));
+
+        let mut history = LaneHistory::new(state).expect("valid history");
+        history.append(&receipt, &req, inputs_w1).expect("append 1");
+        assert_eq!(history.verify_replay(), Ok(result.next_state()));
+    }
+
+    #[test]
+    fn flask_overflow_and_insufficient_are_rejected() {
+        let state = LaneSnapshot::initial();
+        let (receipt, req) = request(&state, LaneIntent::Stabilize);
+        let validated = validate_lane_request(&state, &receipt, &req).expect("valid");
+
+        let mut insufficient_inputs = inputs(1, 1, LaneWaveResult::Held);
+        insufficient_inputs.execution = insufficient_inputs
+            .execution
+            .with_flask_spent(LaneFlask::new(1).unwrap());
+        let insufficient_inputs = insufficient_inputs.with_mana_spent(LaneMana::zero());
+
+        assert!(matches!(
+            transition_lane(&state, &validated, &insufficient_inputs),
+            Err(LaneTransitionError::Execution(
+                LaneExecutionError::InsufficientFlask { .. }
+            ))
+        ));
+
+        let mut gain_max_inputs = inputs(1, 1, LaneWaveResult::Held);
+        gain_max_inputs.execution = gain_max_inputs
+            .execution
+            .with_flask_gained(LaneFlask::new(MAX_LANE_FLASK).unwrap());
+        let gain_max_inputs = gain_max_inputs.with_mana_spent(LaneMana::zero());
+
+        let res1 = transition_lane(&state, &validated, &gain_max_inputs).expect("transition max");
+        let max_flask_state = reopen_lane_window(&res1).expect("reopen");
+
+        let (rec2, req2) = request(&max_flask_state, LaneIntent::Stabilize);
+        let val2 = validate_lane_request(&max_flask_state, &rec2, &req2).expect("valid");
+
+        let mut overflow_inputs_2 = inputs(1, 1, LaneWaveResult::Held);
+        overflow_inputs_2.execution = overflow_inputs_2
+            .execution
+            .with_flask_gained(LaneFlask::new(1).unwrap());
+        let overflow_inputs_2 = overflow_inputs_2.with_mana_spent(LaneMana::zero());
+
+        assert!(matches!(
+            transition_lane(&max_flask_state, &val2, &overflow_inputs_2),
+            Err(LaneTransitionError::Execution(
+                LaneExecutionError::FlaskOverflow { .. }
+            ))
+        ));
+    }
+
 
 
 

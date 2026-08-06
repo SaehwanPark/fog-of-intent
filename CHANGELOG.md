@@ -34,6 +34,15 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.46 — 2026-08-06
+
+### Added
+
+- Added `LaneFlask` bounded player consumable resource abstraction (maximum 5, zero default, `LANE_FLASK_HASH_TAG` state-hash binding).
+- Exposed `self_flask` in `LanerObservation` and `laner_flask` in `AlliedLaneObservation`.
+- Supported `flask_gained` and `flask_spent` resolution during execution with direct-immediate `FlaskGained`/`FlaskSpent`/`FlaskChanged` events and effects, debrief recording, and replay verification.
+- Rejection of flask overflow (`FlaskOverflow`) or spending without available flasks (`InsufficientFlask`) before state mutation.
+
 ## 0.1.45 — 2026-08-06
 
 ### Added
