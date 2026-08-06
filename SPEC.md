@@ -564,6 +564,14 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Phial overflow exceeding maximum bounds (`MAX_LANE_PHIAL`) or spending without available phials fails before transition state mutation with `LaneExecutionError::PhialOverflow` or `LaneExecutionError::InsufficientPhial`.
 - Three focused phial-resource tests plus the prior 141 tests pass, for 144 Rust tests total.
 
+#### Delivered in the bounded flask-resource follow-up
+
+- `LaneFlask` is a bounded player consumable resource with zero default and non-zero state-hash and allied visible-digest tags (`LANE_FLASK_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` expose player flask count (`self_flask`, `laner_flask`) without exposing opponent flask count.
+- `LaneExecutionInputs` supports `flask_gained` and `flask_spent` resolution during execution with direct-immediate `FlaskGained`/`FlaskSpent`/`FlaskChanged` events and effects, debrief recording, and `LaneRecordIdentity` integration.
+- Flask overflow exceeding maximum bounds (`MAX_LANE_FLASK`) or spending without available flasks fails before transition state mutation with `LaneExecutionError::FlaskOverflow` or `LaneExecutionError::InsufficientFlask`.
+- Three focused flask-resource tests plus the prior 144 tests pass, for 147 Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
