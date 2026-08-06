@@ -34,6 +34,15 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.44 — 2026-08-06
+
+### Added
+
+- Added `LaneAmulet` bounded player consumable resource abstraction (maximum 5, zero default, `LANE_AMULET_HASH_TAG` state-hash binding).
+- Exposed `self_amulet` in `LanerObservation` and `laner_amulet` in `AlliedLaneObservation`.
+- Supported `amulet_gained` and `amulet_spent` resolution during execution with direct-immediate `AmuletGained`/`AmuletSpent`/`AmuletChanged` events and effects, debrief recording, and replay verification.
+- Rejection of amulet overflow (`AmuletOverflow`) or spending without available amulets (`InsufficientAmulet`) before state mutation.
+
 ## 0.1.43 — 2026-08-06
 
 ### Added
