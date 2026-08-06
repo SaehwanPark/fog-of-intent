@@ -55,6 +55,7 @@ pub(crate) struct PlayerResources {
     pub(crate) sigil: LaneSigil,
     pub(crate) talisman: LaneTalisman,
     pub(crate) amulet: LaneAmulet,
+    pub(crate) phial: LanePhial,
 }
 
 impl PlayerResources {
@@ -80,6 +81,7 @@ impl PlayerResources {
             sigil: LaneSigil::zero(),
             talisman: LaneTalisman::zero(),
             amulet: LaneAmulet::zero(),
+            phial: LanePhial::zero(),
         }
     }
 
@@ -132,6 +134,7 @@ pub struct PlayerLaneState {
     pub(crate) sigil: LaneSigil,
     pub(crate) talisman: LaneTalisman,
     pub(crate) amulet: LaneAmulet,
+    pub(crate) phial: LanePhial,
     pub(crate) position: LanePosition,
 }
 
@@ -165,6 +168,7 @@ impl PlayerLaneState {
             sigil: resources.sigil,
             talisman: resources.talisman,
             amulet: resources.amulet,
+            phial: resources.phial,
             position,
         }
     }
@@ -191,6 +195,7 @@ impl PlayerLaneState {
             sigil: self.sigil,
             talisman: self.talisman,
             amulet: self.amulet,
+            phial: self.phial,
         }
     }
 
@@ -354,6 +359,7 @@ impl PlayerLaneState {
                 sigil: LaneSigil::zero(),
                 talisman: LaneTalisman::zero(),
                 amulet: LaneAmulet::zero(),
+                phial: LanePhial::zero(),
             },
             position,
         )
@@ -445,6 +451,10 @@ impl PlayerLaneState {
 
     pub fn amulet(self) -> LaneAmulet {
         self.amulet
+    }
+
+    pub fn phial(self) -> LanePhial {
+        self.phial
     }
 
     pub fn position(self) -> LanePosition {
@@ -819,6 +829,9 @@ impl LaneSnapshot {
         }
         if self.player.amulet() != LaneAmulet::zero() {
             hash = hash_bytes(hash, &[LANE_AMULET_HASH_TAG, self.player.amulet().value()]);
+        }
+        if self.player.phial() != LanePhial::zero() {
+            hash = hash_bytes(hash, &[LANE_PHIAL_HASH_TAG, self.player.phial().value()]);
         }
         hash = hash_bytes(hash, &[position_tag(self.player.position())]);
         hash = hash_bytes(

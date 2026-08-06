@@ -556,6 +556,14 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Amulet overflow exceeding maximum bounds (`MAX_LANE_AMULET`) or spending without available amulets fails before transition state mutation with `LaneExecutionError::AmuletOverflow` or `LaneExecutionError::InsufficientAmulet`.
 - Three focused amulet-resource tests plus the prior 138 tests pass, for 141 Rust tests total.
 
+#### Delivered in the bounded phial-resource follow-up
+
+- `LanePhial` is a bounded player consumable resource with zero default and non-zero state-hash and allied visible-digest tags (`LANE_PHIAL_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` expose player phial count (`self_phial`, `laner_phial`) without exposing opponent phial count.
+- `LaneExecutionInputs` supports `phial_gained` and `phial_spent` resolution during execution with direct-immediate `PhialGained`/`PhialSpent`/`PhialChanged` events and effects, debrief recording, and `LaneRecordIdentity` integration.
+- Phial overflow exceeding maximum bounds (`MAX_LANE_PHIAL`) or spending without available phials fails before transition state mutation with `LaneExecutionError::PhialOverflow` or `LaneExecutionError::InsufficientPhial`.
+- Three focused phial-resource tests plus the prior 141 tests pass, for 144 Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
