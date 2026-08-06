@@ -580,6 +580,14 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Incense overflow exceeding maximum bounds (`MAX_LANE_INCENSE`) or spending without available incenses fails before transition state mutation with `LaneExecutionError::IncenseOverflow` or `LaneExecutionError::InsufficientIncense`.
 - Three focused incense-resource tests plus the prior 147 tests pass, for 150 Rust tests total.
 
+#### Delivered in the bounded salve-resource follow-up
+
+- `LaneSalve` is a bounded player consumable resource with zero default and non-zero state-hash and allied visible-digest tags (`LANE_SALVE_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` expose player salve count (`self_salve`, `laner_salve`) without exposing opponent salve count.
+- `LaneExecutionInputs` supports `salve_gained` and `salve_spent` resolution during execution with direct-immediate `SalveGained`/`SalveSpent`/`SalveChanged` events and effects, debrief recording, and `LaneRecordIdentity` integration.
+- Salve overflow exceeding maximum bounds (`MAX_LANE_SALVE`) or spending without available salves fails before transition state mutation with `LaneExecutionError::SalveOverflow` or `LaneExecutionError::InsufficientSalve`.
+- Three focused salve-resource tests plus the prior 150 tests pass, for 153 Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield

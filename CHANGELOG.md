@@ -34,6 +34,15 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.48 — 2026-08-06
+
+### Added
+
+- Added `LaneSalve` bounded player consumable resource abstraction (maximum 5, zero default, `LANE_SALVE_HASH_TAG` state-hash binding).
+- Exposed `self_salve` in `LanerObservation` and `laner_salve` in `AlliedLaneObservation`.
+- Supported `salve_gained` and `salve_spent` resolution during execution with direct-immediate `SalveGained`/`SalveSpent`/`SalveChanged` events and effects, debrief recording, and replay verification.
+- Rejection of salve overflow (`SalveOverflow`) or spending without available salves (`InsufficientSalve`) before state mutation.
+
 ## 0.1.47 — 2026-08-06
 
 ### Added
