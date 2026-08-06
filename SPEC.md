@@ -160,6 +160,10 @@ exists. Planned proposal or roadmap text is never implementation evidence.
   observations expose those role identities while retaining their existing
   hidden-state redaction; the roster is scenario metadata and is not hashed into
   mutable lane state.
+- The minimum diagnostic state is bounded `LanePosition`, `LaneHealth`,
+  `WavePressure`, and the `LaneResources` aggregate containing mana, cooldown,
+  gold, and experience. These values remain host-owned and flow through
+  explicit execution inputs, projections, hashing, and replay.
 - M1 ruleset, codec, fixtures, hashes, and test behavior remain unchanged. The
   complete M2 exit criteria below remain unchecked.
 
@@ -176,6 +180,13 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 This establishes actor-role identity and observation completeness only. It does
 not establish a complete vision/belief model, communication, pacing, balance,
 playability, or human-experience evidence.
+
+#### Reconciled in the bounded minimum-abstraction follow-up
+
+- Promoted the M2 minimum lane/wave/position/health/resource checklist item from
+  existing implementation evidence; no runtime code or package version changed.
+- Kept the current contract bounded to the diagnostic window and explicitly
+  deferred a complete economy, balance, and playable scenario.
 
 #### Historical M2 v1 slices (retired; preserved as changelog evidence)
 
