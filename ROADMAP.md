@@ -303,7 +303,7 @@ a causal debrief.
   lane, preparing a gank, or recalling with limited loss.
 - [x] Define one human-controlled laner, one opposing laner, one allied autonomous
   actor, and one abstract opposing jungle threat.
-- [ ] Define the minimum lane, wave, position, health, mana, cooldown, gold, and
+- [x] Define the minimum lane, wave, position, health, mana, cooldown, gold, and
   experience abstractions needed by the scenario.
 - [ ] Define vision, last-known information, belief updates, unknowns, and report
   wording without exposing latent values.
@@ -609,6 +609,18 @@ This evidence establishes one bounded cooldown resource. It does not establish c
 This evidence establishes actor-role completeness for the bounded M2 contract;
 it does not establish complete vision, belief updates, communication, threat
 execution, pacing, or a playable scenario.
+
+### Current bounded minimum-abstraction evidence
+
+- [x] Define bounded lane positions, player/opponent health, wave pressure, and
+  the `LaneResources` aggregate for mana, cooldown, gold, and experience.
+- [x] Carry those values through the host-owned snapshot, state hash, and replay
+  checks; expose only actor-authorized player fields and bounded reports, while
+  explicit execution inputs carry resolved damage, wave, and resource changes.
+
+This evidence establishes the minimum typed state needed by the current
+diagnostic window only; it does not establish a complete economy, balance, or
+playable scenario.
 
 The following older resource-slice notes are retained as historical evidence
 only. Bounty, level, minion kills, shield, ward, and the sixteen experimental

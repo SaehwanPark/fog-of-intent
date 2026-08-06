@@ -145,6 +145,15 @@ authority, while player and allied projections expose only authorized
 player-laner values. `LaneStatus` stores either `Open` or
 `Resolved(LaneOutcome)`, and `LaneDelay` prevents zero-beat effects.
 
+Together with bounded `LanePosition`, `LaneHealth`, and `WavePressure`, these
+types are the minimum state abstractions for the current diagnostic window.
+They are host-owned and represented in the snapshot, state hash, and replay.
+Actor projections expose only authorized player fields and bounded reports;
+explicit inputs carry resolved damage, wave, and resource changes, while
+position follows authoritative intent/fallback evaluation, health follows
+validated damage/delayed-effect resolution, and terminal outcome is evaluated
+from the resulting values. They are not a complete economy or balance model.
+
 The player projection also applies one fixed FarSide opponent sighting rule;
 health/posture and allied opponent reports remain hidden, and complete vision
 or belief state has not been added. Both player and allied projections carry the

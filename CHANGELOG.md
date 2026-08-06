@@ -33,6 +33,9 @@ not increment the package version.
 - M1 is promoted to complete after its replay, codec, determinism, and bounded
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
+- Reconciled the M2 minimum lane/wave/position/health/resource checklist item
+  with the existing bounded v2 implementation; no package version increment or
+  runtime change was needed.
 
 ## 0.1.50 — 2026-08-06
 
