@@ -34,6 +34,15 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.42 — 2026-08-06
+
+### Added
+
+- Added `LaneSigil` bounded player consumable resource abstraction (maximum 5, zero default, `LANE_SIGIL_HASH_TAG` state-hash binding).
+- Exposed `self_sigil` in `LanerObservation` and `laner_sigil` in `AlliedLaneObservation`.
+- Supported `sigil_gained` and `sigil_spent` resolution during execution with direct-immediate `SigilGained`/`SigilSpent`/`SigilChanged` events and effects, debrief recording, and replay verification.
+- Rejection of sigil overflow (`SigilOverflow`) or spending without available sigils (`InsufficientSigil`) before state mutation.
+
 ## 0.1.41 — 2026-08-06
 
 ### Added
