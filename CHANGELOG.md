@@ -34,6 +34,15 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.45 — 2026-08-06
+
+### Added
+
+- Added `LanePhial` bounded player consumable resource abstraction (maximum 5, zero default, `LANE_PHIAL_HASH_TAG` state-hash binding).
+- Exposed `self_phial` in `LanerObservation` and `laner_phial` in `AlliedLaneObservation`.
+- Supported `phial_gained` and `phial_spent` resolution during execution with direct-immediate `PhialGained`/`PhialSpent`/`PhialChanged` events and effects, debrief recording, and replay verification.
+- Rejection of phial overflow (`PhialOverflow`) or spending without available phials (`InsufficientPhial`) before state mutation.
+
 ## 0.1.44 — 2026-08-06
 
 ### Added

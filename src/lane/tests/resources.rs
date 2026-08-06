@@ -2159,6 +2159,119 @@
         ));
     }
 
+    #[test]
+    fn phial_is_bounded_and_default_zero() {
+        let state = LaneSnapshot::initial();
+        assert_eq!(state.player().phial(), LanePhial::zero());
+        assert_eq!(state.player().phial().value(), 0);
+
+        let obs = observe_player(&state, ObservationId::new(1)).observation();
+        assert_eq!(obs.self_phial(), LanePhial::zero());
+
+        let allied = observe_allied(&state, ObservationId::new(1)).observation();
+        assert_eq!(allied.laner_phial(), LanePhial::zero());
+
+        assert!(LanePhial::new(MAX_LANE_PHIAL).is_ok());
+        assert!(LanePhial::new(MAX_LANE_PHIAL + 1).is_err());
+    }
+
+    #[test]
+    fn phial_gained_and_spent_are_direct_immediate_and_replayable() {
+        let state = LaneSnapshot::initial();
+        let (receipt, req) = request(&state, LaneIntent::Stabilize);
+        let validated = validate_lane_request(&state, &receipt, &req).expect("valid");
+
+        let phial_gained = LanePhial::new(3).expect("3 phials");
+        let mut inputs_w1 = inputs(1, 1, LaneWaveResult::Held);
+        inputs_w1.execution = inputs_w1.execution.with_phial_gained(phial_gained);
+        let inputs_w1 = inputs_w1.with_mana_spent(LaneMana::zero());
+
+        let result = transition_lane(&state, &validated, &inputs_w1).expect("transition 1");
+        assert_eq!(result.next_state().player().phial(), phial_gained);
+        assert_eq!(result.debrief().phial_gained(), phial_gained);
+        assert_eq!(result.debrief().phial_spent(), LanePhial::zero());
+
+        assert!(result.events().iter().any(|e| matches!(
+            e,
+            LaneEvent::PhialGained { amount, .. } if *amount == phial_gained
+        )));
+        assert!(result.effects().iter().any(|e| matches!(
+            e,
+            LaneEffect::PhialChanged { before, after, provenance, .. }
+                if *before == LanePhial::zero()
+                    && *after == phial_gained
+                    && provenance.relation() == LaneEffectRelation::Direct
+                    && provenance.timing() == LaneEffectTiming::Immediate
+        )));
+
+        let state_w2 = reopen_lane_window(&result).expect("reopen");
+        let (rec2, req2) = request(&state_w2, LaneIntent::Stabilize);
+        let val2 = validate_lane_request(&state_w2, &rec2, &req2).expect("valid 2");
+
+        let phial_spent = LanePhial::new(2).expect("2 phials");
+        let mut inputs_w2 = inputs(1, 1, LaneWaveResult::Held);
+        inputs_w2.execution = inputs_w2.execution.with_phial_spent(phial_spent);
+        let inputs_w2 = inputs_w2.with_mana_spent(LaneMana::zero());
+
+        let result2 = transition_lane(&state_w2, &val2, &inputs_w2).expect("transition 2");
+        assert_eq!(result2.next_state().player().phial(), LanePhial::new(1).unwrap());
+        assert_eq!(result2.debrief().phial_spent(), phial_spent);
+
+        assert!(result2.events().iter().any(|e| matches!(
+            e,
+            LaneEvent::PhialSpent { amount, .. } if *amount == phial_spent
+        )));
+
+        let mut history = LaneHistory::new(state).expect("valid history");
+        history.append(&receipt, &req, inputs_w1).expect("append 1");
+        assert_eq!(history.verify_replay(), Ok(result.next_state()));
+    }
+
+    #[test]
+    fn phial_overflow_and_insufficient_are_rejected() {
+        let state = LaneSnapshot::initial();
+        let (receipt, req) = request(&state, LaneIntent::Stabilize);
+        let validated = validate_lane_request(&state, &receipt, &req).expect("valid");
+
+        let mut insufficient_inputs = inputs(1, 1, LaneWaveResult::Held);
+        insufficient_inputs.execution = insufficient_inputs
+            .execution
+            .with_phial_spent(LanePhial::new(1).unwrap());
+        let insufficient_inputs = insufficient_inputs.with_mana_spent(LaneMana::zero());
+
+        assert!(matches!(
+            transition_lane(&state, &validated, &insufficient_inputs),
+            Err(LaneTransitionError::Execution(
+                LaneExecutionError::InsufficientPhial { .. }
+            ))
+        ));
+
+        let mut gain_max_inputs = inputs(1, 1, LaneWaveResult::Held);
+        gain_max_inputs.execution = gain_max_inputs
+            .execution
+            .with_phial_gained(LanePhial::new(MAX_LANE_PHIAL).unwrap());
+        let gain_max_inputs = gain_max_inputs.with_mana_spent(LaneMana::zero());
+
+        let res1 = transition_lane(&state, &validated, &gain_max_inputs).expect("transition max");
+        let max_phial_state = reopen_lane_window(&res1).expect("reopen");
+
+        let (rec2, req2) = request(&max_phial_state, LaneIntent::Stabilize);
+        let val2 = validate_lane_request(&max_phial_state, &rec2, &req2).expect("valid");
+
+        let mut overflow_inputs_2 = inputs(1, 1, LaneWaveResult::Held);
+        overflow_inputs_2.execution = overflow_inputs_2
+            .execution
+            .with_phial_gained(LanePhial::new(1).unwrap());
+        let overflow_inputs_2 = overflow_inputs_2.with_mana_spent(LaneMana::zero());
+
+        assert!(matches!(
+            transition_lane(&max_phial_state, &val2, &overflow_inputs_2),
+            Err(LaneTransitionError::Execution(
+                LaneExecutionError::PhialOverflow { .. }
+            ))
+        ));
+    }
+
 
 
 
