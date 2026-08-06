@@ -1,25 +1,25 @@
 # Architecture
 
-**Last reviewed:** 2026-08-05
+**Last reviewed:** 2026-08-06
 **Status:** Partially verified — M1 kernel and fixture codec are implemented;
-M2 scenario architecture remains a bounded target under construction, with the
-first internal lane decision window, bounded branch, one-window allied
+M2 remains an internal bounded target under construction. The current M2 v2
+contract includes the lane decision window, retained-resource aggregate,
+typed lifecycle status, delayed effects, branch, one-window allied
 proposal/coordination overlay, terminal-objective projection, matched-input
-strategy fixtures, bounded two-window wrapper, final debrief projection, one
-bounded player-facing Recall intent, a bounded last-known threat report, a
-conditional Withdraw response, one bounded TwoBeats duration, bounded
-direct/indirect immediate effect provenance, and bounded player resources
-(mana, gold, experience, cooldown, bounty, level, minion kills, shield, and ward) implemented
+strategy fixtures, bounded two-window wrapper, final debrief projection,
+Recall/Withdraw/Yield intents, and versioned replay identities. Experimental
+M2 v1 resource slices are retired history and are not part of the current
+surface.
 
 ## Overview
 
 Fog of Intent is currently a single Rust 2024 package with no dependencies. The
-binary still prints `Hello, world!`; an internal `kernel` library now provides
-the first bounded deterministic transition and in-memory replay fixture. No
-playable scenario, CLI command host, persistence, MCP, research, or GUI
-component exists yet. M1 is complete as an internal, non-playable fixture;
-M2 currently begins with a lane decision-window contract rather than a user-
-facing host.
+binary still prints `Hello, world!`; internal `kernel` and `lane` modules
+provide bounded deterministic transitions, in-memory history, replay,
+branching, coordination, objective, and debrief fixtures. No playable
+scenario, CLI command host, persistence, MCP, research, or GUI component exists
+yet. M1 is complete as an internal, non-playable fixture; M2 remains a bounded
+lane contract rather than a user-facing host.
 
 The target architecture is one authoritative Rust simulation product with thin
 human, agent, and research adapters. The strongest boundary is:
@@ -61,7 +61,10 @@ _workspace/
 `src/lib.rs`, `src/kernel.rs`, `src/lane/`, and `src/serialization.rs` are the
 current internal kernel/fixture surface; `src/main.rs` remains a placeholder
 executable. The lane surface is split into private responsibility-oriented
-modules behind the existing `crate::lane::*` facade. The other paths are
+modules behind the existing `crate::lane::*` facade: `evaluation.rs` owns
+authoritative state evaluation, `projection.rs` owns ordered event/effect
+projection, `result.rs` owns transition result/debrief assembly, and
+`transition.rs` owns the public types and façade. The other paths are
 project-state, design-source, and agent-workflow artifacts.
 
 ## Target Components
@@ -134,10 +137,13 @@ one-window transition. A branch borrows and verifies the parent history, then
 owns only a copied one-window record and branch metadata; the old branch API
 does not silently discard a future coordination overlay.
 
-The current player-lane state also carries a bounded mana value. Full mana is
-the compatibility default; Contest-only resolved spending is applied by the
-same transition authority, while player and allied projections expose only the
-authorized player-laner value.
+The current player-lane state carries one `LaneResources` aggregate containing
+bounded mana, gold, experience, and cooldown. Execution uses the corresponding
+`LaneResourceInputs` aggregate. Full mana and zero values for the other
+resources are defaults; resolved changes are applied by the same transition
+authority, while player and allied projections expose only authorized
+player-laner values. `LaneStatus` stores either `Open` or
+`Resolved(LaneOutcome)`, and `LaneDelay` prevents zero-beat effects.
 
 The player projection also applies one fixed FarSide opponent sighting rule;
 health/posture and allied opponent reports remain hidden, and complete vision
@@ -186,9 +192,9 @@ to reduce type count.
   interface and must not contaminate playable policies or metrics.
 - Debriefs evaluate decisions using information available at decision time.
 - Current effects expose direct/indirect and immediate/delayed vocabulary while
-  retaining their existing cause/trace attribution; only immediate effects are
-  emitted today, and delayed effects, broader causal chains, and stochastic
-  provenance remain open.
+  retaining their existing cause/trace attribution. A bounded delayed-effect
+  queue is implemented; broader causal chains and stochastic provenance remain
+  open.
 - A good decision may fail and a poor decision may succeed; the model and
   presentation must support that distinction.
 
@@ -268,18 +274,16 @@ and an architecture update or ADR when it changes a consequential boundary.
 
 ## Known Gaps
 
-- The M1 kernel/codec and first M2 lane decision-window/branch/coordination/objective/fixture/two-window contracts are implemented
-  internally, but they are not a playable scenario, public API, migration
-  framework, or persistence service.
-- The M2 window, one bounded branch, allied proposal/coordination overlay, one
-  terminal-objective review, three strategy fixtures, two-window wrapper, and
-  bounded Recall intent, last-known threat report, conditional Withdraw
-  response, bounded mana resource, and bounded opponent last-known report remain
-  bounded: no communication system, complete vision/belief model, automatic
-  threat damage, adaptive pacing,
-  manual tick semantics, cooldowns, gold, experience, resource restoration,
-  external scenario serialization, branch tree, or broader debrief surface is
-  implemented.
+- The M1 kernel/codec and M2 v2 lane decision-window, branch, coordination,
+  objective, strategy-fixture, two-window, final-debrief, retained-resource,
+  intent, and
+  observation contracts are implemented internally, but they are not a
+  playable scenario, external API, migration framework, or persistence service.
+- M2 still lacks a communication system, complete vision/belief model,
+  automatic threat damage, adaptive pacing, a complete item/resource economy,
+  external scenario serialization, a branch tree, and a broader debrief
+  surface. The retired v1 bounty, level, minion-kills, shield, ward, and
+  consumable slices are historical evidence only.
 - Richer external replay bundles and scenario-specific schema fields remain
   open work.
 - `.github/workflows/ci.yml` and `scripts/check_repository.py` now define the

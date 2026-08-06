@@ -128,7 +128,7 @@
     }
 
 #[test]
-    fn objective_replay_rejects_tampered_inputs_or_review_and_hides_state_hash_from_report() {
+fn objective_replay_rejects_tampered_inputs_or_review_and_hides_state_hash_from_report() {
         let state = LaneSnapshot::initial();
         let (receipt, request) = request(&state, LaneIntent::Contest);
         let mut history = LaneHistory::new(state).expect("valid");
@@ -169,11 +169,18 @@
             ObjectiveCoordination::NotApplicable,
             trace(5, 0),
         );
-        assert_eq!(
-            evaluate_terminal_objective(ScenarioGoal::HoldLaneSpaceThroughWindow, &unsupported,),
-            Err(ObjectiveError::UnsupportedReplayId)
-        );
-    }
+    assert_eq!(
+        evaluate_terminal_objective(ScenarioGoal::HoldLaneSpaceThroughWindow, &unsupported,),
+        Err(ObjectiveError::UnsupportedReplayId)
+    );
+
+    let mut old_record = record.clone();
+    old_record.replay_id = "m2-one-lane-window-v1";
+    assert_eq!(
+        review_lane_objective(ScenarioGoal::HoldLaneSpaceThroughWindow, &old_record),
+        Err(ObjectiveError::UnsupportedReplayId)
+    );
+}
 
 #[test]
     fn named_strategy_fixtures_are_matched_input_and_replayable() {

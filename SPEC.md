@@ -1,7 +1,7 @@
 # Project Specification
 
 **Status:** Active project-state index
-**Last reviewed:** 2026-08-04
+**Last reviewed:** 2026-08-06
 
 This file records verified past, the small active slice, and intentionally
 deferred future work. It is not the product proposal, roadmap, issue tracker, or
@@ -141,7 +141,24 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Preserve append-only history and replay identity while leaving the binary,
   CLI, full scenario, and external adapters deferred.
 
-#### Delivered in the first bounded slice
+#### Current M2 v2 contract — 2026-08-06
+
+- The authoritative lane snapshot stores `LaneStatus::{Open,
+  Resolved(LaneOutcome)}` rather than correlated phase/outcome fields.
+- The authoritative lane state retains only health, mana, gold, experience,
+  cooldown, wave, position, threat-backed state, and delayed effects;
+  `LaneResources` groups the player mana/gold/experience/cooldown fields, and
+  `LaneResourceInputs` is the execution aggregate for their deltas.
+- `LaneDelay` rejects zero-beat delayed effects, cooldown ticking saturates for
+  every `u32`, and histories must begin from `LaneStatus::Open`.
+- Ruleset `3`, the v2 player/allied observation schemas, v2 replay/profile/
+  strategy identities, and the base-record replay identity are current internal
+  identifiers. M2 v1 has no release, tag, external codec, or supported artifact;
+  old M2 inputs fail closed and have no migration.
+- M1 ruleset, codec, fixtures, hashes, and test behavior remain unchanged. The
+  complete M2 exit criteria below remain unchecked.
+
+#### Historical M2 v1 slices (retired; preserved as changelog evidence)
 
 - `src/lane/` defines bounded lane health, damage, wave pressure, positions,
   phase, opponent truth, hidden threat truth, terminal outcome, and the fixed
@@ -610,11 +627,12 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 #### Not Yet Done
 
 - The complete lane scenario still needs complete vision/belief updates,
-  adaptive pacing, richer resource abstractions, communication, automatic
-  threat/execution timing, delayed effects, causal completeness, cooldown/gold/
-  experience systems, memory/communication-aware reports, and a broader
-  debrief surface; the opponent-report follow-up is one fixed sighting rule and
-  does not implement complete vision or beliefs.
+  adaptive pacing, communication, automatic threat/execution timing, causal
+  completeness, memory/communication-aware reports, a broader debrief surface,
+  and an evidence-backed resource economy. The current delayed effects,
+  cooldown, gold, and experience slices are bounded fixtures rather than a
+  complete economy; the opponent-report follow-up is one fixed sighting rule
+  and does not implement complete vision or beliefs.
 - CLI, MCP, full agent ecology, and human-experience evidence remain future
   M3/M4+ work; this diagnostic slice is not playable and makes no enjoyment,
   accessibility, trust, or behavioral-validity claim.

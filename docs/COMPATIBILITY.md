@@ -1,9 +1,15 @@
 # Artifact and Replay Compatibility
 
 This document defines the minimum compatibility contract for the local M1
-snapshot/history fixtures before any schema or replay bundle becomes an
-external artifact. The repository has a strict dependency-free `1.0.0` text
-codec; it does not provide migrations or external backward-compatibility support.
+snapshot/history fixtures and the internal M2 replay identities before any
+schema or replay bundle becomes an external artifact. The repository has a
+strict dependency-free `1.0.0` M1 text codec; it does not provide migrations or
+external backward-compatibility support.
+
+M2 v1 is retired internal history. It has no release, tag, external codec, or
+supported artifact, so there is no migration path. The current M2 contract uses
+ruleset `3`, v2 observation/profile/replay/strategy identities, and explicit
+base-record replay IDs; any v1 M2 input must fail closed.
 
 ## Versioned identity
 

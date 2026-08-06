@@ -34,6 +34,49 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.50 — 2026-08-06
+
+### Changed
+
+- Audited the current M2 implementation and reconciled README, specification,
+  architecture, and repository-currentness claims with the verified internal
+  kernel and replay fixtures.
+- The repository checker now rejects a stale README package version.
+
+### Known limits
+
+- The M2 lane contract remains an internal diagnostic fixture; the complete
+  scenario, CLI, MCP, persistence, and human-evidence work remain deferred.
+
+## 0.1.51 — 2026-08-06
+
+### Changed
+
+- Replaced the experimental M2 v1 resource surface with the versioned M2 v2
+  contract: retained resources use `LaneResources` and `LaneResourceInputs`,
+  lifecycle uses `LaneStatus`, and delayed effects require non-zero `LaneDelay`.
+- Retired bounty, level, minion kills, shield, ward, and the sixteen
+  experimental consumable slices from state, observations, execution inputs,
+  events/effects, debriefs, errors, hashes, and replay identities.
+- Versioned current M2 ruleset, observations, replay/profile/strategy fixtures,
+  and base transition-record identities. M2 v1 has no migration because it was
+  never an external or supported artifact; M1 fixtures and codec remain exact.
+- Bound delayed-effect execution inputs into the v2 lane record identity and
+  made objective verification reject retired record IDs.
+- Updated canonical project-state documents to distinguish current v2 evidence
+  from retired v1 history without marking the complete M2 exit criteria done.
+
+## 0.1.52 — 2026-08-06
+
+### Changed
+
+- Decomposed the retained M2 transition into private authoritative evaluation
+  and ordered event/effect projection modules behind the unchanged `lane`
+  facade and v2 contract.
+- Added characterization coverage for v2 hashes, replay identity, lifecycle,
+  retained resource bounds, delayed effects, observations, branches,
+  coordination, scenarios, strategy fixtures, and final debrief replay.
+
 ## 0.1.49 — 2026-08-06
 
 ### Added

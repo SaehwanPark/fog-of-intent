@@ -17,7 +17,7 @@
 
         assert_eq!(
             branch.identity().replay_id(),
-            "m2-one-lane-window-branch-v1"
+            M2_BRANCH_REPLAY_ID
         );
         assert_eq!(
             branch.identity().execution_mode(),
@@ -140,7 +140,7 @@
     }
 
 #[test]
-    fn parent_record_identity_preserves_neutral_input_provenance() {
+fn parent_record_identity_preserves_neutral_input_provenance() {
         let state = LaneSnapshot::initial();
         let (receipt, parent_request) = request(&state, LaneIntent::Contest);
         let parent_inputs = inputs(1, 1, LaneWaveResult::Held);
@@ -258,6 +258,17 @@
             tampered.verify_replay(&parent),
             Err(LaneBranchError::BranchReplayMismatch)
         );
+        let mut old_identity = branch_from_window(
+            &parent,
+            &alternate,
+            BranchExecutionSelection::matched_parent(),
+        )
+        .expect("branch");
+        old_identity.identity.replay_id = "m2-one-lane-window-branch-v1";
+        assert_eq!(
+            old_identity.verify_replay(&parent),
+            Err(LaneBranchError::BranchReplayMismatch)
+        );
     }
 
 #[test]
@@ -282,6 +293,42 @@ fn branch_parent_record_identity_hash_remains_stable() {
 
     assert_eq!(
         branch.identity().parent_record_identity().value(),
-        15_128_027_512_774_469_724
+        18_127_853_837_247_512_108
+    );
+}
+
+#[test]
+fn parent_record_identity_binds_delayed_effect_inputs() {
+    let state = LaneSnapshot::initial();
+    let (receipt, request) = request(&state, LaneIntent::Contest);
+    let effect = LaneDelayedEffect::new(
+        LaneDelay::new(2).expect("bounded delay"),
+        LaneDelayedEffectKind::SelfHealthRegen {
+            amount: LaneHealth::new(1).expect("bounded health"),
+        },
+    );
+    let plain_inputs = inputs(0, 0, LaneWaveResult::Held);
+    let delayed_inputs = plain_inputs.execution().with_delayed_effect(effect);
+    let mut plain_parent = LaneHistory::new(state).expect("valid");
+    plain_parent
+        .append(&receipt, &request, plain_inputs)
+        .expect("append");
+    let mut delayed_parent = LaneHistory::new(state).expect("valid");
+    delayed_parent
+        .append(
+            &receipt,
+            &request,
+            LaneResolvedInputs::new(
+                plain_inputs.environment(),
+                plain_inputs.observation(),
+                plain_inputs.policy(),
+                plain_inputs.coordination(),
+                delayed_inputs,
+            ),
+        )
+        .expect("append");
+    assert_ne!(
+        lane_record_identity(&plain_parent.records()[0]),
+        lane_record_identity(&delayed_parent.records()[0])
     );
 }

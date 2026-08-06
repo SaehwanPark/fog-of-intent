@@ -4,7 +4,7 @@
         let second = LaneSnapshot::new(
             M2_LANE_RULESET,
             first.turn(),
-            LanePhase::Open,
+            LaneStatus::Open,
             first.player(),
             OpponentTruth::new(
                 OPPONENT_LANER,
@@ -14,7 +14,6 @@
             ),
             first.wave(),
             JungleThreatTruth::Absent,
-            None,
         );
         let first_receipt = observe_allied(&first, ObservationId::new(12));
         let second_receipt = observe_allied(&second, ObservationId::new(12));
@@ -44,16 +43,16 @@
         let state = LaneSnapshot::new(
             M2_LANE_RULESET,
             Turn::new(0),
-            LanePhase::Open,
+            LaneStatus::Open,
             PlayerLaneState::new(
                 PLAYER_LANER,
                 LaneHealth::new(2).expect("bounded"),
+                LaneResources::initial(),
                 LanePosition::Center,
             ),
             LaneSnapshot::initial().opponent(),
             WaveState::new(WavePressure::new(3).expect("bounded")),
             JungleThreatTruth::InLane,
-            None,
         );
         let receipt = observe_allied(&state, ObservationId::new(13));
         let proposal =
@@ -230,6 +229,12 @@
         assert_eq!(history.records().len(), 1);
         assert_eq!(history.records()[0].replay_id(), M2_COORDINATION_REPLAY_ID);
         assert_eq!(history.verify_replay(), Ok(history.current_state()));
+        history.records[0].replay_id = "m2-one-lane-coordination-v1";
+        assert_eq!(
+            history.verify_replay(),
+            Err(CoordinationError::ReplayMismatch)
+        );
+        history.records[0].replay_id = M2_COORDINATION_REPLAY_ID;
         history.records[0].request = CoordinatedLaneRequest::new(
             request.intent(),
             ProposalResponse::Reject {

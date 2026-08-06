@@ -76,6 +76,28 @@ class CurrentnessCheckerTests(unittest.TestCase):
             check_repository.check_currentness(root, errors)
             self.assertTrue(any("does not mark M1" in error for error in errors))
 
+    def test_rejects_stale_documented_package_version(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "README.md").write_text(
+                "| Rust package | `0.1.48`, edition 2024, Rust `1.96`, "
+                "no dependencies, single package |\n"
+            )
+            errors: list[str] = []
+            check_repository.check_documented_package_version(root, "0.1.49", errors)
+            self.assertEqual(len(errors), 1)
+
+    def test_accepts_matching_documented_package_version(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "README.md").write_text(
+                "| Rust package | `0.1.49`, edition 2024, Rust `1.96`, "
+                "no dependencies, single package |\n"
+            )
+            errors: list[str] = []
+            check_repository.check_documented_package_version(root, "0.1.49", errors)
+            self.assertEqual(errors, [])
+
 
 class DependencyExceptionTests(unittest.TestCase):
     def dependency(self, name: str, req: str = "^1.0", source: str | None = "registry") -> dict[str, str]:

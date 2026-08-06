@@ -133,6 +133,25 @@ def check_currentness(root: Path = ROOT, errors: list[str] | None = None) -> Non
         errors.append(f"README.md current roadmap milestone does not match {current}")
 
 
+def check_documented_package_version(
+    root: Path, package_version: str, errors: list[str]
+) -> None:
+    """Keep the README package-status row bound to Cargo metadata."""
+    readme = (root / "README.md").read_text()
+    match = re.search(
+        r"^\| Rust package \| `([^`]+)`, edition 2024, Rust `1\.96`,",
+        readme,
+        flags=re.MULTILINE,
+    )
+    if match is None:
+        errors.append("README.md has no parseable Rust package version")
+    elif match.group(1) != package_version:
+        errors.append(
+            "README.md Rust package version does not match Cargo.toml: "
+            f"{match.group(1)} != {package_version}"
+        )
+
+
 def validate_dependency_exceptions(
     dependencies: list[dict[str, str]],
     exceptions: dict[str, dict[str, str]],
@@ -206,6 +225,11 @@ def check_package(errors: list[str]) -> None:
         return
 
     package = manifest.get("package", {})
+    package_version = package.get("version")
+    if not isinstance(package_version, str) or not package_version:
+        errors.append("Cargo.toml package version is missing or invalid")
+    else:
+        check_documented_package_version(ROOT, package_version, errors)
     rust_version = package.get("rust-version")
     if rust_version != "1.96":
         errors.append(f"Cargo.toml rust-version is {rust_version!r}, expected '1.96'")

@@ -1,169 +1,56 @@
 #[test]
-fn player_lane_constructors_preserve_resource_defaults() {
-    let id = PLAYER_LANER;
-    let health = LaneHealth::new(8).expect("bounded health");
-    let position = LanePosition::Center;
-    let mana = LaneMana::new(4).expect("bounded mana");
-    let gold = LaneGold::new(3).expect("bounded gold");
-    let experience = LaneExperience::new(7).expect("bounded experience");
-    let cooldown = LaneCooldown::new(2).expect("bounded cooldown");
-    let bounty = LaneBounty::new(5).expect("bounded bounty");
-    let level = LaneLevel::new(3).expect("bounded level");
-    let minion_kills = LaneMinionKills::new(9).expect("bounded minion kills");
-
-    assert_eq!(
-        PlayerLaneState::new(id, health, position),
-        PlayerLaneState::new_with_absolute_state(
-            id,
-            health,
-            LaneMana::full(),
-            LaneGold::zero(),
-            LaneExperience::zero(),
-            LaneCooldown::zero(),
-            LaneBounty::zero(),
-            LaneLevel::initial(),
-            LaneMinionKills::zero(),
-            position,
-        )
+fn lane_resources_are_constructed_as_one_typed_aggregate() {
+    let resources = LaneResources::new(
+        LaneMana::new(4).expect("bounded mana"),
+        LaneGold::new(3).expect("bounded gold"),
+        LaneExperience::new(7).expect("bounded experience"),
+        LaneCooldown::new(2).expect("bounded cooldown"),
     );
-    assert_eq!(
-        PlayerLaneState::new_with_mana(id, health, mana, position),
-        PlayerLaneState::new_with_absolute_state(
-            id,
-            health,
-            mana,
-            LaneGold::zero(),
-            LaneExperience::zero(),
-            LaneCooldown::zero(),
-            LaneBounty::zero(),
-            LaneLevel::initial(),
-            LaneMinionKills::zero(),
-            position,
-        )
+    let player = PlayerLaneState::new(
+        PLAYER_LANER,
+        LaneHealth::new(8).expect("bounded health"),
+        resources,
+        LanePosition::Center,
     );
-    assert_eq!(
-        PlayerLaneState::new_with_resources(id, health, mana, gold, position),
-        PlayerLaneState::new_with_absolute_state(
-            id,
-            health,
-            mana,
-            gold,
-            LaneExperience::zero(),
-            LaneCooldown::zero(),
-            LaneBounty::zero(),
-            LaneLevel::initial(),
-            LaneMinionKills::zero(),
-            position,
-        )
-    );
-    assert_eq!(
-        PlayerLaneState::new_with_all_resources(id, health, mana, gold, experience, position),
-        PlayerLaneState::new_with_absolute_state(
-            id,
-            health,
-            mana,
-            gold,
-            experience,
-            LaneCooldown::zero(),
-            LaneBounty::zero(),
-            LaneLevel::initial(),
-            LaneMinionKills::zero(),
-            position,
-        )
-    );
-    assert_eq!(
-        PlayerLaneState::new_with_complete_state(
-            id, health, mana, gold, experience, cooldown, position
-        ),
-        PlayerLaneState::new_with_absolute_state(
-            id,
-            health,
-            mana,
-            gold,
-            experience,
-            cooldown,
-            LaneBounty::zero(),
-            LaneLevel::initial(),
-            LaneMinionKills::zero(),
-            position,
-        )
-    );
-    assert_eq!(
-        PlayerLaneState::new_with_full_state(
-            id, health, mana, gold, experience, cooldown, bounty, position
-        ),
-        PlayerLaneState::new_with_absolute_state(
-            id,
-            health,
-            mana,
-            gold,
-            experience,
-            cooldown,
-            bounty,
-            LaneLevel::initial(),
-            LaneMinionKills::zero(),
-            position,
-        )
-    );
-    assert_eq!(
-        PlayerLaneState::new_with_entire_state(
-            id, health, mana, gold, experience, cooldown, bounty, level, position
-        ),
-        PlayerLaneState::new_with_absolute_state(
-            id,
-            health,
-            mana,
-            gold,
-            experience,
-            cooldown,
-            bounty,
-            level,
-            LaneMinionKills::zero(),
-            position,
-        )
-    );
-    let absolute = PlayerLaneState::new_with_absolute_state(
-        id,
-        health,
-        mana,
-        gold,
-        experience,
-        cooldown,
-        bounty,
-        level,
-        minion_kills,
-        position,
-    );
-    assert_eq!(absolute.mana(), mana);
-    assert_eq!(absolute.gold(), gold);
-    assert_eq!(absolute.experience(), experience);
-    assert_eq!(absolute.cooldown(), cooldown);
-    assert_eq!(absolute.bounty(), bounty);
-    assert_eq!(absolute.level(), level);
-    assert_eq!(absolute.minion_kills(), minion_kills);
+    assert_eq!(player.resources(), resources);
+    assert_eq!(player.mana(), resources.mana());
+    assert_eq!(player.gold(), resources.gold());
+    assert_eq!(player.experience(), resources.experience());
+    assert_eq!(player.cooldown(), resources.cooldown());
 }
 
 #[test]
-fn lane_hash_encodings_remain_stable_across_the_module_split() {
+fn lane_status_cannot_represent_correlated_phase_and_outcome_pairs() {
+    assert_eq!(LaneStatus::Open.phase(), LanePhase::Open);
+    assert_eq!(LaneStatus::Open.outcome(), None);
     assert_eq!(
-        LaneSnapshot::initial().hash().value(),
-        18_346_439_562_823_728_570
+        LaneStatus::Resolved(LaneOutcome::HeldSpace).phase(),
+        LanePhase::Resolved
     );
+    assert_eq!(
+        LaneStatus::Resolved(LaneOutcome::HeldSpace).outcome(),
+        Some(LaneOutcome::HeldSpace)
+    );
+    assert_eq!(LaneSnapshot::initial().status(), LaneStatus::Open);
+}
 
+#[test]
+fn lane_hash_encodings_are_stable_for_v2_initial_and_non_default_states() {
+    let initial = LaneSnapshot::initial();
+    let resources = LaneResources::new(
+        LaneMana::new(5).expect("bounded mana"),
+        LaneGold::new(2).expect("bounded gold"),
+        LaneExperience::new(3).expect("bounded experience"),
+        LaneCooldown::new(4).expect("bounded cooldown"),
+    );
     let resolved = LaneSnapshot::new(
         M2_LANE_RULESET,
         Turn::new(1),
-        LanePhase::Resolved,
-        PlayerLaneState::new_with_absolute_state(
+        LaneStatus::Resolved(LaneOutcome::HeldSpace),
+        PlayerLaneState::new(
             PLAYER_LANER,
             LaneHealth::new(7).expect("bounded health"),
-            LaneMana::new(5).expect("bounded mana"),
-            LaneGold::new(2).expect("bounded gold"),
-            LaneExperience::new(3).expect("bounded experience"),
-            LaneCooldown::new(4).expect("bounded cooldown"),
-            LaneBounty::new(5).expect("bounded bounty"),
-            LaneLevel::new(3).expect("bounded level"),
-            LaneMinionKills::new(6).expect("bounded minion kills"),
+            resources,
             LanePosition::Center,
         ),
         OpponentTruth::new(
@@ -174,15 +61,9 @@ fn lane_hash_encodings_remain_stable_across_the_module_split() {
         ),
         WaveState::new(WavePressure::new(2).expect("bounded pressure")),
         JungleThreatTruth::InLane,
-        Some(LaneOutcome::HeldSpace),
     );
-    assert_eq!(resolved.hash().value(), 17_489_665_152_642_147_642);
-
-    let allied = observe_allied(&LaneSnapshot::initial(), ObservationId::new(9)).observation();
-    assert_eq!(
-        allied_input_identity(allied, trace(3, 3))
-            .visible_digest()
-            .value(),
-        2_696_744_198_952_712_513
-    );
+    assert_eq!(initial.hash().value(), 10_367_761_967_024_854_953);
+    assert_eq!(resolved.hash().value(), 9_301_613_880_178_663_280);
+    assert_ne!(initial.hash(), resolved.hash());
+    assert_eq!(initial.hash(), LaneSnapshot::initial().hash());
 }

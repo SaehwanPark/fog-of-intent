@@ -294,7 +294,7 @@ pub fn branch_from_window(
         .first()
         .ok_or(LaneBranchError::ParentNotExactlyOneWindow)?;
     let branch_point = parent.initial_state;
-    if branch_point.phase != LanePhase::Open
+    if branch_point.phase() != LanePhase::Open
         || parent_record.prior_state_hash != branch_point.hash()
         || parent_record.observation
             != observe_player(&branch_point, parent_record.command.observation_id).observation
@@ -322,7 +322,7 @@ pub fn branch_from_window(
                 return Err(LaneBranchError::InvalidBranchPoint);
             }
             let parent_inputs = parent_record.inputs;
-            let mana_policy = if parent_inputs.execution.mana_spent != LaneMana::zero()
+            let mana_policy = if parent_inputs.execution.mana_spent() != LaneMana::zero()
                 && alternate.intent != LaneIntent::Contest
             {
                 LaneBranchManaPolicy::NonContestSpendCleared
@@ -370,7 +370,7 @@ pub fn branch_from_window(
     let result =
         transition_lane(&branch_point, &validated, &inputs).map_err(LaneBranchError::Transition)?;
     let identity = LaneBranchReplayIdentity {
-        replay_id: "m2-one-lane-window-branch-v1",
+        replay_id: M2_BRANCH_REPLAY_ID,
         parent_replay_id: M2_REPLAY_ID,
         parent_record_index: 0,
         parent_initial_state_hash: parent.initial_state.hash(),
@@ -386,6 +386,7 @@ pub fn branch_from_window(
         identity,
         execution_selection: selection,
         record: LaneTransitionRecord {
+            replay_id: M2_REPLAY_ID,
             observation: receipt.observation,
             command: validated.command,
             inputs,
@@ -401,6 +402,7 @@ fn branch_execution_trace(branch_id: BranchId) -> InputTrace {
 
 pub(crate) fn lane_record_identity(record: &LaneTransitionRecord) -> StateHash {
     let mut hash = FNV_OFFSET_BASIS;
+    hash = hash_bytes(hash, record.replay_id.as_bytes());
     hash = hash_bytes(hash, &[record.command.actor.value()]);
     hash = hash_bytes(hash, &record.command.turn.value().to_le_bytes());
     hash = hash_bytes(hash, &record.command.ruleset.value().to_le_bytes());
@@ -446,20 +448,33 @@ pub(crate) fn lane_record_identity(record: &LaneTransitionRecord) -> StateHash {
     }
     hash = hash_bytes(hash, &[record.inputs.execution.self_damage.value()]);
     hash = hash_bytes(hash, &[record.inputs.execution.opponent_damage.value()]);
-    hash = hash_bytes(hash, &[record.inputs.execution.mana_spent.value()]);
-    hash = hash_bytes(hash, &[record.inputs.execution.gold_earned.value()]);
-    hash = hash_bytes(hash, &[record.inputs.execution.experience_gained.value()]);
-    hash = hash_bytes(hash, &[record.inputs.execution.cooldown_set.value()]);
-    hash = hash_bytes(hash, &[record.inputs.execution.bounty_earned.value()]);
-    hash = hash_bytes(hash, &[record.inputs.execution.level_gained.value()]);
-    hash = hash_bytes(hash, &[record.inputs.execution.minion_kills_gained.value()]);
-    hash = hash_bytes(hash, &[record.inputs.execution.shield_gained.value()]);
-    hash = hash_bytes(hash, &[record.inputs.execution.ward_gained.value()]);
-    hash = hash_bytes(hash, &[record.inputs.execution.potion_gained.value()]);
-    hash = hash_bytes(hash, &[record.inputs.execution.potion_spent.value()]);
+    hash = hash_bytes(hash, &[record.inputs.execution.mana_spent().value()]);
+    hash = hash_bytes(hash, &[record.inputs.execution.gold_earned().value()]);
+    hash = hash_bytes(hash, &[record.inputs.execution.experience_gained().value()]);
+    hash = hash_bytes(hash, &[record.inputs.execution.cooldown_set().value()]);
     hash = hash_bytes(
         hash,
         &[wave_result_tag(record.inputs.execution.wave_result)],
     );
+    hash = hash_bytes(hash, &[LANE_DELAYED_EFFECT_HASH_TAG]);
+    match record.inputs.execution.delayed_effect() {
+        None => {
+            hash = hash_bytes(hash, &[0]);
+        }
+        Some(effect) => {
+            hash = hash_bytes(hash, &[1, effect.delay_beats()]);
+            match effect.kind() {
+                LaneDelayedEffectKind::SelfHealthRegen { amount } => {
+                    hash = hash_bytes(hash, &[0x01, amount.value()]);
+                }
+                LaneDelayedEffectKind::SelfManaRegen { amount } => {
+                    hash = hash_bytes(hash, &[0x02, amount.value()]);
+                }
+                LaneDelayedEffectKind::SelfCooldownReduction { amount } => {
+                    hash = hash_bytes(hash, &[0x03, amount.value()]);
+                }
+            }
+        }
+    }
     StateHash::from_raw(hash)
 }

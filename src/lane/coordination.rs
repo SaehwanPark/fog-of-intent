@@ -9,12 +9,12 @@ pub struct AlliedProfileIdentity {
 }
 
 impl AlliedProfileIdentity {
-    pub const fn scripted_v1() -> Self {
+    pub const fn scripted_v2() -> Self {
         Self {
             profile_id: SCRIPTED_ALLIED_PROFILE,
-            candidate_rule: "available-intents-v1",
-            evaluation_rule: "risk-wave-score-v1",
-            selection_rule: "max-score-stabilize-tie-v1",
+            candidate_rule: "available-intents-v2",
+            evaluation_rule: "risk-wave-score-v2",
+            selection_rule: "max-score-stabilize-tie-v2",
         }
     }
 
@@ -244,55 +244,40 @@ fn allied_visible_digest(observation: AlliedLaneObservation) -> StateHash {
     hash = hash_bytes(hash, &[observation.observer.value()]);
     hash = hash_bytes(hash, &observation.turn.value().to_le_bytes());
     hash = hash_bytes(hash, &observation.observation_id.value().to_le_bytes());
-    hash = hash_bytes(hash, &[observation.laner_health.value()]);
-    if observation.laner_mana != LaneMana::full() {
-        hash = hash_bytes(hash, &[LANE_MANA_HASH_TAG, observation.laner_mana.value()]);
+    hash = hash_bytes(hash, &[observation.laner_health().value()]);
+    if observation.laner_mana() != LaneMana::full() {
+        hash = hash_bytes(
+            hash,
+            &[LANE_MANA_HASH_TAG, observation.laner_mana().value()],
+        );
     }
-    if observation.laner_gold != LaneGold::zero() {
-        hash = hash_bytes(hash, &[LANE_GOLD_HASH_TAG, observation.laner_gold.value()]);
+    if observation.laner_gold() != LaneGold::zero() {
+        hash = hash_bytes(
+            hash,
+            &[LANE_GOLD_HASH_TAG, observation.laner_gold().value()],
+        );
     }
-    if observation.laner_experience != LaneExperience::zero() {
+    if observation.laner_experience() != LaneExperience::zero() {
         hash = hash_bytes(
             hash,
             &[
                 LANE_EXPERIENCE_HASH_TAG,
-                observation.laner_experience.value(),
+                observation.laner_experience().value(),
             ],
         );
     }
-    if observation.laner_cooldown != LaneCooldown::zero() {
+    if observation.laner_cooldown() != LaneCooldown::zero() {
         hash = hash_bytes(
             hash,
-            &[LANE_COOLDOWN_HASH_TAG, observation.laner_cooldown.value()],
+            &[LANE_COOLDOWN_HASH_TAG, observation.laner_cooldown().value()],
         );
     }
-    if observation.laner_bounty != LaneBounty::zero() {
-        hash = hash_bytes(
-            hash,
-            &[LANE_BOUNTY_HASH_TAG, observation.laner_bounty.value()],
-        );
-    }
-    if observation.laner_level != LaneLevel::initial() {
-        hash = hash_bytes(
-            hash,
-            &[LANE_LEVEL_HASH_TAG, observation.laner_level.value()],
-        );
-    }
-    if observation.laner_minion_kills != LaneMinionKills::zero() {
-        hash = hash_bytes(
-            hash,
-            &[
-                LANE_MINION_KILLS_HASH_TAG,
-                observation.laner_minion_kills.value(),
-            ],
-        );
-    }
-    hash = hash_bytes(hash, &[position_tag(observation.laner_position)]);
-    hash = hash_bytes(hash, &[observation.wave_pressure.value()]);
-    hash = hash_bytes(hash, &[intent_tag(observation.available_intents[0])]);
-    hash = hash_bytes(hash, &[intent_tag(observation.available_intents[1])]);
-    if observation.window != LaneWindow::OneBeat {
-        hash = hash_bytes(hash, &[window_tag(observation.window)]);
+    hash = hash_bytes(hash, &[position_tag(observation.laner_position())]);
+    hash = hash_bytes(hash, &[observation.wave_pressure().value()]);
+    hash = hash_bytes(hash, &[intent_tag(observation.available_intents()[0])]);
+    hash = hash_bytes(hash, &[intent_tag(observation.available_intents()[1])]);
+    if observation.window() != LaneWindow::OneBeat {
+        hash = hash_bytes(hash, &[window_tag(observation.window())]);
     }
     hash = hash_bytes(hash, &[0, 0, 0]);
     StateHash::from_raw(hash)
@@ -303,7 +288,7 @@ pub fn allied_input_identity(
     policy_trace: InputTrace,
 ) -> AgentInputIdentity {
     AgentInputIdentity {
-        profile: AlliedProfileIdentity::scripted_v1(),
+        profile: AlliedProfileIdentity::scripted_v2(),
         actor: observation.observer,
         ruleset: M2_LANE_RULESET,
         observation_schema: observation.schema,
@@ -322,19 +307,19 @@ pub fn scripted_allied_proposal(
     if observation.schema != M2_ALLIED_OBSERVATION_SCHEMA
         || observation.observer != ALLIED_AUTONOMOUS_ACTOR
         || !matches!(
-            observation.window,
+            observation.window(),
             LaneWindow::OneBeat | LaneWindow::TwoBeats
         )
-        || observation.available_intents != [LaneIntent::Stabilize, LaneIntent::Contest]
+        || observation.available_intents() != [LaneIntent::Stabilize, LaneIntent::Contest]
     {
         return Err(AlliedProposalError::InvalidObservation);
     }
-    let health_risk = (5i16 - i16::from(observation.laner_health.value())).max(0);
-    let mana_risk = (3i16 - i16::from(observation.laner_mana.value())).max(0);
+    let health_risk = (5i16 - i16::from(observation.laner_health().value())).max(0);
+    let mana_risk = (3i16 - i16::from(observation.laner_mana().value())).max(0);
     let stabilize_score =
-        2 * health_risk + (3 - i16::from(observation.wave_pressure.value())) + mana_risk;
-    let contest_score = 2 * i16::from(observation.wave_pressure.value())
-        + (i16::from(observation.laner_health.value()) - 5).max(0)
+        2 * health_risk + (3 - i16::from(observation.wave_pressure().value())) + mana_risk;
+    let contest_score = 2 * i16::from(observation.wave_pressure().value())
+        + (i16::from(observation.laner_health().value()) - 5).max(0)
         - mana_risk;
     let candidates = [
         AlliedCandidate {
@@ -375,7 +360,7 @@ pub fn offer_allied_proposal(
     proposal: LaneIntentProposal,
 ) -> Result<AlliedProposalOffer, AlliedProposalError> {
     if proposal.actor != ALLIED_AUTONOMOUS_ACTOR
-        || proposal.profile != AlliedProfileIdentity::scripted_v1()
+        || proposal.profile != AlliedProfileIdentity::scripted_v2()
     {
         return Err(AlliedProposalError::InvalidProposal);
     }

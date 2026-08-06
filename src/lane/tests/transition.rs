@@ -146,21 +146,25 @@
             ))
         );
 
-        let empty_player = PlayerLaneState::new_with_mana(
+        let empty_player = PlayerLaneState::new(
             state.player().id(),
             state.player().health(),
-            LaneMana::zero(),
+            LaneResources::new(
+                LaneMana::zero(),
+                state.player().gold(),
+                state.player().experience(),
+                state.player().cooldown(),
+            ),
             state.player().position(),
         );
         let empty = LaneSnapshot::new(
             state.ruleset(),
             state.turn(),
-            state.phase(),
+            state.status(),
             empty_player,
             state.opponent(),
             state.wave(),
             state.jungle_threat(),
-            state.terminal_outcome(),
         );
         let (receipt, request) = request(&empty, LaneIntent::Contest);
         let validated = validate_lane_request(&empty, &receipt, &request).expect("valid");
@@ -249,16 +253,16 @@
         let invalid_state = LaneSnapshot::new(
             M2_LANE_RULESET,
             state.turn(),
-            LanePhase::Open,
+            LaneStatus::Open,
             PlayerLaneState::new(
                 ActorId::new(8),
                 state.player().health(),
+                state.player().resources(),
                 state.player().position(),
             ),
             state.opponent(),
             state.wave(),
             state.jungle_threat(),
-            None,
         );
         let invalid_receipt = observe_player(&invalid_state, request.observation_id());
         let invalid_command = LaneIntentCommand::new(
@@ -323,12 +327,11 @@
         let at_zero = LaneSnapshot::new(
             state.ruleset(),
             state.turn(),
-            LanePhase::Open,
+            LaneStatus::Open,
             state.player(),
             state.opponent(),
             WaveState::new(WavePressure::new(0).expect("bounded")),
             state.jungle_threat(),
-            None,
         );
         let (zero_receipt, zero_request) = request(&at_zero, LaneIntent::Contest);
         let zero_validated =
@@ -349,12 +352,11 @@
         let at_max = LaneSnapshot::new(
             state.ruleset(),
             state.turn(),
-            LanePhase::Open,
+            LaneStatus::Open,
             state.player(),
             state.opponent(),
             WaveState::new(WavePressure::new(3).expect("bounded")),
             state.jungle_threat(),
-            None,
         );
         let (max_receipt, max_request) = request(&at_max, LaneIntent::Contest);
         let max_validated =
@@ -393,21 +395,25 @@
 #[test]
     fn mana_is_bounded_visible_and_binds_non_full_hashes_and_policy_inputs() {
         let full = LaneSnapshot::initial();
-        let reduced_player = PlayerLaneState::new_with_mana(
+        let reduced_player = PlayerLaneState::new(
             full.player().id(),
             full.player().health(),
-            LaneMana::new(4).expect("bounded mana"),
+            LaneResources::new(
+                LaneMana::new(4).expect("bounded mana"),
+                full.player().gold(),
+                full.player().experience(),
+                full.player().cooldown(),
+            ),
             full.player().position(),
         );
         let reduced = LaneSnapshot::new(
             full.ruleset(),
             full.turn(),
-            full.phase(),
+            full.status(),
             reduced_player,
             full.opponent(),
             full.wave(),
             full.jungle_threat(),
-            full.terminal_outcome(),
         );
         assert_eq!(
             observe_player(&full, ObservationId::new(1))

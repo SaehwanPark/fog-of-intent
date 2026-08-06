@@ -1,62 +1,91 @@
-# Handoff
+# Final Handoff — Codebase Audit and M2 Contract Remediation
 
 ## Outcome
 
-The bounded M2 opponent last-known-report slice is implemented in the existing
-player observation and replay path. M2 remains active because complete vision,
-belief updates, memory, communication, richer resources, and the complete
-one-lane scenario are not yet built.
+Implemented the requested audit, M2 v2 contract correction, and
+behavior-preserving transition decomposition. The current working branch is
+`codex/audit-m2-contracts`, based on clean `main` commit `64336f7`. The working
+tree is intentionally uncommitted: commit, merge, push, and draft-PR actions
+remain separate approval gates.
 
-## Changed Files
+## Stages and Branch Status
 
-- `Cargo.toml`, `Cargo.lock` — package version `0.1.17`.
-- `src/lane.rs` — FarSide-only player opponent report projection, shared
-  redaction helper, and projection/replay tests.
-- `README.md`, `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` —
-  synchronized opponent-report evidence and limits.
-- `_workspace/00_input/request-summary.md` — opponent-report slice framing.
-- `_workspace/01_simulation-design.md` — information/authority/replay contract.
-- `_workspace/02_design-synthesis.md` — reconciled production contract.
-- `_workspace/03_domain-qa.md` — domain-QA pass.
-- `_workspace/00_input/m2-mana-resource-request-summary.md`,
-  `_workspace/01-simulation-design-m2-mana-resource.md`,
-  `_workspace/03-domain-qa-m2-mana-resource.md`, and
-  `_workspace/final/m2-mana-resource-handoff.md` — immutable prior mana
-  evidence.
+- Stage 1 audit/currentness work is present on the working branch and records
+  the request, evidence-ranked findings, corrected canonical state, and the
+  README/Cargo version guard.
+- Stage 2 v2 model remediation is present with package version `0.1.51` in its
+  changelog history; the final package version is `0.1.52` after stage 3.
+- Stage 3 decomposition is present in private `evaluation.rs`, `projection.rs`,
+  and `result.rs` modules behind the unchanged `crate::lane::*` facade.
+- Separate post-merge stage branches (`codex/refactor-m2-v2` and
+  `codex/refactor-lane-transition`) were not created because the required
+  commit/merge approval gates were not granted. No hosted PR exists.
+
+## Changed Files and Behaviors
+
+- `_workspace/00_input/request-summary.md`,
+  `_workspace/01-codebase-review.md`, `_workspace/01_simulation-design.md`,
+  `_workspace/03_domain-qa.md`, and this handoff capture the durable audit,
+  v2 design, QA, and delivery state.
+- README, ROADMAP, SPEC, ARCHITECTURE, compatibility notes, and CHANGELOG now
+  distinguish current M2 v2 behavior from retired experimental v1 history;
+  complete M2 exit criteria remain unchecked.
+- The repository checker enforces README/Cargo package-version agreement with
+  matching and stale-version tests.
+- Retained M2 state uses `LaneResources`; execution uses
+  `LaneResourceInputs`; lifecycle uses `LaneStatus`; delayed effects require
+  non-zero `LaneDelay`; cooldown ticking saturates for every `u32`; histories
+  require open initial state.
+- Retired resource newtypes, fields, accessors, inputs, hash tags,
+  events/effects, errors, debrief fields, tests, and current capability claims
+  were removed.
+- Ruleset `3`, v2 schemas, profile/strategy IDs, one-window/coordination/
+  branch/two-window/final-debrief IDs, and base-record replay IDs are enforced.
+  M1 rules, codec, fixtures, hashes, and production modules are unchanged.
+- The transition façade now delegates to one retained-resource evaluation path,
+  ordered projection path, and result/debrief assembly path. No dependency,
+  generic inventory, macro-based failure path, or second transition engine was
+  added.
 
 ## Verification
 
-- `cargo +1.96.0 fmt --check`
-- `cargo +1.96.0 clippy --all-targets --all-features -- -D warnings`
-- `cargo +1.96.0 test --locked` — 60 tests passed.
-- `python3 scripts/check_repository.py`
-- `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'`
-- `git diff --check`
+- `cargo fmt --check` — passed.
+- `cargo clippy --all-targets --all-features -- -D warnings` — passed.
+- `cargo test` — 89 Rust tests passed.
+- M1 characterization filters: 13 kernel tests and 6 codec tests passed.
+- `cargo doc --no-deps` — passed.
+- `python3 scripts/check_repository.py` — passed.
+- `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'` — 9 tests passed.
+- `git diff --check` — passed.
+- `git diff` contains no changes to `src/kernel.rs`, `src/serialization.rs`,
+  or `tests/fixtures`.
 
-## Domain QA Disposition
+## Review and QA Disposition
 
-`_workspace/03_domain-qa.md` is `pass` for the declared opponent-report slice.
-FarSide is player-visible as last-known, Center/NearTower remain Unknown,
-health/posture stay hidden, allied opponent reports stay Unknown, and replay
-preserves the projection. Complete vision and human-evidence claims remain
-open.
+- Three independent local review passes were completed over the working-tree
+  diff: contract/compatibility and information boundaries; determinism,
+  replay, and failure paths; and maintainability, scope, and characterization
+  coverage.
+- Findings were deduplicated and no actionable Critical or High issue remains.
+  A follow-up pass after the decomposition and documentation corrections also
+  found no blocking issue.
+- `_workspace/03_domain-qa.md` is `pass` for the bounded internal v2 contract.
+  It does not claim a playable scenario, human experience, accessibility,
+  balance, legal clearance, or external compatibility.
 
-## Canonical State Updates
+## Deviations and Deferred Findings
 
-`ROADMAP.md` records one player-only FarSide sighting while keeping complete
-vision, beliefs, memory, communication, automatic threat timing, and
-complete-scenario scope open. `SPEC.md` and `ARCHITECTURE.md` record the
-report boundary. The package advances to `0.1.17`; the binary remains a
-placeholder.
+- The plan’s post-merge branch/commit/PR choreography is deferred to the
+  explicit approval gate; implementation scope and expected final version
+  `0.1.52` are otherwise preserved.
+- No M2 v1 migration is provided because v1 was never released or externally
+  supported.
+- Complete scenario mechanics, CLI, MCP, persistence, item catalog, richer
+  beliefs/vision, gameplay tuning, and human-evidence work remain on the
+  roadmap.
 
-## Known Limits
+## Unresolved Concerns
 
-No vision graph, belief update, memory decay, communication, automatic threat
-timing, debrief serialization, CLI, MCP adapter, or full scenario exists.
-
-## Next Milestone Dependencies
-
-Use the opponent-report, mana-resource, effect-provenance, TwoBeats, Withdraw,
-last-known threat, window, branch, coordination, objective, fixture, scenario,
-debrief, and Recall contracts to choose the next bounded M2 slice without
-creating a second transition authority.
+No unresolved blocking audit or domain-QA concern remains. The residual risks
+are the intentionally deferred product and external-compatibility work listed
+above.

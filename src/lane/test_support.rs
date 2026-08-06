@@ -36,12 +36,11 @@ fn river_side_state() -> LaneSnapshot {
     LaneSnapshot::new(
         state.ruleset(),
         state.turn(),
-        LanePhase::Open,
+        LaneStatus::Open,
         state.player(),
         state.opponent(),
         state.wave(),
         JungleThreatTruth::RiverSide,
-        None,
     )
 }
 
@@ -51,12 +50,11 @@ fn two_beat_state() -> LaneSnapshot {
         state.ruleset(),
         state.turn(),
         LaneWindow::TwoBeats,
-        LanePhase::Open,
+        LaneStatus::Open,
         state.player(),
         state.opponent(),
         state.wave(),
         state.jungle_threat(),
-        None,
     )
 }
 
