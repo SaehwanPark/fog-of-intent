@@ -661,6 +661,15 @@ This evidence establishes one bounded vision ward resource. It does not establis
 
 This evidence establishes one bounded flask consumable resource. It does not establish complete consumable item active usage or a complete playable lane scenario.
 
+### Current bounded incense-resource evidence
+
+- [x] Add bounded `LaneIncense` to player state with zero default and non-zero state-hash binding (`LANE_INCENSE_HASH_TAG`).
+- [x] Expose `LaneIncense` in player (`self_incense`) and allied (`laner_incense`) observations without exposing opponent incense count.
+- [x] Resolve explicit `incense_gained` and `incense_spent` during execution with direct-immediate `IncenseGained`/`IncenseSpent`/`IncenseChanged` events and effects, debrief recording, and replay verification.
+- [x] Reject incense overflow exceeding maximum bounds (`MAX_LANE_INCENSE`) or spending without available incenses (`InsufficientIncense`) before transition evaluation.
+
+This evidence establishes one bounded incense consumable resource. It does not establish complete consumable item active usage or a complete playable lane scenario.
+
 ### Current final-debrief evidence
 
 - [x] Build a versioned final debrief only from a replay-verified two-window

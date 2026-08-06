@@ -34,6 +34,15 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.47 — 2026-08-06
+
+### Added
+
+- Added `LaneIncense` bounded player consumable resource abstraction (maximum 5, zero default, `LANE_INCENSE_HASH_TAG` state-hash binding).
+- Exposed `self_incense` in `LanerObservation` and `laner_incense` in `AlliedLaneObservation`.
+- Supported `incense_gained` and `incense_spent` resolution during execution with direct-immediate `IncenseGained`/`IncenseSpent`/`IncenseChanged` events and effects, debrief recording, and replay verification.
+- Rejection of incense overflow (`IncenseOverflow`) or spending without available incenses (`InsufficientIncense`) before state mutation.
+
 ## 0.1.46 — 2026-08-06
 
 ### Added
