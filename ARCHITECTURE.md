@@ -166,6 +166,11 @@ intent, commitment, target focus, ping signal, abort condition, and fallback.
 Observation and validation bind those fields to actor-visible receipts; the ping
 signal is communication metadata rather than a free-form message transport.
 
+The current v2 causal path preserves effect relation/timing, cause, and input
+trace through ordered projection and bounded delayed resolution. `LaneOutcome`
+and objective review remain separate read models, and the complete two-window
+replay/debrief path is inspected and verified without exposing hidden state.
+
 ## Consequential Type Boundaries
 
 Future types and public contracts must preserve these distinctions:

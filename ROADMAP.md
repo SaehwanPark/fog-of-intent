@@ -313,13 +313,13 @@ a causal debrief.
 - [x] Implement hold, pressure/trade, yield, recall, and gank-response decisions
   only where they create real tradeoffs.
 - [x] Implement coordination and execution as distinct resolutions.
-- [ ] Record direct, indirect, immediate, and delayed effects with provenance.
-- [ ] Define a terminal outcome that does not collapse evaluation to win/loss.
+- [x] Record direct, indirect, immediate, and delayed effects with provenance.
+- [x] Define a terminal outcome that does not collapse evaluation to win/loss.
 - [x] Produce immediate review and final debrief projections.
 - [x] Support replay and a bounded counterfactual branch at a pivotal decision.
 - [x] Add scripted happy-path, risk-taking, and conservative-strategy fixtures.
-- [ ] Test hidden-state leakage and actor-visible report completeness.
-- [ ] Inspect every transition in at least one complete replay manually.
+- [x] Test hidden-state leakage and actor-visible report completeness.
+- [x] Inspect every transition in at least one complete replay manually.
 
 > The bounded-slice, branch, coordination, objective, strategy, scenario,
 > intent, report, window, effect, and retained-resource evidence sections below
@@ -633,6 +633,19 @@ playable scenario.
 This evidence establishes a bounded intent and communication signal contract;
 it does not establish free-form messaging, delivery, trust, negotiation, or a
 complete communication system.
+
+### Current bounded causal-information evidence
+
+- [x] Preserve direct/indirect and immediate/delayed effect provenance with
+  cause/trace attribution and deterministic delayed-queue resolution.
+- [x] Keep `LaneOutcome` and objective review distinct from binary win/loss
+  scoring.
+- [x] Test hidden-state redaction, actor-visible report completeness, and receipt
+  privacy; inspect one complete two-window replay through debrief projection.
+
+This evidence covers the committed v2 diagnostic path only. Vision/belief
+updates, automatic advance, communication transport, balance, and playability
+remain open.
 
 The following older resource-slice notes are retained as historical evidence
 only. Bounty, level, minion kills, shield, ward, and the sixteen experimental
