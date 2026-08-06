@@ -500,6 +500,14 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Relic overflow exceeding maximum bounds (`MAX_LANE_RELIC`) or spending without available relics fails before transition state mutation with `LaneExecutionError::RelicOverflow` or `LaneExecutionError::InsufficientRelic`.
 - Three focused relic-resource tests plus the prior 117 tests pass, for 120 Rust tests total.
 
+#### Delivered in the bounded charm-resource follow-up
+
+- `LaneCharm` is a bounded player consumable resource with zero default and non-zero state-hash and allied visible-digest tags (`LANE_CHARM_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` expose player charm count (`self_charm`, `laner_charm`) without exposing opponent charm count.
+- `LaneExecutionInputs` supports `charm_gained` and `charm_spent` resolution during execution with direct-immediate `CharmGained`/`CharmSpent`/`CharmChanged` events and effects, debrief recording, and `LaneRecordIdentity` integration.
+- Charm overflow exceeding maximum bounds (`MAX_LANE_CHARM`) or spending without available charms fails before transition state mutation with `LaneExecutionError::CharmOverflow` or `LaneExecutionError::InsufficientCharm`.
+- Three focused charm-resource tests plus the prior 120 tests pass, for 123 Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield

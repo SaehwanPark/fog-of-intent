@@ -34,6 +34,17 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.38 — 2026-08-05
+
+### Added
+
+- Bounded `LaneCharm` player consumable resource abstraction (`MAX_LANE_CHARM = 5`) with zero default.
+- Non-default `LaneCharm` state-hash binding (`LANE_CHARM_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` exposure of player charm count (`self_charm`, `laner_charm`).
+- `LaneExecutionInputs` support for `charm_gained` and `charm_spent` resolution.
+- Direct-immediate `CharmGained`, `CharmSpent`, and `CharmChanged` events and effects during transition evaluation, debrief recording, and `LaneRecordIdentity` integration.
+- `LaneExecutionError::CharmOverflow` and `LaneExecutionError::InsufficientCharm` fail-closed error handling.
+
 ## 0.1.37 — 2026-08-05
 
 ### Added
