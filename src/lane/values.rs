@@ -10,6 +10,70 @@ pub const SCRIPTED_ALLIED_PROFILE: &str = "scripted-allied-proposal-v2";
 pub const PLAYER_LANER: ActorId = ActorId::new(1);
 pub const OPPONENT_LANER: ActorId = ActorId::new(2);
 pub const ALLIED_AUTONOMOUS_ACTOR: ActorId = ActorId::new(3);
+pub const OPPOSING_JUNGLE_THREAT_ACTOR: ActorId = ActorId::new(4);
+
+/// Stable role identities for the bounded M2 lane scenario.
+///
+/// The roster is scenario metadata, not mutable world state. It identifies
+/// who a report refers to without granting an actor access to hidden values.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum LaneActorRole {
+    HumanLaner,
+    OpposingLaner,
+    AlliedAutonomous,
+    OpposingJungleThreat,
+}
+
+impl LaneActorRole {
+    pub const fn roster() -> [Self; 4] {
+        [
+            Self::HumanLaner,
+            Self::OpposingLaner,
+            Self::AlliedAutonomous,
+            Self::OpposingJungleThreat,
+        ]
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct LaneActorRoster {
+    human_laner: ActorId,
+    opposing_laner: ActorId,
+    allied_autonomous: ActorId,
+    opposing_jungle_threat: ActorId,
+}
+
+impl LaneActorRoster {
+    pub const fn initial() -> Self {
+        Self {
+            human_laner: PLAYER_LANER,
+            opposing_laner: OPPONENT_LANER,
+            allied_autonomous: ALLIED_AUTONOMOUS_ACTOR,
+            opposing_jungle_threat: OPPOSING_JUNGLE_THREAT_ACTOR,
+        }
+    }
+
+    pub const fn actor(self, role: LaneActorRole) -> ActorId {
+        match role {
+            LaneActorRole::HumanLaner => self.human_laner,
+            LaneActorRole::OpposingLaner => self.opposing_laner,
+            LaneActorRole::AlliedAutonomous => self.allied_autonomous,
+            LaneActorRole::OpposingJungleThreat => self.opposing_jungle_threat,
+        }
+    }
+
+    pub const fn entries(self) -> [(LaneActorRole, ActorId); 4] {
+        [
+            (LaneActorRole::HumanLaner, self.human_laner),
+            (LaneActorRole::OpposingLaner, self.opposing_laner),
+            (LaneActorRole::AlliedAutonomous, self.allied_autonomous),
+            (
+                LaneActorRole::OpposingJungleThreat,
+                self.opposing_jungle_threat,
+            ),
+        ]
+    }
+}
 
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub enum LaneTargetFocus {

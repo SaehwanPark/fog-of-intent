@@ -87,6 +87,7 @@ impl OpponentReport {
 pub struct LanerObservation {
     pub(crate) schema: &'static str,
     pub(crate) observer: ActorId,
+    pub(crate) actors: LaneActorRoster,
     pub(crate) turn: Turn,
     pub(crate) observation_id: ObservationId,
     pub(crate) self_health: LaneHealth,
@@ -140,6 +141,10 @@ impl LanerObservation {
 
     pub const fn observer(self) -> ActorId {
         self.observer
+    }
+
+    pub const fn actors(self) -> LaneActorRoster {
+        self.actors
     }
 
     pub const fn turn(self) -> Turn {
@@ -253,6 +258,7 @@ pub fn observe_player(
         observation: LanerObservation {
             schema: M2_OBSERVATION_SCHEMA,
             observer: PLAYER_LANER,
+            actors: LaneActorRoster::initial(),
             turn: state.turn(),
             observation_id,
             self_health: state.player().health(),
@@ -307,6 +313,7 @@ pub fn observe_player(
 pub struct AlliedLaneObservation {
     pub(crate) schema: &'static str,
     pub(crate) observer: ActorId,
+    pub(crate) actors: LaneActorRoster,
     pub(crate) turn: Turn,
     pub(crate) observation_id: ObservationId,
     pub(crate) laner_health: LaneHealth,
@@ -326,6 +333,10 @@ impl AlliedLaneObservation {
 
     pub const fn observer(self) -> ActorId {
         self.observer
+    }
+
+    pub const fn actors(self) -> LaneActorRoster {
+        self.actors
     }
 
     pub const fn turn(self) -> Turn {
@@ -414,6 +425,7 @@ pub fn observe_allied(
         observation: AlliedLaneObservation {
             schema: M2_ALLIED_OBSERVATION_SCHEMA,
             observer: ALLIED_AUTONOMOUS_ACTOR,
+            actors: LaneActorRoster::initial(),
             turn: state.turn(),
             observation_id,
             laner_health: state.player().health(),
