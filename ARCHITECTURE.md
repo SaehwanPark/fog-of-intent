@@ -161,6 +161,11 @@ fixed `LaneActorRoster` role/identity metadata, including the abstract opposing
 jungle threat identity; this metadata is not mutable lane state and does not
 participate in the authoritative state hash.
 
+The bounded intent surface is carried by typed request/command fields for
+intent, commitment, target focus, ping signal, abort condition, and fallback.
+Observation and validation bind those fields to actor-visible receipts; the ping
+signal is communication metadata rather than a free-form message transport.
+
 ## Consequential Type Boundaries
 
 Future types and public contracts must preserve these distinctions:

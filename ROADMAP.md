@@ -308,8 +308,8 @@ a causal debrief.
 - [ ] Define vision, last-known information, belief updates, unknowns, and report
   wording without exposing latent values.
 - [ ] Define variable-duration decision windows and automatic-advance conditions.
-- [ ] Define intent, commitment, target/focus, communication, abort conditions,
-  and fallback behavior.
+- [x] Define intent, commitment, target/focus, bounded communication, abort
+  conditions, and fallback behavior.
 - [x] Implement hold, pressure/trade, yield, recall, and gank-response decisions
   only where they create real tradeoffs.
 - [x] Implement coordination and execution as distinct resolutions.
@@ -621,6 +621,18 @@ execution, pacing, or a playable scenario.
 This evidence establishes the minimum typed state needed by the current
 diagnostic window only; it does not establish a complete economy, balance, or
 playable scenario.
+
+### Current bounded intent-contract evidence
+
+- [x] Define `LaneIntent`, `LaneCommitment`, `LaneTargetFocus`,
+  `LanePingSignal`, `LaneAbortCondition`, and `LaneFallbackBehavior` as typed
+  request/command fields with defaults and bounded alternatives.
+- [x] Advertise legal options in actor-visible observations and bind requests to
+  the current observation, validation, record identity, and replay.
+
+This evidence establishes a bounded intent and communication signal contract;
+it does not establish free-form messaging, delivery, trust, negotiation, or a
+complete communication system.
 
 The following older resource-slice notes are retained as historical evidence
 only. Bounty, level, minion kills, shield, ward, and the sixteen experimental
