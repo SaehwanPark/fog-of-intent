@@ -66,6 +66,18 @@ not increment the package version.
 - Updated canonical project-state documents to distinguish current v2 evidence
   from retired v1 history without marking the complete M2 exit criteria done.
 
+## 0.1.53 — 2026-08-06
+
+### Added
+
+- Added the fixed M2 `LaneActorRoster` and `LaneActorRole` contract for one
+  human laner, one opposing laner, one allied autonomous actor, and one
+  abstract opposing jungle threat.
+- Exposed role identity through player and allied observations while retaining
+  hidden opponent/jungle redaction and excluding fixed roster metadata from
+  authoritative lane hashes.
+- Added focused actor-roster completeness and information-boundary tests.
+
 ## 0.1.52 — 2026-08-06
 
 ### Changed

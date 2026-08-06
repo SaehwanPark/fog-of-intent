@@ -155,8 +155,27 @@ exists. Planned proposal or roadmap text is never implementation evidence.
   strategy identities, and the base-record replay identity are current internal
   identifiers. M2 v1 has no release, tag, external codec, or supported artifact;
   old M2 inputs fail closed and have no migration.
+- The fixed `LaneActorRoster` identifies the human laner, opposing laner, allied
+  autonomous actor, and abstract opposing jungle threat. Player and allied
+  observations expose those role identities while retaining their existing
+  hidden-state redaction; the roster is scenario metadata and is not hashed into
+  mutable lane state.
 - M1 ruleset, codec, fixtures, hashes, and test behavior remain unchanged. The
   complete M2 exit criteria below remain unchecked.
+
+#### Delivered in the bounded actor-roster follow-up
+
+- Added `LaneActorRole`, `LaneActorRoster`, and the stable
+  `OPPOSING_JUNGLE_THREAT_ACTOR` identity for the four actors named by the M2
+  scope.
+- Added roster accessors to `LanerObservation` and `AlliedLaneObservation`
+  without exposing latent opponent or jungle values.
+- Added focused roster/completeness/redaction/hash-boundary tests; the locked
+  Rust suite now passes 91 tests.
+
+This establishes actor-role identity and observation completeness only. It does
+not establish a complete vision/belief model, communication, pacing, balance,
+playability, or human-experience evidence.
 
 #### Historical M2 v1 slices (retired; preserved as changelog evidence)
 

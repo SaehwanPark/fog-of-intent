@@ -20,6 +20,28 @@ fn lane_resources_are_constructed_as_one_typed_aggregate() {
 }
 
 #[test]
+fn actor_roster_is_stable_and_does_not_change_lane_state_hash() {
+    let roster = LaneActorRoster::initial();
+    assert_eq!(
+        roster.entries(),
+        [
+            (LaneActorRole::HumanLaner, PLAYER_LANER),
+            (LaneActorRole::OpposingLaner, OPPONENT_LANER),
+            (LaneActorRole::AlliedAutonomous, ALLIED_AUTONOMOUS_ACTOR),
+            (
+                LaneActorRole::OpposingJungleThreat,
+                OPPOSING_JUNGLE_THREAT_ACTOR
+            ),
+        ]
+    );
+    assert_eq!(
+        roster.actor(LaneActorRole::OpposingJungleThreat),
+        OPPOSING_JUNGLE_THREAT_ACTOR
+    );
+    assert_eq!(LaneSnapshot::initial().hash(), LaneSnapshot::initial().hash());
+}
+
+#[test]
 fn lane_status_cannot_represent_correlated_phase_and_outcome_pairs() {
     assert_eq!(LaneStatus::Open.phase(), LanePhase::Open);
     assert_eq!(LaneStatus::Open.outcome(), None);

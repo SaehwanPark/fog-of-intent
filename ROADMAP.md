@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs` | Placeholder `Hello, world!` binary |
-| Package | `Cargo.toml` | Version `0.1.52`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.53`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -301,7 +301,7 @@ a causal debrief.
 
 - [x] Choose one scenario goal and simulated duration, such as surviving a weak
   lane, preparing a gank, or recalling with limited loss.
-- [ ] Define one human-controlled laner, one opposing laner, one allied autonomous
+- [x] Define one human-controlled laner, one opposing laner, one allied autonomous
   actor, and one abstract opposing jungle threat.
 - [ ] Define the minimum lane, wave, position, health, mana, cooldown, gold, and
   experience abstractions needed by the scenario.
@@ -595,6 +595,20 @@ This evidence establishes one bounded cooldown resource. It does not establish c
   branching.
 - [x] Keep the M1 ruleset, codec, fixtures, hashes, and external behavior
   unchanged.
+
+### Current bounded actor-roster evidence
+
+- [x] Define the fixed `LaneActorRoster` for the human laner, opposing laner,
+  allied autonomous actor, and abstract opposing jungle threat with stable role
+  identities.
+- [x] Expose role identity through player and allied observations without adding
+  hidden health, position, posture, policy, or threat truth to either view.
+- [x] Keep the roster outside authoritative state hashing and verify that the
+  existing transition/replay boundary remains unchanged.
+
+This evidence establishes actor-role completeness for the bounded M2 contract;
+it does not establish complete vision, belief updates, communication, threat
+execution, pacing, or a playable scenario.
 
 The following older resource-slice notes are retained as historical evidence
 only. Bounty, level, minion kills, shield, ward, and the sixteen experimental

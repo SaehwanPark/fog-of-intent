@@ -7,7 +7,7 @@ contract includes the lane decision window, retained-resource aggregate,
 typed lifecycle status, delayed effects, branch, one-window allied
 proposal/coordination overlay, terminal-objective projection, matched-input
 strategy fixtures, bounded two-window wrapper, final debrief projection,
-Recall/Withdraw/Yield intents, and versioned replay identities. Experimental
+Recall/Withdraw/Yield intents, a fixed four-actor roster, and versioned replay identities. Experimental
 M2 v1 resource slices are retired history and are not part of the current
 surface.
 
@@ -147,7 +147,10 @@ player-laner values. `LaneStatus` stores either `Open` or
 
 The player projection also applies one fixed FarSide opponent sighting rule;
 health/posture and allied opponent reports remain hidden, and complete vision
-or belief state has not been added.
+or belief state has not been added. Both player and allied projections carry the
+fixed `LaneActorRoster` role/identity metadata, including the abstract opposing
+jungle threat identity; this metadata is not mutable lane state and does not
+participate in the authoritative state hash.
 
 ## Consequential Type Boundaries
 

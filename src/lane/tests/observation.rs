@@ -1,5 +1,5 @@
 #[test]
-    fn observation_redacts_latent_state() {
+fn observation_redacts_latent_state() {
         let first = LaneSnapshot::initial();
         let second = LaneSnapshot::new(
             M2_LANE_RULESET,
@@ -53,7 +53,35 @@
             observe_player(&same_report_different_hidden_state, ObservationId::new(1))
                 .observation()
         );
-    }
+}
+
+#[test]
+fn observations_expose_the_complete_role_roster_without_latent_values() {
+    let state = LaneSnapshot::initial();
+    let player = observe_player(&state, ObservationId::new(1)).observation();
+    let allied = observe_allied(&state, ObservationId::new(1)).observation();
+    let expected = LaneActorRoster::initial();
+
+    assert_eq!(player.actors(), expected);
+    assert_eq!(allied.actors(), expected);
+    assert_eq!(player.actors().actor(LaneActorRole::HumanLaner), PLAYER_LANER);
+    assert_eq!(
+        player.actors().actor(LaneActorRole::OpposingLaner),
+        OPPONENT_LANER
+    );
+    assert_eq!(
+        allied.actors().actor(LaneActorRole::AlliedAutonomous),
+        ALLIED_AUTONOMOUS_ACTOR
+    );
+    assert_eq!(
+        allied.actors().actor(LaneActorRole::OpposingJungleThreat),
+        OPPOSING_JUNGLE_THREAT_ACTOR
+    );
+    assert_eq!(player.opponent().health(), HiddenValue::Unknown);
+    assert_eq!(player.jungle_threat(), ThreatReport::Unknown);
+    assert_eq!(allied.opponent().health(), HiddenValue::Unknown);
+    assert_eq!(allied.jungle_threat(), ThreatReport::Unknown);
+}
 
 #[test]
     fn far_side_opponent_report_replays_and_remains_allied_unknown() {
