@@ -34,6 +34,15 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.49 — 2026-08-06
+
+### Added
+
+- Added `LanePoultice` bounded player consumable resource abstraction (maximum 5, zero default, `LANE_POULTICE_HASH_TAG` state-hash binding).
+- Exposed `self_poultice` in `LanerObservation` and `laner_poultice` in `AlliedLaneObservation`.
+- Supported `poultice_gained` and `poultice_spent` resolution during execution with direct-immediate `PoulticeGained`/`PoulticeSpent`/`PoulticeChanged` events and effects, debrief recording, and replay verification.
+- Rejection of poultice overflow (`PoulticeOverflow`) or spending without available poultices (`InsufficientPoultice`) before state mutation.
+
 ## 0.1.48 — 2026-08-06
 
 ### Added

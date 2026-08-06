@@ -114,6 +114,7 @@ pub struct LanerObservation {
     pub(crate) self_flask: LaneFlask,
     pub(crate) self_incense: LaneIncense,
     pub(crate) self_salve: LaneSalve,
+    pub(crate) self_poultice: LanePoultice,
     pub(crate) self_position: LanePosition,
     pub(crate) wave_pressure: WavePressure,
     pub(crate) opponent: OpponentReport,
@@ -273,6 +274,10 @@ impl LanerObservation {
         self.self_salve
     }
 
+    pub fn self_poultice(self) -> LanePoultice {
+        self.self_poultice
+    }
+
     pub fn self_position(self) -> LanePosition {
         self.self_position
     }
@@ -379,6 +384,7 @@ pub fn observe_player(
             self_flask: state.player().flask(),
             self_incense: state.player().incense(),
             self_salve: state.player().salve(),
+            self_poultice: state.player().poultice(),
             self_position: state.player().position(),
             wave_pressure: state.wave().pressure(),
             opponent: player_opponent_report(state),
@@ -456,6 +462,7 @@ pub struct AlliedLaneObservation {
     pub(crate) laner_flask: LaneFlask,
     pub(crate) laner_incense: LaneIncense,
     pub(crate) laner_salve: LaneSalve,
+    pub(crate) laner_poultice: LanePoultice,
     pub(crate) laner_position: LanePosition,
     pub(crate) wave_pressure: WavePressure,
     pub(crate) opponent: OpponentReport,
@@ -581,6 +588,10 @@ impl AlliedLaneObservation {
         self.laner_salve
     }
 
+    pub fn laner_poultice(self) -> LanePoultice {
+        self.laner_poultice
+    }
+
     pub fn laner_position(self) -> LanePosition {
         self.laner_position
     }
@@ -662,6 +673,7 @@ pub fn observe_allied(
             laner_flask: state.player().flask(),
             laner_incense: state.player().incense(),
             laner_salve: state.player().salve(),
+            laner_poultice: state.player().poultice(),
             laner_position: state.player().position(),
             wave_pressure: state.wave().pressure(),
             opponent: OpponentReport::unknown(),

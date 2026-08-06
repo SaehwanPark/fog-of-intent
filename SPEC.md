@@ -588,6 +588,14 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Salve overflow exceeding maximum bounds (`MAX_LANE_SALVE`) or spending without available salves fails before transition state mutation with `LaneExecutionError::SalveOverflow` or `LaneExecutionError::InsufficientSalve`.
 - Three focused salve-resource tests plus the prior 150 tests pass, for 153 Rust tests total.
 
+#### Delivered in the bounded poultice-resource follow-up
+
+- `LanePoultice` is a bounded player consumable resource with zero default and non-zero state-hash and allied visible-digest tags (`LANE_POULTICE_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` expose player poultice count (`self_poultice`, `laner_poultice`) without exposing opponent poultice count.
+- `LaneExecutionInputs` supports `poultice_gained` and `poultice_spent` resolution during execution with direct-immediate `PoulticeGained`/`PoulticeSpent`/`PoulticeChanged` events and effects, debrief recording, and `LaneRecordIdentity` integration.
+- Poultice overflow exceeding maximum bounds (`MAX_LANE_POULTICE`) or spending without available poultices fails before transition state mutation with `LaneExecutionError::PoulticeOverflow` or `LaneExecutionError::InsufficientPoultice`.
+- Three focused poultice-resource tests plus the prior 153 tests pass, for 156 Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
