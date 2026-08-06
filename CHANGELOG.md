@@ -34,6 +34,17 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.40 — 2026-08-05
+
+### Added
+
+- Bounded `LaneTome` player consumable resource abstraction (`MAX_LANE_TOME = 5`) with zero default.
+- Non-default `LaneTome` state-hash binding (`LANE_TOME_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` exposure of player tome count (`self_tome`, `laner_tome`).
+- `LaneExecutionInputs` support for `tome_gained` and `tome_spent` resolution.
+- Direct-immediate `TomeGained`, `TomeSpent`, and `TomeChanged` events and effects during transition evaluation, debrief recording, and `LaneRecordIdentity` integration.
+- `LaneExecutionError::TomeOverflow` and `LaneExecutionError::InsufficientTome` fail-closed error handling.
+
 ## 0.1.39 — 2026-08-05
 
 ### Added

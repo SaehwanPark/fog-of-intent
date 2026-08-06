@@ -34,6 +34,8 @@ pub struct LaneExecutionInputs {
     pub(crate) charm_spent: LaneCharm,
     pub(crate) scroll_gained: LaneScroll,
     pub(crate) scroll_spent: LaneScroll,
+    pub(crate) tome_gained: LaneTome,
+    pub(crate) tome_spent: LaneTome,
     pub(crate) delayed_effect: Option<LaneDelayedEffect>,
 }
 
@@ -70,6 +72,8 @@ impl LaneExecutionInputs {
             charm_spent: LaneCharm::zero(),
             scroll_gained: LaneScroll::zero(),
             scroll_spent: LaneScroll::zero(),
+            tome_gained: LaneTome::zero(),
+            tome_spent: LaneTome::zero(),
             delayed_effect: None,
         }
     }
@@ -188,6 +192,16 @@ impl LaneExecutionInputs {
         self
     }
 
+    pub fn with_tome_gained(mut self, tome_gained: LaneTome) -> Self {
+        self.tome_gained = tome_gained;
+        self
+    }
+
+    pub fn with_tome_spent(mut self, tome_spent: LaneTome) -> Self {
+        self.tome_spent = tome_spent;
+        self
+    }
+
     pub fn trace(self) -> InputTrace {
         self.trace
     }
@@ -287,6 +301,14 @@ impl LaneExecutionInputs {
     pub fn scroll_spent(self) -> LaneScroll {
         self.scroll_spent
     }
+
+    pub fn tome_gained(self) -> LaneTome {
+        self.tome_gained
+    }
+
+    pub fn tome_spent(self) -> LaneTome {
+        self.tome_spent
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -312,6 +334,8 @@ struct ResourceExecutionDeltas {
     charm_spent: LaneCharm,
     scroll_gained: LaneScroll,
     scroll_spent: LaneScroll,
+    tome_gained: LaneTome,
+    tome_spent: LaneTome,
 }
 
 impl ResourceExecutionDeltas {
@@ -338,6 +362,8 @@ impl ResourceExecutionDeltas {
             charm_spent: execution.charm_spent,
             scroll_gained: execution.scroll_gained,
             scroll_spent: execution.scroll_spent,
+            tome_gained: execution.tome_gained,
+            tome_spent: execution.tome_spent,
         }
     }
 }
@@ -615,6 +641,16 @@ pub enum LaneEvent {
         amount: LaneScroll,
         trace: InputTrace,
     },
+    TomeGained {
+        actor: ActorId,
+        amount: LaneTome,
+        trace: InputTrace,
+    },
+    TomeSpent {
+        actor: ActorId,
+        amount: LaneTome,
+        trace: InputTrace,
+    },
     DelayedEffectQueued {
         actor: ActorId,
         effect: LaneDelayedEffect,
@@ -759,6 +795,13 @@ pub enum LaneEffect {
         cause: LaneEffectCause,
         provenance: LaneEffectProvenance,
     },
+    TomeChanged {
+        actor: ActorId,
+        before: LaneTome,
+        after: LaneTome,
+        cause: LaneEffectCause,
+        provenance: LaneEffectProvenance,
+    },
     PositionChanged {
         actor: ActorId,
         before: LanePosition,
@@ -830,6 +873,7 @@ impl LaneEffect {
             | Self::RelicChanged { provenance, .. }
             | Self::CharmChanged { provenance, .. }
             | Self::ScrollChanged { provenance, .. }
+            | Self::TomeChanged { provenance, .. }
             | Self::PositionChanged { provenance, .. }
             | Self::DelayedEffectQueued { provenance, .. }
             | Self::DelayedEffectResolved { provenance, .. }
@@ -946,6 +990,14 @@ pub enum LaneExecutionError {
         spent: LaneScroll,
         available: LaneScroll,
     },
+    TomeOverflow {
+        gained: LaneTome,
+        current: LaneTome,
+    },
+    InsufficientTome {
+        spent: LaneTome,
+        available: LaneTome,
+    },
     DelayedEffectOverflow,
 }
 
@@ -1002,6 +1054,8 @@ pub struct LaneDebrief {
     pub(crate) charm_spent: LaneCharm,
     pub(crate) scroll_gained: LaneScroll,
     pub(crate) scroll_spent: LaneScroll,
+    pub(crate) tome_gained: LaneTome,
+    pub(crate) tome_spent: LaneTome,
     pub(crate) wave_result: LaneWaveResult,
     pub(crate) fallback_activated: bool,
     pub(crate) delayed_effects_queued: u8,
@@ -1128,6 +1182,14 @@ impl LaneDebrief {
 
     pub fn scroll_spent(self) -> LaneScroll {
         self.scroll_spent
+    }
+
+    pub fn tome_gained(self) -> LaneTome {
+        self.tome_gained
+    }
+
+    pub fn tome_spent(self) -> LaneTome {
+        self.tome_spent
     }
 
     pub fn wave_result(self) -> LaneWaveResult {
@@ -1484,6 +1546,21 @@ fn apply_player_resources(
                 gained: deltas.scroll_gained,
                 current: after_spend_scroll,
             })?;
+    let after_spend_tome =
+        before
+            .tome
+            .subtract(deltas.tome_spent)
+            .ok_or(LaneExecutionError::InsufficientTome {
+                spent: deltas.tome_spent,
+                available: before.tome,
+            })?;
+    let tome =
+        after_spend_tome
+            .add(deltas.tome_gained)
+            .ok_or(LaneExecutionError::TomeOverflow {
+                gained: deltas.tome_gained,
+                current: after_spend_tome,
+            })?;
     Ok(PlayerResources {
         mana,
         gold,
@@ -1500,6 +1577,7 @@ fn apply_player_resources(
         relic,
         charm,
         scroll,
+        tome,
     })
 }
 
@@ -1865,6 +1943,20 @@ fn project_lane_events(
             trace,
         });
     }
+    if execution.tome_gained != LaneTome::zero() {
+        events.push(LaneEvent::TomeGained {
+            actor: player.id,
+            amount: execution.tome_gained,
+            trace,
+        });
+    }
+    if execution.tome_spent != LaneTome::zero() {
+        events.push(LaneEvent::TomeSpent {
+            actor: player.id,
+            amount: execution.tome_spent,
+            trace,
+        });
+    }
     if let Some(queued) = resolved.delayed_effect_queued {
         events.push(LaneEvent::DelayedEffectQueued {
             actor: player.id,
@@ -2098,6 +2190,15 @@ fn project_lane_effects(
             provenance: LaneEffectProvenance::direct_immediate(),
         });
     }
+    if next_player.tome != player.tome {
+        effects.push(LaneEffect::TomeChanged {
+            actor: player.id,
+            before: player.tome,
+            after: next_player.tome,
+            cause: LaneEffectCause::Execution(trace),
+            provenance: LaneEffectProvenance::direct_immediate(),
+        });
+    }
     if let Some(queued) = resolved.delayed_effect_queued {
         effects.push(LaneEffect::DelayedEffectQueued {
             actor: player.id,
@@ -2196,6 +2297,8 @@ pub fn transition_lane(
         charm_spent: execution.charm_spent,
         scroll_gained: execution.scroll_gained,
         scroll_spent: execution.scroll_spent,
+        tome_gained: execution.tome_gained,
+        tome_spent: execution.tome_spent,
         wave_result: execution.wave_result,
         fallback_activated: resolved.fallback_activated,
         delayed_effects_queued: if resolved.delayed_effect_queued.is_some() {

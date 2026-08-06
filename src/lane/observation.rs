@@ -105,6 +105,7 @@ pub struct LanerObservation {
     pub(crate) self_relic: LaneRelic,
     pub(crate) self_charm: LaneCharm,
     pub(crate) self_scroll: LaneScroll,
+    pub(crate) self_tome: LaneTome,
     pub(crate) self_position: LanePosition,
     pub(crate) wave_pressure: WavePressure,
     pub(crate) opponent: OpponentReport,
@@ -228,6 +229,10 @@ impl LanerObservation {
         self.self_scroll
     }
 
+    pub fn self_tome(self) -> LaneTome {
+        self.self_tome
+    }
+
     pub fn self_position(self) -> LanePosition {
         self.self_position
     }
@@ -325,6 +330,7 @@ pub fn observe_player(
             self_relic: state.player().relic(),
             self_charm: state.player().charm(),
             self_scroll: state.player().scroll(),
+            self_tome: state.player().tome(),
             self_position: state.player().position(),
             wave_pressure: state.wave().pressure(),
             opponent: player_opponent_report(state),
@@ -393,6 +399,7 @@ pub struct AlliedLaneObservation {
     pub(crate) laner_relic: LaneRelic,
     pub(crate) laner_charm: LaneCharm,
     pub(crate) laner_scroll: LaneScroll,
+    pub(crate) laner_tome: LaneTome,
     pub(crate) laner_position: LanePosition,
     pub(crate) wave_pressure: WavePressure,
     pub(crate) opponent: OpponentReport,
@@ -482,6 +489,10 @@ impl AlliedLaneObservation {
         self.laner_scroll
     }
 
+    pub fn laner_tome(self) -> LaneTome {
+        self.laner_tome
+    }
+
     pub fn laner_position(self) -> LanePosition {
         self.laner_position
     }
@@ -554,6 +565,7 @@ pub fn observe_allied(
             laner_relic: state.player().relic(),
             laner_charm: state.player().charm(),
             laner_scroll: state.player().scroll(),
+            laner_tome: state.player().tome(),
             laner_position: state.player().position(),
             wave_pressure: state.wave().pressure(),
             opponent: OpponentReport::unknown(),

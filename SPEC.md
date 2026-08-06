@@ -508,6 +508,22 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Charm overflow exceeding maximum bounds (`MAX_LANE_CHARM`) or spending without available charms fails before transition state mutation with `LaneExecutionError::CharmOverflow` or `LaneExecutionError::InsufficientCharm`.
 - Three focused charm-resource tests plus the prior 120 tests pass, for 123 Rust tests total.
 
+#### Delivered in the bounded scroll-resource follow-up
+
+- `LaneScroll` is a bounded player consumable resource with zero default and non-zero state-hash and allied visible-digest tags (`LANE_SCROLL_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` expose player scroll count (`self_scroll`, `laner_scroll`) without exposing opponent scroll count.
+- `LaneExecutionInputs` supports `scroll_gained` and `scroll_spent` resolution during execution with direct-immediate `ScrollGained`/`ScrollSpent`/`ScrollChanged` events and effects, debrief recording, and `LaneRecordIdentity` integration.
+- Scroll overflow exceeding maximum bounds (`MAX_LANE_SCROLL`) or spending without available scrolls fails before transition state mutation with `LaneExecutionError::ScrollOverflow` or `LaneExecutionError::InsufficientScroll`.
+- Three focused scroll-resource tests plus the prior 123 tests pass, for 126 Rust tests total.
+
+#### Delivered in the bounded tome-resource follow-up
+
+- `LaneTome` is a bounded player consumable resource with zero default and non-zero state-hash and allied visible-digest tags (`LANE_TOME_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` expose player tome count (`self_tome`, `laner_tome`) without exposing opponent tome count.
+- `LaneExecutionInputs` supports `tome_gained` and `tome_spent` resolution during execution with direct-immediate `TomeGained`/`TomeSpent`/`TomeChanged` events and effects, debrief recording, and `LaneRecordIdentity` integration.
+- Tome overflow exceeding maximum bounds (`MAX_LANE_TOME`) or spending without available tomes fails before transition state mutation with `LaneExecutionError::TomeOverflow` or `LaneExecutionError::InsufficientTome`.
+- Three focused tome-resource tests plus the prior 126 tests pass, for 129 Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
