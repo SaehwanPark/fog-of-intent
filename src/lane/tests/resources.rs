@@ -964,4 +964,123 @@
         ));
     }
 
+    #[test]
+    fn elixir_is_bounded_and_default_zero() {
+        assert_eq!(LaneElixir::zero().value(), 0);
+
+        let valid = LaneElixir::new(5).expect("valid elixir");
+        assert_eq!(valid.value(), 5);
+
+        let err = LaneElixir::new(6).unwrap_err();
+        assert_eq!(err.value, 6);
+        assert_eq!(err.maximum, MAX_LANE_ELIXIR);
+    }
+
+    #[test]
+    fn elixir_gained_and_spent_are_direct_immediate_and_replayable() {
+        let state = LaneSnapshot::initial();
+        let (receipt, req) = request(&state, LaneIntent::Stabilize);
+        let validated = validate_lane_request(&state, &receipt, &req).expect("valid");
+
+        let elixir_gained = LaneElixir::new(3).expect("3 elixirs");
+        let mut inputs_w1 = inputs(1, 1, LaneWaveResult::Held);
+        inputs_w1.execution = inputs_w1
+            .execution
+            .with_elixir_gained(elixir_gained);
+        let inputs_w1 = inputs_w1.with_mana_spent(LaneMana::zero());
+
+        let result = transition_lane(&state, &validated, &inputs_w1).expect("transition 1");
+        assert_eq!(result.next_state().player().elixir(), elixir_gained);
+        assert_eq!(result.debrief().elixir_gained(), elixir_gained);
+        assert_eq!(result.debrief().elixir_spent(), LaneElixir::zero());
+        assert_ne!(result.next_state().hash(), state.hash());
+
+        assert!(result.events().iter().any(|e| matches!(
+            e,
+            LaneEvent::ElixirGained { amount, .. } if *amount == elixir_gained
+        )));
+        assert!(result.effects().iter().any(|e| matches!(
+            e,
+            LaneEffect::ElixirChanged { before, after, provenance, .. }
+                if *before == LaneElixir::zero()
+                    && *after == elixir_gained
+                    && provenance.relation() == LaneEffectRelation::Direct
+                    && provenance.timing() == LaneEffectTiming::Immediate
+        )));
+
+        let state_w2 = reopen_lane_window(&result).expect("reopen");
+        let player_obs = observe_player(&state_w2, ObservationId::new(2));
+        assert_eq!(player_obs.observation().self_elixir(), elixir_gained);
+        let allied_obs = observe_allied(&state_w2, ObservationId::new(3));
+        assert_eq!(allied_obs.observation().laner_elixir(), elixir_gained);
+
+        let (rec2, req2) = request(&state_w2, LaneIntent::Stabilize);
+        let val2 = validate_lane_request(&state_w2, &rec2, &req2).expect("valid");
+
+        let elixir_spent = LaneElixir::new(2).expect("2 elixirs");
+        let mut inputs_w2 = inputs(1, 1, LaneWaveResult::Held);
+        inputs_w2.execution = inputs_w2
+            .execution
+            .with_elixir_spent(elixir_spent);
+        let inputs_w2 = inputs_w2.with_mana_spent(LaneMana::zero());
+
+        let result2 = transition_lane(&state_w2, &val2, &inputs_w2).expect("transition 2");
+        assert_eq!(result2.next_state().player().elixir(), LaneElixir::new(1).unwrap());
+        assert_eq!(result2.debrief().elixir_spent(), elixir_spent);
+
+        assert!(result2.events().iter().any(|e| matches!(
+            e,
+            LaneEvent::ElixirSpent { amount, .. } if *amount == elixir_spent
+        )));
+
+        let mut history = LaneHistory::new(state).expect("valid history");
+        history.append(&receipt, &req, inputs_w1).expect("append 1");
+        assert_eq!(history.verify_replay(), Ok(result.next_state()));
+    }
+
+    #[test]
+    fn elixir_overflow_and_insufficient_are_rejected() {
+        let state = LaneSnapshot::initial();
+        let (receipt, req) = request(&state, LaneIntent::Stabilize);
+        let validated = validate_lane_request(&state, &receipt, &req).expect("valid");
+
+        let mut insufficient_inputs = inputs(1, 1, LaneWaveResult::Held);
+        insufficient_inputs.execution = insufficient_inputs
+            .execution
+            .with_elixir_spent(LaneElixir::new(1).unwrap());
+        let insufficient_inputs = insufficient_inputs.with_mana_spent(LaneMana::zero());
+
+        assert!(matches!(
+            transition_lane(&state, &validated, &insufficient_inputs),
+            Err(LaneTransitionError::Execution(
+                LaneExecutionError::InsufficientElixir { .. }
+            ))
+        ));
+
+        let mut gain_max_inputs = inputs(1, 1, LaneWaveResult::Held);
+        gain_max_inputs.execution = gain_max_inputs
+            .execution
+            .with_elixir_gained(LaneElixir::new(MAX_LANE_ELIXIR).unwrap());
+        let gain_max_inputs = gain_max_inputs.with_mana_spent(LaneMana::zero());
+
+        let res1 = transition_lane(&state, &validated, &gain_max_inputs).expect("transition max");
+        let max_elixir_state = reopen_lane_window(&res1).expect("reopen");
+
+        let (rec2, req2) = request(&max_elixir_state, LaneIntent::Stabilize);
+        let val2 = validate_lane_request(&max_elixir_state, &rec2, &req2).expect("valid");
+
+        let mut overflow_inputs_2 = inputs(1, 1, LaneWaveResult::Held);
+        overflow_inputs_2.execution = overflow_inputs_2
+            .execution
+            .with_elixir_gained(LaneElixir::new(1).unwrap());
+        let overflow_inputs_2 = overflow_inputs_2.with_mana_spent(LaneMana::zero());
+
+        assert!(matches!(
+            transition_lane(&max_elixir_state, &val2, &overflow_inputs_2),
+            Err(LaneTransitionError::Execution(
+                LaneExecutionError::ElixirOverflow { .. }
+            ))
+        ));
+    }
+
 
