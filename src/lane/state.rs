@@ -48,6 +48,7 @@ pub(crate) struct PlayerResources {
     pub(crate) elixir: LaneElixir,
     pub(crate) trinket: LaneTrinket,
     pub(crate) relic: LaneRelic,
+    pub(crate) charm: LaneCharm,
 }
 
 impl PlayerResources {
@@ -66,6 +67,7 @@ impl PlayerResources {
             elixir: LaneElixir::zero(),
             trinket: LaneTrinket::zero(),
             relic: LaneRelic::zero(),
+            charm: LaneCharm::zero(),
         }
     }
 
@@ -111,6 +113,7 @@ pub struct PlayerLaneState {
     pub(crate) elixir: LaneElixir,
     pub(crate) trinket: LaneTrinket,
     pub(crate) relic: LaneRelic,
+    pub(crate) charm: LaneCharm,
     pub(crate) position: LanePosition,
 }
 
@@ -137,6 +140,7 @@ impl PlayerLaneState {
             elixir: resources.elixir,
             trinket: resources.trinket,
             relic: resources.relic,
+            charm: resources.charm,
             position,
         }
     }
@@ -156,6 +160,7 @@ impl PlayerLaneState {
             elixir: self.elixir,
             trinket: self.trinket,
             relic: self.relic,
+            charm: self.charm,
         }
     }
 
@@ -312,6 +317,7 @@ impl PlayerLaneState {
                 elixir: LaneElixir::zero(),
                 trinket: LaneTrinket::zero(),
                 relic: LaneRelic::zero(),
+                charm: LaneCharm::zero(),
             },
             position,
         )
@@ -375,6 +381,10 @@ impl PlayerLaneState {
 
     pub fn relic(self) -> LaneRelic {
         self.relic
+    }
+
+    pub fn charm(self) -> LaneCharm {
+        self.charm
     }
 
     pub fn position(self) -> LanePosition {
@@ -725,6 +735,9 @@ impl LaneSnapshot {
         }
         if self.player.relic() != LaneRelic::zero() {
             hash = hash_bytes(hash, &[LANE_RELIC_HASH_TAG, self.player.relic().value()]);
+        }
+        if self.player.charm() != LaneCharm::zero() {
+            hash = hash_bytes(hash, &[LANE_CHARM_HASH_TAG, self.player.charm().value()]);
         }
         hash = hash_bytes(hash, &[position_tag(self.player.position())]);
         hash = hash_bytes(
