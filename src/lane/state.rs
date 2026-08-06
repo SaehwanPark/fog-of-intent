@@ -50,6 +50,7 @@ pub(crate) struct PlayerResources {
     pub(crate) relic: LaneRelic,
     pub(crate) charm: LaneCharm,
     pub(crate) scroll: LaneScroll,
+    pub(crate) tome: LaneTome,
 }
 
 impl PlayerResources {
@@ -70,6 +71,7 @@ impl PlayerResources {
             relic: LaneRelic::zero(),
             charm: LaneCharm::zero(),
             scroll: LaneScroll::zero(),
+            tome: LaneTome::zero(),
         }
     }
 
@@ -117,6 +119,7 @@ pub struct PlayerLaneState {
     pub(crate) relic: LaneRelic,
     pub(crate) charm: LaneCharm,
     pub(crate) scroll: LaneScroll,
+    pub(crate) tome: LaneTome,
     pub(crate) position: LanePosition,
 }
 
@@ -145,6 +148,7 @@ impl PlayerLaneState {
             relic: resources.relic,
             charm: resources.charm,
             scroll: resources.scroll,
+            tome: resources.tome,
             position,
         }
     }
@@ -166,6 +170,7 @@ impl PlayerLaneState {
             relic: self.relic,
             charm: self.charm,
             scroll: self.scroll,
+            tome: self.tome,
         }
     }
 
@@ -324,6 +329,7 @@ impl PlayerLaneState {
                 relic: LaneRelic::zero(),
                 charm: LaneCharm::zero(),
                 scroll: LaneScroll::zero(),
+                tome: LaneTome::zero(),
             },
             position,
         )
@@ -395,6 +401,10 @@ impl PlayerLaneState {
 
     pub fn scroll(self) -> LaneScroll {
         self.scroll
+    }
+
+    pub fn tome(self) -> LaneTome {
+        self.tome
     }
 
     pub fn position(self) -> LanePosition {
@@ -751,6 +761,9 @@ impl LaneSnapshot {
         }
         if self.player.scroll() != LaneScroll::zero() {
             hash = hash_bytes(hash, &[LANE_SCROLL_HASH_TAG, self.player.scroll().value()]);
+        }
+        if self.player.tome() != LaneTome::zero() {
+            hash = hash_bytes(hash, &[LANE_TOME_HASH_TAG, self.player.tome().value()]);
         }
         hash = hash_bytes(hash, &[position_tag(self.player.position())]);
         hash = hash_bytes(
