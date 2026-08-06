@@ -46,6 +46,7 @@ pub(crate) struct PlayerResources {
     pub(crate) ward: LaneWard,
     pub(crate) potion: LanePotion,
     pub(crate) elixir: LaneElixir,
+    pub(crate) trinket: LaneTrinket,
 }
 
 impl PlayerResources {
@@ -62,6 +63,7 @@ impl PlayerResources {
             ward: LaneWard::zero(),
             potion: LanePotion::zero(),
             elixir: LaneElixir::zero(),
+            trinket: LaneTrinket::zero(),
         }
     }
 
@@ -105,6 +107,7 @@ pub struct PlayerLaneState {
     pub(crate) ward: LaneWard,
     pub(crate) potion: LanePotion,
     pub(crate) elixir: LaneElixir,
+    pub(crate) trinket: LaneTrinket,
     pub(crate) position: LanePosition,
 }
 
@@ -129,6 +132,7 @@ impl PlayerLaneState {
             ward: resources.ward,
             potion: resources.potion,
             elixir: resources.elixir,
+            trinket: resources.trinket,
             position,
         }
     }
@@ -146,6 +150,7 @@ impl PlayerLaneState {
             ward: self.ward,
             potion: self.potion,
             elixir: self.elixir,
+            trinket: self.trinket,
         }
     }
 
@@ -300,6 +305,7 @@ impl PlayerLaneState {
                 ward: LaneWard::zero(),
                 potion: LanePotion::zero(),
                 elixir: LaneElixir::zero(),
+                trinket: LaneTrinket::zero(),
             },
             position,
         )
@@ -355,6 +361,10 @@ impl PlayerLaneState {
 
     pub fn elixir(self) -> LaneElixir {
         self.elixir
+    }
+
+    pub fn trinket(self) -> LaneTrinket {
+        self.trinket
     }
 
     pub fn position(self) -> LanePosition {
@@ -696,6 +706,12 @@ impl LaneSnapshot {
         }
         if self.player.elixir() != LaneElixir::zero() {
             hash = hash_bytes(hash, &[LANE_ELIXIR_HASH_TAG, self.player.elixir().value()]);
+        }
+        if self.player.trinket() != LaneTrinket::zero() {
+            hash = hash_bytes(
+                hash,
+                &[LANE_TRINKET_HASH_TAG, self.player.trinket().value()],
+            );
         }
         hash = hash_bytes(hash, &[position_tag(self.player.position())]);
         hash = hash_bytes(
