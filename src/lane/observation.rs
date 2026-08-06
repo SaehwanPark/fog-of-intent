@@ -113,6 +113,7 @@ pub struct LanerObservation {
     pub(crate) self_phial: LanePhial,
     pub(crate) self_flask: LaneFlask,
     pub(crate) self_incense: LaneIncense,
+    pub(crate) self_salve: LaneSalve,
     pub(crate) self_position: LanePosition,
     pub(crate) wave_pressure: WavePressure,
     pub(crate) opponent: OpponentReport,
@@ -268,6 +269,10 @@ impl LanerObservation {
         self.self_incense
     }
 
+    pub fn self_salve(self) -> LaneSalve {
+        self.self_salve
+    }
+
     pub fn self_position(self) -> LanePosition {
         self.self_position
     }
@@ -373,6 +378,7 @@ pub fn observe_player(
             self_phial: state.player().phial(),
             self_flask: state.player().flask(),
             self_incense: state.player().incense(),
+            self_salve: state.player().salve(),
             self_position: state.player().position(),
             wave_pressure: state.wave().pressure(),
             opponent: player_opponent_report(state),
@@ -449,6 +455,7 @@ pub struct AlliedLaneObservation {
     pub(crate) laner_phial: LanePhial,
     pub(crate) laner_flask: LaneFlask,
     pub(crate) laner_incense: LaneIncense,
+    pub(crate) laner_salve: LaneSalve,
     pub(crate) laner_position: LanePosition,
     pub(crate) wave_pressure: WavePressure,
     pub(crate) opponent: OpponentReport,
@@ -570,6 +577,10 @@ impl AlliedLaneObservation {
         self.laner_incense
     }
 
+    pub fn laner_salve(self) -> LaneSalve {
+        self.laner_salve
+    }
+
     pub fn laner_position(self) -> LanePosition {
         self.laner_position
     }
@@ -650,6 +661,7 @@ pub fn observe_allied(
             laner_phial: state.player().phial(),
             laner_flask: state.player().flask(),
             laner_incense: state.player().incense(),
+            laner_salve: state.player().salve(),
             laner_position: state.player().position(),
             wave_pressure: state.wave().pressure(),
             opponent: OpponentReport::unknown(),

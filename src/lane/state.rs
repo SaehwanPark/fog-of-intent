@@ -58,6 +58,7 @@ pub(crate) struct PlayerResources {
     pub(crate) phial: LanePhial,
     pub(crate) flask: LaneFlask,
     pub(crate) incense: LaneIncense,
+    pub(crate) salve: LaneSalve,
 }
 
 impl PlayerResources {
@@ -86,6 +87,7 @@ impl PlayerResources {
             phial: LanePhial::zero(),
             flask: LaneFlask::zero(),
             incense: LaneIncense::zero(),
+            salve: LaneSalve::zero(),
         }
     }
 
@@ -141,6 +143,7 @@ pub struct PlayerLaneState {
     pub(crate) phial: LanePhial,
     pub(crate) flask: LaneFlask,
     pub(crate) incense: LaneIncense,
+    pub(crate) salve: LaneSalve,
     pub(crate) position: LanePosition,
 }
 
@@ -177,6 +180,7 @@ impl PlayerLaneState {
             phial: resources.phial,
             flask: resources.flask,
             incense: resources.incense,
+            salve: resources.salve,
             position,
         }
     }
@@ -206,6 +210,7 @@ impl PlayerLaneState {
             phial: self.phial,
             flask: self.flask,
             incense: self.incense,
+            salve: self.salve,
         }
     }
 
@@ -372,6 +377,7 @@ impl PlayerLaneState {
                 phial: LanePhial::zero(),
                 flask: LaneFlask::zero(),
                 incense: LaneIncense::zero(),
+                salve: LaneSalve::zero(),
             },
             position,
         )
@@ -475,6 +481,10 @@ impl PlayerLaneState {
 
     pub fn incense(self) -> LaneIncense {
         self.incense
+    }
+
+    pub fn salve(self) -> LaneSalve {
+        self.salve
     }
 
     pub fn position(self) -> LanePosition {
@@ -861,6 +871,9 @@ impl LaneSnapshot {
                 hash,
                 &[LANE_INCENSE_HASH_TAG, self.player.incense().value()],
             );
+        }
+        if self.player.salve() != LaneSalve::zero() {
+            hash = hash_bytes(hash, &[LANE_SALVE_HASH_TAG, self.player.salve().value()]);
         }
         hash = hash_bytes(hash, &[position_tag(self.player.position())]);
         hash = hash_bytes(
