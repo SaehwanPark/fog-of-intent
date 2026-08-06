@@ -49,6 +49,7 @@ pub(crate) struct PlayerResources {
     pub(crate) trinket: LaneTrinket,
     pub(crate) relic: LaneRelic,
     pub(crate) charm: LaneCharm,
+    pub(crate) scroll: LaneScroll,
 }
 
 impl PlayerResources {
@@ -68,6 +69,7 @@ impl PlayerResources {
             trinket: LaneTrinket::zero(),
             relic: LaneRelic::zero(),
             charm: LaneCharm::zero(),
+            scroll: LaneScroll::zero(),
         }
     }
 
@@ -114,6 +116,7 @@ pub struct PlayerLaneState {
     pub(crate) trinket: LaneTrinket,
     pub(crate) relic: LaneRelic,
     pub(crate) charm: LaneCharm,
+    pub(crate) scroll: LaneScroll,
     pub(crate) position: LanePosition,
 }
 
@@ -141,6 +144,7 @@ impl PlayerLaneState {
             trinket: resources.trinket,
             relic: resources.relic,
             charm: resources.charm,
+            scroll: resources.scroll,
             position,
         }
     }
@@ -161,6 +165,7 @@ impl PlayerLaneState {
             trinket: self.trinket,
             relic: self.relic,
             charm: self.charm,
+            scroll: self.scroll,
         }
     }
 
@@ -318,6 +323,7 @@ impl PlayerLaneState {
                 trinket: LaneTrinket::zero(),
                 relic: LaneRelic::zero(),
                 charm: LaneCharm::zero(),
+                scroll: LaneScroll::zero(),
             },
             position,
         )
@@ -385,6 +391,10 @@ impl PlayerLaneState {
 
     pub fn charm(self) -> LaneCharm {
         self.charm
+    }
+
+    pub fn scroll(self) -> LaneScroll {
+        self.scroll
     }
 
     pub fn position(self) -> LanePosition {
@@ -738,6 +748,9 @@ impl LaneSnapshot {
         }
         if self.player.charm() != LaneCharm::zero() {
             hash = hash_bytes(hash, &[LANE_CHARM_HASH_TAG, self.player.charm().value()]);
+        }
+        if self.player.scroll() != LaneScroll::zero() {
+            hash = hash_bytes(hash, &[LANE_SCROLL_HASH_TAG, self.player.scroll().value()]);
         }
         hash = hash_bytes(hash, &[position_tag(self.player.position())]);
         hash = hash_bytes(
