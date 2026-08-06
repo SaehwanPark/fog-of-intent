@@ -2,7 +2,7 @@
 
 ## Status
 
-`pass` for documentation reconciliation only.
+`pass` after one documentation correction for information-boundary precision.
 
 ## Reviewed Inputs
 
@@ -19,10 +19,14 @@
   state hash, and replay tests support the checklist promotion.
 - Current docs retain the evidence limit that these are bounded diagnostic
   abstractions rather than a complete economy or playable scenario.
+- A review finding that initially conflated host-owned values with execution
+  inputs and actor-visible projections was corrected: explicit inputs now name
+  damage, wave, and resource changes; intent/fallback evaluation owns position
+  and health outcomes; hidden opponent values remain redacted.
 
 ## Required Fixes
 
-None.
+None after the correction above.
 
 ## Residual Risks
 

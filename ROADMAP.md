@@ -614,8 +614,9 @@ execution, pacing, or a playable scenario.
 
 - [x] Define bounded lane positions, player/opponent health, wave pressure, and
   the `LaneResources` aggregate for mana, cooldown, gold, and experience.
-- [x] Carry those values through the host-owned snapshot, explicit execution
-  inputs, actor-visible projections, state hash, and replay checks.
+- [x] Carry those values through the host-owned snapshot, state hash, and replay
+  checks; expose only actor-authorized player fields and bounded reports, while
+  explicit execution inputs carry resolved damage, wave, and resource changes.
 
 This evidence establishes the minimum typed state needed by the current
 diagnostic window only; it does not establish a complete economy, balance, or

@@ -12,7 +12,8 @@ package version and runtime code are unchanged.
 
 ## Verification and QA
 
-Full locked Rust/repository checks pass. Domain QA status is `pass`; see
+Full locked Rust/repository checks pass. Domain QA status is `pass` after one
+documentation precision fix; see
 `_workspace/03-domain-qa-m2-minimum-abstractions.md`.
 
 ## Limits and Next Slice

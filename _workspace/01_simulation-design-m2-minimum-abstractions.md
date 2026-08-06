@@ -14,7 +14,10 @@ limits explicit for the roadmap promotion.
 - `LaneResources` groups bounded `LaneMana`, `LaneCooldown`, `LaneGold`, and
   `LaneExperience` for the player; execution deltas remain explicit inputs.
 - `LaneSnapshot` owns the host-visible truth and state hash; observations expose
-  only authorized player/allied projections.
+  only authorized player/allied projections. Explicit execution inputs carry
+  resolved damage, wave, and resource changes; position and health outcomes are
+  resolved by intent/fallback evaluation, and hidden opponent values stay
+  redacted.
 
 ## Authority and Compatibility
 

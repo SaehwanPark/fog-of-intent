@@ -15,9 +15,10 @@ M2 — One-Lane Vertical Slice, minimum state-abstraction evidence.
 
 - `LaneSnapshot` contains player/opponent positions, health, wave pressure, and
   bounded jungle truth.
-- `LaneResources` contains player mana, cooldown, gold, and experience; the
-  transition and observation contracts carry these values through explicit
-  execution inputs and actor-visible projections.
+- `LaneResources` contains player mana, cooldown, gold, and experience. The
+  snapshot/hash/replay contracts own these values; explicit execution inputs
+  carry resolved damage, wave, and resource changes, while projections expose
+  only authorized player fields and bounded reports.
 - The existing state, resource, transition, observation, history, replay, and
   hidden-state tests pass on merged `main`.
 
