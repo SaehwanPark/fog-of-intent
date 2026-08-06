@@ -52,6 +52,7 @@ pub(crate) struct PlayerResources {
     pub(crate) scroll: LaneScroll,
     pub(crate) tome: LaneTome,
     pub(crate) rune: LaneRune,
+    pub(crate) sigil: LaneSigil,
 }
 
 impl PlayerResources {
@@ -74,6 +75,7 @@ impl PlayerResources {
             scroll: LaneScroll::zero(),
             tome: LaneTome::zero(),
             rune: LaneRune::zero(),
+            sigil: LaneSigil::zero(),
         }
     }
 
@@ -123,6 +125,7 @@ pub struct PlayerLaneState {
     pub(crate) scroll: LaneScroll,
     pub(crate) tome: LaneTome,
     pub(crate) rune: LaneRune,
+    pub(crate) sigil: LaneSigil,
     pub(crate) position: LanePosition,
 }
 
@@ -153,6 +156,7 @@ impl PlayerLaneState {
             scroll: resources.scroll,
             tome: resources.tome,
             rune: resources.rune,
+            sigil: resources.sigil,
             position,
         }
     }
@@ -176,6 +180,7 @@ impl PlayerLaneState {
             scroll: self.scroll,
             tome: self.tome,
             rune: self.rune,
+            sigil: self.sigil,
         }
     }
 
@@ -336,6 +341,7 @@ impl PlayerLaneState {
                 scroll: LaneScroll::zero(),
                 tome: LaneTome::zero(),
                 rune: LaneRune::zero(),
+                sigil: LaneSigil::zero(),
             },
             position,
         )
@@ -415,6 +421,10 @@ impl PlayerLaneState {
 
     pub fn rune(self) -> LaneRune {
         self.rune
+    }
+
+    pub fn sigil(self) -> LaneSigil {
+        self.sigil
     }
 
     pub fn position(self) -> LanePosition {
@@ -777,6 +787,9 @@ impl LaneSnapshot {
         }
         if self.player.rune() != LaneRune::zero() {
             hash = hash_bytes(hash, &[LANE_RUNE_HASH_TAG, self.player.rune().value()]);
+        }
+        if self.player.sigil() != LaneSigil::zero() {
+            hash = hash_bytes(hash, &[LANE_SIGIL_HASH_TAG, self.player.sigil().value()]);
         }
         hash = hash_bytes(hash, &[position_tag(self.player.position())]);
         hash = hash_bytes(
