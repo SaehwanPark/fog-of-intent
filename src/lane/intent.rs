@@ -18,6 +18,7 @@ pub struct LaneIntentRequest {
     pub(crate) commitment: LaneCommitment,
     pub(crate) ping_signal: LanePingSignal,
     pub(crate) abort_condition: LaneAbortCondition,
+    pub(crate) fallback_behavior: LaneFallbackBehavior,
 }
 
 impl LaneIntentRequest {
@@ -74,6 +75,7 @@ impl LaneIntentRequest {
             LaneCommitment::default_commitment(),
             ping_signal,
             LaneAbortCondition::default_condition(),
+            LaneFallbackBehavior::default_behavior(),
         )
     }
 
@@ -91,6 +93,25 @@ impl LaneIntentRequest {
             LaneCommitment::default_commitment(),
             LanePingSignal::default_signal(),
             abort_condition,
+            LaneFallbackBehavior::default_behavior(),
+        )
+    }
+
+    pub fn new_with_fallback_behavior(
+        actor: ActorId,
+        observation_id: ObservationId,
+        intent: LaneIntent,
+        fallback_behavior: LaneFallbackBehavior,
+    ) -> Self {
+        Self::new_with_full_intent(
+            actor,
+            observation_id,
+            intent,
+            LaneTargetFocus::default_focus(),
+            LaneCommitment::default_commitment(),
+            LanePingSignal::default_signal(),
+            LaneAbortCondition::default_condition(),
+            fallback_behavior,
         )
     }
 
@@ -109,9 +130,11 @@ impl LaneIntentRequest {
             commitment,
             LanePingSignal::default_signal(),
             LaneAbortCondition::default_condition(),
+            LaneFallbackBehavior::default_behavior(),
         )
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new_with_full_intent(
         actor: ActorId,
         observation_id: ObservationId,
@@ -120,6 +143,7 @@ impl LaneIntentRequest {
         commitment: LaneCommitment,
         ping_signal: LanePingSignal,
         abort_condition: LaneAbortCondition,
+        fallback_behavior: LaneFallbackBehavior,
     ) -> Self {
         Self {
             actor,
@@ -129,6 +153,7 @@ impl LaneIntentRequest {
             commitment,
             ping_signal,
             abort_condition,
+            fallback_behavior,
         }
     }
 
@@ -159,6 +184,10 @@ impl LaneIntentRequest {
     pub fn abort_condition(self) -> LaneAbortCondition {
         self.abort_condition
     }
+
+    pub fn fallback_behavior(self) -> LaneFallbackBehavior {
+        self.fallback_behavior
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -173,6 +202,7 @@ pub struct LaneIntentCommand {
     pub(crate) commitment: LaneCommitment,
     pub(crate) ping_signal: LanePingSignal,
     pub(crate) abort_condition: LaneAbortCondition,
+    pub(crate) fallback_behavior: LaneFallbackBehavior,
 }
 
 impl LaneIntentCommand {
@@ -257,6 +287,7 @@ impl LaneIntentCommand {
             LaneCommitment::default_commitment(),
             ping_signal,
             LaneAbortCondition::default_condition(),
+            LaneFallbackBehavior::default_behavior(),
         )
     }
 
@@ -280,6 +311,31 @@ impl LaneIntentCommand {
             LaneCommitment::default_commitment(),
             LanePingSignal::default_signal(),
             abort_condition,
+            LaneFallbackBehavior::default_behavior(),
+        )
+    }
+
+    pub fn new_with_fallback_behavior(
+        actor: ActorId,
+        turn: Turn,
+        ruleset: RulesetId,
+        observation_id: ObservationId,
+        host_prior_state_hash: StateHash,
+        intent: LaneIntent,
+        fallback_behavior: LaneFallbackBehavior,
+    ) -> Self {
+        Self::new_with_full_intent(
+            actor,
+            turn,
+            ruleset,
+            observation_id,
+            host_prior_state_hash,
+            intent,
+            LaneTargetFocus::default_focus(),
+            LaneCommitment::default_commitment(),
+            LanePingSignal::default_signal(),
+            LaneAbortCondition::default_condition(),
+            fallback_behavior,
         )
     }
 
@@ -305,6 +361,7 @@ impl LaneIntentCommand {
             commitment,
             LanePingSignal::default_signal(),
             LaneAbortCondition::default_condition(),
+            LaneFallbackBehavior::default_behavior(),
         )
     }
 
@@ -320,6 +377,7 @@ impl LaneIntentCommand {
         commitment: LaneCommitment,
         ping_signal: LanePingSignal,
         abort_condition: LaneAbortCondition,
+        fallback_behavior: LaneFallbackBehavior,
     ) -> Self {
         Self {
             actor,
@@ -332,6 +390,7 @@ impl LaneIntentCommand {
             commitment,
             ping_signal,
             abort_condition,
+            fallback_behavior,
         }
     }
 
@@ -373,6 +432,10 @@ impl LaneIntentCommand {
 
     pub fn abort_condition(self) -> LaneAbortCondition {
         self.abort_condition
+    }
+
+    pub fn fallback_behavior(self) -> LaneFallbackBehavior {
+        self.fallback_behavior
     }
 }
 

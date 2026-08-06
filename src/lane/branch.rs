@@ -426,6 +426,13 @@ pub(crate) fn lane_record_identity(record: &LaneTransitionRecord) -> StateHash {
         hash = hash_bytes(hash, &[LANE_ABORT_CONDITION_HASH_TAG]);
         hash = hash_bytes(hash, &[abort_condition_tag(record.command.abort_condition)]);
     }
+    if record.command.fallback_behavior != LaneFallbackBehavior::MaintainPlan {
+        hash = hash_bytes(hash, &[LANE_FALLBACK_BEHAVIOR_HASH_TAG]);
+        hash = hash_bytes(
+            hash,
+            &[fallback_behavior_tag(record.command.fallback_behavior)],
+        );
+    }
     hash = hash_bytes(hash, &record.prior_state_hash.value().to_le_bytes());
     for trace in [
         record.inputs.environment,

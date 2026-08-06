@@ -40,6 +40,7 @@ pub fn validate_lane_request(
         request.commitment,
         request.ping_signal,
         request.abort_condition,
+        request.fallback_behavior,
     );
     validate_lane_command(state, receipt, &command)
 }

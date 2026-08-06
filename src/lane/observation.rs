@@ -109,6 +109,7 @@ pub struct LanerObservation {
     pub(crate) available_commitments: [LaneCommitment; 3],
     pub(crate) available_ping_signals: [LanePingSignal; 5],
     pub(crate) available_abort_conditions: [LaneAbortCondition; 4],
+    pub(crate) available_fallback_behaviors: [LaneFallbackBehavior; 4],
     pub(crate) window: LaneWindow,
 }
 
@@ -237,6 +238,10 @@ impl LanerObservation {
         self.available_abort_conditions
     }
 
+    pub fn available_fallback_behaviors(self) -> [LaneFallbackBehavior; 4] {
+        self.available_fallback_behaviors
+    }
+
     pub fn window(self) -> LaneWindow {
         self.window
     }
@@ -317,6 +322,12 @@ pub fn observe_player(
                 LaneAbortCondition::HealthThreshold,
                 LaneAbortCondition::ThreatSpotted,
                 LaneAbortCondition::ResourceDepleted,
+            ],
+            available_fallback_behaviors: [
+                LaneFallbackBehavior::MaintainPlan,
+                LaneFallbackBehavior::RetreatToTower,
+                LaneFallbackBehavior::SafeFarm,
+                LaneFallbackBehavior::ConserveResources,
             ],
             window: state.window(),
         },

@@ -723,3 +723,100 @@
             ]
         );
     }
+
+    #[test]
+    fn fallback_behavior_defaults_to_maintain_plan_and_replays() {
+        let state = LaneSnapshot::initial();
+        let receipt = observe_player(&state, ObservationId::new(1));
+        let request = LaneIntentRequest::new(PLAYER_LANER, ObservationId::new(1), LaneIntent::Stabilize);
+        assert_eq!(request.fallback_behavior(), LaneFallbackBehavior::MaintainPlan);
+        let validated = validate_lane_request(&state, &receipt, &request).unwrap();
+        assert_eq!(validated.command().fallback_behavior(), LaneFallbackBehavior::MaintainPlan);
+
+        let mut history = LaneHistory::new(state).unwrap();
+        let result = history
+            .append(&receipt, &request, inputs(0, 0, LaneWaveResult::Held))
+            .unwrap();
+        assert_eq!(result.debrief().fallback_behavior(), LaneFallbackBehavior::MaintainPlan);
+        assert!(result.events().contains(&LaneEvent::FallbackBehaviorSelected {
+            actor: PLAYER_LANER,
+            fallback_behavior: LaneFallbackBehavior::MaintainPlan,
+        }));
+        assert!(result.effects().contains(&LaneEffect::FallbackBehaviorSet {
+            actor: PLAYER_LANER,
+            fallback_behavior: LaneFallbackBehavior::MaintainPlan,
+            cause: LaneEffectCause::Intent,
+            provenance: LaneEffectProvenance::direct_immediate(),
+        }));
+        assert_eq!(history.verify_replay(), Ok(history.current_state()));
+    }
+
+    #[test]
+    fn fallback_behaviors_are_valid_and_bind_record_identity() {
+        let state = LaneSnapshot::initial();
+        let receipt = observe_player(&state, ObservationId::new(1));
+
+        let default_req = LaneIntentRequest::new(PLAYER_LANER, ObservationId::new(1), LaneIntent::Contest);
+        let retreat_req = LaneIntentRequest::new_with_fallback_behavior(
+            PLAYER_LANER,
+            ObservationId::new(1),
+            LaneIntent::Contest,
+            LaneFallbackBehavior::RetreatToTower,
+        );
+        let safe_farm_req = LaneIntentRequest::new_with_fallback_behavior(
+            PLAYER_LANER,
+            ObservationId::new(1),
+            LaneIntent::Contest,
+            LaneFallbackBehavior::SafeFarm,
+        );
+
+        let mut h_default = LaneHistory::new(state).unwrap();
+        let default_res = h_default
+            .append(&receipt, &default_req, inputs(0, 0, LaneWaveResult::Held))
+            .unwrap();
+
+        let mut h_retreat = LaneHistory::new(state).unwrap();
+        let retreat_res = h_retreat
+            .append(&receipt, &retreat_req, inputs(0, 0, LaneWaveResult::Held))
+            .unwrap();
+
+        let mut h_safe_farm = LaneHistory::new(state).unwrap();
+        let safe_farm_res = h_safe_farm
+            .append(&receipt, &safe_farm_req, inputs(0, 0, LaneWaveResult::Held))
+            .unwrap();
+
+        assert_eq!(default_res.debrief().fallback_behavior(), LaneFallbackBehavior::MaintainPlan);
+        assert_eq!(retreat_res.debrief().fallback_behavior(), LaneFallbackBehavior::RetreatToTower);
+        assert_eq!(safe_farm_res.debrief().fallback_behavior(), LaneFallbackBehavior::SafeFarm);
+
+        assert_ne!(
+            lane_record_identity(&h_default.records()[0]),
+            lane_record_identity(&h_retreat.records()[0])
+        );
+        assert_ne!(
+            lane_record_identity(&h_default.records()[0]),
+            lane_record_identity(&h_safe_farm.records()[0])
+        );
+        assert_ne!(
+            lane_record_identity(&h_retreat.records()[0]),
+            lane_record_identity(&h_safe_farm.records()[0])
+        );
+
+        assert_eq!(h_retreat.verify_replay(), Ok(h_retreat.current_state()));
+        assert_eq!(h_safe_farm.verify_replay(), Ok(h_safe_farm.current_state()));
+    }
+
+    #[test]
+    fn laner_observation_advertises_available_fallback_behaviors() {
+        let state = LaneSnapshot::initial();
+        let obs = observe_player(&state, ObservationId::new(42)).observation();
+        assert_eq!(
+            obs.available_fallback_behaviors(),
+            [
+                LaneFallbackBehavior::MaintainPlan,
+                LaneFallbackBehavior::RetreatToTower,
+                LaneFallbackBehavior::SafeFarm,
+                LaneFallbackBehavior::ConserveResources,
+            ]
+        );
+    }

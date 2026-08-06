@@ -461,6 +461,13 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Transition evaluation emits direct-immediate `AbortConditionSelected`, `AbortConditionSet`, and `AbortConditionTriggered` events and effects, records abort condition in `LaneDebrief`, and verifies replay through `LaneHistory`.
 - Three focused abort-condition tests plus the prior 102 tests pass, for 105 Rust tests total.
 
+#### Delivered in the bounded fallback-behavior follow-up
+
+- `LaneFallbackBehavior` is a bounded player intent fallback behavior abstraction with `MaintainPlan` default and non-default record-identity hash binding (`LANE_FALLBACK_BEHAVIOR_HASH_TAG`).
+- `LanerObservation` advertises available fallback behaviors (`MaintainPlan`, `RetreatToTower`, `SafeFarm`, `ConserveResources`).
+- Transition evaluation emits direct-immediate `FallbackBehaviorSelected`, `FallbackBehaviorSet`, and `FallbackBehaviorTriggered` events and effects, records fallback behavior in `LaneDebrief`, and verifies replay through `LaneHistory`.
+- Three focused fallback-behavior tests plus the prior 105 tests pass, for 108 Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
