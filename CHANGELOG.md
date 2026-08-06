@@ -34,6 +34,17 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.37 — 2026-08-05
+
+### Added
+
+- Bounded `LaneRelic` player consumable resource abstraction (`MAX_LANE_RELIC = 5`) with zero default.
+- Non-default `LaneRelic` state-hash binding (`LANE_RELIC_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` exposure of player relic count (`self_relic`, `laner_relic`).
+- `LaneExecutionInputs` support for `relic_gained` and `relic_spent` resolution.
+- Direct-immediate `RelicGained`, `RelicSpent`, and `RelicChanged` events and effects during transition evaluation, debrief recording, and `LaneRecordIdentity` integration.
+- `LaneExecutionError::RelicOverflow` and `LaneExecutionError::InsufficientRelic` fail-closed error handling.
+
 ## 0.1.36 — 2026-08-05
 
 ### Added

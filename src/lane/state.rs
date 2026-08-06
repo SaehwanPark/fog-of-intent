@@ -47,6 +47,7 @@ pub(crate) struct PlayerResources {
     pub(crate) potion: LanePotion,
     pub(crate) elixir: LaneElixir,
     pub(crate) trinket: LaneTrinket,
+    pub(crate) relic: LaneRelic,
 }
 
 impl PlayerResources {
@@ -64,6 +65,7 @@ impl PlayerResources {
             potion: LanePotion::zero(),
             elixir: LaneElixir::zero(),
             trinket: LaneTrinket::zero(),
+            relic: LaneRelic::zero(),
         }
     }
 
@@ -108,6 +110,7 @@ pub struct PlayerLaneState {
     pub(crate) potion: LanePotion,
     pub(crate) elixir: LaneElixir,
     pub(crate) trinket: LaneTrinket,
+    pub(crate) relic: LaneRelic,
     pub(crate) position: LanePosition,
 }
 
@@ -133,6 +136,7 @@ impl PlayerLaneState {
             potion: resources.potion,
             elixir: resources.elixir,
             trinket: resources.trinket,
+            relic: resources.relic,
             position,
         }
     }
@@ -151,6 +155,7 @@ impl PlayerLaneState {
             potion: self.potion,
             elixir: self.elixir,
             trinket: self.trinket,
+            relic: self.relic,
         }
     }
 
@@ -306,6 +311,7 @@ impl PlayerLaneState {
                 potion: LanePotion::zero(),
                 elixir: LaneElixir::zero(),
                 trinket: LaneTrinket::zero(),
+                relic: LaneRelic::zero(),
             },
             position,
         )
@@ -365,6 +371,10 @@ impl PlayerLaneState {
 
     pub fn trinket(self) -> LaneTrinket {
         self.trinket
+    }
+
+    pub fn relic(self) -> LaneRelic {
+        self.relic
     }
 
     pub fn position(self) -> LanePosition {
@@ -712,6 +722,9 @@ impl LaneSnapshot {
                 hash,
                 &[LANE_TRINKET_HASH_TAG, self.player.trinket().value()],
             );
+        }
+        if self.player.relic() != LaneRelic::zero() {
+            hash = hash_bytes(hash, &[LANE_RELIC_HASH_TAG, self.player.relic().value()]);
         }
         hash = hash_bytes(hash, &[position_tag(self.player.position())]);
         hash = hash_bytes(

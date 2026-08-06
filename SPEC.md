@@ -492,6 +492,14 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Trinket overflow exceeding maximum bounds (`MAX_LANE_TRINKET`) or spending without available trinkets fails before transition state mutation with `LaneExecutionError::TrinketOverflow` or `LaneExecutionError::InsufficientTrinket`.
 - Three focused trinket-resource tests plus the prior 114 tests pass, for 117 Rust tests total.
 
+#### Delivered in the bounded relic-resource follow-up
+
+- `LaneRelic` is a bounded player consumable resource with zero default and non-zero state-hash and allied visible-digest tags (`LANE_RELIC_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` expose player relic count (`self_relic`, `laner_relic`) without exposing opponent relic count.
+- `LaneExecutionInputs` supports `relic_gained` and `relic_spent` resolution during execution with direct-immediate `RelicGained`/`RelicSpent`/`RelicChanged` events and effects, debrief recording, and `LaneRecordIdentity` integration.
+- Relic overflow exceeding maximum bounds (`MAX_LANE_RELIC`) or spending without available relics fails before transition state mutation with `LaneExecutionError::RelicOverflow` or `LaneExecutionError::InsufficientRelic`.
+- Three focused relic-resource tests plus the prior 117 tests pass, for 120 Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
