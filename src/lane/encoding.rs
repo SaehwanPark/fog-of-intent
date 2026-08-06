@@ -26,6 +26,7 @@ pub(crate) const LANE_COMMITMENT_HASH_TAG: u8 = 0x56;
 pub(crate) const LANE_DELAYED_EFFECT_HASH_TAG: u8 = 0x44;
 pub(crate) const LANE_PING_SIGNAL_HASH_TAG: u8 = 0x50;
 pub(crate) const LANE_ABORT_CONDITION_HASH_TAG: u8 = 0x41;
+pub(crate) const LANE_FALLBACK_BEHAVIOR_HASH_TAG: u8 = 0x46;
 
 pub(crate) fn phase_tag(phase: LanePhase) -> u8 {
     match phase {
@@ -121,5 +122,14 @@ pub(crate) fn abort_condition_tag(condition: LaneAbortCondition) -> u8 {
         LaneAbortCondition::HealthThreshold => 1,
         LaneAbortCondition::ThreatSpotted => 2,
         LaneAbortCondition::ResourceDepleted => 3,
+    }
+}
+
+pub(crate) fn fallback_behavior_tag(behavior: LaneFallbackBehavior) -> u8 {
+    match behavior {
+        LaneFallbackBehavior::MaintainPlan => 0,
+        LaneFallbackBehavior::RetreatToTower => 1,
+        LaneFallbackBehavior::SafeFarm => 2,
+        LaneFallbackBehavior::ConserveResources => 3,
     }
 }

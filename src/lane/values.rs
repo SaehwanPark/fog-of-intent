@@ -69,6 +69,21 @@ impl LaneAbortCondition {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+pub enum LaneFallbackBehavior {
+    #[default]
+    MaintainPlan,
+    RetreatToTower,
+    SafeFarm,
+    ConserveResources,
+}
+
+impl LaneFallbackBehavior {
+    pub const fn default_behavior() -> Self {
+        Self::MaintainPlan
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct LaneHealth(pub(crate) u8);
 

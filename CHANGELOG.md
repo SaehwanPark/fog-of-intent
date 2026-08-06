@@ -34,6 +34,16 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.33 — 2026-08-05
+
+### Added
+
+- Bounded `LaneFallbackBehavior` player intent fallback abstraction (`MaintainPlan`, `RetreatToTower`, `SafeFarm`, `ConserveResources`) with `MaintainPlan` default.
+- Non-default `LaneFallbackBehavior` state-hash binding (`LANE_FALLBACK_BEHAVIOR_HASH_TAG`).
+- `LanerObservation` advertising of available fallback behaviors.
+- Request/command integration with `fallback_behavior` getters and constructors while preserving existing constructors.
+- Direct-immediate `FallbackBehaviorSelected`, `FallbackBehaviorSet`, and `FallbackBehaviorTriggered` events and effects during transition evaluation, debrief recording, and replay verification.
+
 ## 0.1.32 — 2026-08-05
 
 ### Added

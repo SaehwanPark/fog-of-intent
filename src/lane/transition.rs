@@ -327,6 +327,18 @@ pub enum LaneEvent {
         actor: ActorId,
         abort_condition: LaneAbortCondition,
     },
+    FallbackBehaviorSelected {
+        actor: ActorId,
+        fallback_behavior: LaneFallbackBehavior,
+    },
+    FallbackBehaviorSet {
+        actor: ActorId,
+        fallback_behavior: LaneFallbackBehavior,
+    },
+    FallbackBehaviorTriggered {
+        actor: ActorId,
+        fallback_behavior: LaneFallbackBehavior,
+    },
     PlayerDamaged {
         target: ActorId,
         amount: LaneDamage,
@@ -532,6 +544,12 @@ pub enum LaneEffect {
         cause: LaneEffectCause,
         provenance: LaneEffectProvenance,
     },
+    FallbackBehaviorSet {
+        actor: ActorId,
+        fallback_behavior: LaneFallbackBehavior,
+        cause: LaneEffectCause,
+        provenance: LaneEffectProvenance,
+    },
 }
 
 impl LaneEffect {
@@ -554,7 +572,8 @@ impl LaneEffect {
             | Self::TargetFocusSet { provenance, .. }
             | Self::CommitmentSet { provenance, .. }
             | Self::PingSignalSet { provenance, .. }
-            | Self::AbortConditionSet { provenance, .. } => provenance,
+            | Self::AbortConditionSet { provenance, .. }
+            | Self::FallbackBehaviorSet { provenance, .. } => provenance,
         }
     }
 }
@@ -648,6 +667,7 @@ pub struct LaneDebrief {
     pub(crate) commitment: LaneCommitment,
     pub(crate) ping_signal: LanePingSignal,
     pub(crate) abort_condition: LaneAbortCondition,
+    pub(crate) fallback_behavior: LaneFallbackBehavior,
     pub(crate) self_damage: LaneDamage,
     pub(crate) mana_spent: LaneMana,
     pub(crate) gold_earned: LaneGold,
@@ -692,6 +712,10 @@ impl LaneDebrief {
 
     pub fn abort_condition(self) -> LaneAbortCondition {
         self.abort_condition
+    }
+
+    pub fn fallback_behavior(self) -> LaneFallbackBehavior {
+        self.fallback_behavior
     }
 
     pub fn self_damage(self) -> LaneDamage {
@@ -1196,11 +1220,21 @@ fn project_lane_events(
             actor: command.command.actor,
             abort_condition: command.command.abort_condition,
         },
+        LaneEvent::FallbackBehaviorSelected {
+            actor: command.command.actor,
+            fallback_behavior: command.command.fallback_behavior,
+        },
     ];
     if command.command.abort_condition != LaneAbortCondition::None {
         events.push(LaneEvent::AbortConditionTriggered {
             actor: command.command.actor,
             abort_condition: command.command.abort_condition,
+        });
+    }
+    if command.command.fallback_behavior != LaneFallbackBehavior::MaintainPlan {
+        events.push(LaneEvent::FallbackBehaviorSet {
+            actor: command.command.actor,
+            fallback_behavior: command.command.fallback_behavior,
         });
     }
     if execution.self_damage != LaneDamage::zero() {
@@ -1312,6 +1346,12 @@ fn project_lane_events(
             actor: player.id,
             intent: command.command.intent,
         });
+        if command.command.fallback_behavior != LaneFallbackBehavior::MaintainPlan {
+            events.push(LaneEvent::FallbackBehaviorTriggered {
+                actor: player.id,
+                fallback_behavior: command.command.fallback_behavior,
+            });
+        }
     }
     events.push(LaneEvent::WindowResolved {
         outcome: resolved.outcome,
@@ -1352,6 +1392,12 @@ fn project_lane_effects(
         LaneEffect::AbortConditionSet {
             actor: player.id,
             abort_condition: command.command.abort_condition,
+            cause: LaneEffectCause::Intent,
+            provenance: LaneEffectProvenance::direct_immediate(),
+        },
+        LaneEffect::FallbackBehaviorSet {
+            actor: player.id,
+            fallback_behavior: command.command.fallback_behavior,
             cause: LaneEffectCause::Intent,
             provenance: LaneEffectProvenance::direct_immediate(),
         },
@@ -1530,6 +1576,7 @@ pub fn transition_lane(
         commitment: command.command.commitment,
         ping_signal: command.command.ping_signal,
         abort_condition: command.command.abort_condition,
+        fallback_behavior: command.command.fallback_behavior,
         self_damage: execution.self_damage,
         mana_spent: execution.mana_spent,
         gold_earned: execution.gold_earned,
