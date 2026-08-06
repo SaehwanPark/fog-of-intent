@@ -476,6 +476,14 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Potion overflow exceeding maximum bounds (`MAX_LANE_POTION`) or spending without available potions fails before transition state mutation with `LaneExecutionError::PotionOverflow` or `LaneExecutionError::InsufficientPotion`.
 - Three focused potion-resource tests plus the prior 108 tests pass, for 111 Rust tests total.
 
+#### Delivered in the bounded elixir-resource follow-up
+
+- `LaneElixir` is a bounded player consumable resource with zero default and non-zero state-hash and allied visible-digest tags (`LANE_ELIXIR_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` expose player elixir count (`self_elixir`, `laner_elixir`) without exposing opponent elixir count.
+- `LaneExecutionInputs` supports `elixir_gained` and `elixir_spent` resolution during execution with direct-immediate `ElixirGained`/`ElixirSpent`/`ElixirChanged` events and effects, debrief recording, and `LaneRecordIdentity` integration.
+- Elixir overflow exceeding maximum bounds (`MAX_LANE_ELIXIR`) or spending without available elixirs fails before transition state mutation with `LaneExecutionError::ElixirOverflow` or `LaneExecutionError::InsufficientElixir`.
+- Three focused elixir-resource tests plus the prior 111 tests pass, for 114 Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield

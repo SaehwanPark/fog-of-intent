@@ -45,6 +45,7 @@ pub(crate) struct PlayerResources {
     pub(crate) shield: LaneShield,
     pub(crate) ward: LaneWard,
     pub(crate) potion: LanePotion,
+    pub(crate) elixir: LaneElixir,
 }
 
 impl PlayerResources {
@@ -60,6 +61,7 @@ impl PlayerResources {
             shield: LaneShield::zero(),
             ward: LaneWard::zero(),
             potion: LanePotion::zero(),
+            elixir: LaneElixir::zero(),
         }
     }
 
@@ -102,6 +104,7 @@ pub struct PlayerLaneState {
     pub(crate) shield: LaneShield,
     pub(crate) ward: LaneWard,
     pub(crate) potion: LanePotion,
+    pub(crate) elixir: LaneElixir,
     pub(crate) position: LanePosition,
 }
 
@@ -125,6 +128,7 @@ impl PlayerLaneState {
             shield: resources.shield,
             ward: resources.ward,
             potion: resources.potion,
+            elixir: resources.elixir,
             position,
         }
     }
@@ -141,6 +145,7 @@ impl PlayerLaneState {
             shield: self.shield,
             ward: self.ward,
             potion: self.potion,
+            elixir: self.elixir,
         }
     }
 
@@ -294,6 +299,7 @@ impl PlayerLaneState {
                 shield: LaneShield::zero(),
                 ward: LaneWard::zero(),
                 potion: LanePotion::zero(),
+                elixir: LaneElixir::zero(),
             },
             position,
         )
@@ -345,6 +351,10 @@ impl PlayerLaneState {
 
     pub fn potion(self) -> LanePotion {
         self.potion
+    }
+
+    pub fn elixir(self) -> LaneElixir {
+        self.elixir
     }
 
     pub fn position(self) -> LanePosition {
@@ -683,6 +693,9 @@ impl LaneSnapshot {
         }
         if self.player.potion() != LanePotion::zero() {
             hash = hash_bytes(hash, &[LANE_POTION_HASH_TAG, self.player.potion().value()]);
+        }
+        if self.player.elixir() != LaneElixir::zero() {
+            hash = hash_bytes(hash, &[LANE_ELIXIR_HASH_TAG, self.player.elixir().value()]);
         }
         hash = hash_bytes(hash, &[position_tag(self.player.position())]);
         hash = hash_bytes(

@@ -34,6 +34,17 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.35 — 2026-08-05
+
+### Added
+
+- Bounded `LaneElixir` player consumable resource abstraction (`MAX_LANE_ELIXIR = 5`) with zero default.
+- Non-default `LaneElixir` state-hash binding (`LANE_ELIXIR_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` exposure of player elixir count (`self_elixir`, `laner_elixir`).
+- `LaneExecutionInputs` support for `elixir_gained` and `elixir_spent` resolution.
+- Direct-immediate `ElixirGained`, `ElixirSpent`, and `ElixirChanged` events and effects during transition evaluation, debrief recording, and `LaneRecordIdentity` integration.
+- Execution validation error handling for `ElixirOverflow` and `InsufficientElixir`.
+
 ## 0.1.34 — 2026-08-05
 
 ### Added

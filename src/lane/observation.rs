@@ -100,6 +100,7 @@ pub struct LanerObservation {
     pub(crate) self_shield: LaneShield,
     pub(crate) self_ward: LaneWard,
     pub(crate) self_potion: LanePotion,
+    pub(crate) self_elixir: LaneElixir,
     pub(crate) self_position: LanePosition,
     pub(crate) wave_pressure: WavePressure,
     pub(crate) opponent: OpponentReport,
@@ -203,6 +204,10 @@ impl LanerObservation {
         self.self_potion
     }
 
+    pub fn self_elixir(self) -> LaneElixir {
+        self.self_elixir
+    }
+
     pub fn self_position(self) -> LanePosition {
         self.self_position
     }
@@ -295,6 +300,7 @@ pub fn observe_player(
             self_shield: state.player().shield(),
             self_ward: state.player().ward(),
             self_potion: state.player().potion(),
+            self_elixir: state.player().elixir(),
             self_position: state.player().position(),
             wave_pressure: state.wave().pressure(),
             opponent: player_opponent_report(state),
@@ -358,6 +364,7 @@ pub struct AlliedLaneObservation {
     pub(crate) laner_shield: LaneShield,
     pub(crate) laner_ward: LaneWard,
     pub(crate) laner_potion: LanePotion,
+    pub(crate) laner_elixir: LaneElixir,
     pub(crate) laner_position: LanePosition,
     pub(crate) wave_pressure: WavePressure,
     pub(crate) opponent: OpponentReport,
@@ -427,6 +434,10 @@ impl AlliedLaneObservation {
         self.laner_potion
     }
 
+    pub fn laner_elixir(self) -> LaneElixir {
+        self.laner_elixir
+    }
+
     pub fn laner_position(self) -> LanePosition {
         self.laner_position
     }
@@ -494,6 +505,7 @@ pub fn observe_allied(
             laner_shield: state.player().shield(),
             laner_ward: state.player().ward(),
             laner_potion: state.player().potion(),
+            laner_elixir: state.player().elixir(),
             laner_position: state.player().position(),
             wave_pressure: state.wave().pressure(),
             opponent: OpponentReport::unknown(),

@@ -24,6 +24,8 @@ pub struct LaneExecutionInputs {
     pub(crate) ward_gained: LaneWard,
     pub(crate) potion_gained: LanePotion,
     pub(crate) potion_spent: LanePotion,
+    pub(crate) elixir_gained: LaneElixir,
+    pub(crate) elixir_spent: LaneElixir,
     pub(crate) delayed_effect: Option<LaneDelayedEffect>,
 }
 
@@ -50,6 +52,8 @@ impl LaneExecutionInputs {
             ward_gained: LaneWard::zero(),
             potion_gained: LanePotion::zero(),
             potion_spent: LanePotion::zero(),
+            elixir_gained: LaneElixir::zero(),
+            elixir_spent: LaneElixir::zero(),
             delayed_effect: None,
         }
     }
@@ -118,6 +122,16 @@ impl LaneExecutionInputs {
         self
     }
 
+    pub fn with_elixir_gained(mut self, elixir_gained: LaneElixir) -> Self {
+        self.elixir_gained = elixir_gained;
+        self
+    }
+
+    pub fn with_elixir_spent(mut self, elixir_spent: LaneElixir) -> Self {
+        self.elixir_spent = elixir_spent;
+        self
+    }
+
     pub fn trace(self) -> InputTrace {
         self.trace
     }
@@ -177,6 +191,14 @@ impl LaneExecutionInputs {
     pub fn potion_spent(self) -> LanePotion {
         self.potion_spent
     }
+
+    pub fn elixir_gained(self) -> LaneElixir {
+        self.elixir_gained
+    }
+
+    pub fn elixir_spent(self) -> LaneElixir {
+        self.elixir_spent
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -192,6 +214,8 @@ struct ResourceExecutionDeltas {
     ward_gained: LaneWard,
     potion_gained: LanePotion,
     potion_spent: LanePotion,
+    elixir_gained: LaneElixir,
+    elixir_spent: LaneElixir,
 }
 
 impl ResourceExecutionDeltas {
@@ -208,6 +232,8 @@ impl ResourceExecutionDeltas {
             ward_gained: execution.ward_gained,
             potion_gained: execution.potion_gained,
             potion_spent: execution.potion_spent,
+            elixir_gained: execution.elixir_gained,
+            elixir_spent: execution.elixir_spent,
         }
     }
 }
@@ -435,6 +461,16 @@ pub enum LaneEvent {
         amount: LanePotion,
         trace: InputTrace,
     },
+    ElixirGained {
+        actor: ActorId,
+        amount: LaneElixir,
+        trace: InputTrace,
+    },
+    ElixirSpent {
+        actor: ActorId,
+        amount: LaneElixir,
+        trace: InputTrace,
+    },
     DelayedEffectQueued {
         actor: ActorId,
         effect: LaneDelayedEffect,
@@ -544,6 +580,13 @@ pub enum LaneEffect {
         cause: LaneEffectCause,
         provenance: LaneEffectProvenance,
     },
+    ElixirChanged {
+        actor: ActorId,
+        before: LaneElixir,
+        after: LaneElixir,
+        cause: LaneEffectCause,
+        provenance: LaneEffectProvenance,
+    },
     PositionChanged {
         actor: ActorId,
         before: LanePosition,
@@ -610,6 +653,7 @@ impl LaneEffect {
             | Self::ShieldChanged { provenance, .. }
             | Self::WardChanged { provenance, .. }
             | Self::PotionChanged { provenance, .. }
+            | Self::ElixirChanged { provenance, .. }
             | Self::PositionChanged { provenance, .. }
             | Self::DelayedEffectQueued { provenance, .. }
             | Self::DelayedEffectResolved { provenance, .. }
@@ -686,6 +730,14 @@ pub enum LaneExecutionError {
         spent: LanePotion,
         available: LanePotion,
     },
+    ElixirOverflow {
+        gained: LaneElixir,
+        current: LaneElixir,
+    },
+    InsufficientElixir {
+        spent: LaneElixir,
+        available: LaneElixir,
+    },
     DelayedEffectOverflow,
 }
 
@@ -732,6 +784,8 @@ pub struct LaneDebrief {
     pub(crate) ward_gained: LaneWard,
     pub(crate) potion_gained: LanePotion,
     pub(crate) potion_spent: LanePotion,
+    pub(crate) elixir_gained: LaneElixir,
+    pub(crate) elixir_spent: LaneElixir,
     pub(crate) wave_result: LaneWaveResult,
     pub(crate) fallback_activated: bool,
     pub(crate) delayed_effects_queued: u8,
@@ -818,6 +872,14 @@ impl LaneDebrief {
 
     pub fn potion_spent(self) -> LanePotion {
         self.potion_spent
+    }
+
+    pub fn elixir_gained(self) -> LaneElixir {
+        self.elixir_gained
+    }
+
+    pub fn elixir_spent(self) -> LaneElixir {
+        self.elixir_spent
     }
 
     pub fn wave_result(self) -> LaneWaveResult {
@@ -1106,6 +1168,19 @@ fn apply_player_resources(
                 gained: deltas.potion_gained,
                 current: after_spend_potion,
             })?;
+    let after_spend_elixir = before.elixir.subtract(deltas.elixir_spent).ok_or(
+        LaneExecutionError::InsufficientElixir {
+            spent: deltas.elixir_spent,
+            available: before.elixir,
+        },
+    )?;
+    let elixir =
+        after_spend_elixir
+            .add(deltas.elixir_gained)
+            .ok_or(LaneExecutionError::ElixirOverflow {
+                gained: deltas.elixir_gained,
+                current: after_spend_elixir,
+            })?;
     Ok(PlayerResources {
         mana,
         gold,
@@ -1117,6 +1192,7 @@ fn apply_player_resources(
         shield,
         ward,
         potion,
+        elixir,
     })
 }
 
@@ -1412,6 +1488,20 @@ fn project_lane_events(
             trace,
         });
     }
+    if execution.elixir_gained != LaneElixir::zero() {
+        events.push(LaneEvent::ElixirGained {
+            actor: player.id,
+            amount: execution.elixir_gained,
+            trace,
+        });
+    }
+    if execution.elixir_spent != LaneElixir::zero() {
+        events.push(LaneEvent::ElixirSpent {
+            actor: player.id,
+            amount: execution.elixir_spent,
+            trace,
+        });
+    }
     if let Some(queued) = resolved.delayed_effect_queued {
         events.push(LaneEvent::DelayedEffectQueued {
             actor: player.id,
@@ -1600,6 +1690,15 @@ fn project_lane_effects(
             provenance: LaneEffectProvenance::direct_immediate(),
         });
     }
+    if next_player.elixir != player.elixir {
+        effects.push(LaneEffect::ElixirChanged {
+            actor: player.id,
+            before: player.elixir,
+            after: next_player.elixir,
+            cause: LaneEffectCause::Execution(trace),
+            provenance: LaneEffectProvenance::direct_immediate(),
+        });
+    }
     if let Some(queued) = resolved.delayed_effect_queued {
         effects.push(LaneEffect::DelayedEffectQueued {
             actor: player.id,
@@ -1688,6 +1787,8 @@ pub fn transition_lane(
         ward_gained: execution.ward_gained,
         potion_gained: execution.potion_gained,
         potion_spent: execution.potion_spent,
+        elixir_gained: execution.elixir_gained,
+        elixir_spent: execution.elixir_spent,
         wave_result: execution.wave_result,
         fallback_activated: resolved.fallback_activated,
         delayed_effects_queued: if resolved.delayed_effect_queued.is_some() {
