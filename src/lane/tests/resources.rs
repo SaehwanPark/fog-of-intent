@@ -1691,5 +1691,126 @@
         ));
     }
 
+    #[test]
+    fn rune_is_bounded_and_default_zero() {
+        assert_eq!(LaneRune::zero().value(), 0);
+        assert_eq!(LaneRune::new(5).unwrap().value(), 5);
+        assert!(LaneRune::new(6).is_err());
+
+        let zero = LaneRune::zero();
+        let gained = LaneRune::new(3).unwrap();
+        assert_eq!(zero.add(gained), Some(gained));
+        assert_eq!(gained.add(LaneRune::new(3).unwrap()), None);
+        assert_eq!(
+            gained.subtract(LaneRune::new(1).unwrap()),
+            Some(LaneRune::new(2).unwrap())
+        );
+        assert_eq!(zero.subtract(LaneRune::new(1).unwrap()), None);
+
+        let state = LaneSnapshot::initial();
+        assert_eq!(state.player().rune(), LaneRune::zero());
+        let obs = observe_player(&state, ObservationId::new(1));
+        assert_eq!(obs.observation().self_rune(), LaneRune::zero());
+        let allied = observe_allied(&state, ObservationId::new(2));
+        assert_eq!(allied.observation().laner_rune(), LaneRune::zero());
+    }
+
+    #[test]
+    fn rune_gained_and_spent_are_direct_immediate_and_replayable() {
+        let state = LaneSnapshot::initial();
+        let (receipt, req) = request(&state, LaneIntent::Stabilize);
+        let validated = validate_lane_request(&state, &receipt, &req).expect("valid request");
+
+        let rune_gained = LaneRune::new(3).expect("3 runes");
+        let mut inputs_w1 = inputs(1, 1, LaneWaveResult::Held);
+        inputs_w1.execution = inputs_w1.execution.with_rune_gained(rune_gained);
+        let inputs_w1 = inputs_w1.with_mana_spent(LaneMana::zero());
+
+        let result = transition_lane(&state, &validated, &inputs_w1).expect("transition 1");
+        assert_eq!(result.next_state().player().rune(), rune_gained);
+        assert_eq!(result.debrief().rune_gained(), rune_gained);
+        assert_eq!(result.debrief().rune_spent(), LaneRune::zero());
+
+        assert!(result.events().iter().any(|e| matches!(
+            e,
+            LaneEvent::RuneGained { amount, .. } if *amount == rune_gained
+        )));
+        assert!(result.effects().iter().any(|e| matches!(
+            e,
+            LaneEffect::RuneChanged { before, after, provenance, .. }
+                if *before == LaneRune::zero()
+                    && *after == rune_gained
+                    && provenance.relation() == LaneEffectRelation::Direct
+                    && provenance.timing() == LaneEffectTiming::Immediate
+        )));
+
+        let state_w2 = reopen_lane_window(&result).expect("reopen");
+        let (rec2, req2) = request(&state_w2, LaneIntent::Stabilize);
+        let val2 = validate_lane_request(&state_w2, &rec2, &req2).expect("valid 2");
+
+        let rune_spent = LaneRune::new(2).expect("2 runes");
+        let mut inputs_w2 = inputs(1, 1, LaneWaveResult::Held);
+        inputs_w2.execution = inputs_w2.execution.with_rune_spent(rune_spent);
+        let inputs_w2 = inputs_w2.with_mana_spent(LaneMana::zero());
+
+        let result2 = transition_lane(&state_w2, &val2, &inputs_w2).expect("transition 2");
+        assert_eq!(result2.next_state().player().rune(), LaneRune::new(1).unwrap());
+        assert_eq!(result2.debrief().rune_spent(), rune_spent);
+
+        assert!(result2.events().iter().any(|e| matches!(
+            e,
+            LaneEvent::RuneSpent { amount, .. } if *amount == rune_spent
+        )));
+
+        let mut history = LaneHistory::new(state).expect("valid history");
+        history.append(&receipt, &req, inputs_w1).expect("append 1");
+        assert_eq!(history.verify_replay(), Ok(result.next_state()));
+    }
+
+    #[test]
+    fn rune_overflow_and_insufficient_are_rejected() {
+        let state = LaneSnapshot::initial();
+        let (receipt, req) = request(&state, LaneIntent::Stabilize);
+        let validated = validate_lane_request(&state, &receipt, &req).expect("valid");
+
+        let mut insufficient_inputs = inputs(1, 1, LaneWaveResult::Held);
+        insufficient_inputs.execution = insufficient_inputs
+            .execution
+            .with_rune_spent(LaneRune::new(1).unwrap());
+        let insufficient_inputs = insufficient_inputs.with_mana_spent(LaneMana::zero());
+
+        assert!(matches!(
+            transition_lane(&state, &validated, &insufficient_inputs),
+            Err(LaneTransitionError::Execution(
+                LaneExecutionError::InsufficientRune { .. }
+            ))
+        ));
+
+        let mut gain_max_inputs = inputs(1, 1, LaneWaveResult::Held);
+        gain_max_inputs.execution = gain_max_inputs
+            .execution
+            .with_rune_gained(LaneRune::new(MAX_LANE_RUNE).unwrap());
+        let gain_max_inputs = gain_max_inputs.with_mana_spent(LaneMana::zero());
+
+        let res1 = transition_lane(&state, &validated, &gain_max_inputs).expect("transition max");
+        let max_rune_state = reopen_lane_window(&res1).expect("reopen");
+
+        let (rec2, req2) = request(&max_rune_state, LaneIntent::Stabilize);
+        let val2 = validate_lane_request(&max_rune_state, &rec2, &req2).expect("valid");
+
+        let mut overflow_inputs_2 = inputs(1, 1, LaneWaveResult::Held);
+        overflow_inputs_2.execution = overflow_inputs_2
+            .execution
+            .with_rune_gained(LaneRune::new(1).unwrap());
+        let overflow_inputs_2 = overflow_inputs_2.with_mana_spent(LaneMana::zero());
+
+        assert!(matches!(
+            transition_lane(&max_rune_state, &val2, &overflow_inputs_2),
+            Err(LaneTransitionError::Execution(
+                LaneExecutionError::RuneOverflow { .. }
+            ))
+        ));
+    }
+
 
 

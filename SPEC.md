@@ -524,6 +524,14 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Tome overflow exceeding maximum bounds (`MAX_LANE_TOME`) or spending without available tomes fails before transition state mutation with `LaneExecutionError::TomeOverflow` or `LaneExecutionError::InsufficientTome`.
 - Three focused tome-resource tests plus the prior 126 tests pass, for 129 Rust tests total.
 
+#### Delivered in the bounded rune-resource follow-up
+
+- `LaneRune` is a bounded player consumable resource with zero default and non-zero state-hash and allied visible-digest tags (`LANE_RUNE_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` expose player rune count (`self_rune`, `laner_rune`) without exposing opponent rune count.
+- `LaneExecutionInputs` supports `rune_gained` and `rune_spent` resolution during execution with direct-immediate `RuneGained`/`RuneSpent`/`RuneChanged` events and effects, debrief recording, and `LaneRecordIdentity` integration.
+- Rune overflow exceeding maximum bounds (`MAX_LANE_RUNE`) or spending without available runes fails before transition state mutation with `LaneExecutionError::RuneOverflow` or `LaneExecutionError::InsufficientRune`.
+- Three focused rune-resource tests plus the prior 129 tests pass, for 132 Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
