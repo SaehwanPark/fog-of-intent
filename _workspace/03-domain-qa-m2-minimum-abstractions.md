@@ -21,8 +21,10 @@
   abstractions rather than a complete economy or playable scenario.
 - A review finding that initially conflated host-owned values with execution
   inputs and actor-visible projections was corrected: explicit inputs now name
-  damage, wave, and resource changes; intent/fallback evaluation owns position
-  and health outcomes; hidden opponent values remain redacted.
+  damage, wave, and resource changes; intent/fallback evaluation owns position,
+  validated damage/delayed-effect resolution owns health, and terminal outcome
+  is evaluated from the resulting values; hidden opponent values remain
+  redacted.
 
 ## Required Fixes
 

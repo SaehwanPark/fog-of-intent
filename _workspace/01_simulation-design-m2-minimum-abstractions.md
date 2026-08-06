@@ -15,9 +15,10 @@ limits explicit for the roadmap promotion.
   `LaneExperience` for the player; execution deltas remain explicit inputs.
 - `LaneSnapshot` owns the host-visible truth and state hash; observations expose
   only authorized player/allied projections. Explicit execution inputs carry
-  resolved damage, wave, and resource changes; position and health outcomes are
-  resolved by intent/fallback evaluation, and hidden opponent values stay
-  redacted.
+  resolved damage, wave, and resource changes; position follows intent/fallback
+  evaluation, health follows validated damage/delayed-effect resolution, and
+  terminal outcome is evaluated from the resulting values. Hidden opponent
+  values stay redacted.
 
 ## Authority and Compatibility
 

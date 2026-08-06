@@ -165,9 +165,10 @@ exists. Planned proposal or roadmap text is never implementation evidence.
   gold, and experience. These values remain host-owned and are represented in
   the snapshot, state hash, and replay; projections expose only authorized
   player fields and bounded reports, while explicit execution inputs carry
-  resolved damage, wave, and resource changes. Position and health outcomes are
-  resolved by authoritative intent/fallback evaluation and hidden opponent
-  values remain redacted.
+  resolved damage, wave, and resource changes. Position follows authoritative
+  intent/fallback evaluation; health follows validated damage/delayed-effect
+  resolution; terminal outcome is evaluated from the resulting values, and
+  hidden opponent values remain redacted.
 - M1 ruleset, codec, fixtures, hashes, and test behavior remain unchanged. The
   complete M2 exit criteria below remain unchecked.
 
