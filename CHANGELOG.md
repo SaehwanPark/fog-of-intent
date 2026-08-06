@@ -34,6 +34,17 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.36 — 2026-08-05
+
+### Added
+
+- Bounded `LaneTrinket` player consumable resource abstraction (`MAX_LANE_TRINKET = 5`) with zero default.
+- Non-default `LaneTrinket` state-hash binding (`LANE_TRINKET_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` exposure of player trinket count (`self_trinket`, `laner_trinket`).
+- `LaneExecutionInputs` support for `trinket_gained` and `trinket_spent` resolution.
+- Direct-immediate `TrinketGained`, `TrinketSpent`, and `TrinketChanged` events and effects during transition evaluation, debrief recording, and `LaneRecordIdentity` integration.
+- Execution validation error handling for `TrinketOverflow` and `InsufficientTrinket`.
+
 ## 0.1.35 — 2026-08-05
 
 ### Added

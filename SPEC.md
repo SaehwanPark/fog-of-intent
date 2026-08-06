@@ -484,6 +484,14 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Elixir overflow exceeding maximum bounds (`MAX_LANE_ELIXIR`) or spending without available elixirs fails before transition state mutation with `LaneExecutionError::ElixirOverflow` or `LaneExecutionError::InsufficientElixir`.
 - Three focused elixir-resource tests plus the prior 111 tests pass, for 114 Rust tests total.
 
+#### Delivered in the bounded trinket-resource follow-up
+
+- `LaneTrinket` is a bounded player consumable resource with zero default and non-zero state-hash and allied visible-digest tags (`LANE_TRINKET_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` expose player trinket count (`self_trinket`, `laner_trinket`) without exposing opponent trinket count.
+- `LaneExecutionInputs` supports `trinket_gained` and `trinket_spent` resolution during execution with direct-immediate `TrinketGained`/`TrinketSpent`/`TrinketChanged` events and effects, debrief recording, and `LaneRecordIdentity` integration.
+- Trinket overflow exceeding maximum bounds (`MAX_LANE_TRINKET`) or spending without available trinkets fails before transition state mutation with `LaneExecutionError::TrinketOverflow` or `LaneExecutionError::InsufficientTrinket`.
+- Three focused trinket-resource tests plus the prior 114 tests pass, for 117 Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield
