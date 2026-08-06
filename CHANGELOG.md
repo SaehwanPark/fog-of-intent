@@ -36,6 +36,9 @@ not increment the package version.
 - Reconciled the M2 minimum lane/wave/position/health/resource checklist item
   with the existing bounded v2 implementation; no package version increment or
   runtime change was needed.
+- Reconciled the M2 bounded intent/commitment/focus/communication/abort/fallback
+  definition with existing v2 request, observation, validation, and replay
+  evidence; free-form communication remains deferred.
 
 ## 0.1.50 — 2026-08-06
 

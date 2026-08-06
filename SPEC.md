@@ -169,6 +169,11 @@ exists. Planned proposal or roadmap text is never implementation evidence.
   intent/fallback evaluation; health follows validated damage/delayed-effect
   resolution; terminal outcome is evaluated from the resulting values, and
   hidden opponent values remain redacted.
+- The bounded intent contract carries `LaneIntent`, `LaneCommitment`,
+  `LaneTargetFocus`, `LanePingSignal`, `LaneAbortCondition`, and
+  `LaneFallbackBehavior`. Observations advertise legal alternatives and host
+  validation/replay bind them to the current actor-visible receipt. The ping
+  field is a communication signal, not a free-form message system.
 - M1 ruleset, codec, fixtures, hashes, and test behavior remain unchanged. The
   complete M2 exit criteria below remain unchecked.
 
@@ -192,6 +197,13 @@ playability, or human-experience evidence.
   existing implementation evidence; no runtime code or package version changed.
 - Kept the current contract bounded to the diagnostic window and explicitly
   deferred a complete economy, balance, and playable scenario.
+
+#### Reconciled in the bounded intent-contract follow-up
+
+- Promoted the M2 bounded intent/communication definition from existing v2
+  request, observation, validation, record-identity, and replay evidence.
+- Kept free-form messaging, delivery, trust, negotiation, and a complete
+  communication system explicitly deferred.
 
 #### Historical M2 v1 slices (retired; preserved as changelog evidence)
 
