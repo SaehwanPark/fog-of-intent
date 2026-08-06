@@ -548,6 +548,14 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Talisman overflow exceeding maximum bounds (`MAX_LANE_TALISMAN`) or spending without available talismans fails before transition state mutation with `LaneExecutionError::TalismanOverflow` or `LaneExecutionError::InsufficientTalisman`.
 - Three focused talisman-resource tests plus the prior 135 tests pass, for 138 Rust tests total.
 
+#### Delivered in the bounded amulet-resource follow-up
+
+- `LaneAmulet` is a bounded player consumable resource with zero default and non-zero state-hash and allied visible-digest tags (`LANE_AMULET_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` expose player amulet count (`self_amulet`, `laner_amulet`) without exposing opponent amulet count.
+- `LaneExecutionInputs` supports `amulet_gained` and `amulet_spent` resolution during execution with direct-immediate `AmuletGained`/`AmuletSpent`/`AmuletChanged` events and effects, debrief recording, and `LaneRecordIdentity` integration.
+- Amulet overflow exceeding maximum bounds (`MAX_LANE_AMULET`) or spending without available amulets fails before transition state mutation with `LaneExecutionError::AmuletOverflow` or `LaneExecutionError::InsufficientAmulet`.
+- Three focused amulet-resource tests plus the prior 138 tests pass, for 141 Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield

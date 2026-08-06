@@ -42,6 +42,8 @@ pub struct LaneExecutionInputs {
     pub(crate) sigil_spent: LaneSigil,
     pub(crate) talisman_gained: LaneTalisman,
     pub(crate) talisman_spent: LaneTalisman,
+    pub(crate) amulet_gained: LaneAmulet,
+    pub(crate) amulet_spent: LaneAmulet,
     pub(crate) delayed_effect: Option<LaneDelayedEffect>,
 }
 
@@ -86,6 +88,8 @@ impl LaneExecutionInputs {
             sigil_spent: LaneSigil::zero(),
             talisman_gained: LaneTalisman::zero(),
             talisman_spent: LaneTalisman::zero(),
+            amulet_gained: LaneAmulet::zero(),
+            amulet_spent: LaneAmulet::zero(),
             delayed_effect: None,
         }
     }
@@ -244,6 +248,16 @@ impl LaneExecutionInputs {
         self
     }
 
+    pub fn with_amulet_gained(mut self, amulet_gained: LaneAmulet) -> Self {
+        self.amulet_gained = amulet_gained;
+        self
+    }
+
+    pub fn with_amulet_spent(mut self, amulet_spent: LaneAmulet) -> Self {
+        self.amulet_spent = amulet_spent;
+        self
+    }
+
     pub fn trace(self) -> InputTrace {
         self.trace
     }
@@ -375,6 +389,14 @@ impl LaneExecutionInputs {
     pub fn talisman_spent(self) -> LaneTalisman {
         self.talisman_spent
     }
+
+    pub fn amulet_gained(self) -> LaneAmulet {
+        self.amulet_gained
+    }
+
+    pub fn amulet_spent(self) -> LaneAmulet {
+        self.amulet_spent
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -408,6 +430,8 @@ struct ResourceExecutionDeltas {
     sigil_spent: LaneSigil,
     talisman_gained: LaneTalisman,
     talisman_spent: LaneTalisman,
+    amulet_gained: LaneAmulet,
+    amulet_spent: LaneAmulet,
 }
 
 impl ResourceExecutionDeltas {
@@ -442,6 +466,8 @@ impl ResourceExecutionDeltas {
             sigil_spent: execution.sigil_spent,
             talisman_gained: execution.talisman_gained,
             talisman_spent: execution.talisman_spent,
+            amulet_gained: execution.amulet_gained,
+            amulet_spent: execution.amulet_spent,
         }
     }
 }
@@ -759,6 +785,16 @@ pub enum LaneEvent {
         amount: LaneTalisman,
         trace: InputTrace,
     },
+    AmuletGained {
+        actor: ActorId,
+        amount: LaneAmulet,
+        trace: InputTrace,
+    },
+    AmuletSpent {
+        actor: ActorId,
+        amount: LaneAmulet,
+        trace: InputTrace,
+    },
     DelayedEffectQueued {
         actor: ActorId,
         effect: LaneDelayedEffect,
@@ -931,6 +967,13 @@ pub enum LaneEffect {
         cause: LaneEffectCause,
         provenance: LaneEffectProvenance,
     },
+    AmuletChanged {
+        actor: ActorId,
+        before: LaneAmulet,
+        after: LaneAmulet,
+        cause: LaneEffectCause,
+        provenance: LaneEffectProvenance,
+    },
     PositionChanged {
         actor: ActorId,
         before: LanePosition,
@@ -1006,6 +1049,7 @@ impl LaneEffect {
             | Self::RuneChanged { provenance, .. }
             | Self::SigilChanged { provenance, .. }
             | Self::TalismanChanged { provenance, .. }
+            | Self::AmuletChanged { provenance, .. }
             | Self::PositionChanged { provenance, .. }
             | Self::DelayedEffectQueued { provenance, .. }
             | Self::DelayedEffectResolved { provenance, .. }
@@ -1154,6 +1198,14 @@ pub enum LaneExecutionError {
         spent: LaneTalisman,
         available: LaneTalisman,
     },
+    AmuletOverflow {
+        gained: LaneAmulet,
+        current: LaneAmulet,
+    },
+    InsufficientAmulet {
+        spent: LaneAmulet,
+        available: LaneAmulet,
+    },
     DelayedEffectOverflow,
 }
 
@@ -1218,6 +1270,8 @@ pub struct LaneDebrief {
     pub(crate) sigil_spent: LaneSigil,
     pub(crate) talisman_gained: LaneTalisman,
     pub(crate) talisman_spent: LaneTalisman,
+    pub(crate) amulet_gained: LaneAmulet,
+    pub(crate) amulet_spent: LaneAmulet,
     pub(crate) wave_result: LaneWaveResult,
     pub(crate) fallback_activated: bool,
     pub(crate) delayed_effects_queued: u8,
@@ -1376,6 +1430,14 @@ impl LaneDebrief {
 
     pub fn talisman_spent(self) -> LaneTalisman {
         self.talisman_spent
+    }
+
+    pub fn amulet_gained(self) -> LaneAmulet {
+        self.amulet_gained
+    }
+
+    pub fn amulet_spent(self) -> LaneAmulet {
+        self.amulet_spent
     }
 
     pub fn wave_result(self) -> LaneWaveResult {
@@ -1789,6 +1851,19 @@ fn apply_player_resources(
             current: after_spend_talisman,
         },
     )?;
+    let after_spend_amulet = before.amulet.subtract(deltas.amulet_spent).ok_or(
+        LaneExecutionError::InsufficientAmulet {
+            spent: deltas.amulet_spent,
+            available: before.amulet,
+        },
+    )?;
+    let amulet =
+        after_spend_amulet
+            .add(deltas.amulet_gained)
+            .ok_or(LaneExecutionError::AmuletOverflow {
+                gained: deltas.amulet_gained,
+                current: after_spend_amulet,
+            })?;
     Ok(PlayerResources {
         mana,
         gold,
@@ -1809,6 +1884,7 @@ fn apply_player_resources(
         rune,
         sigil,
         talisman,
+        amulet,
     })
 }
 
@@ -2230,6 +2306,20 @@ fn project_lane_events(
             trace,
         });
     }
+    if execution.amulet_gained != LaneAmulet::zero() {
+        events.push(LaneEvent::AmuletGained {
+            actor: player.id,
+            amount: execution.amulet_gained,
+            trace,
+        });
+    }
+    if execution.amulet_spent != LaneAmulet::zero() {
+        events.push(LaneEvent::AmuletSpent {
+            actor: player.id,
+            amount: execution.amulet_spent,
+            trace,
+        });
+    }
     if let Some(queued) = resolved.delayed_effect_queued {
         events.push(LaneEvent::DelayedEffectQueued {
             actor: player.id,
@@ -2499,6 +2589,15 @@ fn project_lane_effects(
             provenance: LaneEffectProvenance::direct_immediate(),
         });
     }
+    if next_player.amulet != player.amulet {
+        effects.push(LaneEffect::AmuletChanged {
+            actor: player.id,
+            before: player.amulet,
+            after: next_player.amulet,
+            cause: LaneEffectCause::Execution(trace),
+            provenance: LaneEffectProvenance::direct_immediate(),
+        });
+    }
     if let Some(queued) = resolved.delayed_effect_queued {
         effects.push(LaneEffect::DelayedEffectQueued {
             actor: player.id,
@@ -2605,6 +2704,8 @@ pub fn transition_lane(
         sigil_spent: execution.sigil_spent,
         talisman_gained: execution.talisman_gained,
         talisman_spent: execution.talisman_spent,
+        amulet_gained: execution.amulet_gained,
+        amulet_spent: execution.amulet_spent,
         wave_result: execution.wave_result,
         fallback_activated: resolved.fallback_activated,
         delayed_effects_queued: if resolved.delayed_effect_queued.is_some() {
