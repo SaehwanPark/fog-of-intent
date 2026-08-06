@@ -22,6 +22,8 @@ pub struct LaneExecutionInputs {
     pub(crate) minion_kills_gained: LaneMinionKills,
     pub(crate) shield_gained: LaneShield,
     pub(crate) ward_gained: LaneWard,
+    pub(crate) potion_gained: LanePotion,
+    pub(crate) potion_spent: LanePotion,
     pub(crate) delayed_effect: Option<LaneDelayedEffect>,
 }
 
@@ -46,6 +48,8 @@ impl LaneExecutionInputs {
             minion_kills_gained: LaneMinionKills::zero(),
             shield_gained: LaneShield::zero(),
             ward_gained: LaneWard::zero(),
+            potion_gained: LanePotion::zero(),
+            potion_spent: LanePotion::zero(),
             delayed_effect: None,
         }
     }
@@ -104,6 +108,16 @@ impl LaneExecutionInputs {
         self
     }
 
+    pub fn with_potion_gained(mut self, potion_gained: LanePotion) -> Self {
+        self.potion_gained = potion_gained;
+        self
+    }
+
+    pub fn with_potion_spent(mut self, potion_spent: LanePotion) -> Self {
+        self.potion_spent = potion_spent;
+        self
+    }
+
     pub fn trace(self) -> InputTrace {
         self.trace
     }
@@ -155,6 +169,14 @@ impl LaneExecutionInputs {
     pub fn ward_gained(self) -> LaneWard {
         self.ward_gained
     }
+
+    pub fn potion_gained(self) -> LanePotion {
+        self.potion_gained
+    }
+
+    pub fn potion_spent(self) -> LanePotion {
+        self.potion_spent
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -168,6 +190,8 @@ struct ResourceExecutionDeltas {
     minion_kills_gained: LaneMinionKills,
     shield_gained: LaneShield,
     ward_gained: LaneWard,
+    potion_gained: LanePotion,
+    potion_spent: LanePotion,
 }
 
 impl ResourceExecutionDeltas {
@@ -182,6 +206,8 @@ impl ResourceExecutionDeltas {
             minion_kills_gained: execution.minion_kills_gained,
             shield_gained: execution.shield_gained,
             ward_gained: execution.ward_gained,
+            potion_gained: execution.potion_gained,
+            potion_spent: execution.potion_spent,
         }
     }
 }
@@ -399,6 +425,16 @@ pub enum LaneEvent {
         amount: LaneWard,
         trace: InputTrace,
     },
+    PotionGained {
+        actor: ActorId,
+        amount: LanePotion,
+        trace: InputTrace,
+    },
+    PotionSpent {
+        actor: ActorId,
+        amount: LanePotion,
+        trace: InputTrace,
+    },
     DelayedEffectQueued {
         actor: ActorId,
         effect: LaneDelayedEffect,
@@ -501,6 +537,13 @@ pub enum LaneEffect {
         cause: LaneEffectCause,
         provenance: LaneEffectProvenance,
     },
+    PotionChanged {
+        actor: ActorId,
+        before: LanePotion,
+        after: LanePotion,
+        cause: LaneEffectCause,
+        provenance: LaneEffectProvenance,
+    },
     PositionChanged {
         actor: ActorId,
         before: LanePosition,
@@ -566,6 +609,7 @@ impl LaneEffect {
             | Self::MinionKillsChanged { provenance, .. }
             | Self::ShieldChanged { provenance, .. }
             | Self::WardChanged { provenance, .. }
+            | Self::PotionChanged { provenance, .. }
             | Self::PositionChanged { provenance, .. }
             | Self::DelayedEffectQueued { provenance, .. }
             | Self::DelayedEffectResolved { provenance, .. }
@@ -634,6 +678,14 @@ pub enum LaneExecutionError {
         gained: LaneWard,
         current: LaneWard,
     },
+    PotionOverflow {
+        gained: LanePotion,
+        current: LanePotion,
+    },
+    InsufficientPotion {
+        spent: LanePotion,
+        available: LanePotion,
+    },
     DelayedEffectOverflow,
 }
 
@@ -678,6 +730,8 @@ pub struct LaneDebrief {
     pub(crate) minion_kills_gained: LaneMinionKills,
     pub(crate) shield_gained: LaneShield,
     pub(crate) ward_gained: LaneWard,
+    pub(crate) potion_gained: LanePotion,
+    pub(crate) potion_spent: LanePotion,
     pub(crate) wave_result: LaneWaveResult,
     pub(crate) fallback_activated: bool,
     pub(crate) delayed_effects_queued: u8,
@@ -756,6 +810,14 @@ impl LaneDebrief {
 
     pub fn ward_gained(self) -> LaneWard {
         self.ward_gained
+    }
+
+    pub fn potion_gained(self) -> LanePotion {
+        self.potion_gained
+    }
+
+    pub fn potion_spent(self) -> LanePotion {
+        self.potion_spent
     }
 
     pub fn wave_result(self) -> LaneWaveResult {
@@ -1031,6 +1093,19 @@ fn apply_player_resources(
             gained: deltas.ward_gained,
             current: before.ward,
         })?;
+    let after_spend_potion = before.potion.subtract(deltas.potion_spent).ok_or(
+        LaneExecutionError::InsufficientPotion {
+            spent: deltas.potion_spent,
+            available: before.potion,
+        },
+    )?;
+    let potion =
+        after_spend_potion
+            .add(deltas.potion_gained)
+            .ok_or(LaneExecutionError::PotionOverflow {
+                gained: deltas.potion_gained,
+                current: after_spend_potion,
+            })?;
     Ok(PlayerResources {
         mana,
         gold,
@@ -1041,6 +1116,7 @@ fn apply_player_resources(
         minion_kills,
         shield,
         ward,
+        potion,
     })
 }
 
@@ -1322,6 +1398,20 @@ fn project_lane_events(
             trace,
         });
     }
+    if execution.potion_gained != LanePotion::zero() {
+        events.push(LaneEvent::PotionGained {
+            actor: player.id,
+            amount: execution.potion_gained,
+            trace,
+        });
+    }
+    if execution.potion_spent != LanePotion::zero() {
+        events.push(LaneEvent::PotionSpent {
+            actor: player.id,
+            amount: execution.potion_spent,
+            trace,
+        });
+    }
     if let Some(queued) = resolved.delayed_effect_queued {
         events.push(LaneEvent::DelayedEffectQueued {
             actor: player.id,
@@ -1501,6 +1591,15 @@ fn project_lane_effects(
             provenance: LaneEffectProvenance::direct_immediate(),
         });
     }
+    if next_player.potion != player.potion {
+        effects.push(LaneEffect::PotionChanged {
+            actor: player.id,
+            before: player.potion,
+            after: next_player.potion,
+            cause: LaneEffectCause::Execution(trace),
+            provenance: LaneEffectProvenance::direct_immediate(),
+        });
+    }
     if let Some(queued) = resolved.delayed_effect_queued {
         effects.push(LaneEffect::DelayedEffectQueued {
             actor: player.id,
@@ -1587,6 +1686,8 @@ pub fn transition_lane(
         minion_kills_gained: execution.minion_kills_gained,
         shield_gained: execution.shield_gained,
         ward_gained: execution.ward_gained,
+        potion_gained: execution.potion_gained,
+        potion_spent: execution.potion_spent,
         wave_result: execution.wave_result,
         fallback_activated: resolved.fallback_activated,
         delayed_effects_queued: if resolved.delayed_effect_queued.is_some() {

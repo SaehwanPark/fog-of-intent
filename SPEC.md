@@ -468,6 +468,14 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Transition evaluation emits direct-immediate `FallbackBehaviorSelected`, `FallbackBehaviorSet`, and `FallbackBehaviorTriggered` events and effects, records fallback behavior in `LaneDebrief`, and verifies replay through `LaneHistory`.
 - Three focused fallback-behavior tests plus the prior 105 tests pass, for 108 Rust tests total.
 
+#### Delivered in the bounded potion-resource follow-up
+
+- `LanePotion` is a bounded player consumable resource with zero default and non-zero state-hash and allied visible-digest tags (`LANE_POTION_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` expose player potion count (`self_potion`, `laner_potion`) without exposing opponent potion count.
+- `LaneExecutionInputs` supports `potion_gained` and `potion_spent` resolution during execution with direct-immediate `PotionGained`/`PotionSpent`/`PotionChanged` events and effects, debrief recording, and `LaneRecordIdentity` integration.
+- Potion overflow exceeding maximum bounds (`MAX_LANE_POTION`) or spending without available potions fails before transition state mutation with `LaneExecutionError::PotionOverflow` or `LaneExecutionError::InsufficientPotion`.
+- Three focused potion-resource tests plus the prior 108 tests pass, for 111 Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield

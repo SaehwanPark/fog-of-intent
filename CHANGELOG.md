@@ -34,6 +34,17 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.34 — 2026-08-05
+
+### Added
+
+- Bounded `LanePotion` player consumable resource abstraction (`MAX_LANE_POTION = 5`) with zero default.
+- Non-default `LanePotion` state-hash binding (`LANE_POTION_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` exposure of player potion count (`self_potion`, `laner_potion`).
+- `LaneExecutionInputs` support for `potion_gained` and `potion_spent` resolution.
+- Direct-immediate `PotionGained`, `PotionSpent`, and `PotionChanged` events and effects during transition evaluation, debrief recording, and `LaneRecordIdentity` integration.
+- Execution validation error handling for `PotionOverflow` and `InsufficientPotion`.
+
 ## 0.1.33 — 2026-08-05
 
 ### Added

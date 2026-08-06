@@ -99,6 +99,7 @@ pub struct LanerObservation {
     pub(crate) self_minion_kills: LaneMinionKills,
     pub(crate) self_shield: LaneShield,
     pub(crate) self_ward: LaneWard,
+    pub(crate) self_potion: LanePotion,
     pub(crate) self_position: LanePosition,
     pub(crate) wave_pressure: WavePressure,
     pub(crate) opponent: OpponentReport,
@@ -198,6 +199,10 @@ impl LanerObservation {
         self.self_ward
     }
 
+    pub fn self_potion(self) -> LanePotion {
+        self.self_potion
+    }
+
     pub fn self_position(self) -> LanePosition {
         self.self_position
     }
@@ -289,6 +294,7 @@ pub fn observe_player(
             self_minion_kills: state.player().minion_kills(),
             self_shield: state.player().shield(),
             self_ward: state.player().ward(),
+            self_potion: state.player().potion(),
             self_position: state.player().position(),
             wave_pressure: state.wave().pressure(),
             opponent: player_opponent_report(state),
@@ -351,6 +357,7 @@ pub struct AlliedLaneObservation {
     pub(crate) laner_minion_kills: LaneMinionKills,
     pub(crate) laner_shield: LaneShield,
     pub(crate) laner_ward: LaneWard,
+    pub(crate) laner_potion: LanePotion,
     pub(crate) laner_position: LanePosition,
     pub(crate) wave_pressure: WavePressure,
     pub(crate) opponent: OpponentReport,
@@ -414,6 +421,10 @@ impl AlliedLaneObservation {
 
     pub fn laner_ward(self) -> LaneWard {
         self.laner_ward
+    }
+
+    pub fn laner_potion(self) -> LanePotion {
+        self.laner_potion
     }
 
     pub fn laner_position(self) -> LanePosition {
@@ -482,6 +493,7 @@ pub fn observe_allied(
             laner_minion_kills: state.player().minion_kills(),
             laner_shield: state.player().shield(),
             laner_ward: state.player().ward(),
+            laner_potion: state.player().potion(),
             laner_position: state.player().position(),
             wave_pressure: state.wave().pressure(),
             opponent: OpponentReport::unknown(),
