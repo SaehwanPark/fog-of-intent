@@ -572,6 +572,14 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Flask overflow exceeding maximum bounds (`MAX_LANE_FLASK`) or spending without available flasks fails before transition state mutation with `LaneExecutionError::FlaskOverflow` or `LaneExecutionError::InsufficientFlask`.
 - Three focused flask-resource tests plus the prior 144 tests pass, for 147 Rust tests total.
 
+#### Delivered in the bounded incense-resource follow-up
+
+- `LaneIncense` is a bounded player consumable resource with zero default and non-zero state-hash and allied visible-digest tags (`LANE_INCENSE_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` expose player incense count (`self_incense`, `laner_incense`) without exposing opponent incense count.
+- `LaneExecutionInputs` supports `incense_gained` and `incense_spent` resolution during execution with direct-immediate `IncenseGained`/`IncenseSpent`/`IncenseChanged` events and effects, debrief recording, and `LaneRecordIdentity` integration.
+- Incense overflow exceeding maximum bounds (`MAX_LANE_INCENSE`) or spending without available incenses fails before transition state mutation with `LaneExecutionError::IncenseOverflow` or `LaneExecutionError::InsufficientIncense`.
+- Three focused incense-resource tests plus the prior 147 tests pass, for 150 Rust tests total.
+
 #### Verification
 
 - Identical prior state, validated intent, resolved input, and ruleset yield

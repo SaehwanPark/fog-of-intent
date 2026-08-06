@@ -48,6 +48,8 @@ pub struct LaneExecutionInputs {
     pub(crate) phial_spent: LanePhial,
     pub(crate) flask_gained: LaneFlask,
     pub(crate) flask_spent: LaneFlask,
+    pub(crate) incense_gained: LaneIncense,
+    pub(crate) incense_spent: LaneIncense,
     pub(crate) delayed_effect: Option<LaneDelayedEffect>,
 }
 
@@ -98,6 +100,8 @@ impl LaneExecutionInputs {
             phial_spent: LanePhial::zero(),
             flask_gained: LaneFlask::zero(),
             flask_spent: LaneFlask::zero(),
+            incense_gained: LaneIncense::zero(),
+            incense_spent: LaneIncense::zero(),
             delayed_effect: None,
         }
     }
@@ -286,6 +290,16 @@ impl LaneExecutionInputs {
         self
     }
 
+    pub fn with_incense_gained(mut self, incense_gained: LaneIncense) -> Self {
+        self.incense_gained = incense_gained;
+        self
+    }
+
+    pub fn with_incense_spent(mut self, incense_spent: LaneIncense) -> Self {
+        self.incense_spent = incense_spent;
+        self
+    }
+
     pub fn trace(self) -> InputTrace {
         self.trace
     }
@@ -441,6 +455,14 @@ impl LaneExecutionInputs {
     pub fn flask_spent(self) -> LaneFlask {
         self.flask_spent
     }
+
+    pub fn incense_gained(self) -> LaneIncense {
+        self.incense_gained
+    }
+
+    pub fn incense_spent(self) -> LaneIncense {
+        self.incense_spent
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -480,6 +502,8 @@ struct ResourceExecutionDeltas {
     phial_spent: LanePhial,
     flask_gained: LaneFlask,
     flask_spent: LaneFlask,
+    incense_gained: LaneIncense,
+    incense_spent: LaneIncense,
 }
 
 impl ResourceExecutionDeltas {
@@ -520,6 +544,8 @@ impl ResourceExecutionDeltas {
             phial_spent: execution.phial_spent,
             flask_gained: execution.flask_gained,
             flask_spent: execution.flask_spent,
+            incense_gained: execution.incense_gained,
+            incense_spent: execution.incense_spent,
         }
     }
 }
@@ -867,6 +893,16 @@ pub enum LaneEvent {
         amount: LaneFlask,
         trace: InputTrace,
     },
+    IncenseGained {
+        actor: ActorId,
+        amount: LaneIncense,
+        trace: InputTrace,
+    },
+    IncenseSpent {
+        actor: ActorId,
+        amount: LaneIncense,
+        trace: InputTrace,
+    },
     DelayedEffectQueued {
         actor: ActorId,
         effect: LaneDelayedEffect,
@@ -1060,6 +1096,13 @@ pub enum LaneEffect {
         cause: LaneEffectCause,
         provenance: LaneEffectProvenance,
     },
+    IncenseChanged {
+        actor: ActorId,
+        before: LaneIncense,
+        after: LaneIncense,
+        cause: LaneEffectCause,
+        provenance: LaneEffectProvenance,
+    },
     PositionChanged {
         actor: ActorId,
         before: LanePosition,
@@ -1138,6 +1181,7 @@ impl LaneEffect {
             | Self::AmuletChanged { provenance, .. }
             | Self::PhialChanged { provenance, .. }
             | Self::FlaskChanged { provenance, .. }
+            | Self::IncenseChanged { provenance, .. }
             | Self::PositionChanged { provenance, .. }
             | Self::DelayedEffectQueued { provenance, .. }
             | Self::DelayedEffectResolved { provenance, .. }
@@ -1310,6 +1354,14 @@ pub enum LaneExecutionError {
         spent: LaneFlask,
         available: LaneFlask,
     },
+    IncenseOverflow {
+        gained: LaneIncense,
+        current: LaneIncense,
+    },
+    InsufficientIncense {
+        spent: LaneIncense,
+        available: LaneIncense,
+    },
     DelayedEffectOverflow,
 }
 
@@ -1380,6 +1432,8 @@ pub struct LaneDebrief {
     pub(crate) phial_spent: LanePhial,
     pub(crate) flask_gained: LaneFlask,
     pub(crate) flask_spent: LaneFlask,
+    pub(crate) incense_gained: LaneIncense,
+    pub(crate) incense_spent: LaneIncense,
     pub(crate) wave_result: LaneWaveResult,
     pub(crate) fallback_activated: bool,
     pub(crate) delayed_effects_queued: u8,
@@ -1562,6 +1616,14 @@ impl LaneDebrief {
 
     pub fn flask_spent(self) -> LaneFlask {
         self.flask_spent
+    }
+
+    pub fn incense_gained(self) -> LaneIncense {
+        self.incense_gained
+    }
+
+    pub fn incense_spent(self) -> LaneIncense {
+        self.incense_spent
     }
 
     pub fn wave_result(self) -> LaneWaveResult {
@@ -2018,6 +2080,18 @@ fn apply_player_resources(
                 gained: deltas.flask_gained,
                 current: after_spend_flask,
             })?;
+    let after_spend_incense = before.incense.subtract(deltas.incense_spent).ok_or(
+        LaneExecutionError::InsufficientIncense {
+            spent: deltas.incense_spent,
+            available: before.incense,
+        },
+    )?;
+    let incense = after_spend_incense.add(deltas.incense_gained).ok_or(
+        LaneExecutionError::IncenseOverflow {
+            gained: deltas.incense_gained,
+            current: after_spend_incense,
+        },
+    )?;
     Ok(PlayerResources {
         mana,
         gold,
@@ -2041,6 +2115,7 @@ fn apply_player_resources(
         amulet,
         phial,
         flask,
+        incense,
     })
 }
 
@@ -2504,6 +2579,20 @@ fn project_lane_events(
             trace,
         });
     }
+    if execution.incense_gained != LaneIncense::zero() {
+        events.push(LaneEvent::IncenseGained {
+            actor: player.id,
+            amount: execution.incense_gained,
+            trace,
+        });
+    }
+    if execution.incense_spent != LaneIncense::zero() {
+        events.push(LaneEvent::IncenseSpent {
+            actor: player.id,
+            amount: execution.incense_spent,
+            trace,
+        });
+    }
     if let Some(queued) = resolved.delayed_effect_queued {
         events.push(LaneEvent::DelayedEffectQueued {
             actor: player.id,
@@ -2800,6 +2889,15 @@ fn project_lane_effects(
             provenance: LaneEffectProvenance::direct_immediate(),
         });
     }
+    if next_player.incense != player.incense {
+        effects.push(LaneEffect::IncenseChanged {
+            actor: player.id,
+            before: player.incense,
+            after: next_player.incense,
+            cause: LaneEffectCause::Execution(trace),
+            provenance: LaneEffectProvenance::direct_immediate(),
+        });
+    }
     if let Some(queued) = resolved.delayed_effect_queued {
         effects.push(LaneEffect::DelayedEffectQueued {
             actor: player.id,
@@ -2912,6 +3010,8 @@ pub fn transition_lane(
         phial_spent: execution.phial_spent,
         flask_gained: execution.flask_gained,
         flask_spent: execution.flask_spent,
+        incense_gained: execution.incense_gained,
+        incense_spent: execution.incense_spent,
         wave_result: execution.wave_result,
         fallback_activated: resolved.fallback_activated,
         delayed_effects_queued: if resolved.delayed_effect_queued.is_some() {
