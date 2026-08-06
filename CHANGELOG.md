@@ -34,6 +34,17 @@ not increment the package version.
   invariant evidence passed; the first bounded M2 lane decision-window slice is
   now active.
 
+## 0.1.39 — 2026-08-05
+
+### Added
+
+- Bounded `LaneScroll` player consumable resource abstraction (`MAX_LANE_SCROLL = 5`) with zero default.
+- Non-default `LaneScroll` state-hash binding (`LANE_SCROLL_HASH_TAG`).
+- `LanerObservation` and `AlliedLaneObservation` exposure of player scroll count (`self_scroll`, `laner_scroll`).
+- `LaneExecutionInputs` support for `scroll_gained` and `scroll_spent` resolution.
+- Direct-immediate `ScrollGained`, `ScrollSpent`, and `ScrollChanged` events and effects during transition evaluation, debrief recording, and `LaneRecordIdentity` integration.
+- `LaneExecutionError::ScrollOverflow` and `LaneExecutionError::InsufficientScroll` fail-closed error handling.
+
 ## 0.1.38 — 2026-08-05
 
 ### Added
