@@ -32,12 +32,12 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs` | Placeholder `Hello, world!` binary |
-| Package | `Cargo.toml` | Version `0.1.54`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.57`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
 | Internal kernel/replay fixture | `src/kernel.rs`, `src/serialization.rs` | M1 complete; not playable |
-| Scenario, CLI, MCP, research, GUI | No implementation evidence | Not implemented |
+| Scenario, CLI, MCP, research, GUI | `src/cli.rs` in-session grammar only; no host | Not implemented as user-facing flows |
 
 ## Milestone Map
 
@@ -840,7 +840,7 @@ communication, strategy quality, balance, or human experience.
 ## Phase 3 — CLI Reference Experience
 
 **Milestone:** M3
-**Status:** Active — bounded command-grammar foundation
+**Status:** Planned — early bounded grammar evidence
 **Depends on:** M2
 
 ### Outcome
@@ -851,8 +851,9 @@ API access.
 
 ### Scope
 
-- [x] Define stable top-level process commands and in-session grammar as a
-  typed, dependency-free adapter contract.
+- [ ] Define stable top-level process commands.
+- [x] Define stable in-session grammar as a typed, dependency-free adapter
+  contract.
 - [ ] Implement `observe`, bounded `inspect`, and contextual help.
 - [ ] Implement structured `message`, `plan`, contingency, `commit`, and
   `advance` flows.

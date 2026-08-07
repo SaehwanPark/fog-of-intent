@@ -12,10 +12,10 @@ M3 — CLI Reference Experience, command grammar foundation.
 
 ## In Scope
 
-- Define typed command identities for the planned observe/inspect/help,
+- Define typed in-session command identities for the planned observe/inspect/help,
   message/plan/contingency/commit/advance, review/debrief/replay/branch,
   save/load, undo, and quit verbs.
-- Parse stable lowercase verbs with bounded argument forms and explicit parse
+- Parse stable lowercase in-session verbs with bounded argument forms and explicit parse
   errors.
 - Keep free-form payloads as adapter-owned text; no parser calls lane legality
   or transition code.

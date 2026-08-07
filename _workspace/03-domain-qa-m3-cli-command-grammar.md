@@ -14,7 +14,7 @@
 ## Findings
 
 - Parsing is adapter-local and cannot mutate or authorize simulation state.
-- Canonical verb names and payload requirements are explicit and bounded.
+- Canonical in-session verb names and payload requirements are explicit and bounded.
 - The binary remains a documented placeholder; no user-facing CLI flow is
   claimed by this slice.
 

@@ -4,7 +4,8 @@
 
 Added a dependency-free typed parser for the stable M3 in-session command
 grammar. It returns borrowed adapter payloads and typed parse errors without
-touching simulation state or terminal I/O.
+touching simulation state or terminal I/O; top-level process commands remain
+future scope.
 
 ## Changed Files
 

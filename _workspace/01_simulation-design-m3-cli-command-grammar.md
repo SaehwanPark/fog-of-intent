@@ -8,7 +8,7 @@ authorize a domain command.
 
 ## Contract
 
-Commands use lowercase ASCII verbs. Read-only verbs are `help`, `observe`,
+In-session commands use lowercase ASCII verbs. Read-only verbs are `help`, `observe`,
 `inspect`, `review`, `debrief`, and `replay`; planning verbs are `message`,
 `plan`, `contingency`, `commit`, and `advance`; history/session verbs are
 `branch`, `save`, `load`, `undo`, and `quit`. `message`, `plan`,
