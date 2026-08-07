@@ -26,7 +26,7 @@ M2 — One-Lane Vertical Slice, delayed-effect origin-trace provenance.
 - Add an originating `InputTrace` to queued delayed effects with a neutral
   constructor default and an execution-bound constructor path.
 - Preserve origin trace through delay ticking, state hashing, branch/history
-  identity, replay, events, effects, and debrief-visible attribution.
+  identity, replay, events, effects, lane debriefs, and final debrief reports.
 - Version current M2 ruleset/observation/replay/profile/branch identities to v3
   and update expected hash evidence.
 - Add focused tests proving origin-trace retention and tamper sensitivity.

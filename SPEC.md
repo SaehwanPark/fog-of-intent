@@ -177,8 +177,9 @@ exists. Planned proposal or roadmap text is never implementation evidence.
   field is a communication signal, not a free-form message system.
 - The v3 transition records explicit effect relation/timing labels and retains
   each delayed effect's originating execution trace through queue ticking, state
-  hashing, branch/history identity, replay, events, and effects. `LaneOutcome`
-  and objective review remain distinct from binary win/loss scoring.
+  hashing, branch/history identity, replay, events, effects, lane debriefs, and
+  final debrief reports. `LaneOutcome` and objective review remain distinct
+  from binary win/loss scoring.
   Observation/replay tests cover hidden-state redaction, report completeness,
   receipt privacy, and a complete two-window debrief path.
 - M1 ruleset, codec, fixtures, hashes, and test behavior remain unchanged. The

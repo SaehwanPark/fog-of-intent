@@ -3,7 +3,8 @@
 ## Outcome
 
 Delayed effects retain and replay their originating execution trace through
-queueing, state hashing, branch/history identity, and resolution attribution.
+queueing, state hashing, branch/history identity, resolution attribution, lane
+debriefs, and final debrief reports.
 Current internal M2 identities advanced to v3; unsupported v2 M2 inputs remain
 fail-closed.
 
@@ -20,5 +21,5 @@ Full locked Rust/repository checks pass. Domain QA status is `pass`; see
 
 ## Limits and Next Slice
 
-This closes origin-trace provenance only. Vision/belief updates and automatic
-advance remain the next unchecked M2 behavior slices.
+This closes bounded origin-trace provenance only. Vision/belief updates and
+automatic advance remain the next unchecked M2 behavior slices.

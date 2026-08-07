@@ -238,6 +238,7 @@ pub struct WindowDebriefSummary {
     pub(crate) player_position: LanePosition,
     pub(crate) wave_result: LaneWaveResult,
     pub(crate) coordination: LaneCoordinationReview,
+    pub(crate) delayed_effect_origins: LaneDelayedEffectOrigins,
     pub(crate) execution_trace: InputTrace,
     pub(crate) objective: TerminalObjectiveReview,
 }
@@ -271,6 +272,10 @@ impl WindowDebriefSummary {
         self.coordination
     }
 
+    pub fn delayed_effect_origins(self) -> LaneDelayedEffectOrigins {
+        self.delayed_effect_origins
+    }
+
     pub fn execution_trace(self) -> InputTrace {
         self.execution_trace
     }
@@ -288,6 +293,7 @@ impl WindowDebriefSummary {
             player_position: self.player_position,
             wave_result: self.wave_result,
             coordination: self.coordination,
+            delayed_effect_origins: self.delayed_effect_origins,
             objective: self.objective.disposition(),
         }
     }
@@ -302,6 +308,7 @@ pub struct VisibleWindowDebriefSummary {
     pub(crate) player_position: LanePosition,
     pub(crate) wave_result: LaneWaveResult,
     pub(crate) coordination: LaneCoordinationReview,
+    pub(crate) delayed_effect_origins: LaneDelayedEffectOrigins,
     pub(crate) objective: ObjectiveDisposition,
 }
 
@@ -332,6 +339,10 @@ impl VisibleWindowDebriefSummary {
 
     pub fn coordination(self) -> LaneCoordinationReview {
         self.coordination
+    }
+
+    pub fn delayed_effect_origins(self) -> LaneDelayedEffectOrigins {
+        self.delayed_effect_origins
     }
 
     pub fn objective(self) -> ObjectiveDisposition {
@@ -488,6 +499,7 @@ fn window_debrief_summary(
         player_position: transition.result.next_state.player().position(),
         wave_result: transition.inputs.execution.wave_result,
         coordination: LaneCoordinationReview::NotApplicable,
+        delayed_effect_origins: transition.result.debrief.delayed_effect_origins,
         execution_trace: transition.inputs.execution.trace,
         objective: objective.review,
     })

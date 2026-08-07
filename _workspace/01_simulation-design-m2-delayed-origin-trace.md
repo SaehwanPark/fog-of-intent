@@ -18,7 +18,9 @@ When a queued effect resolves, both `LaneEvent::DelayedEffectResolved` and
 `LaneEffect::DelayedEffectResolved` use the stored origin trace as their
 `LaneEffectCause::Execution` attribution. The current window trace remains the
 trace for the queue-resolution operation itself where that distinction is
-visible in the event/effect envelope.
+visible in the event/effect envelope. `LaneDebrief` and the two-window final
+debrief report expose the bounded list of resolved origin traces without
+exposing the host state hash.
 
 ## Compatibility
 
@@ -33,3 +35,5 @@ unchanged.
 - Delayed resolution events/effects attribute the original trace.
 - State hashes and record identities differ when origin trace differs.
 - Replay verifies the updated v3 records and rejects tampering.
+- Lane and final debrief projections expose resolved origin traces and replay
+  verification covers their committed values.

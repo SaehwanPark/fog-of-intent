@@ -17,6 +17,8 @@
   hashing, replay, and attribution.
 - Origin traces are retained as explicit value data rather than inferred from
   current-window inputs.
+- Lane and final debrief projections expose resolved origin traces while the
+  existing report redaction remains intact.
 - Versioned v3 identities make the authoritative representation change explicit;
   M1 compatibility remains isolated.
 
@@ -32,4 +34,5 @@ causal graphs and complete scenario pacing remain deferred.
 ## Verification Evidence
 
 The locked Rust, clippy, formatting, repository-currentness, checker-test, and
-diff checks pass, including focused origin-trace and replay tamper tests.
+diff checks pass, including focused origin-trace hash, identity, debrief, and
+replay-tamper tests.

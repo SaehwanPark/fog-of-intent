@@ -599,7 +599,8 @@ This evidence establishes one bounded cooldown resource. It does not establish c
 ### Current M2 v3 delayed-origin correction
 
 - [x] Retain each delayed effect's originating execution trace through queue
-  ticking, state hashing, branch/history identity, replay, events, and effects.
+  ticking, state hashing, branch/history identity, replay, events, effects,
+  lane debriefs, and final debrief reports.
 - [x] Advance current internal M2 ruleset, observation, replay, profile,
   strategy, scenario, debrief, and branch identities to v3; unsupported v2 M2
   inputs fail closed.
