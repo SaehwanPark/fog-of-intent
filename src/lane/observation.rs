@@ -19,6 +19,66 @@ pub enum HiddenValue {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum LaneBelief<T> {
+    Unknown,
+    Observed { value: T, observed_turn: Turn },
+    LastKnown { value: T, last_seen_turn: Turn },
+}
+
+impl<T: Copy> LaneBelief<T> {
+    pub const fn unknown() -> Self {
+        Self::Unknown
+    }
+
+    fn update(
+        self,
+        value: Option<T>,
+        last_seen_turn: Option<Turn>,
+        observation_turn: Turn,
+    ) -> Self {
+        match (value, last_seen_turn) {
+            (Some(_), Some(last_seen_turn))
+                if last_seen_turn.value() > observation_turn.value() =>
+            {
+                Self::Unknown
+            }
+            (Some(value), Some(last_seen_turn)) if last_seen_turn == observation_turn => {
+                Self::Observed {
+                    value,
+                    observed_turn: last_seen_turn,
+                }
+            }
+            (Some(value), Some(last_seen_turn)) => Self::LastKnown {
+                value,
+                last_seen_turn,
+            },
+            (None, None) => self,
+            _ => Self::Unknown,
+        }
+    }
+}
+
+impl LaneBelief<LanePosition> {
+    pub fn from_opponent_report(self, report: OpponentReport, observation_turn: Turn) -> Self {
+        self.update(
+            report.last_known_position(),
+            report.last_seen_turn(),
+            observation_turn,
+        )
+    }
+}
+
+impl LaneBelief<JungleThreatRegion> {
+    pub fn from_threat_report(self, report: ThreatReport, observation_turn: Turn) -> Self {
+        self.update(
+            report.last_known_region(),
+            report.last_seen_turn(),
+            observation_turn,
+        )
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum JungleThreatRegion {
     RiverSide,
 }

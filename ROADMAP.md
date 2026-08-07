@@ -305,8 +305,9 @@ a causal debrief.
   actor, and one abstract opposing jungle threat.
 - [x] Define the minimum lane, wave, position, health, mana, cooldown, gold, and
   experience abstractions needed by the scenario.
-- [ ] Define vision, last-known information, belief updates, unknowns, and report
-  wording without exposing latent values.
+- [x] Define vision, last-known information, report-derived belief updates,
+  unknowns, and report semantics without exposing latent values; map geometry,
+  decay, and threat execution remain deferred.
 - [x] Define variable-duration decision windows and automatic-advance conditions
   as explicit duration/condition values; host integration for a genuine
   no-choice automatic path remains deferred.
@@ -622,6 +623,19 @@ This defines the advance condition contract only. No-choice host scheduling,
 automatic execution outcomes, timeout policy, or a complete playable scenario
 is established.
 
+### Current bounded belief/report contract
+
+- [x] Define report-derived `LaneBelief<T>` states for `Unknown`, `Observed`,
+  and `LastKnown` information over actor-authorized opponent-position and
+  threat-region reports.
+- [x] Retain prior belief on an unknown report under an explicit no-decay rule;
+  malformed value/turn pairs fail closed and beliefs never enter authoritative
+  lane state.
+
+This establishes the bounded report and belief semantics only. Vision geometry,
+memory decay, threat execution, communication, and a playable scenario remain
+deferred.
+
 ### Current bounded actor-roster evidence
 
 - [x] Define the fixed `LaneActorRoster` for the human laner, opposing laner,
@@ -633,7 +647,7 @@ is established.
   existing transition/replay boundary remains unchanged.
 
 This evidence establishes actor-role completeness for the bounded M2 contract;
-it does not establish complete vision, belief updates, communication, threat
+it does not establish full vision geometry, memory decay, communication, threat
 execution, pacing, or a playable scenario.
 
 ### Current bounded minimum-abstraction evidence
