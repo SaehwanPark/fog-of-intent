@@ -19,6 +19,41 @@ pub enum HiddenValue {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum LaneBelief<T> {
+    Unknown,
+    Observed { value: T, observed_turn: Turn },
+    LastKnown { value: T, last_seen_turn: Turn },
+}
+
+impl<T: Copy> LaneBelief<T> {
+    pub const fn unknown() -> Self {
+        Self::Unknown
+    }
+
+    pub fn update(
+        self,
+        value: Option<T>,
+        last_seen_turn: Option<Turn>,
+        observation_turn: Turn,
+    ) -> Self {
+        match (value, last_seen_turn) {
+            (Some(value), Some(last_seen_turn)) if last_seen_turn == observation_turn => {
+                Self::Observed {
+                    value,
+                    observed_turn: last_seen_turn,
+                }
+            }
+            (Some(value), Some(last_seen_turn)) => Self::LastKnown {
+                value,
+                last_seen_turn,
+            },
+            (None, None) => self,
+            _ => Self::Unknown,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum JungleThreatRegion {
     RiverSide,
 }

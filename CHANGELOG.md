@@ -76,6 +76,16 @@ not increment the package version.
 - Updated canonical project-state documents to distinguish current v2 evidence
   from retired v1 history without marking the complete M2 exit criteria done.
 
+## 0.1.56 — 2026-08-06
+
+### Added
+
+- Added report-derived `LaneBelief<T>` values for unknown, observed, and
+  last-known information with an explicit no-decay update rule.
+- Added focused opponent/threat report, malformed-pair, and redaction-boundary
+  tests without changing observation schemas, authoritative state, or replay
+  identities.
+
 ## 0.1.55 — 2026-08-06
 
 ### Added

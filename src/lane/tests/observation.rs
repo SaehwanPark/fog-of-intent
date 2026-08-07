@@ -56,6 +56,73 @@ fn observation_redacts_latent_state() {
 }
 
 #[test]
+fn report_derived_beliefs_distinguish_observed_last_known_and_unknown() {
+    let initial = LaneSnapshot::initial();
+    let state = LaneSnapshot::new(
+        initial.ruleset(),
+        Turn::new(2),
+        LaneStatus::Open,
+        initial.player(),
+        OpponentTruth::new(
+            OPPONENT_LANER,
+            initial.opponent().health(),
+            LanePosition::FarSide,
+            initial.opponent().posture(),
+        ),
+        initial.wave(),
+        JungleThreatTruth::RiverSide,
+    );
+    let player = observe_player(&state, ObservationId::new(1)).observation();
+    let position_belief = LaneBelief::unknown().update(
+        player.opponent().last_known_position(),
+        player.opponent().last_seen_turn(),
+        player.turn(),
+    );
+    assert_eq!(
+        position_belief,
+        LaneBelief::Observed {
+            value: LanePosition::FarSide,
+            observed_turn: Turn::new(2),
+        }
+    );
+    assert_eq!(
+        LaneBelief::unknown().update(
+            Some(LanePosition::FarSide),
+            Some(Turn::new(2)),
+            Turn::new(3),
+        ),
+        LaneBelief::LastKnown {
+            value: LanePosition::FarSide,
+            last_seen_turn: Turn::new(2),
+        }
+    );
+    let threat_belief = LaneBelief::unknown().update(
+        player.jungle_threat().last_known_region(),
+        player.jungle_threat().last_seen_turn(),
+        player.turn(),
+    );
+    assert_eq!(
+        threat_belief,
+        LaneBelief::Observed {
+            value: JungleThreatRegion::RiverSide,
+            observed_turn: Turn::new(2),
+        }
+    );
+    assert_eq!(
+        threat_belief.update(None, None, Turn::new(3)),
+        threat_belief
+    );
+    assert_eq!(
+        LaneBelief::<LanePosition>::unknown().update(
+            Some(LanePosition::FarSide),
+            None,
+            Turn::new(3),
+        ),
+        LaneBelief::Unknown
+    );
+}
+
+#[test]
 fn observations_expose_the_complete_role_roster_without_latent_values() {
     let state = LaneSnapshot::initial();
     let player = observe_player(&state, ObservationId::new(1)).observation();

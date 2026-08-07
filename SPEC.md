@@ -186,6 +186,10 @@ exists. Planned proposal or roadmap text is never implementation evidence.
   commit-required and no-legal-intent outcomes. Current one- and two-beat
   windows use the commit-required condition; host integration for a genuine
   no-choice automatic path remains deferred.
+- `LaneBelief<T>` is a report-derived value with `Unknown`, `Observed`, and
+  `LastKnown` states. Unknown reports retain prior belief under the explicit
+  no-decay rule; only actor-authorized opponent-position and threat-region
+  reports can update it. No belief becomes authoritative lane state.
 - M1 ruleset, codec, fixtures, hashes, and test behavior remain unchanged. The
   complete M2 exit criteria below remain unchecked.
 
@@ -232,6 +236,13 @@ playability, or human-experience evidence.
   commit-required and no-legal-intent evaluation using only declared inputs.
 - Kept the current one- and two-beat transition, state hash, observation, and
   replay contracts unchanged; automatic execution and scheduling remain open.
+
+#### Defined in the bounded belief/report contract follow-up
+
+- Added report-derived `LaneBelief<T>` updates for unknown, observed, and
+  last-known information with malformed value/turn pairs failing closed.
+- Kept hidden health/posture, exact threat truth, state hashes, observation
+  schemas, replay identities, and authoritative state outside the belief helper.
 
 #### Delivered in the bounded delayed-origin-trace follow-up
 
