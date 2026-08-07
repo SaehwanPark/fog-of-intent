@@ -32,12 +32,12 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs` | Placeholder `Hello, world!` binary |
-| Package | `Cargo.toml` | Version `0.1.58`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.59`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
 | Internal kernel/replay fixture | `src/kernel.rs`, `src/serialization.rs` | M1 complete; not playable |
-| Scenario, CLI, MCP, research, GUI | `src/cli.rs` in-session grammar only; no host | Not implemented as user-facing flows |
+| Scenario, CLI, MCP, research, GUI | `src/cli.rs` in-session grammar plus typed read/write requests; no host | Not implemented as user-facing flows |
 
 ## Milestone Map
 
@@ -856,8 +856,8 @@ API access.
   contract.
 - [x] Implement `observe`, bounded actor-visible `inspect`, and contextual help
   as typed adapter read requests; terminal rendering remains open.
-- [ ] Implement structured `message`, `plan`, contingency, `commit`, and
-  `advance` flows.
+- [x] Define typed adapter requests for `message`, `plan`, contingency,
+  `commit`, and `advance`; host flow execution remains open.
 - [ ] Implement `review`, `debrief`, `replay`, and `branch` flows.
 - [ ] Add guided mode with numbered choices and explanations.
 - [ ] Add expert mode with concise, scriptable commands.
