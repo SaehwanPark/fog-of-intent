@@ -100,7 +100,7 @@ impl LaneExecutionInputs {
     }
 
     pub const fn with_delayed_effect(mut self, delayed_effect: LaneDelayedEffect) -> Self {
-        self.delayed_effect = Some(delayed_effect);
+        self.delayed_effect = Some(delayed_effect.with_origin(self.trace));
         self
     }
 

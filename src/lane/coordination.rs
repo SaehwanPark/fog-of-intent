@@ -12,9 +12,9 @@ impl AlliedProfileIdentity {
     pub const fn scripted_v2() -> Self {
         Self {
             profile_id: SCRIPTED_ALLIED_PROFILE,
-            candidate_rule: "available-intents-v2",
-            evaluation_rule: "risk-wave-score-v2",
-            selection_rule: "max-score-stabilize-tie-v2",
+            candidate_rule: "available-intents-v3",
+            evaluation_rule: "risk-wave-score-v3",
+            selection_rule: "max-score-stabilize-tie-v3",
         }
     }
 

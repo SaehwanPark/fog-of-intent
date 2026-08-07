@@ -110,7 +110,7 @@ pub(super) fn project_lane_events(
         events.push(LaneEvent::DelayedEffectResolved {
             actor: player.id,
             effect: *item,
-            trace,
+            trace: item.origin(),
         });
     }
     events.push(LaneEvent::WaveResolved {
@@ -245,7 +245,7 @@ pub(super) fn project_lane_effects(
         effects.push(LaneEffect::DelayedEffectResolved {
             actor: player.id,
             effect: *item,
-            cause: LaneEffectCause::Execution(trace),
+            cause: LaneEffectCause::Execution(item.origin()),
             provenance: LaneEffectProvenance::direct_delayed(),
         });
     }

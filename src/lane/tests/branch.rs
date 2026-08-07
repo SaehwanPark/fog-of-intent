@@ -293,7 +293,7 @@ fn branch_parent_record_identity_hash_remains_stable() {
 
     assert_eq!(
         branch.identity().parent_record_identity().value(),
-        18_127_853_837_247_512_108
+        11_297_577_596_712_375_834
     );
 }
 

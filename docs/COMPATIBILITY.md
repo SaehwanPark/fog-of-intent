@@ -8,8 +8,9 @@ external backward-compatibility support.
 
 M2 v1 is retired internal history. It has no release, tag, external codec, or
 supported artifact, so there is no migration path. The current M2 contract uses
-ruleset `3`, v2 observation/profile/replay/strategy identities, and explicit
-base-record replay IDs; any v1 M2 input must fail closed.
+ruleset `4`, v3 observation/profile/replay/strategy/scenario/debrief/branch
+identities, and explicit base-record replay IDs; any v1/v2 M2 input must fail
+closed.
 
 ## Versioned identity
 

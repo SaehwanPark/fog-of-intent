@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs` | Placeholder `Hello, world!` binary |
-| Package | `Cargo.toml` | Version `0.1.53`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.54`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -323,7 +323,7 @@ a causal debrief.
 
 > The bounded-slice, branch, coordination, objective, strategy, scenario,
 > intent, report, window, effect, and retained-resource evidence sections below
-> preserve the experimental M2 v1 history. The v2 correction near the end of
+> preserve the experimental M2 v1 history. The version corrections near the end of
 > this evidence block is the current internal contract; the older entries are
 > not release or M2-exit claims.
 
@@ -581,7 +581,7 @@ This evidence establishes one bounded experience resource. It does not establish
 
 This evidence establishes one bounded cooldown resource. It does not establish complete ability catalogs, item active cooldowns, or a complete playable lane scenario.
 
-### Current M2 v2 contract correction
+### Historical M2 v2 contract correction
 
 - [x] Replace the separate player-resource fields with one `LaneResources`
   aggregate and one `LaneResourceInputs` execution aggregate for mana, gold,
@@ -594,6 +594,16 @@ This evidence establishes one bounded cooldown resource. It does not establish c
   base-record identities as v2; verify those identities during replay and
   branching.
 - [x] Keep the M1 ruleset, codec, fixtures, hashes, and external behavior
+  unchanged.
+
+### Current M2 v3 delayed-origin correction
+
+- [x] Retain each delayed effect's originating execution trace through queue
+  ticking, state hashing, branch/history identity, replay, events, and effects.
+- [x] Advance current internal M2 ruleset, observation, replay, profile,
+  strategy, scenario, debrief, and branch identities to v3; unsupported v2 M2
+  inputs fail closed.
+- [x] Keep M1 ruleset, codec, fixtures, hashes, and external behavior
   unchanged.
 
 ### Current bounded actor-roster evidence
@@ -636,17 +646,16 @@ complete communication system.
 
 ### Current bounded causal-information evidence
 
-- [ ] Preserve direct/indirect and immediate/delayed effect labels with complete
+- [x] Preserve direct/indirect and immediate/delayed effect labels with complete
   originating cause/trace attribution through delayed-queue resolution.
 - [x] Keep `LaneOutcome` and objective review distinct from binary win/loss
   scoring.
 - [x] Test hidden-state redaction, actor-visible report completeness, and receipt
   privacy; inspect one complete two-window replay through debrief projection.
 
-This evidence covers deterministic relation/timing labels and current-resolution
-trace only. Origin-trace linkage for queued delayed effects, vision/belief
-updates, automatic advance, communication transport, balance, and playability
-remain open.
+This evidence covers the bounded delayed-origin path. Vision/belief updates,
+automatic advance, communication transport, balance, and playability remain
+open.
 
 The following older resource-slice notes are retained as historical evidence
 only. Bounty, level, minion kills, shield, ward, and the sixteen experimental

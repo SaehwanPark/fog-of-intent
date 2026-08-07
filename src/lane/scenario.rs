@@ -1,6 +1,6 @@
 use super::*;
 
-pub const M2_TWO_WINDOW_REPLAY_ID: &str = "m2-two-window-scenario-v2";
+pub const M2_TWO_WINDOW_REPLAY_ID: &str = "m2-two-window-scenario-v3";
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ScenarioWindow {
@@ -222,7 +222,7 @@ pub enum ScenarioError {
     ReplayMismatch,
 }
 
-pub const M2_FINAL_DEBRIEF_REPLAY_ID: &str = "m2-two-window-final-debrief-v2";
+pub const M2_FINAL_DEBRIEF_REPLAY_ID: &str = "m2-two-window-final-debrief-v3";
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum FinalDebriefAttributionLimit {

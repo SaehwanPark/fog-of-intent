@@ -11,7 +11,7 @@ fn history_replays_the_committed_window() {
 }
 
 #[test]
-fn history_requires_open_initial_state_and_v2_record_identity() {
+fn history_requires_open_initial_state_and_v3_record_identity() {
     let state = LaneSnapshot::initial();
     let (receipt, request) = request(&state, LaneIntent::Contest);
     let mut history = LaneHistory::new(state).expect("initial state is valid");

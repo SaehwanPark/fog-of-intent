@@ -2,14 +2,16 @@
 
 ## Goal and Boundary
 
-Record the evidence-backed causal and information contracts around the existing
-v2 transition without adding mechanics.
+Record the initial evidence-backed causal and information contracts around the
+M2 transition. The delayed-origin-trace portion was subsequently implemented
+in `m2-delayed-origin-trace.md`; this file remains the initial review artifact.
 
 ## Contracts Reviewed
 
 - Effects carry `Direct`/`Indirect` relation and `Immediate`/`Delayed` timing,
-  plus current-resolution cause/trace attribution. The delayed queue resolves
-  in deterministic window order but does not yet retain an originating trace.
+  plus current-resolution cause/trace attribution. The initial review noted
+  that the delayed queue did not yet retain an originating trace; the follow-up
+  design closes that gap.
 - `LaneOutcome` (`HeldSpace`, `YieldedSpace`, `ForcedOut`) and the objective
   projection remain distinct from binary win/loss scoring.
 - Player/allied observations expose actor-authorized reports and roster roles,

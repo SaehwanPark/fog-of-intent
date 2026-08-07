@@ -141,7 +141,7 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Preserve append-only history and replay identity while leaving the binary,
   CLI, full scenario, and external adapters deferred.
 
-#### Current M2 v2 contract — 2026-08-06
+#### Current M2 v3 contract — 2026-08-06
 
 - The authoritative lane snapshot stores `LaneStatus::{Open,
   Resolved(LaneOutcome)}` rather than correlated phase/outcome fields.
@@ -151,10 +151,11 @@ exists. Planned proposal or roadmap text is never implementation evidence.
   `LaneResourceInputs` is the execution aggregate for their deltas.
 - `LaneDelay` rejects zero-beat delayed effects, cooldown ticking saturates for
   every `u32`, and histories must begin from `LaneStatus::Open`.
-- Ruleset `3`, the v2 player/allied observation schemas, v2 replay/profile/
-  strategy identities, and the base-record replay identity are current internal
-  identifiers. M2 v1 has no release, tag, external codec, or supported artifact;
-  old M2 inputs fail closed and have no migration.
+- Ruleset `4`, the v3 player/allied observation schemas, v3 replay/profile/
+  strategy/scenario/debrief/branch identities, and the v3 base-record replay
+  identity are current internal identifiers. M2 v1/v2 have no release, tag,
+  external codec, or supported artifact; old M2 inputs fail closed and have no
+  migration.
 - The fixed `LaneActorRoster` identifies the human laner, opposing laner, allied
   autonomous actor, and abstract opposing jungle threat. Player and allied
   observations expose those role identities while retaining their existing
@@ -174,11 +175,12 @@ exists. Planned proposal or roadmap text is never implementation evidence.
   `LaneFallbackBehavior`. Observations advertise legal alternatives and host
   validation/replay bind them to the current actor-visible receipt. The ping
   field is a communication signal, not a free-form message system.
-- The v2 transition records explicit effect relation/timing labels and current
-  resolution traces; queued delayed effects do not yet retain their originating
-  trace. `LaneOutcome` and objective review remain distinct from binary
-  win/loss scoring. Observation/replay tests cover hidden-state redaction,
-  report completeness, receipt privacy, and a complete two-window debrief path.
+- The v3 transition records explicit effect relation/timing labels and retains
+  each delayed effect's originating execution trace through queue ticking, state
+  hashing, branch/history identity, replay, events, and effects. `LaneOutcome`
+  and objective review remain distinct from binary win/loss scoring.
+  Observation/replay tests cover hidden-state redaction, report completeness,
+  receipt privacy, and a complete two-window debrief path.
 - M1 ruleset, codec, fixtures, hashes, and test behavior remain unchanged. The
   complete M2 exit criteria below remain unchecked.
 
@@ -213,11 +215,17 @@ playability, or human-experience evidence.
 #### Reconciled in the bounded causal-information follow-up
 
 - Promoted non-binary terminal outcome, hidden-state/report coverage, and
-  complete-replay inspection from existing v2 tests and source/fixture
-  inspection. Effect provenance remains partially implemented because queued
-  delayed effects lack originating-trace linkage.
+  complete-replay inspection from existing v3 tests and source/fixture
+  inspection; delayed-origin provenance is now complete for the bounded queue.
 - Kept vision/belief updates, automatic advance, communication transport,
   balance, and playability explicitly deferred.
+
+#### Delivered in the bounded delayed-origin-trace follow-up
+
+- Added delayed-effect origin traces, preserved them through queue ticking and
+  hashing, and attributed resolution events/effects to the originating trace.
+- Advanced current internal M2 identities from v2 to v3 with fail-closed
+  compatibility; M1 fixtures and behavior remain unchanged.
 
 #### Historical M2 v1 slices (retired; preserved as changelog evidence)
 

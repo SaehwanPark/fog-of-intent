@@ -146,7 +146,11 @@ pub(super) fn resolve_lane_execution(
             let remaining = LaneDelay::new(effect.delay_beats() - beats as u8)
                 .expect("remaining delay is non-zero");
             next_delayed_effects
-                .push(LaneDelayedEffect::new(remaining, effect.kind()))
+                .push(LaneDelayedEffect::new_with_origin(
+                    remaining,
+                    effect.kind(),
+                    effect.origin(),
+                ))
                 .expect("valid queue bounds");
         }
     }
