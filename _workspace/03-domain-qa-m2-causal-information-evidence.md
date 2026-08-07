@@ -28,8 +28,8 @@ None.
 
 ## Residual Risks
 
-Vision/belief updates, variable-duration automatic advance, communication
-transport, and a playable scenario remain incomplete. Broader provenance
+Vision/belief updates, no-choice host scheduling, communication transport, and
+a playable scenario remain incomplete. Broader provenance
 requirements outside the bounded delayed-effect queue remain future work. No
 human-experience or behavioral-validity claim follows from these tests.
 

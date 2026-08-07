@@ -182,6 +182,10 @@ exists. Planned proposal or roadmap text is never implementation evidence.
   from binary win/loss scoring.
   Observation/replay tests cover hidden-state redaction, report completeness,
   receipt privacy, and a complete two-window debrief path.
+- `LaneAdvanceCondition` and `LaneAdvanceDecision` define deterministic
+  commit-required and no-legal-intent outcomes. Current one- and two-beat
+  windows use the commit-required condition; host integration for a genuine
+  no-choice automatic path remains deferred.
 - M1 ruleset, codec, fixtures, hashes, and test behavior remain unchanged. The
   complete M2 exit criteria below remain unchecked.
 
@@ -218,8 +222,16 @@ playability, or human-experience evidence.
 - Promoted non-binary terminal outcome, hidden-state/report coverage, and
   complete-replay inspection from existing v3 tests and source/fixture
   inspection; delayed-origin provenance is now complete for the bounded queue.
-- Kept vision/belief updates, automatic advance, communication transport,
-  balance, and playability explicitly deferred.
+- Kept vision/belief updates, automatic host scheduling, communication
+  transport, balance, and playability explicitly deferred; the bounded
+  advance-condition contract is defined separately.
+
+#### Defined in the bounded automatic-advance contract follow-up
+
+- Added explicit `LaneAdvanceCondition` and `LaneAdvanceDecision` values for
+  commit-required and no-legal-intent evaluation using only declared inputs.
+- Kept the current one- and two-beat transition, state hash, observation, and
+  replay contracts unchanged; automatic execution and scheduling remain open.
 
 #### Delivered in the bounded delayed-origin-trace follow-up
 

@@ -7,7 +7,8 @@ contract includes the lane decision window, retained-resource aggregate,
 typed lifecycle status, delayed effects, branch, one-window allied
 proposal/coordination overlay, terminal-objective projection, matched-input
 strategy fixtures, bounded two-window wrapper, final debrief projection,
-Recall/Withdraw/Yield intents, a fixed four-actor roster, and versioned replay identities. Experimental
+Recall/Withdraw/Yield intents, a fixed four-actor roster, explicit advance
+conditions, and versioned replay identities. Experimental
 M2 v1 resource slices are retired history and are not part of the current
 surface.
 
@@ -303,7 +304,7 @@ and an architecture update or ADR when it changes a consequential boundary.
   observation contracts are implemented internally, but they are not a
   playable scenario, external API, migration framework, or persistence service.
 - M2 still lacks a communication system, complete vision/belief model,
-  automatic threat damage, adaptive pacing, a complete item/resource economy,
+  automatic threat damage, no-choice host scheduling, adaptive pacing, a complete item/resource economy,
   external scenario serialization, a branch tree, and a broader debrief
   surface. The retired v1 bounty, level, minion-kills, shield, ward, and
   consumable slices are historical evidence only.

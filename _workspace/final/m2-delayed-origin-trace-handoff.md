@@ -22,4 +22,4 @@ Full locked Rust/repository checks pass. Domain QA status is `pass`; see
 ## Limits and Next Slice
 
 This closes bounded origin-trace provenance only. Vision/belief updates and
-automatic advance remain the next unchecked M2 behavior slices.
+no-choice host scheduling remain the next unchecked M2 behavior slices.

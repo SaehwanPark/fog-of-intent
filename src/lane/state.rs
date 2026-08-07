@@ -603,4 +603,36 @@ impl LaneWindow {
     pub const fn closes_on_commit(self) -> bool {
         true
     }
+
+    pub const fn advance_condition(self) -> LaneAdvanceCondition {
+        match self {
+            Self::OneBeat | Self::TwoBeats => LaneAdvanceCondition::OnCommit,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum LaneAdvanceCondition {
+    OnCommit,
+    WhenNoLegalIntent,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum LaneAdvanceDecision {
+    DecisionRequired,
+    AdvanceAutomatically,
+}
+
+impl LaneAdvanceCondition {
+    pub const fn evaluate(self, committed: bool, legal_intent_count: u8) -> LaneAdvanceDecision {
+        let should_advance = match self {
+            Self::OnCommit => committed,
+            Self::WhenNoLegalIntent => legal_intent_count == 0,
+        };
+        if should_advance {
+            LaneAdvanceDecision::AdvanceAutomatically
+        } else {
+            LaneAdvanceDecision::DecisionRequired
+        }
+    }
 }
