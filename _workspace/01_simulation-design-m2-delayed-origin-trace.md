@@ -16,11 +16,11 @@ trace substitution fails replay.
 
 When a queued effect resolves, both `LaneEvent::DelayedEffectResolved` and
 `LaneEffect::DelayedEffectResolved` use the stored origin trace as their
-`LaneEffectCause::Execution` attribution. The current window trace remains the
-trace for the queue-resolution operation itself where that distinction is
-visible in the event/effect envelope. `LaneDebrief` and the two-window final
-debrief report expose the bounded list of resolved origin traces without
-exposing the host state hash.
+`LaneEffectCause::Execution` attribution. The current window trace remains
+available separately through the transition inputs and lane debrief; the
+resolved event/effect projections expose the originating trace. `LaneDebrief`
+and the two-window final debrief report expose the bounded list of resolved
+origin traces without exposing the host state hash.
 
 ## Compatibility
 
