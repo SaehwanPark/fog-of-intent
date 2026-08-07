@@ -57,7 +57,7 @@ fn lane_status_cannot_represent_correlated_phase_and_outcome_pairs() {
 }
 
 #[test]
-fn lane_hash_encodings_are_stable_for_v2_initial_and_non_default_states() {
+fn lane_hash_encodings_are_stable_for_v3_initial_and_non_default_states() {
     let initial = LaneSnapshot::initial();
     let resources = LaneResources::new(
         LaneMana::new(5).expect("bounded mana"),
@@ -84,8 +84,8 @@ fn lane_hash_encodings_are_stable_for_v2_initial_and_non_default_states() {
         WaveState::new(WavePressure::new(2).expect("bounded pressure")),
         JungleThreatTruth::InLane,
     );
-    assert_eq!(initial.hash().value(), 10_367_761_967_024_854_953);
-    assert_eq!(resolved.hash().value(), 9_301_613_880_178_663_280);
+    assert_eq!(initial.hash().value(), 6_571_807_888_986_103_628);
+    assert_eq!(resolved.hash().value(), 66_596_859_370_032_817);
     assert_ne!(initial.hash(), resolved.hash());
     assert_eq!(initial.hash(), LaneSnapshot::initial().hash());
 }

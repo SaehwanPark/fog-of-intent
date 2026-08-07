@@ -75,6 +75,20 @@ not increment the package version.
 - Updated canonical project-state documents to distinguish current v2 evidence
   from retired v1 history without marking the complete M2 exit criteria done.
 
+## 0.1.54 — 2026-08-06
+
+### Added
+
+- Retained each delayed lane effect's originating execution trace through
+  queueing, ticking, state hashing, branch/history identity, replay,
+  resolution event/effect attribution, lane debriefs, and final debrief
+  reports.
+- Versioned the current internal M2 ruleset, observation, replay, profile,
+  strategy, scenario, debrief, and branch identities from v2 to v3; unsupported
+  older M2 inputs fail closed while M1 fixtures remain unchanged.
+- Added focused origin-trace retention, hash/identity tamper, delayed-resolution
+  attribution, and debrief projection tests.
+
 ## 0.1.53 — 2026-08-06
 
 ### Added

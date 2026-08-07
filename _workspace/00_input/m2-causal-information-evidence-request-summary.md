@@ -2,7 +2,7 @@
 
 ## Requested Outcome
 
-Reconcile four remaining M2 checklist items with verified v2 evidence already
+Reconcile four remaining M2 checklist items with verified evidence already
 present in the lane transition: direct/indirect and immediate/delayed effect
 provenance, a terminal outcome distinct from win/loss, hidden-state/report
 completeness tests, and one manually inspected complete replay. Keep vision/
@@ -46,6 +46,7 @@ M2 — One-Lane Vertical Slice, causal and information-boundary evidence.
 
 ## Evidence Limits
 
-The promotion covers committed v2 mechanics and inspections only. It does not
-establish complete vision/belief updates, variable pacing, balance, playability,
-or human experience.
+The initial promotion covered committed v2 mechanics and inspections only. The
+bounded delayed-origin-trace follow-up is recorded separately. Neither artifact
+establishes complete vision/belief updates, variable pacing, balance,
+playability, or human experience.

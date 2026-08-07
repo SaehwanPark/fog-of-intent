@@ -24,6 +24,9 @@ pub(super) fn build_transition_result(
         fallback_activated: resolved.fallback_activated,
         delayed_effects_queued: u8::from(resolved.delayed_effect_queued.is_some()),
         delayed_effects_resolved: resolved.delayed_effects_resolved.len() as u8,
+        delayed_effect_origins: LaneDelayedEffectOrigins::from_effects(
+            &resolved.delayed_effects_resolved,
+        ),
         execution_trace: trace,
     };
     let events = project_lane_events(state, command, execution, &resolved, trace);

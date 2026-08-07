@@ -402,9 +402,9 @@ pub enum StrategyFixtureId {
 impl StrategyFixtureId {
     pub fn id(self) -> &'static str {
         match self {
-            Self::HappyPath => "m2-strategy-happy-path-v2",
-            Self::RiskTaking => "m2-strategy-risk-taking-v2",
-            Self::Conservative => "m2-strategy-conservative-v2",
+            Self::HappyPath => "m2-strategy-happy-path-v3",
+            Self::RiskTaking => "m2-strategy-risk-taking-v3",
+            Self::Conservative => "m2-strategy-conservative-v3",
         }
     }
 }

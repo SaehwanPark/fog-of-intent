@@ -1,12 +1,12 @@
 use super::*;
 
-pub const M2_LANE_RULESET: RulesetId = RulesetId::new(3);
-pub const M2_OBSERVATION_SCHEMA: &str = "m2-lane-observation-v2";
-pub const M2_ALLIED_OBSERVATION_SCHEMA: &str = "m2-allied-proposal-observation-v2";
-pub const M2_REPLAY_ID: &str = "m2-one-lane-window-v2";
-pub const M2_COORDINATION_REPLAY_ID: &str = "m2-one-lane-coordination-v2";
-pub const M2_BRANCH_REPLAY_ID: &str = "m2-one-lane-window-branch-v2";
-pub const SCRIPTED_ALLIED_PROFILE: &str = "scripted-allied-proposal-v2";
+pub const M2_LANE_RULESET: RulesetId = RulesetId::new(4);
+pub const M2_OBSERVATION_SCHEMA: &str = "m2-lane-observation-v3";
+pub const M2_ALLIED_OBSERVATION_SCHEMA: &str = "m2-allied-proposal-observation-v3";
+pub const M2_REPLAY_ID: &str = "m2-one-lane-window-v3";
+pub const M2_COORDINATION_REPLAY_ID: &str = "m2-one-lane-coordination-v3";
+pub const M2_BRANCH_REPLAY_ID: &str = "m2-one-lane-window-branch-v3";
+pub const SCRIPTED_ALLIED_PROFILE: &str = "scripted-allied-proposal-v3";
 pub const PLAYER_LANER: ActorId = ActorId::new(1);
 pub const OPPONENT_LANER: ActorId = ActorId::new(2);
 pub const ALLIED_AUTONOMOUS_ACTOR: ActorId = ActorId::new(3);

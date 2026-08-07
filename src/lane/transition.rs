@@ -100,7 +100,7 @@ impl LaneExecutionInputs {
     }
 
     pub const fn with_delayed_effect(mut self, delayed_effect: LaneDelayedEffect) -> Self {
-        self.delayed_effect = Some(delayed_effect);
+        self.delayed_effect = Some(delayed_effect.with_origin(self.trace));
         self
     }
 
@@ -193,6 +193,11 @@ impl LaneResolvedInputs {
 
     pub const fn with_resource_inputs(mut self, resources: LaneResourceInputs) -> Self {
         self.execution = self.execution.with_resource_inputs(resources);
+        self
+    }
+
+    pub const fn with_delayed_effect(mut self, delayed_effect: LaneDelayedEffect) -> Self {
+        self.execution = self.execution.with_delayed_effect(delayed_effect);
         self
     }
 
@@ -553,6 +558,41 @@ pub enum LaneDecisionReview {
     InformationConsistent,
 }
 
+const MAX_DEBRIEF_DELAYED_ORIGINS: usize = 4;
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct LaneDelayedEffectOrigins {
+    origins: [Option<InputTrace>; MAX_DEBRIEF_DELAYED_ORIGINS],
+    count: u8,
+}
+
+impl LaneDelayedEffectOrigins {
+    pub(crate) fn from_effects(effects: &[LaneDelayedEffect]) -> Self {
+        let mut origins = [None; MAX_DEBRIEF_DELAYED_ORIGINS];
+        let mut count = 0;
+        for (index, effect) in effects.iter().enumerate() {
+            if index == MAX_DEBRIEF_DELAYED_ORIGINS {
+                break;
+            }
+            origins[index] = Some(effect.origin());
+            count += 1;
+        }
+        Self { origins, count }
+    }
+
+    pub const fn count(self) -> u8 {
+        self.count
+    }
+
+    pub const fn origin(self, index: usize) -> Option<InputTrace> {
+        if index < MAX_DEBRIEF_DELAYED_ORIGINS {
+            self.origins[index]
+        } else {
+            None
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct LaneDebrief {
     pub(crate) decision: LaneDecisionReview,
@@ -569,6 +609,7 @@ pub struct LaneDebrief {
     pub(crate) fallback_activated: bool,
     pub(crate) delayed_effects_queued: u8,
     pub(crate) delayed_effects_resolved: u8,
+    pub(crate) delayed_effect_origins: LaneDelayedEffectOrigins,
     pub(crate) execution_trace: InputTrace,
 }
 
@@ -643,6 +684,10 @@ impl LaneDebrief {
 
     pub const fn delayed_effects_resolved(self) -> u8 {
         self.delayed_effects_resolved
+    }
+
+    pub const fn delayed_effect_origins(self) -> LaneDelayedEffectOrigins {
+        self.delayed_effect_origins
     }
 
     pub const fn execution_trace(self) -> InputTrace {

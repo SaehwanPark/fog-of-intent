@@ -276,11 +276,32 @@ pub enum LaneDelayedEffectKind {
 pub struct LaneDelayedEffect {
     pub(crate) delay: LaneDelay,
     pub(crate) kind: LaneDelayedEffectKind,
+    pub(crate) origin: InputTrace,
 }
 
 impl LaneDelayedEffect {
     pub fn new(delay: LaneDelay, kind: LaneDelayedEffectKind) -> Self {
-        Self { delay, kind }
+        Self::new_with_origin(
+            delay,
+            kind,
+            InputTrace::new(StreamId::new(0), DrawId::new(0)),
+        )
+    }
+
+    pub fn new_with_origin(
+        delay: LaneDelay,
+        kind: LaneDelayedEffectKind,
+        origin: InputTrace,
+    ) -> Self {
+        Self {
+            delay,
+            kind,
+            origin,
+        }
+    }
+
+    pub const fn with_origin(self, origin: InputTrace) -> Self {
+        Self { origin, ..self }
     }
 
     pub const fn delay(self) -> LaneDelay {
@@ -293,6 +314,10 @@ impl LaneDelayedEffect {
 
     pub const fn kind(self) -> LaneDelayedEffectKind {
         self.kind
+    }
+
+    pub const fn origin(self) -> InputTrace {
+        self.origin
     }
 }
 
@@ -534,6 +559,8 @@ impl LaneSnapshot {
             );
             for item in self.delayed_effects.items().iter().flatten() {
                 hash = hash_bytes(hash, &[item.delay_beats()]);
+                hash = hash_bytes(hash, &[item.origin().stream().value()]);
+                hash = hash_bytes(hash, &item.origin().draw().value().to_le_bytes());
                 match item.kind() {
                     LaneDelayedEffectKind::SelfHealthRegen { amount } => {
                         hash = hash_bytes(hash, &[0x01, amount.value()]);

@@ -2,7 +2,7 @@
 
 **Last reviewed:** 2026-08-06
 **Status:** Partially verified — M1 kernel and fixture codec are implemented;
-M2 remains an internal bounded target under construction. The current M2 v2
+M2 remains an internal bounded target under construction. The current M2 v3
 contract includes the lane decision window, retained-resource aggregate,
 typed lifecycle status, delayed effects, branch, one-window allied
 proposal/coordination overlay, terminal-objective projection, matched-input
@@ -166,12 +166,11 @@ intent, commitment, target focus, ping signal, abort condition, and fallback.
 Observation and validation bind those fields to actor-visible receipts; the ping
 signal is communication metadata rather than a free-form message transport.
 
-The current v2 causal path preserves effect relation/timing labels and the
-current-resolution input trace through ordered projection and bounded delayed
-resolution. Queued delayed effects do not yet retain their originating trace.
-`LaneOutcome` and objective review remain separate read models, and the complete
-two-window replay/debrief path is inspected and verified without exposing hidden
-state.
+The current v3 causal path preserves effect relation/timing labels and each
+delayed effect's originating execution trace through ordered projection and
+bounded delayed resolution, state hashing, and replay identity. `LaneOutcome`
+and objective review remain separate read models, and the complete two-window
+replay/debrief path is inspected and verified without exposing hidden state.
 
 ## Consequential Type Boundaries
 
@@ -298,7 +297,7 @@ and an architecture update or ADR when it changes a consequential boundary.
 
 ## Known Gaps
 
-- The M1 kernel/codec and M2 v2 lane decision-window, branch, coordination,
+- The M1 kernel/codec and M2 v3 lane decision-window, branch, coordination,
   objective, strategy-fixture, two-window, final-debrief, retained-resource,
   intent, and
   observation contracts are implemented internally, but they are not a

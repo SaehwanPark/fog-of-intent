@@ -109,7 +109,14 @@
                 .append(
                     &first_receipt,
                     &first_request,
-                    inputs(0, 1, LaneWaveResult::Advanced),
+                    inputs(0, 1, LaneWaveResult::Advanced).with_delayed_effect(
+                        LaneDelayedEffect::new(
+                            LaneDelay::new(1).expect("one beat"),
+                            LaneDelayedEffectKind::SelfHealthRegen {
+                                amount: LaneHealth::new(1).expect("bounded health"),
+                            },
+                        ),
+                    ),
                 )
                 .expect("first window");
             let reopened = history.current_state();
@@ -135,6 +142,16 @@
         );
         assert_eq!(debrief.windows()[1].window(), ScenarioWindow::Second);
         assert_eq!(debrief.windows()[1].intent(), LaneIntent::Stabilize);
+        assert_eq!(
+            debrief.windows()[1].delayed_effect_origins().origin(0),
+            Some(trace(5, 0))
+        );
+        assert_eq!(
+            debrief.report().windows()[1]
+                .delayed_effect_origins()
+                .origin(0),
+            Some(trace(5, 0))
+        );
         assert_eq!(debrief.final_objective(), ObjectiveDisposition::GoalMissed);
         assert_eq!(
             debrief.attribution_limit(),

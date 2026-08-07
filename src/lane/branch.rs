@@ -463,6 +463,8 @@ pub(crate) fn lane_record_identity(record: &LaneTransitionRecord) -> StateHash {
         }
         Some(effect) => {
             hash = hash_bytes(hash, &[1, effect.delay_beats()]);
+            hash = hash_bytes(hash, &[effect.origin().stream().value()]);
+            hash = hash_bytes(hash, &effect.origin().draw().value().to_le_bytes());
             match effect.kind() {
                 LaneDelayedEffectKind::SelfHealthRegen { amount } => {
                     hash = hash_bytes(hash, &[0x01, amount.value()]);

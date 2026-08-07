@@ -9,12 +9,12 @@ pub struct AlliedProfileIdentity {
 }
 
 impl AlliedProfileIdentity {
-    pub const fn scripted_v2() -> Self {
+    pub const fn scripted_v3() -> Self {
         Self {
             profile_id: SCRIPTED_ALLIED_PROFILE,
-            candidate_rule: "available-intents-v2",
-            evaluation_rule: "risk-wave-score-v2",
-            selection_rule: "max-score-stabilize-tie-v2",
+            candidate_rule: "available-intents-v3",
+            evaluation_rule: "risk-wave-score-v3",
+            selection_rule: "max-score-stabilize-tie-v3",
         }
     }
 
@@ -288,7 +288,7 @@ pub fn allied_input_identity(
     policy_trace: InputTrace,
 ) -> AgentInputIdentity {
     AgentInputIdentity {
-        profile: AlliedProfileIdentity::scripted_v2(),
+        profile: AlliedProfileIdentity::scripted_v3(),
         actor: observation.observer,
         ruleset: M2_LANE_RULESET,
         observation_schema: observation.schema,
@@ -360,7 +360,7 @@ pub fn offer_allied_proposal(
     proposal: LaneIntentProposal,
 ) -> Result<AlliedProposalOffer, AlliedProposalError> {
     if proposal.actor != ALLIED_AUTONOMOUS_ACTOR
-        || proposal.profile != AlliedProfileIdentity::scripted_v2()
+        || proposal.profile != AlliedProfileIdentity::scripted_v3()
     {
         return Err(AlliedProposalError::InvalidProposal);
     }
