@@ -76,6 +76,16 @@ not increment the package version.
 - Updated canonical project-state documents to distinguish current v2 evidence
   from retired v1 history without marking the complete M2 exit criteria done.
 
+## 0.1.61 — 2026-08-07
+
+### Added
+
+- Added typed borrowed adapter session requests for `save`, `load`, `undo`, and
+  `quit` verbs with run identifier and payload-free boundaries.
+- Added focused session-request mapping tests; persistence, save/load execution,
+  uncommitted choice editing, and session lifecycle remain outside the adapter.
+  Help metadata now identifies these four verbs as session-adapter requests.
+
 ## 0.1.60 — 2026-08-07
 
 ### Added

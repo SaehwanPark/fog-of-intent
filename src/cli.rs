@@ -103,11 +103,25 @@ pub enum CliProcessError {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum CliSessionRequest<'a> {
+    Save { run_id: &'a str },
+    Load { run_id: &'a str },
+    Undo,
+    Quit,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum CliSessionError {
+    NotSessionCommand { verb: &'static str },
+    EmptyPayload { verb: &'static str },
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum CliCommandAvailability {
     ReadOnlyAdapter,
     WriteAdapter,
     ProcessAdapter,
-    GrammarOnly,
+    SessionAdapter,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -229,29 +243,29 @@ pub static CLI_HELP_ENTRIES: [CliHelpEntry; 16] = [
         name: "save",
         usage: "save <id>",
         summary: "save a run identifier",
-        context: "grammar only",
-        availability: CliCommandAvailability::GrammarOnly,
+        context: "session adapter",
+        availability: CliCommandAvailability::SessionAdapter,
     },
     CliHelpEntry {
         name: "load",
         usage: "load <id>",
         summary: "load a run identifier",
-        context: "grammar only",
-        availability: CliCommandAvailability::GrammarOnly,
+        context: "session adapter",
+        availability: CliCommandAvailability::SessionAdapter,
     },
     CliHelpEntry {
         name: "undo",
         usage: "undo",
         summary: "edit uncommitted local choices",
-        context: "grammar only",
-        availability: CliCommandAvailability::GrammarOnly,
+        context: "session adapter",
+        availability: CliCommandAvailability::SessionAdapter,
     },
     CliHelpEntry {
         name: "quit",
         usage: "quit",
         summary: "end the adapter session",
-        context: "grammar only",
-        availability: CliCommandAvailability::GrammarOnly,
+        context: "session adapter",
+        availability: CliCommandAvailability::SessionAdapter,
     },
 ];
 
@@ -318,6 +332,24 @@ pub fn process_request(command: CliCommand<'_>) -> Result<CliProcessRequest<'_>,
         CliCommand::Replay(run_id) => Ok(CliProcessRequest::Replay { run_id }),
         CliCommand::Branch(point_id) => Ok(CliProcessRequest::Branch { point_id }),
         _ => Err(CliProcessError::NotProcessCommand {
+            verb: command.canonical_name(),
+        }),
+    }
+}
+
+pub fn session_request(command: CliCommand<'_>) -> Result<CliSessionRequest<'_>, CliSessionError> {
+    match command {
+        CliCommand::Save(run_id) if !run_id.trim().is_empty() => {
+            Ok(CliSessionRequest::Save { run_id })
+        }
+        CliCommand::Load(run_id) if !run_id.trim().is_empty() => {
+            Ok(CliSessionRequest::Load { run_id })
+        }
+        CliCommand::Save(_) => Err(CliSessionError::EmptyPayload { verb: "save" }),
+        CliCommand::Load(_) => Err(CliSessionError::EmptyPayload { verb: "load" }),
+        CliCommand::Undo => Ok(CliSessionRequest::Undo),
+        CliCommand::Quit => Ok(CliSessionRequest::Quit),
+        _ => Err(CliSessionError::NotSessionCommand {
             verb: command.canonical_name(),
         }),
     }
@@ -526,6 +558,16 @@ mod tests {
                 .iter()
                 .all(|entry| entry.availability == CliCommandAvailability::WriteAdapter)
         );
+        assert!(
+            entries[8..12]
+                .iter()
+                .all(|entry| entry.availability == CliCommandAvailability::ProcessAdapter)
+        );
+        assert!(
+            entries[12..16]
+                .iter()
+                .all(|entry| entry.availability == CliCommandAvailability::SessionAdapter)
+        );
         assert!(entries.iter().all(|entry| !entry.summary.is_empty()));
     }
 
@@ -600,6 +642,42 @@ mod tests {
         assert_eq!(
             process_request(CliCommand::Observe),
             Err(CliProcessError::NotProcessCommand { verb: "observe" })
+        );
+    }
+
+    #[test]
+    fn session_commands_map_save_load_undo_and_quit_requests() {
+        assert_eq!(
+            session_request(CliCommand::Save("run-1")),
+            Ok(CliSessionRequest::Save { run_id: "run-1" })
+        );
+        assert_eq!(
+            session_request(CliCommand::Load("run-1")),
+            Ok(CliSessionRequest::Load { run_id: "run-1" })
+        );
+        assert_eq!(
+            session_request(CliCommand::Undo),
+            Ok(CliSessionRequest::Undo)
+        );
+        assert_eq!(
+            session_request(CliCommand::Quit),
+            Ok(CliSessionRequest::Quit)
+        );
+        assert_eq!(
+            session_request(CliCommand::Observe),
+            Err(CliSessionError::NotSessionCommand { verb: "observe" })
+        );
+        assert_eq!(
+            session_request(CliCommand::Save("")),
+            Err(CliSessionError::EmptyPayload { verb: "save" })
+        );
+        assert_eq!(
+            session_request(CliCommand::Save("   ")),
+            Err(CliSessionError::EmptyPayload { verb: "save" })
+        );
+        assert_eq!(
+            session_request(CliCommand::Load("")),
+            Err(CliSessionError::EmptyPayload { verb: "load" })
         );
     }
 }

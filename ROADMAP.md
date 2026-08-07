@@ -860,6 +860,8 @@ API access.
   `commit`, and `advance`; host flow execution remains open.
 - [x] Define typed adapter requests for `review`, `debrief`, `replay`, and
   `branch`; host flow execution remains open.
+- [x] Define typed adapter requests for `save`, `load`, `undo`, and `quit`; host
+  session management and persistence remain open.
 - [ ] Add guided mode with numbered choices and explanations.
 - [ ] Add expert mode with concise, scriptable commands.
 - [ ] Add research inspection only behind an explicit privileged context.
