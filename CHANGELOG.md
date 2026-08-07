@@ -76,6 +76,15 @@ not increment the package version.
 - Updated canonical project-state documents to distinguish current v2 evidence
   from retired v1 history without marking the complete M2 exit criteria done.
 
+## 0.1.57 — 2026-08-06
+
+### Added
+
+- Added the dependency-free typed M3 CLI grammar for stable help, observe,
+  inspect, planning, review, replay, branch, save/load, undo, and quit verbs.
+- Added bounded parse errors and borrowed-payload transcript tests; terminal
+  I/O, rendering, and domain authorization remain outside the adapter.
+
 ## 0.1.56 — 2026-08-06
 
 ### Added
