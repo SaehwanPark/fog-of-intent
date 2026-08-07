@@ -727,8 +727,20 @@ playability, or human-experience evidence.
   complete economy; the opponent-report follow-up is one fixed sighting rule
   and does not implement complete vision or beliefs.
 - CLI, MCP, full agent ecology, and human-experience evidence remain future
-  M3/M4+ work; this diagnostic slice is not playable and makes no enjoyment,
+  M3/M4+ work; the M3 grammar foundation is present but this diagnostic slice
+  is not playable and makes no enjoyment,
   accessibility, trust, or behavioral-validity claim.
+
+### M3 — CLI grammar foundation — 2026-08-06
+
+**Status:** Bounded foundation delivered; host and terminal flows remain open.
+
+- `src/cli.rs` defines stable lowercase command identities and borrowed
+  payloads for the planned in-session verbs.
+- Parsing returns typed errors for empty input, unknown verbs, missing payloads,
+  and unexpected arguments without reading simulation state.
+- The parser is an adapter contract only; it does not authorize domain actions,
+  render output, persist artifacts, or change the lane transition boundary.
 
 ## Future
 

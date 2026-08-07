@@ -840,7 +840,7 @@ communication, strategy quality, balance, or human experience.
 ## Phase 3 — CLI Reference Experience
 
 **Milestone:** M3
-**Status:** Planned
+**Status:** Active — bounded command-grammar foundation
 **Depends on:** M2
 
 ### Outcome
@@ -851,7 +851,8 @@ API access.
 
 ### Scope
 
-- [ ] Define stable top-level process commands and in-session grammar.
+- [x] Define stable top-level process commands and in-session grammar as a
+  typed, dependency-free adapter contract.
 - [ ] Implement `observe`, bounded `inspect`, and contextual help.
 - [ ] Implement structured `message`, `plan`, contingency, `commit`, and
   `advance` flows.
