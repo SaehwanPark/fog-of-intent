@@ -14,8 +14,9 @@ to that window's execution trace. Delay ticking preserves the original trace.
 The lane state hash and record identity include the origin trace so tampering or
 trace substitution fails replay.
 
-When a queued effect resolves, both `LaneEvent::DelayedEffectResolved` and
-`LaneEffect::DelayedEffectResolved` use the stored origin trace as their
+When a queued effect resolves, `LaneEvent::DelayedEffectResolved` stores the
+origin trace in its `trace` field, while
+`LaneEffect::DelayedEffectResolved` uses that origin in its
 `LaneEffectCause::Execution` attribution. The current window trace remains
 available separately through the transition inputs and lane debrief; the
 resolved event/effect projections expose the originating trace. `LaneDebrief`
