@@ -8,8 +8,9 @@ not access lane state, authorize a domain command, or render output.
 ## Contract
 
 `observe` maps to `CliReadRequest::Observe`; `help` maps to contextual metadata;
-`inspect` with no target maps to actor-visible current state, while `inspect
-state` and `inspect history` are the only explicit targets. Unknown targets and
+`inspect` with no target maps to the current actor-visible observation, while
+`inspect observation` and `inspect history` are the only explicit targets.
+Unknown targets and
 non-read commands return typed `CliReadError` values. The static help catalog
 lists canonical verbs and does not imply that their flows are implemented.
 

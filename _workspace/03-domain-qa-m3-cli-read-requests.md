@@ -14,8 +14,8 @@
 ## Findings
 
 - Read mapping is pure and accepts only actor-visible inspect targets.
-- Static help metadata is descriptive and cannot authorize or execute a domain
-  operation.
+- Structured help entries carry usage, description, context, and availability;
+  they are descriptive and cannot authorize or execute a domain operation.
 - Privileged provenance and hidden-state inspection remain outside ordinary CLI
   reads.
 
