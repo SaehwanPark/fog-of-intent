@@ -30,13 +30,18 @@ impl<T: Copy> LaneBelief<T> {
         Self::Unknown
     }
 
-    pub fn update(
+    fn update(
         self,
         value: Option<T>,
         last_seen_turn: Option<Turn>,
         observation_turn: Turn,
     ) -> Self {
         match (value, last_seen_turn) {
+            (Some(_), Some(last_seen_turn))
+                if last_seen_turn.value() > observation_turn.value() =>
+            {
+                Self::Unknown
+            }
             (Some(value), Some(last_seen_turn)) if last_seen_turn == observation_turn => {
                 Self::Observed {
                     value,
@@ -50,6 +55,26 @@ impl<T: Copy> LaneBelief<T> {
             (None, None) => self,
             _ => Self::Unknown,
         }
+    }
+}
+
+impl LaneBelief<LanePosition> {
+    pub fn from_opponent_report(self, report: OpponentReport, observation_turn: Turn) -> Self {
+        self.update(
+            report.last_known_position(),
+            report.last_seen_turn(),
+            observation_turn,
+        )
+    }
+}
+
+impl LaneBelief<JungleThreatRegion> {
+    pub fn from_threat_report(self, report: ThreatReport, observation_turn: Turn) -> Self {
+        self.update(
+            report.last_known_region(),
+            report.last_seen_turn(),
+            observation_turn,
+        )
     }
 }
 

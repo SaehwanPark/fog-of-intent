@@ -13,7 +13,8 @@ observed_turn }`, and `LastKnown { value, last_seen_turn }`. Updating from a
 report with a value marks it `Observed` when the sighting turn equals the
 observation turn and `LastKnown` otherwise. Updating from an unknown report
 retains the prior belief; memory decay is deliberately not modeled in this
-bounded slice. Malformed value/turn pairs fail closed to `Unknown`.
+bounded slice. Public updates consume only `OpponentReport` or `ThreatReport`;
+malformed or future-dated value/turn pairs fail closed to `Unknown`.
 
 Opponent position and jungle-threat region beliefs are derived only from their
 actor-authorized reports. Health, posture, exact threat truth, state hashes, and

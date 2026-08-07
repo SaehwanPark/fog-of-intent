@@ -15,6 +15,8 @@
 
 - Beliefs are pure derived values and do not become authoritative simulation
   state.
+- Public belief updates consume only actor-authorized opponent/threat reports;
+  raw value injection is private and future-dated sightings fail closed.
 - Unknown reports do not reveal hidden truth; retaining a prior belief is an
   explicit no-decay rule rather than an inference about current truth.
 - Existing player/allied report boundaries and replay identities remain stable.
