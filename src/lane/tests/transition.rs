@@ -33,6 +33,34 @@
     }
 
 #[test]
+fn advance_conditions_are_explicit_and_side_effect_free() {
+    assert_eq!(
+        LaneWindow::OneBeat.advance_condition(),
+        LaneAdvanceCondition::OnCommit
+    );
+    assert_eq!(
+        LaneWindow::TwoBeats.advance_condition(),
+        LaneAdvanceCondition::OnCommit
+    );
+    assert_eq!(
+        LaneAdvanceCondition::OnCommit.evaluate(false, 4),
+        LaneAdvanceDecision::DecisionRequired
+    );
+    assert_eq!(
+        LaneAdvanceCondition::OnCommit.evaluate(true, 4),
+        LaneAdvanceDecision::AdvanceAutomatically
+    );
+    assert_eq!(
+        LaneAdvanceCondition::WhenNoLegalIntent.evaluate(false, 1),
+        LaneAdvanceDecision::DecisionRequired
+    );
+    assert_eq!(
+        LaneAdvanceCondition::WhenNoLegalIntent.evaluate(false, 0),
+        LaneAdvanceDecision::AdvanceAutomatically
+    );
+}
+
+#[test]
     fn legal_unfavorable_contest_activates_fallback() {
         let state = LaneSnapshot::initial();
         let (receipt, contest_request) = request(&state, LaneIntent::Contest);

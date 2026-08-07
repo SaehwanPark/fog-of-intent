@@ -20,5 +20,5 @@ Full locked Rust/repository checks pass. Domain QA status is `pass`; see
 
 ## Limits and Next Slice
 
-Vision/belief updates and variable-duration automatic advance remain
-unchecked; this evidence does not promote M2 or establish a playable scenario.
+Vision/belief updates and no-choice host scheduling remain unchecked; this
+evidence does not promote M2 or establish a playable scenario.

@@ -307,13 +307,17 @@ a causal debrief.
   experience abstractions needed by the scenario.
 - [ ] Define vision, last-known information, belief updates, unknowns, and report
   wording without exposing latent values.
-- [ ] Define variable-duration decision windows and automatic-advance conditions.
+- [x] Define variable-duration decision windows and automatic-advance conditions
+  as explicit duration/condition values; host integration for a genuine
+  no-choice automatic path remains deferred.
 - [x] Define intent, commitment, target/focus, bounded communication, abort
   conditions, and fallback behavior.
 - [x] Implement hold, pressure/trade, yield, recall, and gank-response decisions
   only where they create real tradeoffs.
 - [x] Implement coordination and execution as distinct resolutions.
-- [ ] Record direct, indirect, immediate, and delayed effects with provenance.
+- [x] Record direct, indirect, immediate, and delayed effects with provenance
+  through the bounded delayed-effect queue, replay, attribution, and debrief
+  projections.
 - [x] Define a terminal outcome that does not collapse evaluation to win/loss.
 - [x] Produce immediate review and final debrief projections.
 - [x] Support replay and a bounded counterfactual branch at a pivotal decision.
@@ -607,6 +611,17 @@ This evidence establishes one bounded cooldown resource. It does not establish c
 - [x] Keep M1 ruleset, codec, fixtures, hashes, and external behavior
   unchanged.
 
+### Current bounded automatic-advance contract
+
+- [x] Define `LaneAdvanceCondition` and `LaneAdvanceDecision` for deterministic
+  commit-required and no-legal-intent evaluation using explicit inputs.
+- [x] Keep current one- and two-beat windows commit-required and preserve their
+  transition, observation, hash, and replay behavior.
+
+This defines the advance condition contract only. No-choice host scheduling,
+automatic execution outcomes, timeout policy, or a complete playable scenario
+is established.
+
 ### Current bounded actor-roster evidence
 
 - [x] Define the fixed `LaneActorRoster` for the human laner, opposing laner,
@@ -654,9 +669,9 @@ complete communication system.
 - [x] Test hidden-state redaction, actor-visible report completeness, and receipt
   privacy; inspect one complete two-window replay through debrief projection.
 
-This evidence covers the bounded delayed-origin path. Vision/belief updates,
-automatic advance, communication transport, balance, and playability remain
-open.
+This evidence covers the bounded delayed-origin and advance-condition paths.
+Vision/belief updates, no-choice host scheduling, communication transport,
+balance, and playability remain open.
 
 The following older resource-slice notes are retained as historical evidence
 only. Bounty, level, minion kills, shield, ward, and the sixteen experimental

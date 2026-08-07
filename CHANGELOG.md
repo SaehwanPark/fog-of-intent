@@ -41,7 +41,8 @@ not increment the package version.
   evidence; free-form communication remains deferred.
 - Reconciled M2 causal/information evidence for effect provenance, non-binary
   outcomes, hidden-state/report coverage, and complete-replay inspection;
-  vision/belief and automatic-advance work remain deferred.
+  vision/belief remains deferred; the bounded automatic-advance condition
+  contract is now explicit while host scheduling remains deferred.
 
 ## 0.1.50 — 2026-08-06
 
@@ -74,6 +75,16 @@ not increment the package version.
   made objective verification reject retired record IDs.
 - Updated canonical project-state documents to distinguish current v2 evidence
   from retired v1 history without marking the complete M2 exit criteria done.
+
+## 0.1.55 — 2026-08-06
+
+### Added
+
+- Added typed deterministic `LaneAdvanceCondition` and
+  `LaneAdvanceDecision` values for commit-required and no-legal-intent
+  evaluation; current one- and two-beat windows remain commit-required.
+- Added focused condition-mapping tests without changing authoritative state,
+  replay identities, or M1 behavior.
 
 ## 0.1.54 — 2026-08-06
 
