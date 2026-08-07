@@ -174,6 +174,11 @@ exists. Planned proposal or roadmap text is never implementation evidence.
   `LaneFallbackBehavior`. Observations advertise legal alternatives and host
   validation/replay bind them to the current actor-visible receipt. The ping
   field is a communication signal, not a free-form message system.
+- The v2 transition records explicit effect relation/timing labels and current
+  resolution traces; queued delayed effects do not yet retain their originating
+  trace. `LaneOutcome` and objective review remain distinct from binary
+  win/loss scoring. Observation/replay tests cover hidden-state redaction,
+  report completeness, receipt privacy, and a complete two-window debrief path.
 - M1 ruleset, codec, fixtures, hashes, and test behavior remain unchanged. The
   complete M2 exit criteria below remain unchecked.
 
@@ -204,6 +209,15 @@ playability, or human-experience evidence.
   request, observation, validation, record-identity, and replay evidence.
 - Kept free-form messaging, delivery, trust, negotiation, and a complete
   communication system explicitly deferred.
+
+#### Reconciled in the bounded causal-information follow-up
+
+- Promoted non-binary terminal outcome, hidden-state/report coverage, and
+  complete-replay inspection from existing v2 tests and source/fixture
+  inspection. Effect provenance remains partially implemented because queued
+  delayed effects lack originating-trace linkage.
+- Kept vision/belief updates, automatic advance, communication transport,
+  balance, and playability explicitly deferred.
 
 #### Historical M2 v1 slices (retired; preserved as changelog evidence)
 

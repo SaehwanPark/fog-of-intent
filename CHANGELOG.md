@@ -39,6 +39,9 @@ not increment the package version.
 - Reconciled the M2 bounded intent/commitment/focus/communication/abort/fallback
   definition with existing v2 request, observation, validation, and replay
   evidence; free-form communication remains deferred.
+- Reconciled M2 causal/information evidence for effect provenance, non-binary
+  outcomes, hidden-state/report coverage, and complete-replay inspection;
+  vision/belief and automatic-advance work remain deferred.
 
 ## 0.1.50 — 2026-08-06
 
