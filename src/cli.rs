@@ -75,6 +75,20 @@ pub enum CliReadError<'a> {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum CliWriteRequest<'a> {
+    Message { text: &'a str },
+    Plan { text: &'a str },
+    Contingency { text: &'a str },
+    Commit,
+    Advance,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum CliWriteError {
+    NotWriteCommand { verb: &'static str },
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum CliCommandAvailability {
     ReadOnlyAdapter,
     GrammarOnly,
@@ -254,6 +268,19 @@ pub fn read_request(command: CliCommand<'_>) -> Result<CliReadRequest, CliReadEr
         )),
         CliCommand::Inspect(Some(target)) => Err(CliReadError::UnknownInspectTarget { target }),
         _ => Err(CliReadError::NotReadCommand {
+            verb: command.canonical_name(),
+        }),
+    }
+}
+
+pub fn write_request(command: CliCommand<'_>) -> Result<CliWriteRequest<'_>, CliWriteError> {
+    match command {
+        CliCommand::Message(text) => Ok(CliWriteRequest::Message { text }),
+        CliCommand::Plan(text) => Ok(CliWriteRequest::Plan { text }),
+        CliCommand::Contingency(text) => Ok(CliWriteRequest::Contingency { text }),
+        CliCommand::Commit => Ok(CliWriteRequest::Commit),
+        CliCommand::Advance => Ok(CliWriteRequest::Advance),
+        _ => Err(CliWriteError::NotWriteCommand {
             verb: command.canonical_name(),
         }),
     }
@@ -455,5 +482,35 @@ mod tests {
         assert_eq!(entries[2].context, "read-only adapter");
         assert_eq!(entries[3].availability, CliCommandAvailability::GrammarOnly);
         assert!(entries.iter().all(|entry| !entry.summary.is_empty()));
+    }
+
+    #[test]
+    fn write_commands_preserve_payload_kinds_and_commit_boundary() {
+        assert_eq!(
+            write_request(CliCommand::Message("ping ally")),
+            Ok(CliWriteRequest::Message { text: "ping ally" })
+        );
+        assert_eq!(
+            write_request(CliCommand::Plan("stabilize")),
+            Ok(CliWriteRequest::Plan { text: "stabilize" })
+        );
+        assert_eq!(
+            write_request(CliCommand::Contingency("retreat if threat")),
+            Ok(CliWriteRequest::Contingency {
+                text: "retreat if threat"
+            })
+        );
+        assert_eq!(
+            write_request(CliCommand::Commit),
+            Ok(CliWriteRequest::Commit)
+        );
+        assert_eq!(
+            write_request(CliCommand::Advance),
+            Ok(CliWriteRequest::Advance)
+        );
+        assert_eq!(
+            write_request(CliCommand::Observe),
+            Err(CliWriteError::NotWriteCommand { verb: "observe" })
+        );
     }
 }

@@ -23,8 +23,9 @@ yet. M1 is complete as an internal, non-playable fixture; M2 remains a bounded
 lane contract rather than a user-facing host.
 
 The M3 CLI grammar is now a pure adapter module: it parses stable verbs and
-borrows payload text, maps observe/inspect/help to typed read requests, but it
-does not render, authorize, persist, or invoke the simulation.
+borrows payload text, maps observe/inspect/help to typed read requests, and maps
+planning verbs to distinct typed write requests, but it does not render,
+authorize, persist, or invoke the simulation.
 
 The target architecture is one authoritative Rust simulation product with thin
 human, agent, and research adapters. The strongest boundary is:
@@ -307,8 +308,8 @@ and an architecture update or ADR when it changes a consequential boundary.
   intent, and
   observation contracts are implemented internally, but they are not a
   playable scenario, external API, migration framework, or persistence service.
-- M3 has typed command and read-request contracts only; terminal I/O, host
-  lifecycle, domain mapping, and transcript execution remain open.
+- M3 has typed command, read-request, and write-request contracts only; terminal
+  I/O, host lifecycle, domain mapping, and transcript execution remain open.
 - M2 still lacks a communication system, full vision geometry, memory decay,
   automatic threat damage, no-choice host scheduling, adaptive pacing, a complete item/resource economy,
   external scenario serialization, a branch tree, and a broader debrief

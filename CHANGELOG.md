@@ -76,6 +76,16 @@ not increment the package version.
 - Updated canonical project-state documents to distinguish current v2 evidence
   from retired v1 history without marking the complete M2 exit criteria done.
 
+## 0.1.59 — 2026-08-06
+
+### Added
+
+- Added typed borrowed adapter write requests for `message`, `plan`,
+  `contingency`, `commit`, and `advance`, with distinct payload and commitment
+  boundaries.
+- Added focused write-request mapping tests; domain intent mapping, legality,
+  execution, and history mutation remain outside the adapter.
+
 ## 0.1.58 — 2026-08-06
 
 ### Added

@@ -743,6 +743,9 @@ playability, or human-experience evidence.
   render output, persist artifacts, or change the lane transition boundary.
 - `observe`, bounded `inspect`, and contextual `help` map to typed read-only
   requests with actor-visible target restrictions and static command metadata.
+- `message`, `plan`, `contingency`, `commit`, and `advance` map to distinct
+  typed borrowed write requests; the adapter does not map them to `LaneIntent`,
+  validate legality, execute a turn, or mutate history.
 
 ## Future
 
