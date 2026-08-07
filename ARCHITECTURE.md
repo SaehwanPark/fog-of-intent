@@ -23,9 +23,10 @@ yet. M1 is complete as an internal, non-playable fixture; M2 remains a bounded
 lane contract rather than a user-facing host.
 
 The M3 CLI grammar is now a pure adapter module: it parses stable verbs and
-borrows payload text, maps observe/inspect/help to typed read requests, and maps
-planning verbs to distinct typed write requests, but it does not render,
-authorize, persist, or invoke the simulation.
+borrows payload text, maps observe/inspect/help to typed read requests, maps
+planning verbs to distinct typed write requests, maps review/debrief/replay/branch
+to typed process requests, and maps save/load/undo/quit to typed session requests,
+but it does not render, authorize, persist, or invoke the simulation.
 
 The target architecture is one authoritative Rust simulation product with thin
 human, agent, and research adapters. The strongest boundary is:

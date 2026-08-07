@@ -749,6 +749,9 @@ playability, or human-experience evidence.
 - `review`, `debrief`, `replay`, and `branch` map to distinct typed borrowed
   process requests (`CliProcessRequest`); host flow execution, history inspection,
   and branch derivation remain open.
+- `save`, `load`, `undo`, and `quit` map to distinct typed borrowed session
+  requests (`CliSessionRequest`); persistence, uncommitted choice editing, and
+  session lifecycle execution remain open.
 
 ## Future
 
