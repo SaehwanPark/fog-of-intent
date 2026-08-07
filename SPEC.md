@@ -741,6 +741,8 @@ playability, or human-experience evidence.
   and unexpected arguments without reading simulation state.
 - The parser is an adapter contract only; it does not authorize domain actions,
   render output, persist artifacts, or change the lane transition boundary.
+- `observe`, bounded `inspect`, and contextual `help` map to typed read-only
+  requests with actor-visible target restrictions and static command metadata.
 
 ## Future
 

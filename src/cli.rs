@@ -55,6 +55,210 @@ pub enum CliParseError<'a> {
     UnexpectedArguments { verb: &'a str },
 }
 
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum CliInspectTarget {
+    CurrentObservation,
+    VisibleHistoryReport,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum CliReadRequest {
+    Help,
+    Observe,
+    Inspect(CliInspectTarget),
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum CliReadError<'a> {
+    NotReadCommand { verb: &'static str },
+    UnknownInspectTarget { target: &'a str },
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum CliCommandAvailability {
+    ReadOnlyAdapter,
+    GrammarOnly,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct CliHelpEntry {
+    pub name: &'static str,
+    pub usage: &'static str,
+    pub summary: &'static str,
+    pub context: &'static str,
+    pub availability: CliCommandAvailability,
+}
+
+pub struct CliHelpCatalog;
+
+pub static CLI_COMMAND_NAMES: [&str; 16] = [
+    "help",
+    "observe",
+    "inspect",
+    "message",
+    "plan",
+    "contingency",
+    "commit",
+    "advance",
+    "review",
+    "debrief",
+    "replay",
+    "branch",
+    "save",
+    "load",
+    "undo",
+    "quit",
+];
+
+pub static CLI_HELP_ENTRIES: [CliHelpEntry; 16] = [
+    CliHelpEntry {
+        name: "help",
+        usage: "help",
+        summary: "show command help",
+        context: "read-only adapter",
+        availability: CliCommandAvailability::ReadOnlyAdapter,
+    },
+    CliHelpEntry {
+        name: "observe",
+        usage: "observe",
+        summary: "request the actor-visible observation",
+        context: "read-only adapter",
+        availability: CliCommandAvailability::ReadOnlyAdapter,
+    },
+    CliHelpEntry {
+        name: "inspect",
+        usage: "inspect [observation|history]",
+        summary: "inspect bounded actor-visible projections",
+        context: "read-only adapter",
+        availability: CliCommandAvailability::ReadOnlyAdapter,
+    },
+    CliHelpEntry {
+        name: "message",
+        usage: "message <text>",
+        summary: "stage a bounded message payload",
+        context: "grammar only",
+        availability: CliCommandAvailability::GrammarOnly,
+    },
+    CliHelpEntry {
+        name: "plan",
+        usage: "plan <text>",
+        summary: "stage a plan payload",
+        context: "grammar only",
+        availability: CliCommandAvailability::GrammarOnly,
+    },
+    CliHelpEntry {
+        name: "contingency",
+        usage: "contingency <text>",
+        summary: "stage a contingency payload",
+        context: "grammar only",
+        availability: CliCommandAvailability::GrammarOnly,
+    },
+    CliHelpEntry {
+        name: "commit",
+        usage: "commit",
+        summary: "commit staged choices",
+        context: "grammar only",
+        availability: CliCommandAvailability::GrammarOnly,
+    },
+    CliHelpEntry {
+        name: "advance",
+        usage: "advance",
+        summary: "request window advancement",
+        context: "grammar only",
+        availability: CliCommandAvailability::GrammarOnly,
+    },
+    CliHelpEntry {
+        name: "review",
+        usage: "review",
+        summary: "request immediate review",
+        context: "grammar only",
+        availability: CliCommandAvailability::GrammarOnly,
+    },
+    CliHelpEntry {
+        name: "debrief",
+        usage: "debrief",
+        summary: "request a committed debrief",
+        context: "grammar only",
+        availability: CliCommandAvailability::GrammarOnly,
+    },
+    CliHelpEntry {
+        name: "replay",
+        usage: "replay [id]",
+        summary: "request replay inspection",
+        context: "grammar only",
+        availability: CliCommandAvailability::GrammarOnly,
+    },
+    CliHelpEntry {
+        name: "branch",
+        usage: "branch [id]",
+        summary: "request a bounded branch",
+        context: "grammar only",
+        availability: CliCommandAvailability::GrammarOnly,
+    },
+    CliHelpEntry {
+        name: "save",
+        usage: "save <id>",
+        summary: "save a run identifier",
+        context: "grammar only",
+        availability: CliCommandAvailability::GrammarOnly,
+    },
+    CliHelpEntry {
+        name: "load",
+        usage: "load <id>",
+        summary: "load a run identifier",
+        context: "grammar only",
+        availability: CliCommandAvailability::GrammarOnly,
+    },
+    CliHelpEntry {
+        name: "undo",
+        usage: "undo",
+        summary: "edit uncommitted local choices",
+        context: "grammar only",
+        availability: CliCommandAvailability::GrammarOnly,
+    },
+    CliHelpEntry {
+        name: "quit",
+        usage: "quit",
+        summary: "end the adapter session",
+        context: "grammar only",
+        availability: CliCommandAvailability::GrammarOnly,
+    },
+];
+
+impl CliHelpCatalog {
+    pub const fn command_names(self) -> &'static [&'static str; 16] {
+        &CLI_COMMAND_NAMES
+    }
+
+    pub const fn entries(self) -> &'static [CliHelpEntry; 16] {
+        &CLI_HELP_ENTRIES
+    }
+}
+
+pub const fn help_catalog() -> CliHelpCatalog {
+    CliHelpCatalog
+}
+
+pub fn read_request(command: CliCommand<'_>) -> Result<CliReadRequest, CliReadError<'_>> {
+    match command {
+        CliCommand::Help => Ok(CliReadRequest::Help),
+        CliCommand::Observe => Ok(CliReadRequest::Observe),
+        CliCommand::Inspect(None) => Ok(CliReadRequest::Inspect(
+            CliInspectTarget::CurrentObservation,
+        )),
+        CliCommand::Inspect(Some("observation")) => Ok(CliReadRequest::Inspect(
+            CliInspectTarget::CurrentObservation,
+        )),
+        CliCommand::Inspect(Some("history")) => Ok(CliReadRequest::Inspect(
+            CliInspectTarget::VisibleHistoryReport,
+        )),
+        CliCommand::Inspect(Some(target)) => Err(CliReadError::UnknownInspectTarget { target }),
+        _ => Err(CliReadError::NotReadCommand {
+            verb: command.canonical_name(),
+        }),
+    }
+}
+
 pub fn parse_command(line: &str) -> Result<CliCommand<'_>, CliParseError<'_>> {
     let trimmed = line.trim();
     if trimmed.is_empty() {
@@ -199,5 +403,57 @@ mod tests {
         assert_eq!(CliCommand::Message("text").canonical_name(), "message");
         assert_eq!(CliCommand::Branch(None).canonical_name(), "branch");
         assert_eq!(CliCommand::Quit.canonical_name(), "quit");
+    }
+
+    #[test]
+    fn read_commands_map_to_bounded_requests() {
+        assert_eq!(read_request(CliCommand::Help), Ok(CliReadRequest::Help));
+        assert_eq!(
+            read_request(CliCommand::Observe),
+            Ok(CliReadRequest::Observe)
+        );
+        assert_eq!(
+            read_request(CliCommand::Inspect(None)),
+            Ok(CliReadRequest::Inspect(
+                CliInspectTarget::CurrentObservation
+            ))
+        );
+        assert_eq!(
+            read_request(CliCommand::Inspect(Some("observation"))),
+            Ok(CliReadRequest::Inspect(
+                CliInspectTarget::CurrentObservation
+            ))
+        );
+        assert_eq!(
+            read_request(CliCommand::Inspect(Some("history"))),
+            Ok(CliReadRequest::Inspect(
+                CliInspectTarget::VisibleHistoryReport
+            ))
+        );
+        assert_eq!(
+            read_request(CliCommand::Inspect(Some("secret"))),
+            Err(CliReadError::UnknownInspectTarget { target: "secret" })
+        );
+        assert_eq!(
+            read_request(CliCommand::Commit),
+            Err(CliReadError::NotReadCommand { verb: "commit" })
+        );
+    }
+
+    #[test]
+    fn help_catalog_lists_every_stable_grammar_verb() {
+        let names = help_catalog().command_names();
+        assert_eq!(names.len(), 16);
+        assert_eq!(names[0], "help");
+        assert!(names.contains(&"observe"));
+        assert!(names.contains(&"inspect"));
+        assert!(names.contains(&"advance"));
+        assert!(names.contains(&"debrief"));
+        assert!(names.contains(&"quit"));
+        let entries = help_catalog().entries();
+        assert_eq!(entries[1].usage, "observe");
+        assert_eq!(entries[2].context, "read-only adapter");
+        assert_eq!(entries[3].availability, CliCommandAvailability::GrammarOnly);
+        assert!(entries.iter().all(|entry| !entry.summary.is_empty()));
     }
 }
