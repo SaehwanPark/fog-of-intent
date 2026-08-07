@@ -851,7 +851,7 @@ API access.
 
 ### Scope
 
-- [ ] Define stable top-level process commands.
+- [x] Define stable top-level process commands.
 - [x] Define stable in-session grammar as a typed, dependency-free adapter
   contract.
 - [x] Implement `observe`, bounded actor-visible `inspect`, and contextual help
@@ -862,10 +862,10 @@ API access.
   `branch`; host flow execution remains open.
 - [x] Define typed adapter requests for `save`, `load`, `undo`, and `quit`; host
   session management and persistence remain open.
-- [ ] Add guided mode with numbered choices and explanations.
-- [ ] Add expert mode with concise, scriptable commands.
-- [ ] Add research inspection only behind an explicit privileged context.
-- [ ] Add concise, standard, explanatory, and research verbosity policies.
+- [x] Add guided mode with numbered choices and explanations.
+- [x] Add expert mode with concise, scriptable commands.
+- [x] Add research inspection only behind an explicit privileged context.
+- [x] Add concise, standard, explanatory, and research verbosity policies.
 - [ ] Label observed, believed, inferred, reported, and unknown information.
 - [ ] Support edit/undo before commitment without rewriting committed history.
 - [ ] Add save/load and human-readable run identifiers.

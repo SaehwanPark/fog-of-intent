@@ -25,8 +25,12 @@ lane contract rather than a user-facing host.
 The M3 CLI grammar is now a pure adapter module: it parses stable verbs and
 borrows payload text, maps observe/inspect/help to typed read requests, maps
 planning verbs to distinct typed write requests, maps review/debrief/replay/branch
-to typed process requests, and maps save/load/undo/quit to typed session requests,
-but it does not render, authorize, persist, or invoke the simulation.
+to typed process requests, maps save/load/undo/quit to typed session requests,
+and maps top-level commands (`play`, `replay`, `branch`, `experiment`, `export`,
+`validate`, `mcp`, `help`, `version`) with interaction modes (`Guided`, `Expert`),
+verbosity policies (`Concise`, `Standard`, `Explanatory`, `Research`), and explicit
+privilege guards (`Unprivileged`, `Privileged`) without rendering, authorizing,
+persisting, or invoking the simulation.
 
 The target architecture is one authoritative Rust simulation product with thin
 human, agent, and research adapters. The strongest boundary is:

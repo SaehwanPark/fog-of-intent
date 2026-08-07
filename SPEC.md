@@ -752,6 +752,13 @@ playability, or human-experience evidence.
 - `save`, `load`, `undo`, and `quit` map to distinct typed borrowed session
   requests (`CliSessionRequest`); persistence, uncommitted choice editing, and
   session lifecycle execution remain open.
+- Top-level process commands (`play`, `replay`, `branch`, `experiment`, `export`,
+  `validate`, `mcp`, `help`, `version`) parse positional and flag options, map
+  to typed requests (`CliTopLevelRequest`), enforce interaction modes (`Guided`,
+  `Expert`), verbosity policies (`Concise`, `Standard`, `Explanatory`, `Research`),
+  and explicit privilege guards (`Unprivileged`, `Privileged`).
+- `CliTopLevelHelpCatalog` documents top-level subcommands and their usage
+  without adding runtime dependencies or executing simulation state.
 
 ## Future
 
