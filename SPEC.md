@@ -746,6 +746,9 @@ playability, or human-experience evidence.
 - `message`, `plan`, `contingency`, `commit`, and `advance` map to distinct
   typed borrowed write requests; the adapter does not map them to `LaneIntent`,
   validate legality, execute a turn, or mutate history.
+- `review`, `debrief`, `replay`, and `branch` map to distinct typed borrowed
+  process requests (`CliProcessRequest`); host flow execution, history inspection,
+  and branch derivation remain open.
 
 ## Future
 

@@ -90,9 +90,23 @@ pub enum CliWriteError {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum CliProcessRequest<'a> {
+    Review,
+    Debrief,
+    Replay { run_id: Option<&'a str> },
+    Branch { point_id: Option<&'a str> },
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum CliProcessError {
+    NotProcessCommand { verb: &'static str },
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum CliCommandAvailability {
     ReadOnlyAdapter,
     WriteAdapter,
+    ProcessAdapter,
     GrammarOnly,
 }
 
@@ -187,29 +201,29 @@ pub static CLI_HELP_ENTRIES: [CliHelpEntry; 16] = [
         name: "review",
         usage: "review",
         summary: "request immediate review",
-        context: "grammar only",
-        availability: CliCommandAvailability::GrammarOnly,
+        context: "process adapter",
+        availability: CliCommandAvailability::ProcessAdapter,
     },
     CliHelpEntry {
         name: "debrief",
         usage: "debrief",
         summary: "request a committed debrief",
-        context: "grammar only",
-        availability: CliCommandAvailability::GrammarOnly,
+        context: "process adapter",
+        availability: CliCommandAvailability::ProcessAdapter,
     },
     CliHelpEntry {
         name: "replay",
         usage: "replay [id]",
         summary: "request replay inspection",
-        context: "grammar only",
-        availability: CliCommandAvailability::GrammarOnly,
+        context: "process adapter",
+        availability: CliCommandAvailability::ProcessAdapter,
     },
     CliHelpEntry {
         name: "branch",
         usage: "branch [id]",
         summary: "request a bounded branch",
-        context: "grammar only",
-        availability: CliCommandAvailability::GrammarOnly,
+        context: "process adapter",
+        availability: CliCommandAvailability::ProcessAdapter,
     },
     CliHelpEntry {
         name: "save",
@@ -292,6 +306,18 @@ pub fn write_request(command: CliCommand<'_>) -> Result<CliWriteRequest<'_>, Cli
         CliCommand::Commit => Ok(CliWriteRequest::Commit),
         CliCommand::Advance => Ok(CliWriteRequest::Advance),
         _ => Err(CliWriteError::NotWriteCommand {
+            verb: command.canonical_name(),
+        }),
+    }
+}
+
+pub fn process_request(command: CliCommand<'_>) -> Result<CliProcessRequest<'_>, CliProcessError> {
+    match command {
+        CliCommand::Review => Ok(CliProcessRequest::Review),
+        CliCommand::Debrief => Ok(CliProcessRequest::Debrief),
+        CliCommand::Replay(run_id) => Ok(CliProcessRequest::Replay { run_id }),
+        CliCommand::Branch(point_id) => Ok(CliProcessRequest::Branch { point_id }),
+        _ => Err(CliProcessError::NotProcessCommand {
             verb: command.canonical_name(),
         }),
     }
@@ -538,6 +564,42 @@ mod tests {
         assert_eq!(
             write_request(CliCommand::Plan("")),
             Err(CliWriteError::EmptyPayload { verb: "plan" })
+        );
+    }
+
+    #[test]
+    fn process_commands_map_review_debrief_replay_and_branch_requests() {
+        assert_eq!(
+            process_request(CliCommand::Review),
+            Ok(CliProcessRequest::Review)
+        );
+        assert_eq!(
+            process_request(CliCommand::Debrief),
+            Ok(CliProcessRequest::Debrief)
+        );
+        assert_eq!(
+            process_request(CliCommand::Replay(None)),
+            Ok(CliProcessRequest::Replay { run_id: None })
+        );
+        assert_eq!(
+            process_request(CliCommand::Replay(Some("run-123"))),
+            Ok(CliProcessRequest::Replay {
+                run_id: Some("run-123")
+            })
+        );
+        assert_eq!(
+            process_request(CliCommand::Branch(None)),
+            Ok(CliProcessRequest::Branch { point_id: None })
+        );
+        assert_eq!(
+            process_request(CliCommand::Branch(Some("rec-0"))),
+            Ok(CliProcessRequest::Branch {
+                point_id: Some("rec-0")
+            })
+        );
+        assert_eq!(
+            process_request(CliCommand::Observe),
+            Err(CliProcessError::NotProcessCommand { verb: "observe" })
         );
     }
 }
