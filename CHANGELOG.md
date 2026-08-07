@@ -76,6 +76,16 @@ not increment the package version.
 - Updated canonical project-state documents to distinguish current v2 evidence
   from retired v1 history without marking the complete M2 exit criteria done.
 
+## 0.1.60 — 2026-08-07
+
+### Added
+
+- Added typed borrowed adapter process requests for `review`, `debrief`,
+  `replay`, and `branch` verbs with optional run and point identifier boundaries.
+- Added focused process-request mapping tests; host execution, history inspection,
+  and branch derivation remain outside the adapter. Help metadata now identifies
+  these four verbs as process-adapter requests.
+
 ## 0.1.59 — 2026-08-06
 
 ### Added

@@ -858,7 +858,8 @@ API access.
   as typed adapter read requests; terminal rendering remains open.
 - [x] Define typed adapter requests for `message`, `plan`, contingency,
   `commit`, and `advance`; host flow execution remains open.
-- [ ] Implement `review`, `debrief`, `replay`, and `branch` flows.
+- [x] Define typed adapter requests for `review`, `debrief`, `replay`, and
+  `branch`; host flow execution remains open.
 - [ ] Add guided mode with numbered choices and explanations.
 - [ ] Add expert mode with concise, scriptable commands.
 - [ ] Add research inspection only behind an explicit privileged context.
