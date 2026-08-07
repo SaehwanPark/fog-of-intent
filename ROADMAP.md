@@ -854,7 +854,8 @@ API access.
 - [ ] Define stable top-level process commands.
 - [x] Define stable in-session grammar as a typed, dependency-free adapter
   contract.
-- [ ] Implement `observe`, bounded `inspect`, and contextual help.
+- [x] Implement `observe`, bounded actor-visible `inspect`, and contextual help
+  as typed adapter read requests; terminal rendering remains open.
 - [ ] Implement structured `message`, `plan`, contingency, `commit`, and
   `advance` flows.
 - [ ] Implement `review`, `debrief`, `replay`, and `branch` flows.

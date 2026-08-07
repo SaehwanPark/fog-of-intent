@@ -76,6 +76,15 @@ not increment the package version.
 - Updated canonical project-state documents to distinguish current v2 evidence
   from retired v1 history without marking the complete M2 exit criteria done.
 
+## 0.1.58 — 2026-08-06
+
+### Added
+
+- Added typed read-only adapter requests for `observe`, bounded `inspect`, and
+  contextual `help`, with a static catalog of stable grammar verbs.
+- Added actor-visible inspect-target restrictions and read-mapping tests without
+  terminal I/O, hidden-state access, or domain mutation.
+
 ## 0.1.57 — 2026-08-06
 
 ### Added

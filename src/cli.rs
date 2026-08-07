@@ -55,6 +55,74 @@ pub enum CliParseError<'a> {
     UnexpectedArguments { verb: &'a str },
 }
 
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum CliInspectTarget {
+    CurrentState,
+    History,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum CliReadRequest {
+    Help,
+    Observe,
+    Inspect(CliInspectTarget),
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum CliReadError<'a> {
+    NotReadCommand { verb: &'static str },
+    UnknownInspectTarget { target: &'a str },
+}
+
+pub struct CliHelpCatalog;
+
+pub static CLI_COMMAND_NAMES: [&str; 16] = [
+    "help",
+    "observe",
+    "inspect",
+    "message",
+    "plan",
+    "contingency",
+    "commit",
+    "advance",
+    "review",
+    "debrief",
+    "replay",
+    "branch",
+    "save",
+    "load",
+    "undo",
+    "quit",
+];
+
+impl CliHelpCatalog {
+    pub const fn command_names(self) -> &'static [&'static str; 16] {
+        &CLI_COMMAND_NAMES
+    }
+}
+
+pub const fn help_catalog() -> CliHelpCatalog {
+    CliHelpCatalog
+}
+
+pub fn read_request(command: CliCommand<'_>) -> Result<CliReadRequest, CliReadError<'_>> {
+    match command {
+        CliCommand::Help => Ok(CliReadRequest::Help),
+        CliCommand::Observe => Ok(CliReadRequest::Observe),
+        CliCommand::Inspect(None) => Ok(CliReadRequest::Inspect(CliInspectTarget::CurrentState)),
+        CliCommand::Inspect(Some("state")) => {
+            Ok(CliReadRequest::Inspect(CliInspectTarget::CurrentState))
+        }
+        CliCommand::Inspect(Some("history")) => {
+            Ok(CliReadRequest::Inspect(CliInspectTarget::History))
+        }
+        CliCommand::Inspect(Some(target)) => Err(CliReadError::UnknownInspectTarget { target }),
+        _ => Err(CliReadError::NotReadCommand {
+            verb: command.canonical_name(),
+        }),
+    }
+}
+
 pub fn parse_command(line: &str) -> Result<CliCommand<'_>, CliParseError<'_>> {
     let trimmed = line.trim();
     if trimmed.is_empty() {
@@ -199,5 +267,42 @@ mod tests {
         assert_eq!(CliCommand::Message("text").canonical_name(), "message");
         assert_eq!(CliCommand::Branch(None).canonical_name(), "branch");
         assert_eq!(CliCommand::Quit.canonical_name(), "quit");
+    }
+
+    #[test]
+    fn read_commands_map_to_bounded_requests() {
+        assert_eq!(read_request(CliCommand::Help), Ok(CliReadRequest::Help));
+        assert_eq!(
+            read_request(CliCommand::Observe),
+            Ok(CliReadRequest::Observe)
+        );
+        assert_eq!(
+            read_request(CliCommand::Inspect(None)),
+            Ok(CliReadRequest::Inspect(CliInspectTarget::CurrentState))
+        );
+        assert_eq!(
+            read_request(CliCommand::Inspect(Some("history"))),
+            Ok(CliReadRequest::Inspect(CliInspectTarget::History))
+        );
+        assert_eq!(
+            read_request(CliCommand::Inspect(Some("secret"))),
+            Err(CliReadError::UnknownInspectTarget { target: "secret" })
+        );
+        assert_eq!(
+            read_request(CliCommand::Commit),
+            Err(CliReadError::NotReadCommand { verb: "commit" })
+        );
+    }
+
+    #[test]
+    fn help_catalog_lists_every_stable_grammar_verb() {
+        let names = help_catalog().command_names();
+        assert_eq!(names.len(), 16);
+        assert_eq!(names[0], "help");
+        assert!(names.contains(&"observe"));
+        assert!(names.contains(&"inspect"));
+        assert!(names.contains(&"advance"));
+        assert!(names.contains(&"debrief"));
+        assert!(names.contains(&"quit"));
     }
 }
