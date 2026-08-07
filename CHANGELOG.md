@@ -76,6 +76,20 @@ not increment the package version.
 - Updated canonical project-state documents to distinguish current v2 evidence
   from retired v1 history without marking the complete M2 exit criteria done.
 
+## 0.1.62 — 2026-08-07
+
+### Added
+
+- Added typed top-level process commands for `play`, `replay`, `branch`, `experiment`,
+  `export`, `validate`, `mcp`, `help`, and `version`.
+- Added `CliInteractionMode` (`Guided` default and `Expert`) and `CliVerbosity`
+  (`Concise`, `Standard` default, `Explanatory`, `Research`) policies.
+- Added `CliPrivilegeLevel` (`Unprivileged` and `Privileged`), enforcing that research
+  verbosity and unredacted exports fail closed under standard unprivileged contexts.
+- Added pure, dependency-free parsing and validation for top-level arguments and flags.
+- Added `CliTopLevelHelpCatalog` and focused top-level command, mode, verbosity, privilege,
+  and catalog unit tests.
+
 ## 0.1.61 — 2026-08-07
 
 ### Added
