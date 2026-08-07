@@ -10,9 +10,10 @@ validate, resolve, commit, or advance simulation state.
 
 `message`, `plan`, and `contingency` become distinct borrowed-payload variants;
 `commit` and `advance` become separate payload-free variants. Mapping any
-read-only or history verb returns `CliWriteError::NotWriteCommand`. Empty
-payloads are already rejected by the grammar parser; the mapper performs no
-additional domain interpretation.
+read-only or history verb returns `CliWriteError::NotWriteCommand`. The mapper
+also rejects empty or whitespace-only payloads when callers construct
+`CliCommand` values directly; this preserves the parser invariant without
+performing domain interpretation.
 
 ## Verification Contract
 

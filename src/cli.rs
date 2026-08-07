@@ -86,11 +86,13 @@ pub enum CliWriteRequest<'a> {
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum CliWriteError {
     NotWriteCommand { verb: &'static str },
+    EmptyPayload { verb: &'static str },
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum CliCommandAvailability {
     ReadOnlyAdapter,
+    WriteAdapter,
     GrammarOnly,
 }
 
@@ -150,36 +152,36 @@ pub static CLI_HELP_ENTRIES: [CliHelpEntry; 16] = [
         name: "message",
         usage: "message <text>",
         summary: "stage a bounded message payload",
-        context: "grammar only",
-        availability: CliCommandAvailability::GrammarOnly,
+        context: "write adapter",
+        availability: CliCommandAvailability::WriteAdapter,
     },
     CliHelpEntry {
         name: "plan",
         usage: "plan <text>",
         summary: "stage a plan payload",
-        context: "grammar only",
-        availability: CliCommandAvailability::GrammarOnly,
+        context: "write adapter",
+        availability: CliCommandAvailability::WriteAdapter,
     },
     CliHelpEntry {
         name: "contingency",
         usage: "contingency <text>",
         summary: "stage a contingency payload",
-        context: "grammar only",
-        availability: CliCommandAvailability::GrammarOnly,
+        context: "write adapter",
+        availability: CliCommandAvailability::WriteAdapter,
     },
     CliHelpEntry {
         name: "commit",
         usage: "commit",
         summary: "commit staged choices",
-        context: "grammar only",
-        availability: CliCommandAvailability::GrammarOnly,
+        context: "write adapter",
+        availability: CliCommandAvailability::WriteAdapter,
     },
     CliHelpEntry {
         name: "advance",
         usage: "advance",
         summary: "request window advancement",
-        context: "grammar only",
-        availability: CliCommandAvailability::GrammarOnly,
+        context: "write adapter",
+        availability: CliCommandAvailability::WriteAdapter,
     },
     CliHelpEntry {
         name: "review",
@@ -275,9 +277,18 @@ pub fn read_request(command: CliCommand<'_>) -> Result<CliReadRequest, CliReadEr
 
 pub fn write_request(command: CliCommand<'_>) -> Result<CliWriteRequest<'_>, CliWriteError> {
     match command {
-        CliCommand::Message(text) => Ok(CliWriteRequest::Message { text }),
-        CliCommand::Plan(text) => Ok(CliWriteRequest::Plan { text }),
-        CliCommand::Contingency(text) => Ok(CliWriteRequest::Contingency { text }),
+        CliCommand::Message(text) if !text.trim().is_empty() => {
+            Ok(CliWriteRequest::Message { text })
+        }
+        CliCommand::Plan(text) if !text.trim().is_empty() => Ok(CliWriteRequest::Plan { text }),
+        CliCommand::Contingency(text) if !text.trim().is_empty() => {
+            Ok(CliWriteRequest::Contingency { text })
+        }
+        CliCommand::Message(_) => Err(CliWriteError::EmptyPayload { verb: "message" }),
+        CliCommand::Plan(_) => Err(CliWriteError::EmptyPayload { verb: "plan" }),
+        CliCommand::Contingency(_) => Err(CliWriteError::EmptyPayload {
+            verb: "contingency",
+        }),
         CliCommand::Commit => Ok(CliWriteRequest::Commit),
         CliCommand::Advance => Ok(CliWriteRequest::Advance),
         _ => Err(CliWriteError::NotWriteCommand {
@@ -480,7 +491,15 @@ mod tests {
         let entries = help_catalog().entries();
         assert_eq!(entries[1].usage, "observe");
         assert_eq!(entries[2].context, "read-only adapter");
-        assert_eq!(entries[3].availability, CliCommandAvailability::GrammarOnly);
+        assert_eq!(
+            entries[3].availability,
+            CliCommandAvailability::WriteAdapter
+        );
+        assert!(
+            entries[4..8]
+                .iter()
+                .all(|entry| entry.availability == CliCommandAvailability::WriteAdapter)
+        );
         assert!(entries.iter().all(|entry| !entry.summary.is_empty()));
     }
 
@@ -511,6 +530,14 @@ mod tests {
         assert_eq!(
             write_request(CliCommand::Observe),
             Err(CliWriteError::NotWriteCommand { verb: "observe" })
+        );
+        assert_eq!(
+            write_request(CliCommand::Message("   ")),
+            Err(CliWriteError::EmptyPayload { verb: "message" })
+        );
+        assert_eq!(
+            write_request(CliCommand::Plan("")),
+            Err(CliWriteError::EmptyPayload { verb: "plan" })
         );
     }
 }
