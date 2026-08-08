@@ -16,7 +16,8 @@ tests, and diff checks remain required.
 
 ## Limits
 
-This is an in-process read-only actor-boundary command with host-local draft
-mutation only. It does not deliver values or define communication, transport,
+This is an in-process actor-boundary command with host-local draft mutation
+only; it is read-only with respect to observation and history. It does not
+deliver values or define communication, transport,
 persistence, reconnect, simultaneous-draft, provider, or free-form plan
 semantics.
