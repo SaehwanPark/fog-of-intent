@@ -2,9 +2,10 @@
 
 ## Disposition
 
-Pending independent three-pass review.
+PASS — no actionable findings after independent three-pass review at
+implementation/evidence head `cd5ae03`.
 
-## Scope to review
+## Scope reviewed
 
 - The report binds exact schema, rule, threshold, and three status IDs.
 - Magnitudes 2 and 1 classify above and below the inclusive threshold.
@@ -12,11 +13,13 @@ Pending independent three-pass review.
 - The projection is pure, fixed-fixture, and adds no outlier or replay
   authority.
 
-## Evidence target
+## Evidence
 
 One focused agent regression, 36 focused agent tests within 249 Rust unit
 tests, 7 binary tests, and 3 RustDoc tests, 15 Python tests, formatter, Clippy
-with warnings denied, repository checker, and diff checks must pass.
+with warnings denied, repository checker, and diff checks all pass at
+`cd5ae03`. The regression directly proves magnitude 1 below and magnitude 2
+at the inclusive threshold, plus unchanged `no_candidate` handling.
 
 ## Limits
 
@@ -26,4 +29,4 @@ population inference, persistence, providers, and human evidence remain open.
 
 ## Required fixes
 
-To be determined by independent review.
+None. The signal remains provisional, reproducible, and non-authoritative.
