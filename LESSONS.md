@@ -224,6 +224,7 @@ canonical policy instead of duplicating it.
   different questions and require different methods.
 - Resolution: Check stable lowercase labels, newline structure, and sanitized
   control characters over a representative output/error transcript, while
-  keeping terminal I/O and human keyboard/screen-reader inspection deferred.
+  leaving the existing stdin/stdout adapter unchanged and deferring only
+  terminal-specific prompts/focus plus human keyboard/screen-reader inspection.
 - Prevention: Name machine-checkable text shape separately from accessibility
   validation in roadmap, QA, and handoff documents.

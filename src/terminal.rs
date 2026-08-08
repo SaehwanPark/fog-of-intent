@@ -411,9 +411,11 @@ fn window_name(window: ScenarioWindow) -> &'static str {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::command_loop::CliCommandLoop;
   use crate::host::CliScenarioHost;
   use crate::kernel::{DrawId, InputTrace, StreamId};
   use crate::lane::{LaneDamage, LaneExecutionInputs, LaneResolvedInputs, LaneWaveResult};
+  use std::io::Cursor;
 
   #[test]
   fn output_is_plain_labeled_text_for_empty_and_complete_states() {
@@ -492,7 +494,6 @@ mod tests {
   fn representative_transcript_has_plain_labeled_lines() {
     let mut host = CliScenarioHost::fixture();
     for command in [
-      "",
       "help",
       "observe",
       "message ping ally",
@@ -506,11 +507,16 @@ mod tests {
       "debrief",
       "quit",
     ] {
-      match host.apply_line(command) {
-        Ok(output) => assert_plain_labeled_lines(&render_output(&output)),
-        Err(error) => assert_plain_labeled_lines(&format!("{}\n", render_error(&error))),
-      }
+      let output = host.apply_line(command).expect("representative output");
+      assert_plain_labeled_lines(&render_output(&output));
     }
+
+    let mut command_loop = CliCommandLoop::fixture();
+    let mut output = Vec::new();
+    command_loop
+      .run(Cursor::new("\nquit\n"), &mut output)
+      .expect("command-loop error transcript");
+    assert_plain_labeled_lines(&String::from_utf8(output).expect("plain UTF-8 transcript"));
   }
 
   #[test]

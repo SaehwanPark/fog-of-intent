@@ -17,5 +17,6 @@ Python checks, and diff checks must pass before handoff.
 
 ## Open boundaries
 
-Terminal I/O, prompts, focus management, screen-reader semantics, human
-keyboard-only inspection, and complete reference-client usability remain open.
+The existing line-oriented stdin/stdout adapter remains delivered. Terminal-
+specific prompts, focus management, screen-reader semantics, human keyboard-only
+inspection, and complete reference-client usability remain open.
