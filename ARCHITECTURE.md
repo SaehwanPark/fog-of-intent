@@ -130,7 +130,7 @@ authoritative history. An opt-in seeded tie path accepts only an explicit
 policy seed bundle, and the library-only decision replay record remains
 outside transition, host history, and durable persistence authority.
 
-`src/protocol.rs` owns the bounded actor observation/action/commit DTO projection. It
+`src/protocol.rs` owns the bounded actor observation/action/commit/draft-receipt DTO projection. It
 maps primitive actor-visible fields and closed intent IDs without exposing
 internal observation/request types as a transport contract; host validation
 still owns legality. It also maps codec failures to the versioned,
@@ -141,9 +141,10 @@ projections plus actor-action validation and submission entry points: it delegat
 validator and closes a fixture window only after successful validation and
 history append.
 `ActorDraftDto` remains a bounded metadata envelope in the protocol edge, while
-`src/host.rs` owns its observation-bound pre-commit staging. Staging replaces
-one internal draft field but does not add communication authority or transition
-authority. `ActorDebriefDto` is a committed-facts summary only; the host derives
+`src/host.rs` owns its observation-bound pre-commit staging and its
+`ActorDraftReceiptDto` acknowledgement. The receipt contains no draft value;
+staging replaces one internal draft field but does not add communication
+authority or transition authority. `ActorDebriefDto` is a committed-facts summary only; the host derives
 it from the existing complete lane report and keeps detailed causal fields,
 replay identity, and persistence outside the protocol contract.
 

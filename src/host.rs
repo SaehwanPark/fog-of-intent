@@ -21,8 +21,8 @@ use crate::lane::{
 use crate::protocol::{
   ActorActionDto, ActorActionResultDto, ActorActionResultOutcome, ActorActionResultWindow,
   ActorCommitDto, ActorCommitResultDto, ActorDebriefDto, ActorDraftDto, ActorDraftField,
-  ActorHistoryDto, ActorHistoryStatus, ActorObservationDto, ActorProtocolError,
-  ActorProtocolErrorCode, ActorProtocolRepairHint,
+  ActorDraftReceiptDto, ActorHistoryDto, ActorHistoryStatus, ActorObservationDto,
+  ActorProtocolError, ActorProtocolErrorCode, ActorProtocolRepairHint,
 };
 use crate::run_store::{CliRunStore, CliRunStoreError};
 
@@ -305,6 +305,18 @@ impl CliScenarioHost {
     Ok(CliHostOutput::DraftStaged {
       field: draft.field().id(),
     })
+  }
+
+  /// Stage one bounded actor draft field and acknowledge its host receipt.
+  pub fn stage_actor_draft_receipt(
+    &mut self,
+    draft: ActorDraftDto,
+  ) -> Result<ActorDraftReceiptDto, ActorProtocolError> {
+    let observer = draft.observer();
+    let observation_id = draft.observation_id();
+    let field = draft.field();
+    self.stage_actor_draft(draft)?;
+    Ok(ActorDraftReceiptDto::new(observer, observation_id, field))
   }
 
   /// Commit one observation-bound actor intent without advancing the host.
@@ -1617,6 +1629,54 @@ mod tests {
         ActorProtocolRepairHint::StartNewSession,
       ))
     );
+  }
+
+  #[test]
+  fn actor_draft_receipt_acknowledges_existing_staging_without_advancing() {
+    let mut host = CliScenarioHost::fixture();
+    let first = host.observation();
+    let draft = ActorDraftDto::new(
+      first.observer().value(),
+      first.observation_id().value(),
+      ActorDraftField::Plan,
+      "contest",
+    )
+    .expect("draft value is bounded");
+    let receipt = host
+      .stage_actor_draft_receipt(draft)
+      .expect("staging receipt succeeds");
+    assert_eq!(
+      receipt,
+      ActorDraftReceiptDto::new(
+        first.observer().value(),
+        first.observation_id().value(),
+        ActorDraftField::Plan,
+      )
+    );
+    assert_eq!(ActorDraftReceiptDto::decode(&receipt.encode()), Ok(receipt));
+    assert_eq!(host.record_count(), 0);
+    assert_eq!(host.observation(), first);
+
+    host.apply_line("commit").expect("staged plan commits");
+    host.apply_line("advance").expect("first window advances");
+    let second = host.observation();
+    let second_draft = ActorDraftDto::new(
+      second.observer().value(),
+      second.observation_id().value(),
+      ActorDraftField::Contingency,
+      "retreat if threat",
+    )
+    .expect("second draft value is bounded");
+    let second_receipt = host
+      .stage_actor_draft_receipt(second_draft)
+      .expect("second-window receipt succeeds");
+    assert_eq!(second_receipt.field(), ActorDraftField::Contingency);
+    assert_eq!(
+      second_receipt.observation_id(),
+      second.observation_id().value()
+    );
+    assert_eq!(host.record_count(), 1);
+    assert_eq!(host.observation(), second);
   }
 
   #[test]

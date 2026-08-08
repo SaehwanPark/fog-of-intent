@@ -36,6 +36,9 @@ pub const ACTOR_COMMIT_RESULT_SCHEMA: &str = "m5-actor-commit-result-v1";
 /// Versioned actor message/plan/contingency metadata identity.
 pub const ACTOR_DRAFT_SCHEMA: &str = "m5-actor-draft-v1";
 
+/// Versioned actor draft-staging acknowledgement identity.
+pub const ACTOR_DRAFT_RECEIPT_SCHEMA: &str = "m5-actor-draft-receipt-v1";
+
 /// Versioned actor-visible bounded history-status identity.
 pub const ACTOR_HISTORY_SCHEMA: &str = "m5-actor-history-v1";
 
@@ -1017,6 +1020,89 @@ impl ActorDraftDto {
   }
 }
 
+/// Bounded actor-safe acknowledgement after host-owned draft staging.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ActorDraftReceiptDto {
+  schema: &'static str,
+  observer: u8,
+  observation_id: u64,
+  field: ActorDraftField,
+}
+
+impl ActorDraftReceiptDto {
+  pub const fn new(observer: u8, observation_id: u64, field: ActorDraftField) -> Self {
+    Self {
+      schema: ACTOR_DRAFT_RECEIPT_SCHEMA,
+      observer,
+      observation_id,
+      field,
+    }
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn observer(self) -> u8 {
+    self.observer
+  }
+
+  pub const fn observation_id(self) -> u64 {
+    self.observation_id
+  }
+
+  pub const fn field(self) -> ActorDraftField {
+    self.field
+  }
+
+  /// Encode the bounded draft receipt as stable line-oriented text.
+  pub fn encode(self) -> String {
+    format!(
+      "schema={}\nobserver={}\nobservation_id={}\nfield={}\n",
+      self.schema,
+      self.observer,
+      self.observation_id,
+      self.field.id()
+    )
+  }
+
+  /// Decode a bounded draft receipt without host or transition authority.
+  pub fn decode(input: &str) -> Result<Self, ActorProtocolCodecError> {
+    let fields = parse_fields(input, 4)?;
+    let mut schema = None;
+    let mut observer = None;
+    let mut observation_id = None;
+    let mut field = None;
+    for (key, value) in fields {
+      let slot = match key {
+        "schema" => &mut schema,
+        "observer" => &mut observer,
+        "observation_id" => &mut observation_id,
+        "field" => &mut field,
+        _ => return Err(ActorProtocolCodecError::UnknownField),
+      };
+      if slot.is_some() {
+        return Err(ActorProtocolCodecError::DuplicateField);
+      }
+      *slot = Some(value);
+    }
+    if schema != Some(ACTOR_DRAFT_RECEIPT_SCHEMA) {
+      return Err(ActorProtocolCodecError::UnsupportedSchema);
+    }
+    Ok(Self::new(
+      observer
+        .ok_or(ActorProtocolCodecError::MissingField)?
+        .parse::<u8>()
+        .map_err(|_| ActorProtocolCodecError::InvalidValue)?,
+      observation_id
+        .ok_or(ActorProtocolCodecError::MissingField)?
+        .parse::<u64>()
+        .map_err(|_| ActorProtocolCodecError::InvalidValue)?,
+      ActorDraftField::parse_id(field.ok_or(ActorProtocolCodecError::MissingField)?)?,
+    ))
+  }
+}
+
 /// Closed actor-visible lifecycle status for the bounded fixture history.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ActorHistoryStatus {
@@ -1772,6 +1858,75 @@ mod tests {
         "schema=m5-actor-draft-v1\nobserver=1\nobservation_id=36\nfield=plan\nvalue=unknown\n"
       ),
       Err(ActorProtocolCodecError::InvalidValue)
+    );
+  }
+
+  #[test]
+  fn actor_draft_receipt_codec_is_bounded_and_payload_free() {
+    for field in [
+      ActorDraftField::Message,
+      ActorDraftField::Plan,
+      ActorDraftField::Contingency,
+    ] {
+      let receipt = ActorDraftReceiptDto::new(1, 36, field);
+      assert_eq!(receipt.schema(), "m5-actor-draft-receipt-v1");
+      assert_eq!(receipt.observer(), 1);
+      assert_eq!(receipt.observation_id(), 36);
+      assert_eq!(receipt.field(), field);
+      if field == ActorDraftField::Message {
+        assert_eq!(
+          receipt.encode(),
+          "schema=m5-actor-draft-receipt-v1\nobserver=1\nobservation_id=36\nfield=message\n"
+        );
+      }
+      assert_eq!(ActorDraftReceiptDto::decode(&receipt.encode()), Ok(receipt));
+      assert!(!format!("{receipt:?}").contains("value"));
+      assert!(!format!("{receipt:?}").contains("StateHash"));
+    }
+    assert_eq!(
+      ActorDraftReceiptDto::decode(
+        "schema=m5-actor-draft-receipt-v1\nobserver=1\nobservation_id=36\nunknown=message\n"
+      ),
+      Err(ActorProtocolCodecError::UnknownField)
+    );
+    assert_eq!(
+      ActorDraftReceiptDto::decode(
+        "schema=m5-actor-draft-receipt-v1\nobserver=1\nobserver=1\nfield=message\n"
+      ),
+      Err(ActorProtocolCodecError::DuplicateField)
+    );
+    assert_eq!(
+      ActorDraftReceiptDto::decode(
+        "schema=m5-actor-draft-receipt-v1\nobserver=1\nobservation_id=36\n"
+      ),
+      Err(ActorProtocolCodecError::MissingField)
+    );
+    assert_eq!(
+      ActorDraftReceiptDto::decode(
+        "schema=m5-actor-draft-receipt-v0\nobserver=1\nobservation_id=36\nfield=message\n"
+      ),
+      Err(ActorProtocolCodecError::UnsupportedSchema)
+    );
+    assert_eq!(
+      ActorDraftReceiptDto::decode(
+        "schema=m5-actor-draft-receipt-v1\nobserver=nope\nobservation_id=36\nfield=message\n"
+      ),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ActorDraftReceiptDto::decode(
+        "schema=m5-actor-draft-receipt-v1\nobserver=1\nobservation_id=36\nfield=unknown\n"
+      ),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ActorDraftReceiptDto::decode(
+        "schema=m5-actor-draft-receipt-v1\nobserver=1\nobservation_id=36\nfield=message\nextra=x\n"
+      ),
+      Err(ActorProtocolCodecError::UnexpectedLineCount {
+        expected: 4,
+        actual: 5,
+      })
     );
   }
 
