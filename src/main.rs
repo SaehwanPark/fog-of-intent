@@ -1,11 +1,16 @@
 use std::io;
+use std::process::ExitCode;
 
 use fog_of_intent::command_loop::CliCommandLoop;
 
-fn main() {
+fn main() -> ExitCode {
   let stdin = io::stdin();
   let mut stdout = io::stdout().lock();
-  if let Err(error) = CliCommandLoop::fixture().run(stdin.lock(), &mut stdout) {
-    eprintln!("command loop failed: {error}");
+  match CliCommandLoop::fixture().run(stdin.lock(), &mut stdout) {
+    Ok(_) => ExitCode::SUCCESS,
+    Err(error) => {
+      eprintln!("command loop failed: {error}");
+      ExitCode::FAILURE
+    }
   }
 }

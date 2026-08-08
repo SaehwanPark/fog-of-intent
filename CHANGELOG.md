@@ -102,7 +102,8 @@ not increment the package version.
 - Added the versioned `m3-cli-command-loop-v1` line-oriented stdin/stdout edge
   adapter and wired the binary to the deterministic two-window fixture host.
 - The loop renders plain text results and bounded errors, continues after
-  malformed commands, and exits cleanly on `quit` or end-of-input.
+  malformed commands, exits cleanly on `quit` or end-of-input, and propagates
+  fatal stdin/stdout errors to a non-success process status.
 
 ### Known limits
 

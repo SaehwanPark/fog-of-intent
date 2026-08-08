@@ -15,8 +15,8 @@ surface.
 ## Overview
 
 Fog of Intent is currently a single Rust 2024 package with no dependencies. The
-binary still prints `Hello, world!`; internal `kernel` and `lane` modules
-provide bounded deterministic transitions, in-memory history, replay,
+binary runs the bounded line-oriented fixture loop; internal `kernel` and
+`lane` modules provide bounded deterministic transitions, in-memory history, replay,
 branching, coordination, objective, and debrief fixtures. No playable scenario,
 persistence, MCP, research, or GUI component exists yet; the binary only wraps
 the bounded fixture loop. M1 is complete as an internal fixture; M2 remains a bounded lane contract,

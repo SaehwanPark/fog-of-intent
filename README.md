@@ -90,19 +90,27 @@ players?
 See the [canonical roadmap](ROADMAP.md) for dependencies, scope, promotion
 evidence, and explicit deferrals.
 
-## Run the Current Placeholder
+## Run the Bounded Fixture Command Loop
 
-Install a Rust toolchain with Rust 2024 edition support, then run:
+Install a Rust toolchain with Rust 2024 edition support, then send
+line-oriented commands to the deterministic two-window fixture loop:
 
 ```sh
-cargo run
+printf 'help\nquit\n' | cargo run
 ```
 
-Expected output today:
+Expected output begins with the command catalog and ends with:
 
 ```text
-Hello, world!
+help: commands
+command: name=help usage=help summary=show command help
+...
+quit: status=closed
 ```
+
+The binary is intentionally a bounded fixture adapter: it has no scenario
+selection, persistent storage, branch execution, or complete accessibility
+inspection.
 
 Repository checks:
 

@@ -10,7 +10,7 @@
 
 ## Verification
 
-The pinned formatter, Clippy, 129-test Rust suite plus Rustdoc, repository
+The pinned formatter, Clippy, 130-test Rust suite plus Rustdoc, repository
 checker, 14 Python checks, and diff checks all pass.
 
 ## Open boundaries

@@ -19,8 +19,8 @@ bounded host and pure terminal-text projection.
 
 ## Evidence
 
-- Three focused command-loop tests passed.
-- Full pinned Rust suite: 129 tests passed; one compile-fail RustDoc test
+- Four focused command-loop tests passed.
+- Full pinned Rust suite: 130 tests passed; one compile-fail RustDoc test
   passed.
 - `cargo +1.96.0 fmt --all -- --check`
 - `cargo +1.96.0 clippy --locked --all-targets --all-features -- -D warnings`

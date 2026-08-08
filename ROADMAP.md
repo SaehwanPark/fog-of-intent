@@ -920,9 +920,10 @@ persist a session, or rewrite authoritative lane history.
 - [x] Assign any future rendering to an outer adapter that consumes
   actor-valid projections and cannot authorize commands or mutate history.
 
-This verifies a structural boundary, bounded library-only host flow, and pure
-text projection. Terminal I/O, a user-facing command loop, persistent backend,
-and keyboard/screen-reader inspection remain open.
+This verifies a structural boundary, bounded library-only host flow, pure text
+projection, and the thin line-oriented fixture I/O loop. Complete reference-
+client behavior, persistent backend, scenario selection, branch execution, and
+keyboard/screen-reader inspection remain open.
 
 ### Current bounded run-identifier evidence
 

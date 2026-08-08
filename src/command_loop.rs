@@ -111,4 +111,25 @@ mod tests {
     assert_eq!(exit, CliLoopExit::EndOfInput);
     assert!(output.is_empty());
   }
+
+  #[test]
+  fn loop_propagates_fatal_output_errors() {
+    struct FailingWriter;
+
+    impl Write for FailingWriter {
+      fn write(&mut self, _buffer: &[u8]) -> io::Result<usize> {
+        Err(io::Error::new(io::ErrorKind::BrokenPipe, "closed output"))
+      }
+
+      fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+      }
+    }
+
+    let error = CliCommandLoop::fixture()
+      .run(Cursor::new("help\n"), FailingWriter)
+      .expect_err("fatal output errors must reach the process boundary");
+
+    assert_eq!(error.kind(), io::ErrorKind::BrokenPipe);
+  }
 }
