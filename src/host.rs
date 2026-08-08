@@ -1614,7 +1614,7 @@ mod tests {
   }
 
   #[test]
-  fn actor_draft_commit_receipt_reports_presence_without_payload_or_mutation() {
+  fn actor_draft_commit_receipt_reports_presence_without_payload_or_history_advance() {
     let mut host = CliScenarioHost::fixture();
     let observation = host.observation();
     for (field, value) in [
@@ -1669,6 +1669,7 @@ mod tests {
     assert!(!receipt.encode().contains("ping ally"));
     assert!(!receipt.encode().contains("retreat if threat"));
     assert!(host.draft.is_empty());
+    assert_eq!(host.committed_intent, Some(LaneIntent::Contest));
     assert_eq!(host.record_count(), 0);
     assert_eq!(host.observation(), observation);
 
@@ -1710,6 +1711,7 @@ mod tests {
       ))
     );
     assert_eq!(mismatch.draft.plan.as_deref(), Some("contest"));
+    assert_eq!(mismatch.committed_intent, None);
     assert_eq!(mismatch.record_count(), 0);
   }
 
