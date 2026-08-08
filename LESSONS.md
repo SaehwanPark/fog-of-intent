@@ -389,3 +389,15 @@ canonical policy instead of duplicating it.
   advertised candidate.
 - Prevention: Treat top-1 tie behavior as a policy contract before adding
   top-k/nucleus sampling or random streams.
+
+## Bind aggregate policy evidence to unique observation IDs
+
+- Context: The two-observation action tally needed to remain inspectable as
+  evidence rather than an anonymous count.
+- Symptom: Aggregating observations without retaining their actor-visible IDs
+  can hide accidental duplicate inputs and weaken replay-oriented diagnosis.
+- Resolution: Store both observation IDs in the bounded tally and reject
+  duplicates before invoking any profile policy.
+- Prevention: Keep provenance fields actor-visible and bounded; defer broader
+  scenario/replay provenance and population sampling until their contracts are
+  separately defined.

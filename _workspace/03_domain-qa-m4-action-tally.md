@@ -14,8 +14,8 @@ Pass for the bounded two-observation action-tally slice.
 
 - The report receives only copied `LanerObservation` values and emits no state,
   hash, execution, or raw-domain data.
-- Mixed observer identities fail before report construction with a bounded
-  `MismatchedObserver` error.
+- Mixed observer identities and duplicate observation IDs fail before report
+  construction with bounded errors.
 - The two-observation counts match the existing profile selections, and all six
   requests are validated through the existing host/lane boundary.
 - The schema and count fields are fixed and bounded; the report is not a
