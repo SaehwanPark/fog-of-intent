@@ -3,7 +3,8 @@
 ## Goal and Roadmap Milestone
 
 Make the terminal-rendering ownership rule explicit and inspectable: the
-authoritative kernel owns state and transitions; a future CLI host may render
+application host owns true-state lifecycle and transition orchestration, the
+pure kernel evaluates validated inputs, and a future CLI renderer consumes
 host-projected values at the edge.
 
 ## Slice Boundary and Non-Goals
