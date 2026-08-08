@@ -404,6 +404,12 @@ mod tests {
         error: CliRunIdError::InvalidCharacter { character: '/' }
       })
     ));
+    assert!(matches!(
+      CliHostArtifact::decode(&valid.replace("run_id=run", "run_id=")),
+      Err(CliHostArtifactError::InvalidRunId {
+        error: CliRunIdError::Empty
+      })
+    ));
 
     let record = "\nrecord index=0 intent=contest prior_hash=1 state_hash=2 identity_hash=3";
     assert!(
@@ -448,10 +454,13 @@ mod tests {
       CliHostArtifact::decode(&oversized),
       Err(CliHostArtifactError::InputTooLarge)
     );
-    let many_lines = format!("{valid}\n\n\n");
-    assert!(matches!(
+    let many_lines = format!("{valid}\n\n\nx");
+    assert_eq!(
       CliHostArtifact::decode(&many_lines),
-      Err(CliHostArtifactError::UnexpectedLineCount { .. })
-    ));
+      Err(CliHostArtifactError::UnexpectedLineCount {
+        expected: 3,
+        actual: 4
+      })
+    );
   }
 }
