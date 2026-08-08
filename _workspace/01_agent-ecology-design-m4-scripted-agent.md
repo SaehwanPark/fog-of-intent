@@ -61,9 +61,10 @@ randomness are separate future evidence gates.
 
 The policies are tested against the existing initial and visible-RiverSide lane
 fixtures. Metrics are limited to candidate count, selected intent, score and
-reason inspection, legality validation, repeated-decision equality, and one
-matched initial-observation comparison. No population distribution, outcome,
-communication, diversity, or scenario-level report is produced.
+reason inspection, legality validation, repeated-decision equality, one
+matched initial-observation comparison, and a two-observation selected-action
+tally. No population distribution, outcome, communication, diversity, or
+scenario-level outcome report is produced.
 
 ## Calibration or Regression Protocol
 

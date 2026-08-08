@@ -95,6 +95,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.87 — 2026-08-08
+
+### Added
+
+- Added the versioned `m4-scripted-agent-action-tally-v1` actor-safe report
+  over the safe and RiverSide fixture observations, with bounded profile/rule
+  IDs and selected-intent counts.
+- Rejected mixed-observer tally inputs and added legality checks for all six
+  underlying profile/observation requests.
+
+### Known limits
+
+- The tally covers exactly two library observations; population distributions,
+  outcomes, strategic quality, and human realism remain deferred.
+
 ## 0.1.86 — 2026-08-08
 
 ### Added

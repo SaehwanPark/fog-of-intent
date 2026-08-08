@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.86`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.87`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1051,8 +1051,10 @@ strategy while remaining bound to actor-visible information.
 - [x] Define one bounded monotonic utility effect: Anchor's `Stabilize` score
   increases with observed wave pressure; broader parameter interactions remain
   open.
-- [ ] Measure legality, action distribution, strategic diversity,
-  communication, coordination, plan interruption, and outcome distributions.
+- [x] Measure a bounded selected-action tally and legality over the two fixture
+  observations; broader action distributions, strategic diversity,
+  communication, coordination, plan interruption, and outcome distributions
+  remain open.
 - [x] Add one visible-threat profile-sensitivity regression; broader
   adversarial edge-case matrices remain open.
 
@@ -1081,12 +1083,16 @@ strategy while remaining bound to actor-visible information.
   profiles without conflating them with the lane scenario actor roster.
 - [x] Verify Anchor's `Stabilize` score rises from 80 to 83 as the observed
   wave-pressure value rises from 0 to 3, while requests remain host-valid.
+- [x] Emit the versioned `m4-scripted-agent-action-tally-v1` report for the
+  two fixture observations, reject mixed observers, and retain only bounded
+  profile/rule IDs and selected-intent counts.
 
-This is a three-profile library-only comparison and bounded metric report. It
+This is a three-profile library-only comparison with bounded score and
+selected-action reports. It
 does not establish a
-population, broader role heuristics, memory, communication, randomness, matched-
-scenario metrics, strategic quality, human realism, or an executable agent
-adapter.
+population, broader role heuristics, memory, communication, randomness,
+matched-scenario metrics, strategic quality, human realism, or an executable
+agent adapter.
 
 ### Deliverables
 

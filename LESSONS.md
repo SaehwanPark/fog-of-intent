@@ -351,3 +351,17 @@ canonical policy instead of duplicating it.
 - Prevention: Keep monotonic checks tied to matched observations and state
   whether the result is a score relation rather than an outcome, balance, or
   strategic-quality claim.
+
+## Keep action tallies bounded and observer-consistent
+
+- Context: M4 needed its first action-distribution evidence after comparing
+  fixed profiles on safe and visible-threat observations.
+- Symptom: Aggregating selected intents without an observer check can mix
+  unrelated actor views, while a broad distribution can be mistaken for a
+  population or outcome metric.
+- Resolution: Version a two-observation actor-safe tally, reject mixed
+  observers, and expose only profile/rule IDs, the fixed count, and selected
+  intent counts; validate each underlying request through the host boundary.
+- Prevention: Describe fixture tallies as bounded action evidence and defer
+  population, outcome, strategic-quality, and human-behavior claims until those
+  datasets and contracts exist.
