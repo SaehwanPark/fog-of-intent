@@ -138,7 +138,10 @@ actor-visible observation in process. `ScriptedAgentBatchCheckpoint` binds a
 bounded cursor to the ordered actor-visible inputs, and
 `ScriptedAgentBatchRunStore` reuses the injected run-store filesystem boundary
 for cursor persistence; neither stores decisions nor owns transition/history
-authority.
+authority. `ScriptedAgentMatchedSample` reuses the runner across exactly two
+same-actor, distinct-ID observations and returns only ordered profile/rule/seed
+labels with selected intents; it does not generate populations or own outcome,
+transition, history, or provider authority.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

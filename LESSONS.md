@@ -910,3 +910,15 @@ canonical policy instead of duplicating it.
   evaluation and persist only the cursor through the existing file-store edge.
 - Prevention: Keep decision/result persistence and crash recovery separate, and
   never use a cursor as a substitute for authoritative simulation history.
+
+## Keep matched sampling caller-supplied
+
+- Context: M6 needed visible-input sensitivity evidence before population
+  generation or distribution sampling was authorized.
+- Symptom: Generating observations or populations inside the sample can confound
+  the policy comparison and quietly add scenario or sampling authority.
+- Resolution: Require exactly two same-actor, distinct-ID observations from the
+  caller and reuse the existing ordered seeded batch runner for each.
+- Prevention: Keep matched samples fixture-sized and actor-visible; defer
+  population distributions, outcomes, metrics, persistence, and calibration to
+  separate contracts with separate evidence.
