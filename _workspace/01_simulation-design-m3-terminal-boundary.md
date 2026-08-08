@@ -13,9 +13,11 @@ The current pure CLI adapter remains a request/projection contract only.
 
 ## Actors and Authority
 
-The kernel and host own true state, legality, transition ordering, history,
-replay, and debrief facts. Terminal rendering belongs to an outer adapter and
-must not infer hidden state, authorize commands, or mutate history.
+The application host solely owns true-state lifecycle, legality, transition
+ordering, history commit, replay orchestration, and debrief facts. The pure
+kernel and lane modules evaluate validated inputs within that host-owned
+boundary. Terminal rendering belongs to an outer adapter and must not infer
+hidden state, authorize commands, or mutate history.
 
 ## True State, Beliefs, Observations, and Reports
 

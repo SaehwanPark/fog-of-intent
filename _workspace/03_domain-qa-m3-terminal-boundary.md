@@ -21,10 +21,12 @@ and keyboard/screen-reader items remain open.
 
 ## Authority and Information-Boundary Findings
 
-The current kernel, lane, and CLI modules do not own terminal I/O or
+The application host remains the sole simulation authority; the pure kernel and
+lane modules evaluate validated inputs within that boundary. The current core
+and CLI modules own no terminal I/O, rendering loop, or mutable runtime
 presentation state. The reconciled architecture assigns future rendering to an
-outer adapter consuming actor-valid projections; it cannot authorize commands,
-infer hidden state, or mutate history.
+outer adapter consuming host-projected actor-valid values; it cannot authorize
+commands, infer hidden state, or mutate history.
 
 ## Determinism, Replay, and Reproducibility Findings
 

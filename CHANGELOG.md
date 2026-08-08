@@ -44,8 +44,10 @@ not increment the package version.
   vision/belief remains deferred; the bounded automatic-advance condition
   contract is now explicit while host scheduling remains deferred.
 - Reconciled the M3 terminal-rendering boundary with source evidence: the
-  authoritative kernel, lane, and current CLI adapter own no terminal I/O or
-  presentation state; a future renderer remains an outer adapter concern.
+  application host remains the sole simulation authority, the pure kernel/lane
+  modules evaluate validated inputs, and the current CLI adapter owns no
+  terminal I/O, rendering loop, or mutable runtime presentation state; a future
+  renderer remains an outer adapter concern.
 
 ## 0.1.64 — 2026-08-08
 

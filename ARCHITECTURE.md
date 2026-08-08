@@ -40,10 +40,14 @@ marker with read-only getters; it does not edit committed history or authorize
 domain commands.
 
 Terminal rendering is intentionally outside the authoritative boundary. The
-current kernel, lane, and CLI modules own no terminal I/O, formatting loop, or
-presentation state; a future host/renderer may consume actor-valid projections
-at the edge but must not authorize commands, infer hidden state, or mutate
-history.
+application host solely owns true-state lifecycle, legality, ordering, history
+commit, and adapter coordination; the kernel and lane modules evaluate only
+validated inputs within that host-owned boundary. A future renderer consumes
+host-projected actor-valid values at the edge and must not authorize commands,
+infer hidden state, or mutate history. The current kernel, lane, and CLI modules
+own no terminal I/O, rendering loop, or mutable runtime presentation state;
+the CLI's static modes, verbosity policies, and help metadata remain adapter
+contracts rather than a renderer.
 
 The target architecture is one authoritative Rust simulation product with thin
 human, agent, and research adapters. The strongest boundary is:

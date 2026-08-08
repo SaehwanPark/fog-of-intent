@@ -905,8 +905,8 @@ persist a session, or rewrite authoritative lane history.
 
 ### Current terminal-rendering boundary evidence
 
-- [x] Keep `src/kernel.rs` and `src/lane/` free of terminal and presentation
-  ownership.
+- [x] Keep `src/kernel.rs` and `src/lane/` free of terminal I/O, rendering
+  loops, and mutable runtime presentation state.
 - [x] Keep `src/cli.rs` limited to borrowed grammar, typed requests, labels, and
   local drafts; it performs no terminal I/O, transition, or persistence work.
 - [x] Assign any future rendering to an outer adapter that consumes
