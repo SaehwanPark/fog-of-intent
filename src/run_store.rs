@@ -21,6 +21,10 @@ pub const CLI_RUN_TEMP_SUFFIX: &str = ".foi-artifact.tmp";
 pub const CLI_RUN_BATCH_CHECKPOINT_SUFFIX: &str = ".foi-batch-run";
 /// Fixed suffix for a batch-cursor replacement temporary file.
 pub const CLI_RUN_BATCH_CHECKPOINT_TEMP_SUFFIX: &str = ".foi-batch-run.tmp";
+/// Distinct suffix for persisted payload-free operational logs.
+pub const CLI_RUN_OPERATIONAL_LOG_SUFFIX: &str = ".foi-operational-log";
+/// Fixed suffix for an operational-log replacement temporary file.
+pub const CLI_RUN_OPERATIONAL_LOG_TEMP_SUFFIX: &str = ".foi-operational-log.tmp";
 
 static NEXT_TEMP_FILE: AtomicU64 = AtomicU64::new(0);
 
