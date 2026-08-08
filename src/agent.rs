@@ -3493,10 +3493,9 @@ mod tests {
       singleton_report.selection_count()
     );
     let singleton_encoded = singleton_report.encode();
-    assert!(
-      singleton_report
-        .to_markdown()
-        .contains("| river-side-threat-v1 | 0 |")
+    assert_eq!(
+      singleton_report.to_markdown(),
+      "# Scenario Frequency\n\n- schema: m6-scripted-agent-fixture-frequency-v1\n- selection_count: 1\n\n| scenario_id | count |\n| --- | ---: |\n| safe-fixture-v1 | 1 |\n| river-side-threat-v1 | 0 |\n"
     );
     assert_eq!(
       ScriptedAgentFixtureScenarioFrequencyReport::decode(&singleton_encoded, &singleton_report,),
