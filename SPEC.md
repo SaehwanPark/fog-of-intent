@@ -784,6 +784,10 @@ playability, or human-experience evidence.
   save/load/replay/export requests. It accepts bounded human-readable ASCII
   forms and rejects malformed values before host execution; it does not create
   persistence, guarantee uniqueness, or alter replay identity.
+- CLI tests now exercise a representative grammar transcript and common errors
+  across read/write/process/session mappings. This is parser/request evidence
+  only; a host-backed complete run, save/resume, replay/debrief transcript, and
+  terminal output remain unimplemented.
 
 ## Future
 

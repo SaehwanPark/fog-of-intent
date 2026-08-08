@@ -95,6 +95,18 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.67 — 2026-08-08
+
+### Added
+
+- Added grammar-level transcript acceptance tests covering a representative
+  read/write/process/session sequence and common parser/request errors.
+
+### Known limits
+
+- These tests do not claim a host-backed complete run, save/resume, replay,
+  debrief, terminal output, or human keyboard/screen-reader evidence.
+
 ## 0.1.63 — 2026-08-08
 
 ### Added

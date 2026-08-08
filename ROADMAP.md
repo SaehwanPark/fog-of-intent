@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs` | Placeholder `Hello, world!` binary |
-| Package | `Cargo.toml` | Version `0.1.66`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.67`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -927,6 +927,18 @@ keyboard/screen-reader inspection remain open.
 
 This establishes adapter syntax and typing only. Run generation, collision
 handling, storage, resume behavior, and human discoverability remain open.
+
+### Current bounded grammar-transcript evidence
+
+- [x] Exercise a representative 16-command grammar transcript across read,
+  write, process, and session request mappings.
+- [x] Cover common parser, malformed request, invalid run-ID, and privilege
+  errors before host boundaries.
+- [ ] Complete a host-backed scenario transcript with save/resume, replay,
+  debrief, and terminal output.
+
+The checked items are grammar-level acceptance only and do not satisfy the M3
+complete-run exit evidence.
 
 ### Deliverables
 
