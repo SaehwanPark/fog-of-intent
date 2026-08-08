@@ -98,6 +98,23 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.135 — 2026-08-08
+
+### Added
+
+- Added `m6-scripted-agent-fixture-scenarios-v1`, a closed catalog and
+  deterministic selector for the safe and RiverSide-threat fixture variants.
+  It binds caller-supplied observation IDs, preserves ordered repeated
+  selections, and composes actor-visible matched samples without adding
+  population, distributional, transition, history, persistence, or provider
+  authority.
+
+### Known limits
+
+- Broad population generation, random/distributional sampling, outcome and
+  strategic metrics, persistence, providers, calibration, and human evidence
+  remain open.
+
 ## 0.1.134 — 2026-08-08
 
 ### Added

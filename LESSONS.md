@@ -969,3 +969,16 @@ canonical policy instead of duplicating it.
   4096-byte bound, validating profile/rule identity and count totals on decode.
 - Prevention: Treat the codec as evidence transport only; keep durable export,
   population metrics, and provider/report pipelines outside the core.
+
+## Keep fixture selection closed and caller-ID-bound
+
+- Context: M6 needed a small scenario-selection boundary before broader
+  population generation or distribution sampling was authorized.
+- Symptom: Letting a selector invent states, IDs, or random draws can silently
+  add scenario-generation authority and make repeated evidence irreproducible.
+- Resolution: Admit only exact fixed-fixture IDs, require caller-supplied
+  globally distinct observation IDs, preserve ordered repeated selections, and
+  project through the existing actor-visible matched-sample path.
+- Prevention: Keep selection metadata separate from transition/history/replay,
+  persistence, distribution, provider, and outcome contracts; broaden the
+  catalog only with a new bounded schema and independent evidence.

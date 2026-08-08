@@ -11,9 +11,10 @@ use std::hash::Hasher;
 
 use crate::kernel::{ActorId, DrawId, InputTrace, StreamId};
 use crate::lane::{
-  HiddenValue, JungleThreatRegion, LaneAbortCondition, LaneActorRole, LaneCommitment,
-  LaneFallbackBehavior, LaneIntent, LaneIntentRequest, LanePingSignal, LanePosition,
-  LaneTargetFocus, LanerObservation, ObservationId,
+  HiddenValue, JungleThreatRegion, JungleThreatTruth, LaneAbortCondition, LaneActorRole,
+  LaneCommitment, LaneFallbackBehavior, LaneIntent, LaneIntentRequest, LanePingSignal,
+  LanePosition, LaneSnapshot, LaneStatus, LaneTargetFocus, LanerObservation, ObservationId,
+  observe_player,
 };
 
 /// Versioned identity for the first scripted-agent policy boundary.
@@ -78,6 +79,16 @@ pub const SCRIPTED_AGENT_MATCHED_SAMPLE_SCHEMA: &str = "m6-scripted-agent-matche
 pub const SCRIPTED_AGENT_MATCHED_SCENARIO_SAMPLE_SCHEMA: &str =
   "m6-scripted-agent-matched-scenarios-v1";
 
+/// Versioned identity for the closed fixture-scenario catalog.
+pub const SCRIPTED_AGENT_FIXTURE_SCENARIO_CATALOG_SCHEMA: &str =
+  "m6-scripted-agent-fixture-scenarios-v1";
+
+/// Stable ID for the no-threat fixture variant.
+pub const SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID: &str = "safe-fixture-v1";
+
+/// Stable ID for the visible RiverSide-threat fixture variant.
+pub const SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID: &str = "river-side-threat-v1";
+
 /// Versioned identity for bounded matched-scenario selected-intent tallies.
 pub const SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_SCHEMA: &str =
   "m6-scripted-agent-matched-scenario-tally-v1";
@@ -87,6 +98,9 @@ pub const MAX_SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_BYTES: usize = 4096;
 
 /// Maximum number of caller-supplied matched pairs in one sample set.
 pub const MAX_SCRIPTED_AGENT_MATCHED_SCENARIO_SAMPLES: usize = 4;
+
+/// Maximum number of selected fixed-fixture scenarios in one request.
+pub const MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS: usize = 4;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum ScriptedAgentEvaluationRule {
@@ -497,6 +511,147 @@ pub enum ScriptedAgentMatchedSampleError {
   MismatchedObserver,
   DuplicateObservationId,
   Batch(ScriptedAgentBatchError),
+}
+
+/// Bounded failures from fixed-fixture scenario selection.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentFixtureScenarioSelectionError {
+  EmptySelection,
+  SelectionTooLarge { max: usize, actual: usize },
+  UnknownScenario,
+  MismatchedObservationPairCount { expected: usize, actual: usize },
+  DuplicateObservationId,
+}
+
+/// Closed fixture variants available to the bounded M6 scenario selector.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentFixtureScenario {
+  Safe,
+  RiverSideThreat,
+}
+
+impl ScriptedAgentFixtureScenario {
+  pub const fn id(self) -> &'static str {
+    match self {
+      Self::Safe => SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+      Self::RiverSideThreat => SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+    }
+  }
+
+  fn parse_id(value: &str) -> Result<Self, ScriptedAgentFixtureScenarioSelectionError> {
+    match value {
+      SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID => Ok(Self::Safe),
+      SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID => Ok(Self::RiverSideThreat),
+      _ => Err(ScriptedAgentFixtureScenarioSelectionError::UnknownScenario),
+    }
+  }
+
+  fn observations(self, observation_ids: [ObservationId; 2]) -> [LanerObservation; 2] {
+    let initial = LaneSnapshot::initial();
+    let second = match self {
+      Self::Safe => initial,
+      Self::RiverSideThreat => LaneSnapshot::new(
+        initial.ruleset(),
+        initial.turn(),
+        LaneStatus::Open,
+        initial.player(),
+        initial.opponent(),
+        initial.wave(),
+        JungleThreatTruth::RiverSide,
+      ),
+    };
+    [
+      observe_player(&initial, observation_ids[0]).observation(),
+      observe_player(&second, observation_ids[1]).observation(),
+    ]
+  }
+}
+
+/// Ordered selection of caller-ID-bound fixed fixture scenarios.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentFixtureScenarioSelection {
+  schema: &'static str,
+  scenarios: Vec<ScriptedAgentFixtureScenario>,
+  observation_ids: Vec<[ObservationId; 2]>,
+}
+
+impl ScriptedAgentFixtureScenarioSelection {
+  /// Select closed fixture IDs and bind each to two distinct caller IDs.
+  pub fn from_ids(
+    scenario_ids: &[&str],
+    observation_ids: &[[ObservationId; 2]],
+  ) -> Result<Self, ScriptedAgentFixtureScenarioSelectionError> {
+    if scenario_ids.is_empty() {
+      return Err(ScriptedAgentFixtureScenarioSelectionError::EmptySelection);
+    }
+    if scenario_ids.len() > MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS {
+      return Err(
+        ScriptedAgentFixtureScenarioSelectionError::SelectionTooLarge {
+          max: MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS,
+          actual: scenario_ids.len(),
+        },
+      );
+    }
+    if scenario_ids.len() != observation_ids.len() {
+      return Err(
+        ScriptedAgentFixtureScenarioSelectionError::MismatchedObservationPairCount {
+          expected: scenario_ids.len(),
+          actual: observation_ids.len(),
+        },
+      );
+    }
+    let mut scenarios = Vec::with_capacity(scenario_ids.len());
+    for scenario_id in scenario_ids {
+      let scenario = ScriptedAgentFixtureScenario::parse_id(scenario_id)?;
+      scenarios.push(scenario);
+    }
+    let mut seen_ids = Vec::with_capacity(observation_ids.len() * 2);
+    for pair in observation_ids {
+      for observation_id in pair {
+        if seen_ids.contains(observation_id) {
+          return Err(ScriptedAgentFixtureScenarioSelectionError::DuplicateObservationId);
+        }
+        seen_ids.push(*observation_id);
+      }
+    }
+    Ok(Self {
+      schema: SCRIPTED_AGENT_FIXTURE_SCENARIO_CATALOG_SCHEMA,
+      scenarios,
+      observation_ids: observation_ids.to_vec(),
+    })
+  }
+
+  pub const fn schema(&self) -> &'static str {
+    self.schema
+  }
+
+  pub fn scenarios(&self) -> &[ScriptedAgentFixtureScenario] {
+    &self.scenarios
+  }
+
+  pub fn observation_ids(&self) -> &[[ObservationId; 2]] {
+    &self.observation_ids
+  }
+
+  /// Build the actor-visible pairs in the selected order.
+  pub fn observations(&self) -> Vec<[LanerObservation; 2]> {
+    self
+      .scenarios
+      .iter()
+      .copied()
+      .zip(self.observation_ids.iter().copied())
+      .map(|(scenario, observation_ids)| scenario.observations(observation_ids))
+      .collect()
+  }
+
+  /// Compose the generated pairs through the existing verified sample path.
+  pub fn matched_sample(
+    &self,
+    manifests: &[ScriptedAgentExperimentManifest],
+  ) -> Result<ScriptedAgentMatchedScenarioSample, ScriptedAgentMatchedScenarioSampleError> {
+    let observations = self.observations();
+    ScriptedAgentMatchedScenarioSample::from_observations(&observations, manifests)
+  }
 }
 
 /// One actor-safe profile row across two matched observations.
@@ -2906,6 +3061,139 @@ mod tests {
     assert_eq!(
       ScriptedAgentMatchedScenarioSample::from_observations(&duplicate, &manifests),
       Err(ScriptedAgentMatchedScenarioSampleError::DuplicateObservationId)
+    );
+  }
+
+  #[test]
+  fn fixture_scenario_selection_is_closed_ordered_and_bounded() {
+    let scenario_ids = [
+      SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+      SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+      SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+      SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+    ];
+    let observation_ids = [
+      [ObservationId::new(100), ObservationId::new(101)],
+      [ObservationId::new(102), ObservationId::new(103)],
+      [ObservationId::new(104), ObservationId::new(105)],
+      [ObservationId::new(106), ObservationId::new(107)],
+    ];
+    let selection =
+      ScriptedAgentFixtureScenarioSelection::from_ids(&scenario_ids, &observation_ids)
+        .expect("closed fixture selection builds");
+    assert_eq!(
+      [
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+      ],
+      ["safe-fixture-v1", "river-side-threat-v1"]
+    );
+    assert_eq!(
+      SCRIPTED_AGENT_FIXTURE_SCENARIO_CATALOG_SCHEMA,
+      "m6-scripted-agent-fixture-scenarios-v1"
+    );
+    assert_eq!(
+      selection.schema(),
+      SCRIPTED_AGENT_FIXTURE_SCENARIO_CATALOG_SCHEMA
+    );
+    assert_eq!(
+      selection
+        .scenarios()
+        .iter()
+        .map(|scenario| scenario.id())
+        .collect::<Vec<_>>(),
+      scenario_ids
+    );
+    assert_eq!(selection.observation_ids(), &observation_ids);
+    assert_eq!(selection.observations(), selection.observations());
+    let observations = selection.observations();
+    assert_eq!(observations.len(), 4);
+    assert_eq!(observations[0][0].observation_id(), ObservationId::new(100));
+    assert_eq!(observations[1][1].observation_id(), ObservationId::new(103));
+    assert_eq!(observations[0][1].available_threat_response(), None);
+    assert_eq!(
+      observations[1][1].available_threat_response(),
+      Some(LaneIntent::Withdraw)
+    );
+
+    let manifests = [ScriptedAgentExperimentManifest::new(
+      ScriptedAgentProfile::cautious_v1(),
+      ScriptedAgentSeedBundle::new(31, StreamId::new(32), DrawId::new(33)),
+    )];
+    let sample = selection
+      .matched_sample(&manifests)
+      .expect("selected fixture samples compose");
+    assert_eq!(sample.samples().len(), 4);
+    assert_eq!(
+      sample,
+      ScriptedAgentFixtureScenarioSelection::from_ids(&scenario_ids, &observation_ids)
+        .expect("selection repeats")
+        .matched_sample(&manifests)
+        .expect("repeated samples compose")
+    );
+
+    assert_eq!(
+      ScriptedAgentFixtureScenarioSelection::from_ids(&[], &[]),
+      Err(ScriptedAgentFixtureScenarioSelectionError::EmptySelection)
+    );
+    assert_eq!(
+      ScriptedAgentFixtureScenarioSelection::from_ids(
+        &["unknown-fixture-v1"],
+        &[[ObservationId::new(108), ObservationId::new(109)]],
+      ),
+      Err(ScriptedAgentFixtureScenarioSelectionError::UnknownScenario)
+    );
+    assert_eq!(
+      ScriptedAgentFixtureScenarioSelection::from_ids(
+        &[SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID],
+        &[],
+      ),
+      Err(
+        ScriptedAgentFixtureScenarioSelectionError::MismatchedObservationPairCount {
+          expected: 1,
+          actual: 0,
+        }
+      )
+    );
+    assert_eq!(
+      ScriptedAgentFixtureScenarioSelection::from_ids(
+        &[SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID],
+        &[[ObservationId::new(110), ObservationId::new(110)]],
+      ),
+      Err(ScriptedAgentFixtureScenarioSelectionError::DuplicateObservationId)
+    );
+    assert_eq!(
+      ScriptedAgentFixtureScenarioSelection::from_ids(
+        &[
+          SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+          SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        ],
+        &[
+          [ObservationId::new(112), ObservationId::new(113)],
+          [ObservationId::new(114), ObservationId::new(112)],
+        ],
+      ),
+      Err(ScriptedAgentFixtureScenarioSelectionError::DuplicateObservationId)
+    );
+    let too_many_scenarios =
+      [SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID; MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS + 1];
+    let too_many_ids = (0..=MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS)
+      .map(|index| {
+        let offset = u64::try_from(index).expect("fixture index fits in u64") * 2;
+        [
+          ObservationId::new(120 + offset),
+          ObservationId::new(121 + offset),
+        ]
+      })
+      .collect::<Vec<_>>();
+    assert_eq!(
+      ScriptedAgentFixtureScenarioSelection::from_ids(&too_many_scenarios, &too_many_ids,),
+      Err(
+        ScriptedAgentFixtureScenarioSelectionError::SelectionTooLarge {
+          max: MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS,
+          actual: MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS + 1,
+        }
+      )
     );
   }
 

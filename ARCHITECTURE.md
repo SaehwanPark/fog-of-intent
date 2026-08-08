@@ -157,6 +157,12 @@ Its line-oriented codec is bounded and closed-field validated for
 machine-readable evidence; decoding is accepted only when it matches an
 already verified report, and it is not durable export or an external report
 pipeline.
+`ScriptedAgentFixtureScenarioSelection` is a closed metadata catalog for the
+safe and RiverSide-threat fixture IDs. It binds caller-supplied observation IDs,
+projects deterministic actor-visible pairs, and composes the existing sample
+contract; repeated IDs are explicit ordered samples. It does not generate a
+population, sample a distribution, resolve a transition, or own history,
+replay, persistence, provider, or outcome authority.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO
