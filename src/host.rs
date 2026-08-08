@@ -19,8 +19,8 @@ use crate::lane::{
   build_scenario_debrief, observe_player,
 };
 use crate::protocol::{
-  ActorActionDto, ActorDraftDto, ActorDraftField, ActorObservationDto, ActorProtocolError,
-  ActorProtocolErrorCode, ActorProtocolRepairHint,
+  ActorActionDto, ActorDraftDto, ActorDraftField, ActorHistoryDto, ActorHistoryStatus,
+  ActorObservationDto, ActorProtocolError, ActorProtocolErrorCode, ActorProtocolRepairHint,
 };
 use crate::run_store::{CliRunStore, CliRunStoreError};
 
@@ -203,6 +203,19 @@ impl CliScenarioHost {
       ));
     }
     Ok(ActorObservationDto::from_observation(self.observation()))
+  }
+
+  /// Return bounded actor-visible history status without exposing state details.
+  pub fn actor_history(&self) -> ActorHistoryDto {
+    let status = if self.closed {
+      ActorHistoryStatus::Closed
+    } else if self.is_complete() {
+      ActorHistoryStatus::Complete
+    } else {
+      ActorHistoryStatus::Open
+    };
+    ActorHistoryDto::new(self.record_count(), status)
+      .expect("host history status stays within the two-window fixture bounds")
   }
 
   /// Validate one actor action without mutating host state or history.
@@ -860,6 +873,64 @@ mod tests {
         ActorProtocolErrorCode::ClosedSession,
         ActorProtocolRepairHint::StartNewSession,
       ))
+    );
+  }
+
+  #[test]
+  fn actor_history_projection_tracks_bounded_lifecycle_without_hidden_state() {
+    let mut host = CliScenarioHost::fixture();
+    assert_eq!(
+      host.actor_history(),
+      ActorHistoryDto::new(0, ActorHistoryStatus::Open).expect("open history is bounded")
+    );
+    assert_eq!(
+      host.apply_line("inspect history"),
+      Ok(CliHostOutput::History {
+        records: 0,
+        complete: false,
+      })
+    );
+
+    for command in ["plan contest", "commit", "advance"] {
+      host.apply_line(command).expect("first window advances");
+    }
+    assert_eq!(
+      host.actor_history(),
+      ActorHistoryDto::new(1, ActorHistoryStatus::Open).expect("next history is bounded")
+    );
+    assert!(!format!("{:?}", host.actor_history()).contains("hash"));
+
+    for command in ["plan stabilize", "commit", "advance"] {
+      host.apply_line(command).expect("second window advances");
+    }
+    assert_eq!(
+      host.actor_history(),
+      ActorHistoryDto::new(2, ActorHistoryStatus::Complete).expect("complete history is bounded")
+    );
+    host.apply_line("quit").expect("complete host closes");
+    assert_eq!(
+      host.actor_history(),
+      ActorHistoryDto::new(2, ActorHistoryStatus::Closed)
+        .expect("closed complete history is bounded")
+    );
+
+    let mut partially_closed = CliScenarioHost::fixture();
+    for command in ["plan contest", "commit", "advance", "quit"] {
+      partially_closed
+        .apply_line(command)
+        .expect("partial host command succeeds");
+    }
+    assert_eq!(
+      partially_closed.actor_history(),
+      ActorHistoryDto::new(1, ActorHistoryStatus::Closed)
+        .expect("closed partial history is bounded")
+    );
+
+    let mut closed = CliScenarioHost::fixture();
+    closed.apply_line("quit").expect("host closes");
+    assert_eq!(
+      closed.actor_history(),
+      ActorHistoryDto::new(0, ActorHistoryStatus::Closed).expect("closed history is bounded")
     );
   }
 

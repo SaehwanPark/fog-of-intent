@@ -561,3 +561,15 @@ canonical policy instead of duplicating it.
   state authority remain host-owned.
 - Prevention: Keep the DTO actor-visible and pure; add transport, simultaneous
   actor, and richer session semantics only behind separate contracts.
+
+## Keep history summaries separate from replay records
+
+- Context: M5 needed an actor-visible way to distinguish an open, complete, or
+  closed fixture without exposing detailed history internals.
+- Symptom: Reusing replay or debrief structures for a status check would leak
+  hashes, snapshots, or causal detail and blur lifecycle authority.
+- Resolution: Define a tiny versioned history DTO containing only bounded record
+  count and a closed status enum, and have the host derive it from lifecycle
+  state without changing history.
+- Prevention: Keep detailed records, replay, debrief, and persistence behind
+  separate contracts and tests.

@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.102`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.103`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1182,6 +1182,9 @@ control over simulation resolution.
 - [x] Expose the active actor-visible receipt through the versioned observation
   DTO, rejecting closed/complete hosts without mutating history; transport and
   simultaneous actors remain open.
+- [x] Define the bounded `m5-actor-history-v1` status DTO and host projection
+  for record count plus open/complete/closed lifecycle state; detailed history
+  and replay remain open.
 
 This is a pure library adapter boundary with no MCP transport, async runtime,
 or provider-specific behavior. The DTOs expose only four advertised intents
@@ -1195,10 +1198,11 @@ closes the fixture window through the existing deterministic transition.
 The `m5-actor-draft-v1` DTO adds bounded message, plan, and contingency
 metadata without communication authority. The host stages those DTOs only
 before commit and never turns them into a transition by itself. Focused
-evidence is 11 protocol tests, 5 session tests, and 17 host tests within the
-189-unit, 7-binary, and 1-Rustdoc suite. The host observation projection is a
+evidence is 12 protocol tests, 5 session tests, and 18 host tests within the
+191-unit, 7-binary, and 1-Rustdoc suite. The host observation projection is a
 pure actor-visible DTO mapping, rejects inactive lifecycle states, and leaves
-the internal receipt private.
+the internal receipt private. The history DTO is a bounded status summary, not
+a detailed replay or debrief contract.
 
 ### Scope
 

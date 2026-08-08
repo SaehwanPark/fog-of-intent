@@ -95,6 +95,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.103 — 2026-08-08
+
+### Added
+
+- Added the bounded `m5-actor-history-v1` DTO and host projection for record
+  count plus open/complete/closed lifecycle status without hashes or snapshots.
+- Added exact codec and host lifecycle coverage for open, complete, and closed
+  history states.
+
+### Known limits
+
+- History status is a synchronous actor-safe summary; detailed history, replay,
+  debrief, transport, persistence, and broader MCP compatibility remain open.
+
 ## 0.1.102 — 2026-08-08
 
 ### Added
