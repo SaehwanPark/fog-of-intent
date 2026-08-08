@@ -1090,3 +1090,14 @@ canonical policy instead of duplicating it.
   evaluating policy or mutating the caller-owned log.
 - Prevention: Treat lifecycle production as an all-or-nothing edge adapter;
   checkpoint/resume and runtime failure events require separate contracts.
+
+## Emit storage events only after successful persistence
+
+- Context: Checkpoint save/load adapters can expose caller-owned lifecycle
+  labels without making those labels part of the checkpoint payload.
+- Symptom: Recording `checkpoint_saved` or `batch_resumed` before a filesystem
+  write or decode succeeds creates a false operational trace.
+- Resolution: Preflight one event slot, perform the existing bounded operation,
+  and append the label only after success; keep failure paths non-mutating.
+- Prevention: Treat storage event production as a post-success edge effect and
+  keep event-log persistence and runtime diagnostics behind separate contracts.

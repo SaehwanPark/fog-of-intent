@@ -1242,6 +1242,11 @@ transport-integrated sessions and broader protocol compatibility remain open.
   `batch_started`/`chunk_completed`/`batch_finished` labels, and preserves
   decision parity. Invalid batches and insufficient capacity leave the log
   unchanged; checkpoint/resume production and runtime diagnostics remain open.
+- `ScriptedAgentBatchRunStore::save_with_operational_log` and
+  `load_with_operational_log` append `checkpoint_saved` and `batch_resumed`
+  only after successful bounded cursor storage/decode, respectively. Each
+  preflights one log slot, and storage, codec, or capacity failures do not
+  append an event; the operational log itself remains non-authoritative.
 
 ## Future
 

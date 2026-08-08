@@ -1407,6 +1407,10 @@ representative replays, and an evidence-limited report.
   `batch_finished` labels around one complete deterministic in-process batch;
   checkpoint/resume producers, runtime failure detection, transport, and
   persistence remain open.
+- [x] Produce caller-driven `checkpoint_saved` and `batch_resumed` labels only
+  after successful bounded cursor save/load; capacity preflight and failure
+  nonmutation remain explicit, while runtime diagnostics and event-log
+  persistence remain open.
 - [x] Export bounded machine-readable data and a concise pure Markdown
   evidence report for the verified fixed-fixture frequency slice; durable
   export, arbitrary report pipelines, and broader metrics remain open.

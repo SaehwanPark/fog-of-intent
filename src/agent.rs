@@ -3447,12 +3447,110 @@ mod tests {
     host_store
       .save("resume", host_artifact)
       .expect("host artifact saves");
-    store.save("resume", checkpoint).expect("checkpoint saves");
+    let mut operational_log = ScriptedAgentOperationalLog::new();
+    store
+      .save_with_operational_log("resume", checkpoint, &mut operational_log)
+      .expect("checkpoint saves with an event");
+    assert_eq!(
+      operational_log.entries()[0].event(),
+      ScriptedAgentOperationalEvent::CheckpointSaved
+    );
     assert_eq!(
       host_store.load("resume").expect("host artifact loads"),
       host_artifact
     );
-    let loaded = store.load("resume").expect("checkpoint loads");
+    let loaded = store
+      .load_with_operational_log("resume", &mut operational_log)
+      .expect("checkpoint loads with an event");
+    assert_eq!(
+      operational_log.entries()[1].event(),
+      ScriptedAgentOperationalEvent::BatchResumed
+    );
+    std::fs::write(root.join("broken.foi-batch-run"), "bad")
+      .expect("malformed checkpoint fixture writes");
+    let log_before_decode_error = operational_log.entries().to_vec();
+    assert_eq!(
+      store.load_with_operational_log("broken", &mut operational_log),
+      Err(
+        crate::agent_batch_store::ScriptedAgentBatchStoreOperationalError::Store(
+          crate::agent_batch_store::ScriptedAgentBatchStoreError::InvalidCheckpoint {
+            error: ScriptedAgentBatchCheckpointError::InvalidValue,
+          },
+        )
+      )
+    );
+    assert_eq!(
+      operational_log.entries(),
+      log_before_decode_error.as_slice()
+    );
+    let invalid_root = root.join("not-a-directory");
+    std::fs::write(&invalid_root, "file").expect("invalid storage root fixture writes");
+    let invalid_store = crate::agent_batch_store::ScriptedAgentBatchRunStore::new(&invalid_root);
+    let mut storage_error_log = ScriptedAgentOperationalLog::new();
+    storage_error_log
+      .append(ScriptedAgentOperationalEvent::BatchStarted)
+      .expect("one event fits");
+    let storage_error_before = storage_error_log.entries().to_vec();
+    assert_eq!(
+      invalid_store.save_with_operational_log("resume", checkpoint, &mut storage_error_log),
+      Err(
+        crate::agent_batch_store::ScriptedAgentBatchStoreOperationalError::Store(
+          crate::agent_batch_store::ScriptedAgentBatchStoreError::StorageUnavailable,
+        )
+      )
+    );
+    assert_eq!(storage_error_log.entries(), storage_error_before.as_slice());
+    assert_eq!(
+      invalid_store.load_with_operational_log("resume", &mut storage_error_log),
+      Err(
+        crate::agent_batch_store::ScriptedAgentBatchStoreOperationalError::Store(
+          crate::agent_batch_store::ScriptedAgentBatchStoreError::StorageUnavailable,
+        )
+      )
+    );
+    assert_eq!(storage_error_log.entries(), storage_error_before.as_slice());
+    for _ in operational_log.len()..MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS {
+      operational_log
+        .append(ScriptedAgentOperationalEvent::BatchStarted)
+        .expect("event log reaches its cap");
+    }
+    let log_before_capacity_error = operational_log.entries().to_vec();
+    assert_eq!(
+      store.load_with_operational_log("resume", &mut operational_log),
+      Err(
+        crate::agent_batch_store::ScriptedAgentBatchStoreOperationalError::LogCapacityExceeded {
+          max: MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS,
+        }
+      )
+    );
+    assert_eq!(
+      operational_log.entries(),
+      log_before_capacity_error.as_slice()
+    );
+    let mut save_capacity_log = ScriptedAgentOperationalLog::new();
+    for _ in 0..MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS {
+      save_capacity_log
+        .append(ScriptedAgentOperationalEvent::BatchStarted)
+        .expect("save capacity fixture reaches its cap");
+    }
+    let save_capacity_before = save_capacity_log.entries().to_vec();
+    assert_eq!(
+      store.save_with_operational_log(
+        "resume",
+        checkpoint.with_completed_count(1),
+        &mut save_capacity_log,
+      ),
+      Err(
+        crate::agent_batch_store::ScriptedAgentBatchStoreOperationalError::LogCapacityExceeded {
+          max: MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS,
+        }
+      )
+    );
+    assert_eq!(save_capacity_log.entries(), save_capacity_before.as_slice());
+    assert_eq!(
+      store.load("resume").expect("prior checkpoint remains"),
+      checkpoint
+    );
     let (first, advanced) = ScriptedAgentBatchRunner::run_next(observation, &manifests, loaded, 1)
       .expect("first chunk runs");
     assert_eq!(first.len(), 1);
