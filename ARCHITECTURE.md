@@ -181,6 +181,10 @@ envelope for completed, crashed, timed-out, missing-branch, and inconclusive
 runs. Its closed codec preserves only categorical status metadata; it does not
 detect process failures, retain diagnostics, attach decisions or results, or
 own execution, persistence, provider, or experiment authority.
+`ScriptedAgentOperationalLog` is a separate bounded in-memory container for
+ordered payload-free batch lifecycle event labels. It is non-authoritative and
+does not reconstruct history, emit runtime logs, inspect time/process state, or
+persist operational data.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

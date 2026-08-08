@@ -1400,7 +1400,9 @@ representative replays, and an evidence-limited report.
 - [ ] Check causal-trace completeness and replay identity for sampled runs.
 - [x] Define one provisional fixed-fixture regression gate with written
   threshold rationale; broader gates remain open.
-- [ ] Separate operational logs from committed simulation artifacts.
+- [x] Define a bounded non-authoritative operational event log container
+  separate from committed simulation artifacts; runtime log production,
+  transport, and persistence remain open.
 - [x] Export bounded machine-readable data and a concise pure Markdown
   evidence report for the verified fixed-fixture frequency slice; durable
   export, arbitrary report pipelines, and broader metrics remain open.

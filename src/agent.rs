@@ -113,6 +113,12 @@ pub const SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_REGRESSION_RULE: &str =
 /// Versioned identity for caller-declared build labels on comparisons.
 pub const SCRIPTED_AGENT_BUILD_ID_SCHEMA: &str = "m6-scripted-agent-build-id-v1";
 
+/// Versioned identity for the non-authoritative operational event vocabulary.
+pub const SCRIPTED_AGENT_OPERATIONAL_EVENT_SCHEMA: &str = "m6-scripted-agent-operational-event-v1";
+
+/// Maximum number of operational events retained in one in-memory log.
+pub const MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS: usize = 16;
+
 /// Versioned identity for bounded matched-scenario selected-intent tallies.
 pub const SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_SCHEMA: &str =
   "m6-scripted-agent-matched-scenario-tally-v1";
@@ -842,6 +848,111 @@ impl ScriptedAgentBuildId {
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ScriptedAgentBuildComparisonError {
   MatchingBuildIds,
+}
+
+/// Closed operational events kept separate from committed simulation history.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentOperationalEvent {
+  BatchStarted,
+  ChunkCompleted,
+  CheckpointSaved,
+  BatchResumed,
+  BatchFinished,
+}
+
+impl ScriptedAgentOperationalEvent {
+  pub const fn id(self) -> &'static str {
+    match self {
+      Self::BatchStarted => "batch_started",
+      Self::ChunkCompleted => "chunk_completed",
+      Self::CheckpointSaved => "checkpoint_saved",
+      Self::BatchResumed => "batch_resumed",
+      Self::BatchFinished => "batch_finished",
+    }
+  }
+}
+
+/// One payload-free event in a non-authoritative operational log.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentOperationalEventRecord {
+  schema: &'static str,
+  event: ScriptedAgentOperationalEvent,
+}
+
+impl ScriptedAgentOperationalEventRecord {
+  pub const fn new(event: ScriptedAgentOperationalEvent) -> Self {
+    Self {
+      schema: SCRIPTED_AGENT_OPERATIONAL_EVENT_SCHEMA,
+      event,
+    }
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn event(self) -> ScriptedAgentOperationalEvent {
+    self.event
+  }
+}
+
+/// Bounded failures from the in-memory operational log container.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentOperationalLogError {
+  CapacityExceeded { max: usize },
+}
+
+/// Ordered, non-authoritative operational metadata kept outside history.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentOperationalLog {
+  schema: &'static str,
+  entries: Vec<ScriptedAgentOperationalEventRecord>,
+}
+
+impl ScriptedAgentOperationalLog {
+  pub fn new() -> Self {
+    Self {
+      schema: SCRIPTED_AGENT_OPERATIONAL_EVENT_SCHEMA,
+      entries: Vec::with_capacity(MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS),
+    }
+  }
+
+  pub const fn schema(&self) -> &'static str {
+    self.schema
+  }
+
+  pub fn append(
+    &mut self,
+    event: ScriptedAgentOperationalEvent,
+  ) -> Result<(), ScriptedAgentOperationalLogError> {
+    if self.entries.len() == MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS {
+      return Err(ScriptedAgentOperationalLogError::CapacityExceeded {
+        max: MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS,
+      });
+    }
+    self
+      .entries
+      .push(ScriptedAgentOperationalEventRecord::new(event));
+    Ok(())
+  }
+
+  pub const fn is_empty(&self) -> bool {
+    self.entries.is_empty()
+  }
+
+  pub const fn len(&self) -> usize {
+    self.entries.len()
+  }
+
+  pub fn entries(&self) -> &[ScriptedAgentOperationalEventRecord] {
+    &self.entries
+  }
+}
+
+impl Default for ScriptedAgentOperationalLog {
+  fn default() -> Self {
+    Self::new()
+  }
 }
 
 /// Bounded frequency evidence over one validated fixed-fixture selection.
@@ -3065,6 +3176,74 @@ mod tests {
     assert_eq!(
       ScriptedAgentRunDispositionRecord::decode(&"x".repeat(4097)),
       Err(ScriptedAgentRunDispositionCodecError::Oversized)
+    );
+  }
+
+  #[test]
+  fn operational_log_preserves_closed_ordered_events_without_history_payloads() {
+    let events = [
+      (ScriptedAgentOperationalEvent::BatchStarted, "batch_started"),
+      (
+        ScriptedAgentOperationalEvent::ChunkCompleted,
+        "chunk_completed",
+      ),
+      (
+        ScriptedAgentOperationalEvent::CheckpointSaved,
+        "checkpoint_saved",
+      ),
+      (ScriptedAgentOperationalEvent::BatchResumed, "batch_resumed"),
+      (
+        ScriptedAgentOperationalEvent::BatchFinished,
+        "batch_finished",
+      ),
+    ];
+    let mut log = ScriptedAgentOperationalLog::new();
+    assert_eq!(log.schema(), "m6-scripted-agent-operational-event-v1");
+    assert!(log.is_empty());
+    assert_eq!(log.len(), 0);
+    for (event, expected_id) in events {
+      assert_eq!(event.id(), expected_id);
+      log.append(event).expect("event fits in operational log");
+    }
+    assert_eq!(log.len(), events.len());
+    assert!(!log.is_empty());
+    assert_eq!(log.entries()[0].schema(), log.schema());
+    assert_eq!(
+      log.entries()[0].event(),
+      ScriptedAgentOperationalEvent::BatchStarted
+    );
+    assert_eq!(
+      log.entries()[1].event(),
+      ScriptedAgentOperationalEvent::ChunkCompleted
+    );
+    assert_eq!(
+      log.entries()[2].event(),
+      ScriptedAgentOperationalEvent::CheckpointSaved
+    );
+    assert_eq!(
+      log.entries()[3].event(),
+      ScriptedAgentOperationalEvent::BatchResumed
+    );
+    assert_eq!(
+      log.entries()[4].event(),
+      ScriptedAgentOperationalEvent::BatchFinished
+    );
+    for _ in events.len()..MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS {
+      log
+        .append(ScriptedAgentOperationalEvent::BatchStarted)
+        .expect("event fits at inclusive cap");
+    }
+    assert_eq!(log.len(), MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS);
+    assert_eq!(
+      log.append(ScriptedAgentOperationalEvent::BatchFinished),
+      Err(ScriptedAgentOperationalLogError::CapacityExceeded {
+        max: MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS,
+      })
+    );
+    assert_eq!(log.len(), MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS);
+    assert_eq!(
+      log.entries()[4].event(),
+      ScriptedAgentOperationalEvent::BatchFinished
     );
   }
 

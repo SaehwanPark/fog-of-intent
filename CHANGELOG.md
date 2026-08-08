@@ -98,6 +98,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.143 — 2026-08-08
+
+### Added
+
+- Added `m6-scripted-agent-operational-event-v1`, a bounded in-memory
+  non-authoritative event vocabulary and 16-entry log container kept separate
+  from committed simulation history and evidence reports.
+
+### Known limits
+
+- Runtime log production, tracing/transport, durations, diagnostics,
+  persistence, scheduling, decision/result attachment, and broader experiment
+  evidence remain open.
+
 ## 0.1.142 — 2026-08-08
 
 ### Added
