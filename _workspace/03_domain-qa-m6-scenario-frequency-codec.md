@@ -2,8 +2,8 @@
 
 ## Disposition
 
-Pending independent three-pass review of implementation and evidence head
-`248a669`.
+PASS — independent three-pass review found no actionable findings at
+implementation/evidence head `b185c29`.
 
 ## Scope reviewed
 
@@ -14,15 +14,15 @@ not turn arbitrary text into trusted frequency evidence. It owns no scenario
 generation, policy evaluation, transition, history, replay, persistence,
 provider, or outcome authority.
 
-## Evidence target
+## Evidence
 
 One focused frequency-report test covers the canonical five-line wire shape,
 four-selection and singleton round trips, closed malformed-field cases,
 inclusive count handling, oversized input, and verified-report tamper
-rejection. The expected full evidence is one focused report test within 23
+rejection. The full evidence is one focused report test within 23
 focused agent tests, 236 Rust unit tests, 7 binary tests, and 3 RustDoc tests,
 plus formatter, Clippy warnings denied, repository checker, 15 Python policy
-tests, and diff checks.
+tests, and diff checks; all pass at reviewed head `b185c29`.
 
 ## Review limits
 
