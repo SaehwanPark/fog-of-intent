@@ -95,6 +95,23 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.75 — 2026-08-08
+
+### Added
+
+- Added explicit process-edge selection for the versioned
+  `m3-two-window-fixture-v1` executable fixture.
+- Added fail-closed missing, empty, option-shaped, duplicate, and unsupported
+  scenario-argument handling with bounded path-free errors and process status.
+- Added parser and binary regressions for explicit/default selection, option
+  composition, help output, and the existing two-process store smoke path.
+
+### Known limits
+
+- Only the existing deterministic two-window fixture is selectable. Scenario
+  catalogs, external scenario data, arbitrary configuration, complete playable
+  behavior, and accessibility evidence remain deferred.
+
 ## 0.1.74 — 2026-08-08
 
 ### Added

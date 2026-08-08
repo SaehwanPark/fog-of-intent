@@ -28,15 +28,23 @@ fn binary_path() -> PathBuf {
   path
 }
 
-fn run_binary(binary: &Path, root: &Path, input: &str) -> Output {
-  let mut child = Command::new(binary)
+fn run_binary_with_scenario(
+  binary: &Path,
+  root: &Path,
+  scenario: Option<&str>,
+  input: &str,
+) -> Output {
+  let mut command = Command::new(binary);
+  if let Some(scenario) = scenario {
+    command.args(["--scenario", scenario]);
+  }
+  command
     .arg("--run-dir")
     .arg(root)
     .stdin(Stdio::piped())
     .stdout(Stdio::piped())
-    .stderr(Stdio::piped())
-    .spawn()
-    .expect("spawn fixture binary");
+    .stderr(Stdio::piped());
+  let mut child = command.spawn().expect("spawn fixture binary");
   child
     .stdin
     .as_mut()
@@ -70,9 +78,10 @@ fn run_directory_wires_save_and_load_across_processes() {
   let binary = binary_path();
   let root = temporary_root();
 
-  let first = run_binary(
+  let first = run_binary_with_scenario(
     &binary,
     &root,
+    Some("m3-two-window-fixture-v1"),
     "plan contest\ncommit\nadvance\nsave run\nquit\n",
   );
   assert!(first.status.success(), "first stderr: {:?}", first.stderr);
@@ -80,7 +89,12 @@ fn run_directory_wires_save_and_load_across_processes() {
   assert!(first_stdout.contains("save: status=saved run_id=run records=1"));
   assert!(root.join("run.foi-artifact").is_file());
 
-  let second = run_binary(&binary, &root, "load run\ninspect history\nquit\n");
+  let second = run_binary_with_scenario(
+    &binary,
+    &root,
+    Some("m3-two-window-fixture-v1"),
+    "load run\ninspect history\nquit\n",
+  );
   assert!(
     second.status.success(),
     "second stderr: {:?}",
@@ -118,6 +132,20 @@ fn binary_argument_failures_are_non_success_and_path_free() {
       .expect("run option-shaped path parser");
     assert!(!output.status.success());
   }
+
+  for args in [
+    vec!["--scenario"],
+    vec!["--scenario", "unknown-fixture"],
+    vec!["--scenario", "--run-dir"],
+  ] {
+    let output = Command::new(binary_path())
+      .args(args)
+      .output()
+      .expect("run scenario parser");
+    assert!(!output.status.success());
+    let stderr = String::from_utf8(output.stderr).expect("scenario stderr UTF-8");
+    assert!(!stderr.contains("unknown-fixture"));
+  }
 }
 
 #[test]
@@ -130,8 +158,25 @@ fn binary_help_is_successful_and_bounded() {
   assert!(output.status.success());
   assert_eq!(
     String::from_utf8(output.stdout).expect("help UTF-8 output"),
-    "usage: fog-of-intent [--run-dir <path>]\n\noptions:\n  --run-dir <path>  store bounded run artifacts in this directory\n  --help            show this help\n"
+    "usage: fog-of-intent [--scenario <id>] [--run-dir <path>]\n\noptions:\n  --scenario <id>   select the versioned two-window fixture\n  --run-dir <path>  store bounded run artifacts in this directory\n  --help            show this help\n"
   );
+  assert!(output.stderr.is_empty());
+}
+
+#[test]
+fn binary_accepts_the_versioned_fixture_scenario() {
+  let binary = binary_path();
+  let output = Command::new(binary)
+    .args(["--scenario", "m3-two-window-fixture-v1"])
+    .stdin(Stdio::piped())
+    .stdout(Stdio::piped())
+    .stderr(Stdio::piped())
+    .spawn()
+    .expect("spawn explicitly selected fixture binary")
+    .wait_with_output()
+    .expect("wait for explicitly selected fixture binary");
+
+  assert!(output.status.success());
   assert!(output.stderr.is_empty());
 }
 

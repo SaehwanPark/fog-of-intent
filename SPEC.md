@@ -790,10 +790,11 @@ remain open.
 - `src/command_loop.rs` provides the versioned `m3-cli-command-loop-v1` edge
   adapter. It reads newline-delimited input, continues after bounded errors,
   renders each result through the pure text projection, and stops on `quit` or
-  end-of-input. It does not select scenarios, authorize host actions, or add
-  prompts/styling; its bounded process-argument helper parses `--run-dir`
-  without echoing paths, and `src/main.rs` invokes it to inject the host's
-  configured artifact store.
+  end-of-input. Its bounded process-argument helper recognizes the one
+  versioned `--scenario m3-two-window-fixture-v1` ID and `--run-dir` without
+  echoing values; `src/main.rs` maps the closed scenario enum to the existing
+  fixture and injects the configured artifact store. It does not authorize
+  host actions, add prompts/styling, or load external scenario data.
 - `CliRunId<'a>` is the versioned `m3-cli-run-id-v1` borrowed identifier for
   save/load/replay/export requests. It accepts bounded human-readable ASCII
   forms and rejects malformed values before host execution; it does not create
@@ -810,8 +811,9 @@ remain open.
   replay, and debrief projections while keeping true-state snapshots and hashes
   private. `src/host_artifact.rs` gives save/load a versioned, replay-validated
   text artifact and `src/run_store.rs` provides injected file storage; the
-  binary selects it only through an explicit `--run-dir <path>` option and
-  retains the in-memory fixture when the option is absent.
+  binary selects the one versioned fixture ID at the process edge and accepts
+  an explicit `--run-dir <path>` option while retaining the in-memory fixture
+  when that option is absent.
 - Host tests cover staged message/plan/contingency text, pre-commit undo,
   commit/advance, artifact save/load and divergent-input rejection, replay
   verification, debrief, quit, malformed plans, matched-parent branch review,
@@ -820,8 +822,8 @@ remain open.
   output/error variant, control character sanitization, and bounded labels. The
   fixture command loop covers stdin/stdout recovery and quit/end-of-input
   behavior. A two-process integration smoke test covers the explicit run
-  directory handoff. Scenario selection, regenerated/graph branching, and
-  human keyboard/screen-reader evidence remain unimplemented. Store locking
+  directory handoff. Broader scenario catalogs, regenerated/graph branching,
+  and human keyboard/screen-reader evidence remain unimplemented. Store locking
   and fsync/crash recovery remain open.
 
 ## Future
