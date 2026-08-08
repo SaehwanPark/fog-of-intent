@@ -15,15 +15,17 @@ surface.
 ## Overview
 
 Fog of Intent is currently a single Rust 2024 package with no dependencies. The
-binary runs the bounded line-oriented fixture loop; internal `kernel` and
+binary runs the bounded line-oriented fixture loop and accepts one explicit
+`--run-dir` storage option; internal `kernel` and
 `lane` modules provide bounded deterministic transitions, in-memory history, replay,
 branching, coordination, objective, and debrief fixtures. No playable scenario,
 MCP, research, or GUI component exists yet; an injected
-persistent file store now exists as a library boundary, while the binary only
-wraps the bounded fixture loop. M1 is complete as an internal fixture; M2
-remains a bounded lane contract, and M3 now adds a library-only two-window host
+persistent file store now exists as a library boundary, and the binary injects
+it only when that option is supplied. M1 is complete as an internal fixture; M2
+remains a bounded lane contract, and M3 now adds a bounded two-window host
 fixture, replay-validated artifacts, injected file storage, pure terminal text,
-and a thin fixture command loop rather than a complete reference client.
+and an optionally persistent fixture command loop rather than a complete
+reference client.
 
 The M3 CLI grammar is now a pure adapter module: it parses stable verbs and
 borrows payload text, maps observe/inspect/help to typed read requests, maps
@@ -356,8 +358,8 @@ and an architecture update or ADR when it changes a consequential boundary.
   playable scenario, external API, migration framework, or persistence service.
 - M3 has typed command contracts, a bounded host fixture, replay-validated
   artifacts, an injected file store, a pure terminal-text projection, and a
-  thin line-oriented fixture loop; binary store wiring, scenario selection,
-  branch execution, and complete accessibility evidence remain open.
+  thin line-oriented fixture loop with explicit `--run-dir` wiring; scenario
+  selection, branch execution, and complete accessibility evidence remain open.
 - M2 still lacks a communication system, full vision geometry, memory decay,
   automatic threat damage, no-choice host scheduling, adaptive pacing, a complete item/resource economy,
   external scenario serialization, a branch tree, and a broader debrief

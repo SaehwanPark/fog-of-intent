@@ -95,6 +95,22 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.73 — 2026-08-08
+
+### Added
+
+- Added bounded executable argument parsing with `--run-dir <path>` and
+  `--help`; the no-argument binary remains an in-memory fixture loop.
+- Wired the explicit run directory to the injected `CliRunStore` and added a
+  two-process save/load smoke test plus path-free argument failure evidence.
+- Updated the M3 canonical and workspace documents for the executable boundary.
+
+### Known limits
+
+- The binary still has no default storage directory, scenario selection,
+  branch execution, locking, fsync/crash recovery, race-hard symlink
+  protection, or keyboard/screen-reader evidence.
+
 ## 0.1.72 — 2026-08-08
 
 ### Added
