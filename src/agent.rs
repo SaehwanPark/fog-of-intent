@@ -105,6 +105,9 @@ pub const MAX_SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_BYTES: usize = 4096;
 /// Integer basis-point scale for the bounded scenario distribution projection.
 pub const SCRIPTED_AGENT_SCENARIO_DISTRIBUTION_SCALE: u16 = 10_000;
 
+/// Versioned identity for the bounded caller-declared stress-case matrix.
+pub const SCRIPTED_AGENT_STRESS_POPULATION_SCHEMA: &str = "m6-scripted-agent-stress-population-v1";
+
 /// Versioned identity for bounded fixed-fixture frequency baseline comparisons.
 pub const SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_COMPARISON_SCHEMA: &str =
   "m6-scripted-agent-fixture-frequency-compare-v1";
@@ -848,6 +851,162 @@ impl ScriptedAgentFixtureScenarioSelection {
 pub struct ScriptedAgentFixtureScenarioPopulation {
   schema: &'static str,
   selection: ScriptedAgentFixtureScenarioSelection,
+}
+
+/// Closed stress cases used by the bounded M6 population matrix.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentStressCase {
+  IllegalCommand,
+  ExploitSeeking,
+  CommunicationAbuse,
+  DegeneratePolicy,
+}
+
+impl ScriptedAgentStressCase {
+  pub const fn id(self) -> &'static str {
+    match self {
+      Self::IllegalCommand => "illegal-command-v1",
+      Self::ExploitSeeking => "exploit-seeking-v1",
+      Self::CommunicationAbuse => "communication-abuse-v1",
+      Self::DegeneratePolicy => "degenerate-policy-v1",
+    }
+  }
+
+  pub const fn ordered() -> [Self; 4] {
+    [
+      Self::IllegalCommand,
+      Self::ExploitSeeking,
+      Self::CommunicationAbuse,
+      Self::DegeneratePolicy,
+    ]
+  }
+}
+
+/// Closed categorical result IDs for the stress-case matrix.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentStressResult {
+  HostValidationRejected,
+  StaleObservation,
+  MessageInvalidValue,
+  RepeatedStabilize,
+}
+
+impl ScriptedAgentStressResult {
+  pub const fn id(self) -> &'static str {
+    match self {
+      Self::HostValidationRejected => "host_validation_rejected",
+      Self::StaleObservation => "stale_observation",
+      Self::MessageInvalidValue => "message_invalid_value",
+      Self::RepeatedStabilize => "repeated_stabilize",
+    }
+  }
+}
+
+/// One bounded caller-declared stress-case result.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentStressPopulationEntry {
+  case: ScriptedAgentStressCase,
+  result: ScriptedAgentStressResult,
+}
+
+impl ScriptedAgentStressPopulationEntry {
+  pub const fn case(self) -> ScriptedAgentStressCase {
+    self.case
+  }
+
+  pub const fn result(self) -> ScriptedAgentStressResult {
+    self.result
+  }
+}
+
+/// Bounded caller-declared stress-case evidence over existing boundaries.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentStressPopulationReport {
+  schema: &'static str,
+  degenerate_stabilize_count: u8,
+  entries: [ScriptedAgentStressPopulationEntry; 4],
+}
+
+/// Failures from constructing the closed stress-case report.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentStressPopulationError {
+  UnexpectedResult,
+  InvalidDegenerateCount,
+}
+
+impl ScriptedAgentStressPopulationReport {
+  /// Bind the four expected categorical results and one degenerate count.
+  pub fn from_results(
+    results: [ScriptedAgentStressResult; 4],
+    degenerate_stabilize_count: u8,
+  ) -> Result<Self, ScriptedAgentStressPopulationError> {
+    let expected = [
+      ScriptedAgentStressResult::HostValidationRejected,
+      ScriptedAgentStressResult::StaleObservation,
+      ScriptedAgentStressResult::MessageInvalidValue,
+      ScriptedAgentStressResult::RepeatedStabilize,
+    ];
+    if results != expected {
+      return Err(ScriptedAgentStressPopulationError::UnexpectedResult);
+    }
+    if !(1..=MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS)
+      .contains(&usize::from(degenerate_stabilize_count))
+    {
+      return Err(ScriptedAgentStressPopulationError::InvalidDegenerateCount);
+    }
+    let cases = ScriptedAgentStressCase::ordered();
+    Ok(Self {
+      schema: SCRIPTED_AGENT_STRESS_POPULATION_SCHEMA,
+      degenerate_stabilize_count,
+      entries: [
+        ScriptedAgentStressPopulationEntry {
+          case: cases[0],
+          result: results[0],
+        },
+        ScriptedAgentStressPopulationEntry {
+          case: cases[1],
+          result: results[1],
+        },
+        ScriptedAgentStressPopulationEntry {
+          case: cases[2],
+          result: results[2],
+        },
+        ScriptedAgentStressPopulationEntry {
+          case: cases[3],
+          result: results[3],
+        },
+      ],
+    })
+  }
+
+  pub const fn schema(&self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn degenerate_stabilize_count(&self) -> u8 {
+    self.degenerate_stabilize_count
+  }
+
+  pub const fn entries(&self) -> &[ScriptedAgentStressPopulationEntry; 4] {
+    &self.entries
+  }
+
+  /// Render the bounded matrix without performing I/O.
+  pub fn to_markdown(&self) -> String {
+    format!(
+      "# Scripted Agent Stress Population\n\n- schema: {}\n- degenerate_stabilize_count: {}\n\n| case_id | result_id |\n| --- | --- |\n| {} | {} |\n| {} | {} |\n| {} | {} |\n| {} | {} |\n",
+      self.schema,
+      self.degenerate_stabilize_count,
+      self.entries[0].case.id(),
+      self.entries[0].result.id(),
+      self.entries[1].case.id(),
+      self.entries[1].result.id(),
+      self.entries[2].case.id(),
+      self.entries[2].result.id(),
+      self.entries[3].case.id(),
+      self.entries[3].result.id(),
+    )
+  }
 }
 
 impl ScriptedAgentFixtureScenarioPopulation {
@@ -3642,9 +3801,11 @@ mod tests {
   use super::*;
   use crate::kernel::{DrawId, StreamId};
   use crate::lane::{
-    ALLIED_AUTONOMOUS_ACTOR, JungleThreatTruth, LaneIntent, LaneSnapshot, LaneStatus,
-    M2_LANE_RULESET, ObservationId, WavePressure, WaveState, observe_player, validate_lane_request,
+    ALLIED_AUTONOMOUS_ACTOR, JungleThreatTruth, LaneIntent, LaneIntentRequest, LaneSnapshot,
+    LaneStatus, M2_LANE_RULESET, ObservationId, WavePressure, WaveState, observe_player,
+    validate_lane_request,
   };
+  use crate::protocol::{ActorMessageDto, MAX_ACTOR_DRAFT_VALUE_BYTES};
 
   #[test]
   fn cautious_agent_uses_initial_actor_visible_candidates_and_legal_request() {
@@ -5389,6 +5550,103 @@ mod tests {
         })
         .collect::<Vec<_>>(),
       vec![8, 8, 8]
+    );
+  }
+
+  #[test]
+  fn scripted_agent_stress_population_catalog_is_closed_and_reproducible() {
+    let state = LaneSnapshot::initial();
+    let first_receipt = observe_player(&state, ObservationId::new(410));
+    let first_observation = first_receipt.observation();
+    let illegal_request = LaneIntentRequest::new(
+      first_observation.observer(),
+      first_observation.observation_id(),
+      LaneIntent::Withdraw,
+    );
+    assert!(validate_lane_request(&state, &first_receipt, &illegal_request).is_err());
+
+    let stale_request = LaneIntentRequest::new(
+      first_observation.observer(),
+      ObservationId::new(409),
+      LaneIntent::Stabilize,
+    );
+    assert!(validate_lane_request(&state, &first_receipt, &stale_request).is_err());
+
+    assert!(
+      ActorMessageDto::new(
+        first_observation.observer().value(),
+        ALLIED_AUTONOMOUS_ACTOR.value(),
+        first_observation.observation_id().value(),
+        &"x".repeat(MAX_ACTOR_DRAFT_VALUE_BYTES + 1),
+      )
+      .is_err()
+    );
+
+    let second_receipt = observe_player(&state, ObservationId::new(411));
+    let choices = [
+      ScriptedAgent::cautious_v1().choose(first_observation),
+      ScriptedAgent::cautious_v1().choose(second_receipt.observation()),
+    ];
+    let degenerate_stabilize_count = u8::try_from(
+      choices
+        .iter()
+        .filter(|choice| choice.selected_intent() == LaneIntent::Stabilize)
+        .count(),
+    )
+    .expect("bounded degenerate count fits in u8");
+    assert_eq!(degenerate_stabilize_count, 2);
+
+    let results = [
+      ScriptedAgentStressResult::HostValidationRejected,
+      ScriptedAgentStressResult::StaleObservation,
+      ScriptedAgentStressResult::MessageInvalidValue,
+      ScriptedAgentStressResult::RepeatedStabilize,
+    ];
+    let report =
+      ScriptedAgentStressPopulationReport::from_results(results, degenerate_stabilize_count)
+        .expect("stress report binds expected results");
+    assert_eq!(
+      SCRIPTED_AGENT_STRESS_POPULATION_SCHEMA,
+      "m6-scripted-agent-stress-population-v1"
+    );
+    assert_eq!(report.schema(), SCRIPTED_AGENT_STRESS_POPULATION_SCHEMA);
+    assert_eq!(report.degenerate_stabilize_count(), 2);
+    assert_eq!(
+      report
+        .entries()
+        .iter()
+        .map(|entry| (entry.case().id(), entry.result().id()))
+        .collect::<Vec<_>>(),
+      vec![
+        ("illegal-command-v1", "host_validation_rejected"),
+        ("exploit-seeking-v1", "stale_observation"),
+        ("communication-abuse-v1", "message_invalid_value"),
+        ("degenerate-policy-v1", "repeated_stabilize"),
+      ]
+    );
+    assert_eq!(
+      report.to_markdown(),
+      "# Scripted Agent Stress Population\n\n- schema: m6-scripted-agent-stress-population-v1\n- degenerate_stabilize_count: 2\n\n| case_id | result_id |\n| --- | --- |\n| illegal-command-v1 | host_validation_rejected |\n| exploit-seeking-v1 | stale_observation |\n| communication-abuse-v1 | message_invalid_value |\n| degenerate-policy-v1 | repeated_stabilize |\n"
+    );
+    assert_eq!(
+      ScriptedAgentStressPopulationReport::from_results(results, 2),
+      Ok(report.clone())
+    );
+    assert_eq!(
+      ScriptedAgentStressPopulationReport::from_results(
+        [
+          ScriptedAgentStressResult::RepeatedStabilize,
+          ScriptedAgentStressResult::StaleObservation,
+          ScriptedAgentStressResult::MessageInvalidValue,
+          ScriptedAgentStressResult::RepeatedStabilize,
+        ],
+        2,
+      ),
+      Err(ScriptedAgentStressPopulationError::UnexpectedResult)
+    );
+    assert_eq!(
+      ScriptedAgentStressPopulationReport::from_results(results, 0),
+      Err(ScriptedAgentStressPopulationError::InvalidDegenerateCount)
     );
   }
 

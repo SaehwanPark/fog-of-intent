@@ -1419,6 +1419,9 @@ representative replays, and an evidence-limited report.
 - [x] Add a bounded 10,000-point intent-share projection over each verified
   profile-aware selected-intent tally row; broader population-level
   distributional, outcome, and strategic metrics remain open.
+- [x] Add a bounded caller-declared four-case stress matrix over existing
+  validation, freshness, message-codec, and deterministic-policy boundaries;
+  actual adversarial/degenerate populations and exploit search remain open.
 - [ ] Add illegal-command, exploit-seeking, communication-abuse, and degenerate
   policy populations.
 - [ ] Detect outliers and select representative replays deterministically.
