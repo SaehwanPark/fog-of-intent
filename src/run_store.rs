@@ -17,6 +17,10 @@ use crate::host_artifact::MAX_CLI_HOST_ARTIFACT_BYTES;
 pub const CLI_RUN_ARTIFACT_SUFFIX: &str = ".foi-artifact";
 /// Fixed suffix for a same-directory replacement temporary file.
 pub const CLI_RUN_TEMP_SUFFIX: &str = ".foi-artifact.tmp";
+/// Distinct suffix for persisted scripted-agent batch cursors.
+pub const CLI_RUN_BATCH_CHECKPOINT_SUFFIX: &str = ".foi-batch-run";
+/// Fixed suffix for a batch-cursor replacement temporary file.
+pub const CLI_RUN_BATCH_CHECKPOINT_TEMP_SUFFIX: &str = ".foi-batch-run.tmp";
 
 static NEXT_TEMP_FILE: AtomicU64 = AtomicU64::new(0);
 
@@ -48,14 +52,30 @@ impl CliRunStore {
 
   /// Atomically replace one run artifact within the configured root.
   pub fn save(&self, run_id: &str, artifact: &str) -> Result<(), CliRunStoreError> {
+    self.save_with_suffix(
+      run_id,
+      artifact,
+      CLI_RUN_ARTIFACT_SUFFIX,
+      CLI_RUN_TEMP_SUFFIX,
+    )
+  }
+
+  /// Atomically replace one explicitly namespaced artifact within the root.
+  pub(crate) fn save_with_suffix(
+    &self,
+    run_id: &str,
+    artifact: &str,
+    suffix: &str,
+    temporary_suffix: &str,
+  ) -> Result<(), CliRunStoreError> {
     self.validate_run_id(run_id)?;
     if artifact.len() > MAX_CLI_HOST_ARTIFACT_BYTES {
       return Err(CliRunStoreError::ArtifactTooLarge);
     }
     fs::create_dir_all(&self.root)
       .map_err(|error| CliRunStoreError::CreateDirectory { kind: error.kind() })?;
-    let temporary = self.temporary_path(run_id);
-    let final_path = self.path(run_id, CLI_RUN_ARTIFACT_SUFFIX);
+    let temporary = self.temporary_path(run_id, temporary_suffix);
+    let final_path = self.path(run_id, suffix);
     let mut temporary_file = OpenOptions::new()
       .write(true)
       .create_new(true)
@@ -76,8 +96,17 @@ impl CliRunStore {
 
   /// Read one final artifact, rejecting oversized files before unbounded decode.
   pub fn load(&self, run_id: &str) -> Result<String, CliRunStoreError> {
+    self.load_with_suffix(run_id, CLI_RUN_ARTIFACT_SUFFIX)
+  }
+
+  /// Read one explicitly namespaced artifact, rejecting oversized files first.
+  pub(crate) fn load_with_suffix(
+    &self,
+    run_id: &str,
+    suffix: &str,
+  ) -> Result<String, CliRunStoreError> {
     self.validate_run_id(run_id)?;
-    let final_path = self.path(run_id, CLI_RUN_ARTIFACT_SUFFIX);
+    let final_path = self.path(run_id, suffix);
     let metadata = fs::symlink_metadata(&final_path)
       .map_err(|error| CliRunStoreError::Read { kind: error.kind() })?;
     if !metadata.file_type().is_file() {
@@ -108,10 +137,10 @@ impl CliRunStore {
     self.root.join(format!("{run_id}{suffix}"))
   }
 
-  fn temporary_path(&self, run_id: &str) -> PathBuf {
+  fn temporary_path(&self, run_id: &str, suffix: &str) -> PathBuf {
     let sequence = NEXT_TEMP_FILE.fetch_add(1, Ordering::Relaxed);
     self.root.join(format!(
-      "{run_id}{CLI_RUN_TEMP_SUFFIX}.{}.{sequence}",
+      "{run_id}{suffix}.{}.{sequence}",
       std::process::id()
     ))
   }

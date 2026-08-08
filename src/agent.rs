@@ -7,10 +7,14 @@
 //! ties from an explicit policy bundle. It never reads true state, resolves
 //! execution inputs, or owns a transition.
 
-use std::hash::{Hash, Hasher};
+use std::hash::Hasher;
 
 use crate::kernel::{ActorId, DrawId, InputTrace, StreamId};
-use crate::lane::{LaneIntent, LaneIntentRequest, LanerObservation, ObservationId};
+use crate::lane::{
+  HiddenValue, JungleThreatRegion, LaneAbortCondition, LaneActorRole, LaneCommitment,
+  LaneFallbackBehavior, LaneIntent, LaneIntentRequest, LanePingSignal, LanePosition,
+  LaneTargetFocus, LanerObservation, ObservationId,
+};
 
 /// Versioned identity for the first scripted-agent policy boundary.
 pub const SCRIPTED_AGENT_SCHEMA: &str = "m4-scripted-agent-v1";
@@ -628,10 +632,237 @@ fn batch_input_fingerprint(
   manifests: &[ScriptedAgentExperimentManifest],
 ) -> u64 {
   let mut hasher = FnvHasher::default();
-  SCRIPTED_AGENT_BATCH_RUN_SCHEMA.hash(&mut hasher);
-  observation.hash(&mut hasher);
-  manifests.hash(&mut hasher);
+  write_str(&mut hasher, SCRIPTED_AGENT_BATCH_RUN_SCHEMA);
+  write_observation(&mut hasher, observation);
+  write_u8(
+    &mut hasher,
+    u8::try_from(manifests.len()).expect("batch cap fits in u8"),
+  );
+  for manifest in manifests {
+    write_str(&mut hasher, manifest.schema());
+    write_str(&mut hasher, manifest.scenario_id());
+    write_str(&mut hasher, manifest.profile().profile_id());
+    write_str(&mut hasher, manifest.profile().evaluation_rule());
+    write_str(&mut hasher, manifest.selection_rule());
+    write_u64(&mut hasher, manifest.seed_bundle().seed());
+    write_u8(
+      &mut hasher,
+      manifest.seed_bundle().policy_trace().stream().value(),
+    );
+    write_u16(
+      &mut hasher,
+      manifest.seed_bundle().policy_trace().draw().value(),
+    );
+  }
   hasher.finish()
+}
+
+fn write_observation(hasher: &mut FnvHasher, observation: LanerObservation) {
+  write_str(hasher, observation.schema());
+  write_u8(hasher, observation.observer().value());
+  for role in LaneActorRole::roster() {
+    write_u8(hasher, observation.actors().actor(role).value());
+  }
+  write_u32(hasher, observation.turn().value());
+  write_u64(hasher, observation.observation_id().value());
+  write_u8(hasher, observation.self_health().value());
+  write_u8(hasher, observation.self_mana().value());
+  write_u8(hasher, observation.self_gold().value());
+  write_u8(hasher, observation.self_experience().value());
+  write_u8(hasher, observation.self_cooldown().value());
+  write_position(hasher, observation.self_position());
+  write_u8(hasher, observation.wave_pressure().value());
+
+  let opponent = observation.opponent();
+  write_optional_position(hasher, opponent.last_known_position());
+  write_optional_u32(hasher, opponent.last_seen_turn().map(|turn| turn.value()));
+  write_hidden_value(hasher, opponent.health());
+  write_hidden_value(hasher, opponent.posture());
+
+  let threat = observation.jungle_threat();
+  match threat.last_known_region() {
+    None => write_u8(hasher, 0),
+    Some(region) => {
+      write_u8(hasher, 1);
+      write_threat_region(hasher, region);
+      write_u32(
+        hasher,
+        threat
+          .last_seen_turn()
+          .expect("known threat has a last-seen turn")
+          .value(),
+      );
+    }
+  }
+  for intent in observation.available_intents() {
+    write_intent(hasher, intent);
+  }
+  write_optional_intent(hasher, observation.available_threat_response());
+  for focus in observation.available_target_focuses() {
+    write_target_focus(hasher, focus);
+  }
+  for commitment in observation.available_commitments() {
+    write_commitment(hasher, commitment);
+  }
+  for signal in observation.available_ping_signals() {
+    write_ping_signal(hasher, signal);
+  }
+  for condition in observation.available_abort_conditions() {
+    write_abort_condition(hasher, condition);
+  }
+  for behavior in observation.available_fallback_behaviors() {
+    write_fallback_behavior(hasher, behavior);
+  }
+  write_u32(hasher, observation.window().beats());
+}
+
+fn write_str(hasher: &mut FnvHasher, value: &str) {
+  write_u64(
+    hasher,
+    u64::try_from(value.len()).expect("string length fits in u64"),
+  );
+  hasher.write(value.as_bytes());
+}
+
+fn write_u8(hasher: &mut FnvHasher, value: u8) {
+  hasher.write(&[value]);
+}
+
+fn write_u16(hasher: &mut FnvHasher, value: u16) {
+  hasher.write(&value.to_le_bytes());
+}
+
+fn write_u32(hasher: &mut FnvHasher, value: u32) {
+  hasher.write(&value.to_le_bytes());
+}
+
+fn write_u64(hasher: &mut FnvHasher, value: u64) {
+  hasher.write(&value.to_le_bytes());
+}
+
+fn write_optional_u32(hasher: &mut FnvHasher, value: Option<u32>) {
+  match value {
+    Some(value) => {
+      write_u8(hasher, 1);
+      write_u32(hasher, value);
+    }
+    None => write_u8(hasher, 0),
+  }
+}
+
+fn write_hidden_value(hasher: &mut FnvHasher, value: HiddenValue) {
+  match value {
+    HiddenValue::Unknown => write_u8(hasher, 0),
+  }
+}
+
+fn write_position(hasher: &mut FnvHasher, value: LanePosition) {
+  write_u8(
+    hasher,
+    match value {
+      LanePosition::NearTower => 0,
+      LanePosition::Center => 1,
+      LanePosition::FarSide => 2,
+    },
+  );
+}
+
+fn write_optional_position(hasher: &mut FnvHasher, value: Option<LanePosition>) {
+  match value {
+    Some(value) => {
+      write_u8(hasher, 1);
+      write_position(hasher, value);
+    }
+    None => write_u8(hasher, 0),
+  }
+}
+
+fn write_threat_region(hasher: &mut FnvHasher, value: JungleThreatRegion) {
+  match value {
+    JungleThreatRegion::RiverSide => write_u8(hasher, 0),
+  }
+}
+
+fn write_intent(hasher: &mut FnvHasher, value: LaneIntent) {
+  write_u8(
+    hasher,
+    match value {
+      LaneIntent::Stabilize => 0,
+      LaneIntent::Contest => 1,
+      LaneIntent::Yield => 2,
+      LaneIntent::Recall => 3,
+      LaneIntent::Withdraw => 4,
+    },
+  );
+}
+
+fn write_optional_intent(hasher: &mut FnvHasher, value: Option<LaneIntent>) {
+  match value {
+    Some(value) => {
+      write_u8(hasher, 1);
+      write_intent(hasher, value);
+    }
+    None => write_u8(hasher, 0),
+  }
+}
+
+fn write_target_focus(hasher: &mut FnvHasher, value: LaneTargetFocus) {
+  write_u8(
+    hasher,
+    match value {
+      LaneTargetFocus::Minions => 0,
+      LaneTargetFocus::OpposingLaner => 1,
+      LaneTargetFocus::Tower => 2,
+    },
+  );
+}
+
+fn write_commitment(hasher: &mut FnvHasher, value: LaneCommitment) {
+  write_u8(
+    hasher,
+    match value {
+      LaneCommitment::Standard => 0,
+      LaneCommitment::Cautious => 1,
+      LaneCommitment::Aggressive => 2,
+    },
+  );
+}
+
+fn write_ping_signal(hasher: &mut FnvHasher, value: LanePingSignal) {
+  write_u8(
+    hasher,
+    match value {
+      LanePingSignal::None => 0,
+      LanePingSignal::Danger => 1,
+      LanePingSignal::OnMyWay => 2,
+      LanePingSignal::Assist => 3,
+      LanePingSignal::EnemyMissing => 4,
+    },
+  );
+}
+
+fn write_abort_condition(hasher: &mut FnvHasher, value: LaneAbortCondition) {
+  write_u8(
+    hasher,
+    match value {
+      LaneAbortCondition::None => 0,
+      LaneAbortCondition::HealthThreshold => 1,
+      LaneAbortCondition::ThreatSpotted => 2,
+      LaneAbortCondition::ResourceDepleted => 3,
+    },
+  );
+}
+
+fn write_fallback_behavior(hasher: &mut FnvHasher, value: LaneFallbackBehavior) {
+  write_u8(
+    hasher,
+    match value {
+      LaneFallbackBehavior::MaintainPlan => 0,
+      LaneFallbackBehavior::RetreatToTower => 1,
+      LaneFallbackBehavior::SafeFarm => 2,
+      LaneFallbackBehavior::ConserveResources => 3,
+    },
+  );
 }
 
 struct FnvHasher(u64);
@@ -1517,7 +1748,7 @@ mod tests {
       format!(
         "schema=m6-scripted-agent-batch-run-v1\nobserver={}\nobservation_id=45\nmanifest_count=2\ncompleted_count=0\ninput_fingerprint={}\n",
         observation.observer().value(),
-        checkpoint.input_fingerprint(),
+        12216804097755993549u64,
       )
     );
     assert_eq!(
@@ -1567,7 +1798,16 @@ mod tests {
     let root =
       std::env::temp_dir().join(format!("fog-of-intent-agent-batch-{}", std::process::id()));
     let store = crate::agent_batch_store::ScriptedAgentBatchRunStore::new(&root);
+    let host_store = crate::run_store::CliRunStore::new(&root);
+    let host_artifact = "artifact schema=m3-cli-host-artifact-v1 replay_id=m2-two-window-scenario-v3 run_id=resume records=0";
+    host_store
+      .save("resume", host_artifact)
+      .expect("host artifact saves");
     store.save("resume", checkpoint).expect("checkpoint saves");
+    assert_eq!(
+      host_store.load("resume").expect("host artifact loads"),
+      host_artifact
+    );
     let loaded = store.load("resume").expect("checkpoint loads");
     let (first, advanced) = ScriptedAgentBatchRunner::run_next(observation, &manifests, loaded, 1)
       .expect("first chunk runs");
@@ -1596,6 +1836,11 @@ mod tests {
     let mismatched_observation = observe_player(&state, ObservationId::new(46)).observation();
     assert_eq!(
       ScriptedAgentBatchRunner::run_next(mismatched_observation, &manifests, complete, 1),
+      Err(ScriptedAgentBatchRunError::InputMismatch)
+    );
+    let reordered = [manifests[1], manifests[0]];
+    assert_eq!(
+      ScriptedAgentBatchRunner::run_next(observation, &reordered, complete, 1),
       Err(ScriptedAgentBatchRunError::InputMismatch)
     );
     let _ = std::fs::remove_dir_all(root);

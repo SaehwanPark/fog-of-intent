@@ -7,7 +7,10 @@
 use std::path::{Path, PathBuf};
 
 use crate::agent::{ScriptedAgentBatchCheckpoint, ScriptedAgentBatchCheckpointError};
-use crate::run_store::{CliRunStore, CliRunStoreError};
+use crate::run_store::{
+  CLI_RUN_BATCH_CHECKPOINT_SUFFIX, CLI_RUN_BATCH_CHECKPOINT_TEMP_SUFFIX, CliRunStore,
+  CliRunStoreError,
+};
 
 /// Bounded errors exposed by the batch checkpoint store.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -44,7 +47,12 @@ impl ScriptedAgentBatchRunStore {
   ) -> Result<(), ScriptedAgentBatchStoreError> {
     self
       .store
-      .save(run_id, &checkpoint.encode())
+      .save_with_suffix(
+        run_id,
+        &checkpoint.encode(),
+        CLI_RUN_BATCH_CHECKPOINT_SUFFIX,
+        CLI_RUN_BATCH_CHECKPOINT_TEMP_SUFFIX,
+      )
       .map_err(map_store_error)
   }
 
@@ -53,7 +61,10 @@ impl ScriptedAgentBatchRunStore {
     &self,
     run_id: &str,
   ) -> Result<ScriptedAgentBatchCheckpoint, ScriptedAgentBatchStoreError> {
-    let encoded = self.store.load(run_id).map_err(map_store_error)?;
+    let encoded = self
+      .store
+      .load_with_suffix(run_id, CLI_RUN_BATCH_CHECKPOINT_SUFFIX)
+      .map_err(map_store_error)?;
     ScriptedAgentBatchCheckpoint::decode(&encoded)
       .map_err(|error| ScriptedAgentBatchStoreError::InvalidCheckpoint { error })
   }
