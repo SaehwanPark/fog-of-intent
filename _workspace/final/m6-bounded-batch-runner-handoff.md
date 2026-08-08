@@ -3,7 +3,7 @@
 ## Outcome
 
 Implementation is complete; the independent three-pass review passed at
-implementation head `9ecaa64` with no actionable findings.
+reviewed evidence head `42c21f9` with no actionable findings.
 The runner evaluates a bounded manifest list deterministically against one
 actor-visible observation without persistence or transition authority.
 

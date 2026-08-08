@@ -2,7 +2,7 @@
 
 ## Disposition
 
-PASS at implementation head `9ecaa64`; no actionable findings remain after
+PASS at reviewed evidence head `42c21f9`; no actionable findings remain after
 three independent code/API, agent-ecology/domain, and docs/evidence passes.
 
 ## Evidence
