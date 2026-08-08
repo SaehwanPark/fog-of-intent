@@ -126,6 +126,12 @@ impl ScriptedAgentOperationalLogStore {
     let mut segments = Vec::new();
     for entry in entries {
       let entry = entry.map_err(|_| ScriptedAgentOperationalLogStoreError::StorageUnavailable)?;
+      let file_type = entry
+        .file_type()
+        .map_err(|_| ScriptedAgentOperationalLogStoreError::StorageUnavailable)?;
+      if !file_type.is_file() {
+        continue;
+      }
       let name = entry.file_name();
       let name = name.to_string_lossy();
       let Some(value) = name.strip_prefix(&prefix) else {
@@ -134,7 +140,7 @@ impl ScriptedAgentOperationalLogStore {
       let Ok(segment) = value.parse::<u8>() else {
         continue;
       };
-      if segment < MAX_SCRIPTED_AGENT_OPERATIONAL_LOG_SEGMENTS {
+      if segment < MAX_SCRIPTED_AGENT_OPERATIONAL_LOG_SEGMENTS && value == segment.to_string() {
         segments.push(segment);
       }
     }

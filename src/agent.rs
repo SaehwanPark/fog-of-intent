@@ -3741,6 +3741,14 @@ mod tests {
     operational_store
       .save_segment("resume", 3, &second_segment)
       .expect("highest segment saves");
+    std::fs::write(root.join("resume.foi-operational-log.segment-01"), "bad")
+      .expect("leading-zero fixture writes");
+    std::fs::write(root.join("resume.foi-operational-log.segment-4"), "bad")
+      .expect("out-of-range fixture writes");
+    std::fs::write(root.join("resume.foi-operational-log.segment-.tmp0"), "bad")
+      .expect("temporary-name fixture writes");
+    std::fs::create_dir(root.join("resume.foi-operational-log.segment-2"))
+      .expect("non-file fixture creates");
     assert_eq!(
       operational_store
         .load_segment("resume", 0)
