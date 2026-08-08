@@ -139,7 +139,7 @@ still owns legality. It also maps codec failures to the versioned,
 actor-safe `m5-actor-error-v2` code/repair vocabulary and its bounded codec
 without retaining raw input or parser details. `src/host.rs` owns the
 actor-observation, actor-commit, draft-status, draft-clear, history-status, replay-status,
-replay-record, action-result, and completion-gated debrief
+replay-record, saved-replay-record, action-result, and completion-gated debrief
 projections plus actor-action validation and submission entry points: it delegates legality to the lane
 validator and closes a fixture window only after successful validation and
 history append.
@@ -186,6 +186,10 @@ verification; it exposes only a categorical result and bounded record count,
 never hashes, resolved inputs, or traces. `ActorReplayRecordDto` is a bounded
 categorical window/intent/outcome entry returned only after the same replay
 verification and never carries record identity, provenance, or causal detail.
+`CliScenarioHost::actor_replay_records_from_run` performs the same verification
+after loading an ID-derived artifact through the injected store and leaves the
+current host untouched; filesystem hardening and scenario-wide durable replay
+remain outer concerns.
 `ActorReplayDebriefRecordDto` adds only a categorical objective and committed-
 facts attribution for each complete verified window; it remains read-only and
 omits causal, hash, input, and trace detail.

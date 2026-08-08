@@ -706,6 +706,18 @@ canonical policy instead of duplicating it.
 - Prevention: Keep empty clears idempotent, clear only after all checks pass,
   and preserve delivery and communication semantics as separate contracts.
 
+## Verify saved actor projections before returning them
+
+- Context: A saved host artifact can be loaded by a fresh host, but actor-safe
+  replay records must not trust serialized categorical output by itself.
+- Symptom: Projecting records directly from a file could expose tampered or
+  divergent history while appearing to preserve the actor boundary.
+- Resolution: Validate the run ID, decode and restore through explicit inputs,
+  verify replay identity, then project the existing categorical DTOs without
+  replacing the current host.
+- Prevention: Keep saved-run lookup and replay verification ahead of projection;
+  leave filesystem hardening and scenario-wide durable replay separate.
+
 ## Test authorization and redaction together
 
 - Context: Adding actor DTOs incrementally can leave each operation locally
