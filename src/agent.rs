@@ -72,6 +72,12 @@ pub const SCRIPTED_AGENT_BATCH_RUN_SCHEMA: &str = "m6-scripted-agent-batch-run-v
 /// Maximum encoded checkpoint size before parsing or allocation.
 pub const MAX_SCRIPTED_AGENT_BATCH_RUN_BYTES: usize = 4096;
 
+/// Versioned identity for caller-declared bounded run dispositions.
+pub const SCRIPTED_AGENT_RUN_DISPOSITION_SCHEMA: &str = "m6-scripted-agent-run-disposition-v1";
+
+/// Maximum encoded run-disposition size before parsing or allocation.
+pub const MAX_SCRIPTED_AGENT_RUN_DISPOSITION_BYTES: usize = 4096;
+
 /// Versioned identity for the bounded matched-observation sample report.
 pub const SCRIPTED_AGENT_MATCHED_SAMPLE_SCHEMA: &str = "m6-scripted-agent-matched-sample-v1";
 
@@ -518,6 +524,131 @@ pub enum ScriptedAgentBatchRunError {
   Batch(ScriptedAgentBatchError),
   InputMismatch,
   ChunkSizeZero,
+}
+
+/// Closed caller-declared outcomes for one bounded experiment run.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentRunDisposition {
+  Completed,
+  Crashed,
+  TimedOut,
+  MissingBranch,
+  Inconclusive,
+}
+
+impl ScriptedAgentRunDisposition {
+  pub const fn id(self) -> &'static str {
+    match self {
+      Self::Completed => "completed",
+      Self::Crashed => "crashed",
+      Self::TimedOut => "timed_out",
+      Self::MissingBranch => "missing_branch",
+      Self::Inconclusive => "inconclusive",
+    }
+  }
+
+  fn parse_id(value: &str) -> Option<Self> {
+    match value {
+      "completed" => Some(Self::Completed),
+      "crashed" => Some(Self::Crashed),
+      "timed_out" => Some(Self::TimedOut),
+      "missing_branch" => Some(Self::MissingBranch),
+      "inconclusive" => Some(Self::Inconclusive),
+      _ => None,
+    }
+  }
+}
+
+/// Bounded failures from the caller-declared run-disposition codec.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentRunDispositionCodecError {
+  Oversized,
+  UnexpectedLineCount { expected: usize, actual: usize },
+  UnknownField,
+  DuplicateField,
+  MissingField,
+  UnsupportedSchema,
+  InvalidValue,
+}
+
+/// A payload-free, caller-declared status envelope for one bounded run.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentRunDispositionRecord {
+  schema: &'static str,
+  disposition: ScriptedAgentRunDisposition,
+}
+
+impl ScriptedAgentRunDispositionRecord {
+  pub const fn new(disposition: ScriptedAgentRunDisposition) -> Self {
+    Self {
+      schema: SCRIPTED_AGENT_RUN_DISPOSITION_SCHEMA,
+      disposition,
+    }
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn disposition(self) -> ScriptedAgentRunDisposition {
+    self.disposition
+  }
+
+  /// Encode the caller-declared disposition as bounded line-oriented text.
+  pub fn encode(self) -> String {
+    format!(
+      "schema={}\ndisposition={}\n",
+      self.schema,
+      self.disposition.id(),
+    )
+  }
+
+  /// Decode a disposition without inspecting execution or process details.
+  pub fn decode(input: &str) -> Result<Self, ScriptedAgentRunDispositionCodecError> {
+    if input.len() > MAX_SCRIPTED_AGENT_RUN_DISPOSITION_BYTES {
+      return Err(ScriptedAgentRunDispositionCodecError::Oversized);
+    }
+    let lines = input.lines().collect::<Vec<_>>();
+    if lines.len() > 2 {
+      return Err(ScriptedAgentRunDispositionCodecError::UnexpectedLineCount {
+        expected: 2,
+        actual: lines.len(),
+      });
+    }
+    let mut schema = None;
+    let mut disposition = None;
+    for line in lines {
+      let (key, value) = line
+        .split_once('=')
+        .ok_or(ScriptedAgentRunDispositionCodecError::InvalidValue)?;
+      if key.is_empty() || value.is_empty() {
+        return Err(ScriptedAgentRunDispositionCodecError::InvalidValue);
+      }
+      match key {
+        "schema" => {
+          if schema.is_some() {
+            return Err(ScriptedAgentRunDispositionCodecError::DuplicateField);
+          }
+          schema = Some(value);
+        }
+        "disposition" => {
+          if disposition.is_some() {
+            return Err(ScriptedAgentRunDispositionCodecError::DuplicateField);
+          }
+          disposition = Some(value);
+        }
+        _ => return Err(ScriptedAgentRunDispositionCodecError::UnknownField),
+      }
+    }
+    if schema != Some(SCRIPTED_AGENT_RUN_DISPOSITION_SCHEMA) {
+      return Err(ScriptedAgentRunDispositionCodecError::UnsupportedSchema);
+    }
+    let disposition = ScriptedAgentRunDisposition::parse_id(
+      disposition.ok_or(ScriptedAgentRunDispositionCodecError::MissingField)?,
+    )
+    .ok_or(ScriptedAgentRunDispositionCodecError::InvalidValue)?;
+    Ok(Self::new(disposition))
+  }
 }
 
 /// Bounded failures from matched-observation sampling.
@@ -2801,6 +2932,76 @@ mod tests {
         max: MAX_SCRIPTED_AGENT_BATCH_MANIFESTS,
         actual: MAX_SCRIPTED_AGENT_BATCH_MANIFESTS + 1,
       })
+    );
+  }
+
+  #[test]
+  fn run_disposition_codec_preserves_all_closed_statuses_and_rejects_malformed_text() {
+    let dispositions = [
+      ScriptedAgentRunDisposition::Completed,
+      ScriptedAgentRunDisposition::Crashed,
+      ScriptedAgentRunDisposition::TimedOut,
+      ScriptedAgentRunDisposition::MissingBranch,
+      ScriptedAgentRunDisposition::Inconclusive,
+    ];
+    for disposition in dispositions {
+      let record = ScriptedAgentRunDispositionRecord::new(disposition);
+      assert_eq!(record.schema(), SCRIPTED_AGENT_RUN_DISPOSITION_SCHEMA);
+      assert_eq!(record.disposition(), disposition);
+      assert_eq!(
+        ScriptedAgentRunDispositionRecord::decode(&record.encode()),
+        Ok(record)
+      );
+    }
+    let valid =
+      ScriptedAgentRunDispositionRecord::new(ScriptedAgentRunDisposition::Completed).encode();
+    assert_eq!(
+      valid,
+      "schema=m6-scripted-agent-run-disposition-v1\ndisposition=completed\n"
+    );
+    for (malformed, expected) in [
+      (
+        valid.replacen(
+          "schema=m6-scripted-agent-run-disposition-v1",
+          "schema=other",
+          1,
+        ),
+        ScriptedAgentRunDispositionCodecError::UnsupportedSchema,
+      ),
+      (
+        valid.replacen("disposition=completed", "unknown=completed", 1),
+        ScriptedAgentRunDispositionCodecError::UnknownField,
+      ),
+      (
+        valid.replacen("schema=", "disposition=", 1),
+        ScriptedAgentRunDispositionCodecError::DuplicateField,
+      ),
+      (
+        valid.replacen("disposition=completed\n", "", 1),
+        ScriptedAgentRunDispositionCodecError::MissingField,
+      ),
+      (
+        valid.replacen("disposition=completed", "disposition=unknown", 1),
+        ScriptedAgentRunDispositionCodecError::InvalidValue,
+      ),
+      (
+        format!("{valid}extra=value\n"),
+        ScriptedAgentRunDispositionCodecError::UnexpectedLineCount {
+          expected: 2,
+          actual: 3,
+        },
+      ),
+    ] {
+      assert_eq!(
+        ScriptedAgentRunDispositionRecord::decode(&malformed),
+        Err(expected)
+      );
+    }
+    assert_eq!(
+      ScriptedAgentRunDispositionRecord::decode(
+        &"x".repeat(MAX_SCRIPTED_AGENT_RUN_DISPOSITION_BYTES + 1),
+      ),
+      Err(ScriptedAgentRunDispositionCodecError::Oversized)
     );
   }
 

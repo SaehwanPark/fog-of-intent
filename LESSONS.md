@@ -1043,3 +1043,15 @@ canonical policy instead of duplicating it.
   and evaluate only bounded verified-report fields.
 - Prevention: Keep broader thresholds, build identity, causality, outcomes, and
   strategic interpretation behind separate evidence contracts.
+
+## Preserve run dispositions without pretending to detect failures
+
+- Context: M6 needs failures and inconclusive runs to remain visible in bounded
+  experiment evidence even before runtime scheduling or diagnostics exist.
+- Symptom: Treating only successful reports as results silently drops crashes,
+  timeouts, missing branches, and inconclusive work, while inventing automatic
+  detection would add process and execution authority to the policy library.
+- Resolution: Keep a closed caller-declared disposition envelope with stable
+  status IDs and no payload, diagnostic, decision, or result fields.
+- Prevention: Describe this as status preservation only; add detection,
+  diagnostics, attachment, or durable result records under separate contracts.
