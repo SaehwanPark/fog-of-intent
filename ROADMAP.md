@@ -31,13 +31,13 @@ sequencing or checklist differs from this file, this file governs current work.
 | --- | --- | --- |
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
-| Executable | `src/main.rs` | Placeholder `Hello, world!` binary |
-| Package | `Cargo.toml` | Version `0.1.69`, no dependencies |
+| Executable | `src/main.rs`, `src/command_loop.rs` | Line-oriented bounded fixture loop; no scenario selection or persistence |
+| Package | `Cargo.toml` | Version `0.1.70`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
 | Internal kernel/replay fixture | `src/kernel.rs`, `src/serialization.rs` | M1 complete; not playable |
-| Scenario, CLI, MCP, research, GUI | `src/cli.rs` grammar plus `src/host.rs` bounded in-memory host fixture; no terminal loop or persistence | Not implemented as user-facing flows |
+| Scenario, CLI, MCP, research, GUI | Grammar, bounded host, pure text, and fixture loop; no scenario selection or persistence | Not implemented as complete user-facing flows |
 
 ## Milestone Map
 
@@ -855,8 +855,8 @@ API access.
 - [x] Define stable in-session grammar as a typed, dependency-free adapter
   contract.
 - [x] Implement `observe`, bounded actor-visible `inspect`, and contextual help
-  as typed adapter read requests; plain text projection is covered while
-  terminal I/O remains open.
+  as typed adapter read requests; plain text projection and fixture-loop I/O
+  are covered while full client behavior remains open.
 - [x] Define typed adapter requests for `message`, `plan`, contingency,
   `commit`, and `advance`; the bounded host fixture executes only the existing
   two-window scenario.
@@ -956,12 +956,13 @@ exit evidence.
 - [x] Complete a library-only transcript with observe, staged
   message/plan/contingency text, commit, advance, in-memory save/load, replay,
   debrief, and quit.
-- [ ] Add terminal I/O/command-loop integration and persistent storage around
-  the host contract;
+- [x] Add line-oriented terminal I/O/command-loop integration around the host
+  contract; persistent storage remains open.
   keyboard-only and screen-reader inspection remain open.
 
-This is host-backed scenario and text-projection evidence, but not a
-user-facing command loop or the complete M3 terminal/accessibility evidence.
+This is host-backed scenario and text-projection evidence plus a fixture
+command loop, but not the complete M3 reference client or accessibility
+evidence.
 
 ### Current bounded terminal-text evidence
 
@@ -969,7 +970,7 @@ user-facing command loop or the complete M3 terminal/accessibility evidence.
   without ANSI styling, terminal I/O, or hidden-state lookup.
 - [x] Sanitize control characters in echoed user context and keep domain
   failures redacted to the bounded host error categories.
-- [ ] Validate a real terminal command loop, keyboard/focus behavior, and
+- [ ] Validate complete interactive behavior, keyboard/focus behavior, and
   screen-reader semantics with human-oriented inspection.
 
 ### Deliverables

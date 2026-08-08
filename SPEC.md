@@ -733,8 +733,9 @@ playability, or human-experience evidence.
 
 ### M3 — CLI grammar foundation — 2026-08-06
 
-**Status:** Bounded grammar, in-memory host, and pure terminal-text evidence
-delivered; terminal I/O and persistent flows remain open.
+**Status:** Bounded grammar, in-memory host, pure terminal text, and a thin
+fixture command loop delivered; persistence, scenario selection, and complete
+accessibility evidence remain open.
 
 - `src/cli.rs` defines stable lowercase command identities and borrowed
   payloads for the planned in-session verbs.
@@ -782,15 +783,20 @@ delivered; terminal I/O and persistent flows remain open.
   code has no terminal I/O, rendering loop, or mutable runtime presentation
   state. The versioned `m3-cli-terminal-text-v1` projection consumes
   host-projected actor-valid values at the edge without authorizing commands or
-  mutating history; terminal-loop and accessibility evidence remain open.
+  mutating history; complete client and accessibility evidence remain open.
+- `src/command_loop.rs` provides the versioned `m3-cli-command-loop-v1` edge
+  adapter. It reads newline-delimited input, continues after bounded errors,
+  renders each result through the pure text projection, and stops on `quit` or
+  end-of-input. It does not select scenarios, persist artifacts, or add
+  prompts/styling.
 - `CliRunId<'a>` is the versioned `m3-cli-run-id-v1` borrowed identifier for
   save/load/replay/export requests. It accepts bounded human-readable ASCII
   forms and rejects malformed values before host execution; it does not create
   persistence, guarantee uniqueness, or alter replay identity.
 - CLI tests now exercise a representative grammar transcript and common errors
   across read/write/process/session mappings. This remains parser/request
-  evidence only; host-backed scenario and terminal-text evidence are described
-  below, while terminal I/O remains unimplemented.
+  evidence only; host-backed scenario, terminal-text, and fixture-loop evidence
+  are described below, while persistence and full client behavior remain open.
 - `src/host.rs` now provides the versioned `m3-cli-host-v1` synchronous host
   fixture. It accepts explicit resolved inputs, maps the grammar to a bounded
   two-window scenario, and returns actor-valid observation/history, outcome,
@@ -800,9 +806,10 @@ delivered; terminal I/O and persistent flows remain open.
   commit/advance, in-memory save/load, replay verification, debrief, quit,
   malformed plans, unsupported branches, and deterministic repeated runs. A
   pure text renderer now covers every host output/error variant, control
-  character sanitization, and bounded labels. Persistent backend, branch
-  execution, terminal I/O, and human keyboard/screen-reader evidence remain
-  unimplemented.
+  character sanitization, and bounded labels. The fixture command loop covers
+  stdin/stdout recovery and quit/end-of-input behavior. Persistent backend,
+  scenario selection, branch execution, and human keyboard/screen-reader
+  evidence remain unimplemented.
 
 ## Future
 

@@ -95,6 +95,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.70 — 2026-08-08
+
+### Added
+
+- Added the versioned `m3-cli-command-loop-v1` line-oriented stdin/stdout edge
+  adapter and wired the binary to the deterministic two-window fixture host.
+- The loop renders plain text results and bounded errors, continues after
+  malformed commands, and exits cleanly on `quit` or end-of-input.
+
+### Known limits
+
+- The binary remains a deterministic fixture loop without scenario selection,
+  persistent storage, branch execution, prompt styling, or human
+  keyboard/screen-reader evidence.
+
 ## 0.1.69 — 2026-08-08
 
 ### Added

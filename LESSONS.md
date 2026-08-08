@@ -125,3 +125,18 @@ canonical policy instead of duplicating it.
 - Prevention: Keep presentation downstream of actor-valid DTOs, make errors
   actionable but bounded, and treat plain text/accessibility structure as
   evidence separate from terminal I/O or human usability claims.
+
+## Keep command-loop I/O at the outer edge
+
+- Context: The first executable loop needed to connect line input/output to the
+  bounded host without changing the deterministic core.
+- Symptom: Putting buffering, prompts, retries, or terminal writes in host or
+  renderer code would make simulation behavior depend on environment effects.
+- Cause: A small CLI loop can look like harmless glue while quietly becoming a
+  second lifecycle or presentation authority.
+- Resolution: Keep `BufRead`/`Write` handling in `command_loop.rs`, pass each
+  line to the host, render only the returned actor-valid value, and continue on
+  bounded errors until `quit` or end-of-input.
+- Prevention: Treat I/O as an outer adapter concern, keep the loop
+  line-oriented and deterministic, and test recovery/exit behavior separately
+  from terminal usability or accessibility claims.

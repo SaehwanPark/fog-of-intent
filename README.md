@@ -4,10 +4,10 @@ A turn-based, AI-native team-strategy simulation about making plans under
 uncertainty and living with how teammates interpret and execute them.
 
 > **Project status:** Pre-playable foundation. The repository currently
-> contains a Rust 2024 placeholder binary, an internal deterministic kernel and
-> replay fixtures, canonical planning/spec documents, and a domain-oriented
-> agent harness. No playable simulation, command loop, MCP server, persistence
-> service, or GUI exists yet.
+> contains a Rust 2024 line-oriented fixture command loop, an internal
+> deterministic kernel and replay fixtures, canonical planning/spec documents,
+> and a domain-oriented agent harness. No complete playable simulation, MCP
+> server, persistence service, or GUI exists yet.
 
 ## The Idea
 
@@ -77,11 +77,11 @@ players?
 | --- | --- |
 | Current roadmap milestone | M2 — One-Lane Vertical Slice (Active) |
 | Repository governance and canonical docs | Complete — M0 |
-| Rust package | `0.1.69`, edition 2024, Rust `1.96`, no dependencies, single package |
-| Executable behavior | Prints `Hello, world!`; bounded host orchestration is library-only |
+| Rust package | `0.1.70`, edition 2024, Rust `1.96`, no dependencies, single package |
+| Executable behavior | Runs a line-oriented deterministic two-window fixture loop; no persistence or scenario selection |
 | Deterministic kernel | M1 fixture/codec complete; M2 v3 internal lane-window, explicit four-actor roster, retained-resource aggregate, intent, observation, branch, coordination, objective, strategy-fixture, scenario, replay, delayed-origin provenance, debrief, advance-condition, and belief/report contracts implemented |
 | One-lane scenario | Internal diagnostic windows and fixtures cover bounded intents, observations, coordination, resources, replay, and debrief projections — full scenario not complete |
-| CLI reference experience | Stable grammar plus typed requests, labels, draft/undo, run IDs, in-memory host transcript, and pure terminal text projection; terminal I/O loop and persistent flows remain open |
+| CLI reference experience | Stable grammar plus typed requests, labels, draft/undo, run IDs, in-memory host transcript, pure text projection, and a fixture command loop; persistence, scenario selection, and accessibility evidence remain open |
 | Agent ecology and MCP | One bounded M2 proposal baseline; full ecology/MCP not implemented — M4/M5 |
 | Behavioral experiments and calibration | Not implemented — M6/M7 |
 | Team play, full match, human alpha, optional GUI | Not implemented — M8-M11 |
@@ -115,8 +115,8 @@ python3 -m unittest discover -s scripts -p 'test_*.py'
 ```
 
 These commands validate the internal M1 kernel and M2 lane boundary plus
-repository policy; the binary itself remains a placeholder until a later
-milestone adds a user-facing host.
+repository policy; the binary runs only the bounded fixture host and is not a
+complete playable reference client.
 
 ## Canonical Documents
 
@@ -166,7 +166,7 @@ git practices remain reusable global concerns.
 ## Repository Map
 
 ```text
-src/                         Rust placeholder plus internal kernel fixtures
+src/                         Rust fixture loop plus internal kernel/adapter fixtures
 docs/                        Proposal, stack analysis, ADRs, terminology, and harness contract
 scripts/                     Dependency-free repository currentness checks
 .agents/skills/              Repo-local domain skills
