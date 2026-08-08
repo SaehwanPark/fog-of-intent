@@ -1224,6 +1224,14 @@ transport-integrated sessions and broader protocol compatibility remain open.
   every delta is zero. This is metric-side fixed-fixture evidence, not outlier
   detection, threshold calibration, representative replay selection, causal
   attribution, population inference, or outcome/strategic evidence.
+- `ScriptedAgentTallyOutlierThresholdReport` defines
+  `m6-scripted-agent-tally-outlier-threshold-v1` under
+  `m6-fixed-intent-delta-outlier-threshold-v1`. It classifies the existing
+  largest-delta candidate as `above_threshold`, `below_threshold`, or
+  `no_candidate` using an inclusive magnitude threshold of 2. This is a
+  provisional fixed-fixture signal, not calibrated outlier detection,
+  representative replay selection, causal attribution, population inference,
+  or outcome/strategic evidence.
 - `ScriptedAgentOperationalLogSequenceReport` defines
   `m6-scripted-agent-operational-log-sequence-v1` under the fixed
   `m6-operational-start-chunk-finish-v1` rule. It classifies complete,
