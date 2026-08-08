@@ -5386,6 +5386,50 @@ mod tests {
         ScriptedAgentMatchedScenarioTallyComparisonCodecError::DuplicateField,
       ),
       (
+        encoded.replacen(
+          "observer=1\nbaseline_pair_count=4",
+          "baseline_pair_count=4\nobserver=1",
+          1,
+        ),
+        ScriptedAgentMatchedScenarioTallyComparisonCodecError::DuplicateField,
+      ),
+      (
+        encoded.replacen("cautious-laner-v1", "unknown-profile-v1", 1),
+        ScriptedAgentMatchedScenarioTallyComparisonCodecError::InvalidValue,
+      ),
+      (
+        encoded.replacen(
+          "threat-first-pressure-aware-fixed-score-v1",
+          "contest-first-fixed-score-v1",
+          1,
+        ),
+        ScriptedAgentMatchedScenarioTallyComparisonCodecError::InvalidValue,
+      ),
+      (
+        encoded.replacen("baseline_pair_count=4", "baseline_pair_count=x", 1),
+        ScriptedAgentMatchedScenarioTallyComparisonCodecError::InvalidValue,
+      ),
+      (
+        encoded.replacen("|7|0|0|0|1|5|0|0|0|3\n", "|x|0|0|0|1|5|0|0|0|3\n", 1),
+        ScriptedAgentMatchedScenarioTallyComparisonCodecError::InvalidValue,
+      ),
+      (
+        encoded.replacen("entries=3", "entries=0", 1),
+        ScriptedAgentMatchedScenarioTallyComparisonCodecError::InvalidValue,
+      ),
+      (
+        encoded.replacen("entries=3", "entries=17", 1),
+        ScriptedAgentMatchedScenarioTallyComparisonCodecError::InvalidValue,
+      ),
+      (
+        encoded.replacen(
+          "row=cautious-laner-v1|threat-first-pressure-aware-fixed-score-v1|7|0|0|0|1|5|0|0|0|3\nrow=risk-taking-laner-v1|contest-first-fixed-score-v1|0|8|0|0|0|0|8|0|0|0\n",
+          "row=risk-taking-laner-v1|contest-first-fixed-score-v1|0|8|0|0|0|0|8|0|0|0\nrow=cautious-laner-v1|threat-first-pressure-aware-fixed-score-v1|7|0|0|0|1|5|0|0|0|3\n",
+          1,
+        ),
+        ScriptedAgentMatchedScenarioTallyComparisonCodecError::InputMismatch,
+      ),
+      (
         encoded.lines().take(6).collect::<Vec<_>>().join("\n"),
         ScriptedAgentMatchedScenarioTallyComparisonCodecError::MissingField,
       ),
