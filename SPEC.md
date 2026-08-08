@@ -839,26 +839,33 @@ remain open.
 
 ### M4 — First scripted-agent policy boundary — 2026-08-08
 
-**Status:** One actor-visible deterministic policy baseline delivered; broader
-agent ecology, population comparisons, and external adapters remain open.
+**Status:** Two actor-visible deterministic policy profiles and one matched
+input comparison delivered; broader agent ecology, population comparisons, and
+external adapters remain open.
 
 - `src/agent.rs` defines the versioned `m4-scripted-agent-v1` policy boundary
-  and the `cautious-laner-v1` profile. The profile records candidate,
-  evaluation, and selection rule identities so a decision can be inspected
-  without treating policy behavior as hidden simulation state.
+  and the `cautious-laner-v1` and `risk-taking-laner-v1` profiles. Each profile
+  records candidate, evaluation, and selection rule identities so a decision
+  can be inspected without treating policy behavior as hidden simulation
+  state.
 - `ScriptedAgent` consumes only a `LanerObservation`, copies its advertised
   legal intents, adds the observation's optional visible threat response, and
-  evaluates candidates with the fixed `threat-first-fixed-score-v1` table.
+  evaluates candidates with the profile-specific fixed
+  `threat-first-fixed-score-v1` or `contest-first-fixed-score-v1` table.
   Selection is the stable maximum-score candidate in advertised order.
 - `ScriptedAgentDecision` returns the selected intent together with the
   observer-bound `LaneIntentRequest`; the host remains responsible for
   validating freshness and legality before any transition. The policy does not
   read true state, resolve execution inputs, mutate history, communicate, or
   own a transition.
+- A matched initial observation selects `Stabilize` for the cautious profile
+  and `Contest` for the risk-taking profile, while both requests pass the
+  existing lane validator. This demonstrates a reproducible profile difference
+  only; it is not a strategic-quality or human-realism result.
 - Focused tests cover the initial candidate set, visible-threat prioritization,
-  host validation, and repeated identical-observation reproducibility. This
-  evidence is a single library policy slice, not a claim of strategic quality
-  or human behavioral realism.
+  host validation, repeated identical-observation reproducibility, and the
+  matched profile difference. This evidence is a bounded library comparison,
+  not a claim of strategic quality or human behavioral realism.
 
 ## Future
 

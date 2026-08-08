@@ -120,10 +120,10 @@ projection, `result.rs` owns transition result/debrief assembly, and
 `transition.rs` owns the public types and façade. The other paths are
 project-state, design-source, and agent-workflow artifacts.
 
-`src/agent.rs` is a pure, versioned policy boundary. The first
-`m4-scripted-agent-v1` profile consumes actor-visible lane observations and
-returns a request for host validation; it does not inspect true state, resolve
-execution, communicate, or mutate authoritative history.
+`src/agent.rs` is a pure, versioned policy boundary. Its
+`m4-scripted-agent-v1` cautious and risk-taking profiles consume actor-visible
+lane observations and return requests for host validation; they do not inspect
+true state, resolve execution, communicate, or mutate authoritative history.
 
 ## Target Components
 
