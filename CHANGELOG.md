@@ -98,6 +98,22 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.139 — 2026-08-08
+
+### Added
+
+- Added `m6-scripted-agent-fixture-frequency-compare-v1`, a bounded comparison
+  of two caller-declared verified frequency reports with stable row order and
+  signed candidate-minus-baseline deltas; independent build provenance and
+  causal attribution remain open.
+
+### Known limits
+
+- Independent build provenance, causal attribution, durable export, arbitrary
+  report construction, population generation, random/distributional sampling,
+  outcomes, strategic metrics, persistence, providers, calibration, and human
+  evidence remain open.
+
 ## 0.1.138 — 2026-08-08
 
 ### Added

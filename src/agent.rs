@@ -96,6 +96,10 @@ pub const SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_SCHEMA: &str =
 /// Maximum encoded scenario-frequency report size before parsing/allocation.
 pub const MAX_SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_BYTES: usize = 4096;
 
+/// Versioned identity for bounded fixed-fixture frequency baseline comparisons.
+pub const SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_COMPARISON_SCHEMA: &str =
+  "m6-scripted-agent-fixture-frequency-compare-v1";
+
 /// Versioned identity for bounded matched-scenario selected-intent tallies.
 pub const SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_SCHEMA: &str =
   "m6-scripted-agent-matched-scenario-tally-v1";
@@ -697,6 +701,83 @@ pub enum ScriptedAgentFixtureScenarioFrequencyCodecError {
   UnsupportedSchema,
   InvalidValue,
   InputMismatch,
+}
+
+/// One actor-safe row in a declared baseline comparison.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentFixtureScenarioFrequencyComparisonEntry {
+  scenario_id: &'static str,
+  baseline_count: u8,
+  candidate_count: u8,
+}
+
+impl ScriptedAgentFixtureScenarioFrequencyComparisonEntry {
+  pub const fn scenario_id(self) -> &'static str {
+    self.scenario_id
+  }
+
+  pub const fn baseline_count(self) -> u8 {
+    self.baseline_count
+  }
+
+  pub const fn candidate_count(self) -> u8 {
+    self.candidate_count
+  }
+
+  pub fn delta(self) -> i16 {
+    i16::from(self.candidate_count) - i16::from(self.baseline_count)
+  }
+}
+
+/// Bounded row deltas between two caller-declared verified frequency reports.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentFixtureScenarioFrequencyComparisonReport {
+  schema: &'static str,
+  baseline_selection_count: u8,
+  candidate_selection_count: u8,
+  entries: [ScriptedAgentFixtureScenarioFrequencyComparisonEntry; 2],
+}
+
+impl ScriptedAgentFixtureScenarioFrequencyComparisonReport {
+  /// Compare two verified reports without rerunning selection or policy code.
+  pub fn from_reports(
+    baseline: &ScriptedAgentFixtureScenarioFrequencyReport,
+    candidate: &ScriptedAgentFixtureScenarioFrequencyReport,
+  ) -> Self {
+    Self {
+      schema: SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_COMPARISON_SCHEMA,
+      baseline_selection_count: baseline.selection_count,
+      candidate_selection_count: candidate.selection_count,
+      entries: [
+        ScriptedAgentFixtureScenarioFrequencyComparisonEntry {
+          scenario_id: baseline.entries[0].scenario_id,
+          baseline_count: baseline.entries[0].count,
+          candidate_count: candidate.entries[0].count,
+        },
+        ScriptedAgentFixtureScenarioFrequencyComparisonEntry {
+          scenario_id: baseline.entries[1].scenario_id,
+          baseline_count: baseline.entries[1].count,
+          candidate_count: candidate.entries[1].count,
+        },
+      ],
+    }
+  }
+
+  pub const fn schema(&self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn baseline_selection_count(&self) -> u8 {
+    self.baseline_selection_count
+  }
+
+  pub const fn candidate_selection_count(&self) -> u8 {
+    self.candidate_selection_count
+  }
+
+  pub const fn entries(&self) -> &[ScriptedAgentFixtureScenarioFrequencyComparisonEntry; 2] {
+    &self.entries
+  }
 }
 
 impl ScriptedAgentFixtureScenarioFrequencyReport {
@@ -3577,6 +3658,70 @@ mod tests {
       ),
       Err(ScriptedAgentFixtureScenarioFrequencyCodecError::Oversized)
     );
+  }
+
+  #[test]
+  fn fixture_frequency_report_comparison_preserves_declared_order_and_deltas() {
+    let baseline_selection = ScriptedAgentFixtureScenarioSelection::from_ids(
+      &[
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+      ],
+      &[
+        [ObservationId::new(150), ObservationId::new(151)],
+        [ObservationId::new(152), ObservationId::new(153)],
+      ],
+    )
+    .expect("baseline selection builds");
+    let candidate_selection = ScriptedAgentFixtureScenarioSelection::from_ids(
+      &[
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+      ],
+      &[
+        [ObservationId::new(154), ObservationId::new(155)],
+        [ObservationId::new(156), ObservationId::new(157)],
+        [ObservationId::new(158), ObservationId::new(159)],
+        [ObservationId::new(160), ObservationId::new(161)],
+      ],
+    )
+    .expect("candidate selection builds");
+    let baseline = ScriptedAgentFixtureScenarioFrequencyReport::from_selection(&baseline_selection);
+    let candidate =
+      ScriptedAgentFixtureScenarioFrequencyReport::from_selection(&candidate_selection);
+    let comparison =
+      ScriptedAgentFixtureScenarioFrequencyComparisonReport::from_reports(&baseline, &candidate);
+    assert_eq!(
+      SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_COMPARISON_SCHEMA,
+      "m6-scripted-agent-fixture-frequency-compare-v1"
+    );
+    assert_eq!(
+      comparison.schema(),
+      "m6-scripted-agent-fixture-frequency-compare-v1"
+    );
+    assert_eq!(comparison.baseline_selection_count(), 2);
+    assert_eq!(comparison.candidate_selection_count(), 4);
+    assert_eq!(comparison.entries()[0].scenario_id(), "safe-fixture-v1");
+    assert_eq!(comparison.entries()[0].baseline_count(), 1);
+    assert_eq!(comparison.entries()[0].candidate_count(), 2);
+    assert_eq!(comparison.entries()[0].delta(), 1);
+    assert_eq!(
+      comparison.entries()[1].scenario_id(),
+      "river-side-threat-v1"
+    );
+    assert_eq!(comparison.entries()[1].baseline_count(), 1);
+    assert_eq!(comparison.entries()[1].candidate_count(), 2);
+    assert_eq!(comparison.entries()[1].delta(), 1);
+    assert_eq!(
+      comparison,
+      ScriptedAgentFixtureScenarioFrequencyComparisonReport::from_reports(&baseline, &candidate)
+    );
+    let reversed =
+      ScriptedAgentFixtureScenarioFrequencyComparisonReport::from_reports(&candidate, &baseline);
+    assert_eq!(reversed.entries()[0].delta(), -1);
+    assert_eq!(reversed.entries()[1].delta(), -1);
   }
 
   #[test]

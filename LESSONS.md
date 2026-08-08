@@ -1020,3 +1020,15 @@ canonical policy instead of duplicating it.
 - Prevention: Keep presentation projections deterministic and side-effect-free;
   introduce persistence, broader metrics, or export formats only with separate
   contracts and evidence.
+
+## Compare verified reports without claiming build causality
+
+- Context: M6 needed a bounded baseline signal before independent build
+  provenance and causal attribution were authorized.
+- Symptom: Calling two caller-supplied aggregates a build-to-build result can
+  imply that a code change caused the delta even when no build identity is
+  recorded.
+- Resolution: Compare only constructor-verified reports, preserve catalog order,
+  and expose signed candidate-minus-baseline deltas under a distinct schema.
+- Prevention: Label this as declared-baseline evidence and keep build identity,
+  causal analysis, outcomes, and strategic metrics behind separate contracts.

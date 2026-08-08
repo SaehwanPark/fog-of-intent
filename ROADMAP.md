@@ -1403,6 +1403,9 @@ representative replays, and an evidence-limited report.
 - [x] Export bounded machine-readable data and a concise pure Markdown
   evidence report for the verified fixed-fixture frequency slice; durable
   export, arbitrary report pipelines, and broader metrics remain open.
+- [x] Compare caller-declared verified fixed-fixture frequency reports with
+  bounded ordered row deltas; independent build provenance and causal
+  attribution remain open.
 - [ ] Preserve crashes, timeouts, missing branches, and inconclusive results.
 - [ ] Compare build-to-build behavior against a declared baseline.
 
