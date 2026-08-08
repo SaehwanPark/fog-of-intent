@@ -98,6 +98,22 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.132 — 2026-08-08
+
+### Added
+
+- Added `m6-scripted-agent-matched-scenarios-v1`, a bounded composition of one
+  to four caller-supplied matched observation pairs with globally distinct IDs,
+  stable pair/observation/manifest order, and no scenario-generation authority.
+- Added focused repeated-equality, ordering, mixed-actor, duplicate-ID, empty,
+  and capacity-bound evidence while reusing the existing matched-sample and
+  seeded batch contracts.
+
+### Known limits
+
+- Scenario generation/selection, population and distributional sampling,
+  outcomes, metrics, persistence, providers, and calibration remain open.
+
 ## 0.1.131 — 2026-08-08
 
 ### Added

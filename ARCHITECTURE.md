@@ -146,6 +146,10 @@ transition, history, or provider authority.
 ruleset, scenario, policy schema, and profile identities; it marks
 prompt/model/tool-schema/extractor versions as not applicable and does not
 change manifest, execution, storage, or provider boundaries.
+`ScriptedAgentMatchedScenarioSample` composes one to four caller-supplied
+matched pairs in stable order, requiring one actor and globally distinct
+observation IDs; it generates no scenarios or populations and owns no
+distribution, outcome, transition, history, or provider authority.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO
