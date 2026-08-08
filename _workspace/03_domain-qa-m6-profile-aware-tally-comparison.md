@@ -2,23 +2,26 @@
 
 ## Disposition
 
-Pending independent three-pass review of implementation head.
+PASS: the independent three-pass review found no actionable findings at
+implementation/evidence head `f9b7cde`.
 
-## Scope to review
+## Scope reviewed
 
-- The focused comparison must bind the literal comparison schema and preserve
-  cautious, risk-taking, and yielding profile/evaluation-rule row order.
-- It must retain baseline/candidate pair and observation counts, expose exact
-  bounded intent counts, and compute signed candidate-minus-baseline deltas.
-- It must reject mismatched observers and differently ordered profile/rule rows
+- The focused comparison binds the literal schema and preserves cautious,
+  risk-taking, and yielding profile/evaluation-rule row order.
+- It retains baseline/candidate pair and observation counts, exposes exact
+  bounded intent counts, and computes signed candidate-minus-baseline deltas.
+- It rejects mismatched observers and differently ordered profile/rule rows
   without rerunning policy evaluation or adding host/lane authority.
 
-## Evidence target
+## Evidence
 
-One focused profile-aware tally comparison regression is expected within 31
-focused agent tests and 244 Rust unit tests, 7 binary tests, 3 RustDoc tests,
-15 Python tests, formatter, Clippy with warnings denied, repository checker,
-and diff checks.
+One focused profile-aware tally comparison regression covers schema, ordered
+profile/rule rows, exact counts, signed/reversed deltas, repeatability, and
+mismatch errors. The full evidence is 31 focused agent tests within 244 Rust
+unit tests, 7 binary tests, 3 RustDoc tests, 15 Python tests, formatter,
+Clippy with warnings denied, repository checker, and diff checks, all passing
+at `f9b7cde`.
 
 ## Limits
 
@@ -29,5 +32,5 @@ calibration, durable export, or human evidence.
 
 ## Required fixes
 
-To be determined by independent review. The bounded comparison must retain its
-shared-observer and ordered-row identity checks.
+None. The bounded comparison retains its shared-observer and ordered-row
+identity checks.

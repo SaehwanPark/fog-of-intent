@@ -2,15 +2,16 @@
 
 ## Outcome
 
-Implementation is ready for independent review at the current branch head.
+Implementation and evidence are complete at head `f9b7cde`; the independent
+three-pass review passed with no actionable findings.
 
-## Verification target
+## Verification
 
-The focused comparison regression is expected to bind the schema, ordered
-profile/rule rows, exact counts, signed deltas, repeatability, and mismatch
-errors within 31 focused agent tests and 244 Rust unit tests, 7 binary tests,
-3 RustDoc tests, 15 Python tests, formatter, Clippy, repository, and diff
-gates.
+One focused comparison regression binds the schema, ordered profile/rule rows,
+exact counts, signed and reversed deltas, repeatability, and mismatch errors.
+The full evidence is 31 focused agent tests within 244 Rust unit tests, 7
+binary tests, 3 RustDoc tests, and 15 Python tests; formatter, Clippy,
+repository, and diff gates pass at `f9b7cde`.
 
 ## Limits
 
