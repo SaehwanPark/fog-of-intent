@@ -99,7 +99,9 @@ not increment the package version.
 
 ### Added
 
-- Bound the two-observation action tally to its actor-visible observation IDs,
+- Bumped the action-tally schema to
+  `m4-scripted-agent-action-tally-v2` when binding the two-observation tally to
+  its actor-visible observation IDs,
   exposing both IDs and rejecting duplicate IDs before policy evaluation.
 
 ### Known limits

@@ -881,7 +881,7 @@ open.
   score, and a bounded candidate count tied to the same observer and
   observation ID; it does not expose state, hashes, or execution inputs.
 - `ScriptedAgentActionTallyReport` provides the versioned
-  `m4-scripted-agent-action-tally-v1` actor-safe aggregate over exactly two
+  `m4-scripted-agent-action-tally-v2` actor-safe aggregate over exactly two
   uniquely identified observations. It exposes only profile/rule IDs, the
   shared observer, the bounded observation count and observation IDs, and
   selected-intent counts; mixed observers and duplicate IDs are rejected before

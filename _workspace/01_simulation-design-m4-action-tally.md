@@ -9,7 +9,8 @@ The host remains the sole authority for all simulation lifecycle operations.
 
 ## Versioned contract
 
-- Schema: `m4-scripted-agent-action-tally-v1`
+- Schema: `m4-scripted-agent-action-tally-v2` (v1 is the historical
+  count-only contract)
 - Observation count: exactly two, with distinct retained observation IDs
 - Observer contract: both observations must have the same actor identity
 - Fields: profile ID, evaluation-rule ID, observer, observation count, the two

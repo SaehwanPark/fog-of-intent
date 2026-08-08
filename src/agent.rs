@@ -23,7 +23,7 @@ pub const YIELDING_SCRIPTED_AGENT_PROFILE_ID: &str = "yielding-laner-v1";
 pub const SCRIPTED_AGENT_METRICS_SCHEMA: &str = "m4-scripted-agent-metrics-v1";
 
 /// Versioned bounded selected-action tally schema.
-pub const SCRIPTED_AGENT_ACTION_TALLY_SCHEMA: &str = "m4-scripted-agent-action-tally-v1";
+pub const SCRIPTED_AGENT_ACTION_TALLY_SCHEMA: &str = "m4-scripted-agent-action-tally-v2";
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum ScriptedAgentEvaluationRule {
@@ -289,8 +289,8 @@ impl ScriptedAgentComparisonReport {
   }
 }
 
-/// Bounded error returned when a tally mixes observations from different
-/// actor identities.
+/// Bounded error returned when a tally mixes observers or repeats an
+/// observation ID.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ScriptedAgentActionTallyError {
   MismatchedObserver,
@@ -354,7 +354,8 @@ pub struct ScriptedAgentActionTallyReport {
 }
 
 impl ScriptedAgentActionTallyReport {
-  /// Build a tally from two observations belonging to the same actor.
+  /// Build a tally from two observations belonging to the same actor with
+  /// distinct observation IDs.
   pub fn from_observations(
     observations: [LanerObservation; 2],
   ) -> Result<Self, ScriptedAgentActionTallyError> {
@@ -992,7 +993,7 @@ mod tests {
 
     assert_eq!(
       SCRIPTED_AGENT_ACTION_TALLY_SCHEMA,
-      "m4-scripted-agent-action-tally-v1"
+      "m4-scripted-agent-action-tally-v2"
     );
     assert_eq!(report.schema(), SCRIPTED_AGENT_ACTION_TALLY_SCHEMA);
     assert_eq!(report.observer(), safe_receipt.observation().observer());
