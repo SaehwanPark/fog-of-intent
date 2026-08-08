@@ -598,3 +598,19 @@ canonical policy instead of duplicating it.
   keep validation, execution, and history in the host path.
 - Prevention: Test both windows, exact result wire text, and absence of hashes
   or execution fields; keep debrief and richer outcome semantics separate.
+
+## Gate actor debrief summaries on completed active hosts
+
+- Context: M5 needed an actor-facing outcome review after bounded history and
+  action-result DTOs were available.
+- Symptom: Reusing the internal `ScenarioDebriefReport` directly would expose
+  health, position, wave, coordination, delayed-origin, execution-trace, or
+  replay fields; serving it before completion would present partial facts as a
+  final review.
+- Resolution: Project only fixed-window intent/outcome/objective labels, final
+  objective, and committed-facts attribution through `m5-actor-debrief-v1`;
+  require an active complete host and map incomplete/closed states to closed
+  actor-safe errors.
+- Prevention: Keep detailed causal debrief and replay-linked records behind
+  separate contracts, and test completion, closure, codec bounds, and hidden
+  fields before adding transport or persistence.

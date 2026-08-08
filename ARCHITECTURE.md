@@ -136,14 +136,16 @@ internal observation/request types as a transport contract; host validation
 still owns legality. It also maps codec failures to the versioned,
 actor-safe `m5-actor-error-v1` code/repair vocabulary and its bounded codec
 without retaining raw input or parser details. `src/host.rs` owns the
-actor-observation, history-status, and action-result projections plus actor-action
-validation and submission entry points: it delegates legality to the lane
+actor-observation, history-status, action-result, and completion-gated debrief
+projections plus actor-action validation and submission entry points: it delegates legality to the lane
 validator and closes a fixture window only after successful validation and
 history append.
 `ActorDraftDto` remains a bounded metadata envelope in the protocol edge, while
 `src/host.rs` owns its observation-bound pre-commit staging. Staging replaces
 one internal draft field but does not add communication authority or transition
-authority.
+authority. `ActorDebriefDto` is a committed-facts summary only; the host derives
+it from the existing complete lane report and keeps detailed causal fields,
+replay identity, and persistence outside the protocol contract.
 
 `src/session.rs` owns immutable ordinary-actor session freshness and lifecycle
 metadata only. It cannot validate an intent, submit a transition, or mutate

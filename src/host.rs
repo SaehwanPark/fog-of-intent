@@ -20,8 +20,8 @@ use crate::lane::{
 };
 use crate::protocol::{
   ActorActionDto, ActorActionResultDto, ActorActionResultOutcome, ActorActionResultWindow,
-  ActorDraftDto, ActorDraftField, ActorHistoryDto, ActorHistoryStatus, ActorObservationDto,
-  ActorProtocolError, ActorProtocolErrorCode, ActorProtocolRepairHint,
+  ActorDebriefDto, ActorDraftDto, ActorDraftField, ActorHistoryDto, ActorHistoryStatus,
+  ActorObservationDto, ActorProtocolError, ActorProtocolErrorCode, ActorProtocolRepairHint,
 };
 use crate::run_store::{CliRunStore, CliRunStoreError};
 
@@ -351,6 +351,31 @@ impl CliScenarioHost {
       LaneOutcome::ForcedOut => ActorActionResultOutcome::ForcedOut,
     };
     Ok(ActorActionResultDto::new(window, outcome))
+  }
+
+  /// Return a bounded actor-visible debrief summary for a completed host.
+  pub fn actor_debrief(&self) -> Result<ActorDebriefDto, ActorProtocolError> {
+    if self.closed {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ));
+    }
+    if !self.is_complete() {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::DebriefUnavailable,
+        ActorProtocolRepairHint::AwaitCompletion,
+      ));
+    }
+    let report = build_scenario_debrief(&self.history)
+      .map_err(|_| {
+        ActorProtocolError::new(
+          ActorProtocolErrorCode::HostTransitionRejected,
+          ActorProtocolRepairHint::StartNewSession,
+        )
+      })?
+      .report();
+    Ok(ActorDebriefDto::from_report(report))
   }
 
   /// Return the number of committed scenario windows.
@@ -1189,6 +1214,86 @@ mod tests {
         ActorActionResultWindow::First,
         ActorActionResultOutcome::ForcedOut,
       )
+    );
+  }
+
+  #[test]
+  fn actor_debrief_projection_is_completion_gated_and_actor_safe() {
+    let mut host = CliScenarioHost::fixture();
+    let initial_observation = host.observation();
+    assert_eq!(
+      host.actor_debrief(),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::DebriefUnavailable,
+        ActorProtocolRepairHint::AwaitCompletion,
+      ))
+    );
+    assert_eq!(host.record_count(), 0);
+    assert_eq!(host.observation(), initial_observation);
+
+    for command in [
+      "plan contest",
+      "commit",
+      "advance",
+      "plan stabilize",
+      "commit",
+      "advance",
+    ] {
+      host.apply_line(command).expect("fixture completes");
+    }
+    let debrief = host.actor_debrief().expect("complete host has debrief");
+    assert_eq!(debrief.schema(), "m5-actor-debrief-v1");
+    assert_eq!(debrief.first().window(), ActorActionResultWindow::First);
+    assert_eq!(debrief.first().intent().id(), "contest");
+    assert_eq!(
+      debrief.first().outcome(),
+      ActorActionResultOutcome::HeldSpace
+    );
+    assert_eq!(
+      debrief.first().objective(),
+      crate::protocol::ActorDebriefObjective::GoalAchieved
+    );
+    assert_eq!(debrief.second().window(), ActorActionResultWindow::Second);
+    assert_eq!(debrief.second().intent().id(), "stabilize");
+    assert_eq!(
+      debrief.second().outcome(),
+      ActorActionResultOutcome::YieldedSpace
+    );
+    assert_eq!(
+      debrief.second().objective(),
+      crate::protocol::ActorDebriefObjective::GoalMissed
+    );
+    assert_eq!(
+      debrief.final_objective(),
+      crate::protocol::ActorDebriefObjective::GoalMissed
+    );
+    assert_eq!(
+      debrief.attribution_limit(),
+      crate::protocol::ActorDebriefAttributionLimit::CommittedFactsOnly
+    );
+    assert_eq!(ActorDebriefDto::decode(&debrief.encode()), Ok(debrief));
+    assert_eq!(host.record_count(), 2);
+    assert!(!format!("{debrief:?}").contains("StateHash"));
+    assert!(!format!("{debrief:?}").contains("health"));
+    assert!(!format!("{debrief:?}").contains("trace"));
+
+    host.apply_line("quit").expect("completed host closes");
+    assert_eq!(
+      host.actor_debrief(),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
+    );
+
+    let mut closed = CliScenarioHost::fixture();
+    closed.apply_line("quit").expect("incomplete host closes");
+    assert_eq!(
+      closed.actor_debrief(),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
     );
   }
 
