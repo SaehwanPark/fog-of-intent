@@ -98,6 +98,19 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.148 — 2026-08-08
+
+### Added
+
+- Added a stable caller-declared segment inventory for the bounded
+  operational-log namespace. The directory scan reports recognized indices
+  only and does not infer rotation or crash state.
+
+### Known limits
+
+- Race-hard filesystem scanning, automatic rotation, crash recovery, export,
+  runtime diagnostics, and durable scenario-wide pipelines remain open.
+
 ## 0.1.147 — 2026-08-08
 
 ### Added

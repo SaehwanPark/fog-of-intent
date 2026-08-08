@@ -3741,6 +3741,14 @@ mod tests {
     operational_store
       .save_segment("resume", 3, &second_segment)
       .expect("highest segment saves");
+    std::fs::write(root.join("resume.foi-operational-log.segment-01"), "bad")
+      .expect("leading-zero fixture writes");
+    std::fs::write(root.join("resume.foi-operational-log.segment-4"), "bad")
+      .expect("out-of-range fixture writes");
+    std::fs::write(root.join("resume.foi-operational-log.segment-.tmp0"), "bad")
+      .expect("temporary-name fixture writes");
+    std::fs::create_dir(root.join("resume.foi-operational-log.segment-2"))
+      .expect("non-file fixture creates");
     assert_eq!(
       operational_store
         .load_segment("resume", 0)
@@ -3764,6 +3772,12 @@ mod tests {
     assert!(root.join("resume.foi-operational-log.segment-3").is_file());
     assert_eq!(
       operational_store
+        .list_segments("resume")
+        .expect("segments list"),
+      vec![0, 1, 3]
+    );
+    assert_eq!(
+      operational_store
         .load("resume")
         .expect("base log survives segments"),
       operational_log
@@ -3780,6 +3794,18 @@ mod tests {
       )
     );
     assert!(!invalid_segment_root.exists());
+    assert_eq!(
+      invalid_segment_store.list_segments("resume"),
+      Err(
+        crate::agent_operational_store::ScriptedAgentOperationalLogStoreError::StorageUnavailable
+      )
+    );
+    assert_eq!(
+      operational_store.list_segments("bad/id"),
+      Err(
+        crate::agent_operational_store::ScriptedAgentOperationalLogStoreError::StorageUnavailable
+      )
+    );
     assert_eq!(
       invalid_segment_store.load_segment("resume", 4),
       Err(

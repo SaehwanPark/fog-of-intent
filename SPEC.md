@@ -1257,6 +1257,8 @@ transport-integrated sessions and broader protocol compatibility remain open.
   checkpoints. Its bounded caller-declared segment methods use distinct
   `.foi-operational-log.segment-*` suffixes; automatic rotation, crash
   recovery, and external export remain open.
+  `list_segments` reports recognized indices in stable order only; it does not
+  merge files, infer rotation, or provide race-hard directory semantics.
 
 ## Future
 
