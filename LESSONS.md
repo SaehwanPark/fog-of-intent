@@ -1087,6 +1087,19 @@ canonical policy instead of duplicating it.
   outcomes, build provenance, and strategic interpretation only with separate
   evidence contracts.
 
+## Bind comparison codecs to verified pairings
+
+- Context: M6 needed machine-readable transport for the profile-aware tally
+  comparison after its observer and ordered-row identity checks.
+- Symptom: Self-consistent comparison text can forge count deltas or swap a
+  profile row unless decoding is bound to a constructor-verified comparison.
+- Resolution: Parse a bounded positional candidate, validate closed profiles,
+  rules, totals, and row order, then compare it with the expected verified
+  comparison before returning trusted evidence.
+- Prevention: Treat the codec as evidence transport; keep durable export,
+  arbitrary report construction, provenance, causality, and broader metrics
+  behind separate contracts.
+
 ## Keep provisional regression gates explicit and narrow
 
 - Context: M6 needed one useful regression signal before broad threshold or

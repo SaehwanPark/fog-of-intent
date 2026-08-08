@@ -163,6 +163,9 @@ reports only when their actor and ordered profile/rule identities match. It
 retains bounded baseline/candidate counts and signed intent deltas without
 rerunning policy evaluation or claiming build provenance, causality,
 population, outcome, persistence, or provider authority.
+Its bounded codec parses only the fixed positional metadata and ordered rows,
+then compares the private candidate with an already verified comparison before
+returning it; it is not durable export or an external report pipeline.
 Its `m6-fixed-profile-tally-no-change-v1` gate is a pure equality predicate over
 those bounded counts; it adds no threshold, balance, build, causal, outcome, or
 strategic authority.

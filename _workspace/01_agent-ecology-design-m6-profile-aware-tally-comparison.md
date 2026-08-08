@@ -67,6 +67,12 @@ data, I/O, or new host/lane/history authority are failure signals.
 different observers and differently ordered profile/rule rows, preserve input
 row order, and expose no raw report text or private provenance.
 
+The comparison codec uses the same versioned identity with a 4096-byte bound,
+seven positional metadata lines, and one ordered pipe-delimited row per
+profile. It parses into a private candidate and returns a trusted value only
+when it exactly matches the expected verified comparison; malformed fields,
+count totals, and tampered rows fail closed.
+
 ## Open Questions
 
 Broader/random sampling, population-level distributions and metrics, outcomes,

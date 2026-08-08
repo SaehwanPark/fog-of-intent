@@ -133,6 +133,9 @@ pub const SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_SCHEMA: &str =
 pub const SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_COMPARISON_SCHEMA: &str =
   "m6-scripted-agent-matched-scenario-tally-compare-v1";
 
+/// Maximum encoded profile-aware tally comparison size before parsing.
+pub const MAX_SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_COMPARISON_BYTES: usize = 4096;
+
 /// Stable identity for the profile-aware fixed-fixture equality gate.
 pub const SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_REGRESSION_RULE: &str =
   "m6-fixed-profile-tally-no-change-v1";
@@ -1831,6 +1834,19 @@ pub struct ScriptedAgentMatchedScenarioTallyComparisonReport {
   entries: Vec<ScriptedAgentMatchedScenarioTallyComparisonEntry>,
 }
 
+/// Bounded failures from the profile-aware tally comparison codec.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentMatchedScenarioTallyComparisonCodecError {
+  Oversized,
+  UnexpectedLineCount { expected: usize, actual: usize },
+  UnknownField,
+  DuplicateField,
+  MissingField,
+  UnsupportedSchema,
+  InvalidValue,
+  InputMismatch,
+}
+
 impl ScriptedAgentMatchedScenarioTallyComparisonReport {
   /// Compare two verified reports without rerunning policy evaluation.
   pub fn from_reports(
@@ -1910,6 +1926,192 @@ impl ScriptedAgentMatchedScenarioTallyComparisonReport {
 
   pub fn entries(&self) -> &[ScriptedAgentMatchedScenarioTallyComparisonEntry] {
     &self.entries
+  }
+
+  /// Encode the verified comparison as bounded positional line-oriented text.
+  pub fn encode(&self) -> String {
+    let mut encoded = format!(
+      "schema={}\nobserver={}\nbaseline_pair_count={}\nbaseline_observation_count={}\ncandidate_pair_count={}\ncandidate_observation_count={}\nentries={}\n",
+      self.schema,
+      self.observer.value(),
+      self.baseline_pair_count,
+      self.baseline_observation_count,
+      self.candidate_pair_count,
+      self.candidate_observation_count,
+      self.entries.len(),
+    );
+    for entry in &self.entries {
+      let baseline = entry.baseline_counts();
+      let candidate = entry.candidate_counts();
+      encoded.push_str(&format!(
+        "row={}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}\n",
+        entry.profile_id,
+        entry.evaluation_rule,
+        baseline[0],
+        baseline[1],
+        baseline[2],
+        baseline[3],
+        baseline[4],
+        candidate[0],
+        candidate[1],
+        candidate[2],
+        candidate[3],
+        candidate[4],
+      ));
+    }
+    encoded
+  }
+
+  /// Decode and validate a comparison against an already verified report.
+  pub fn decode(
+    input: &str,
+    expected: &Self,
+  ) -> Result<Self, ScriptedAgentMatchedScenarioTallyComparisonCodecError> {
+    let decoded = Self::decode_unverified(input)?;
+    if decoded != *expected {
+      return Err(ScriptedAgentMatchedScenarioTallyComparisonCodecError::InputMismatch);
+    }
+    Ok(decoded)
+  }
+
+  fn decode_unverified(
+    input: &str,
+  ) -> Result<Self, ScriptedAgentMatchedScenarioTallyComparisonCodecError> {
+    if input.len() > MAX_SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_COMPARISON_BYTES {
+      return Err(ScriptedAgentMatchedScenarioTallyComparisonCodecError::Oversized);
+    }
+    let lines = input.lines().collect::<Vec<_>>();
+    if lines.len() < 7 {
+      return Err(ScriptedAgentMatchedScenarioTallyComparisonCodecError::MissingField);
+    }
+    let expected_keys = [
+      "schema",
+      "observer",
+      "baseline_pair_count",
+      "baseline_observation_count",
+      "candidate_pair_count",
+      "candidate_observation_count",
+      "entries",
+    ];
+    let mut values = [None; 7];
+    for (index, line) in lines.iter().take(7).enumerate() {
+      let (key, value) = line
+        .split_once('=')
+        .ok_or(ScriptedAgentMatchedScenarioTallyComparisonCodecError::InvalidValue)?;
+      if key.is_empty() || value.is_empty() {
+        return Err(ScriptedAgentMatchedScenarioTallyComparisonCodecError::InvalidValue);
+      }
+      if key != expected_keys[index] {
+        if expected_keys.contains(&key) {
+          return Err(ScriptedAgentMatchedScenarioTallyComparisonCodecError::DuplicateField);
+        }
+        return Err(ScriptedAgentMatchedScenarioTallyComparisonCodecError::UnknownField);
+      }
+      values[index] = Some(value);
+    }
+    let schema = values[0].expect("schema header is collected");
+    if schema != SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_COMPARISON_SCHEMA {
+      return Err(ScriptedAgentMatchedScenarioTallyComparisonCodecError::UnsupportedSchema);
+    }
+    let parse_u8 = |value: &str| {
+      value
+        .parse::<u8>()
+        .map_err(|_| ScriptedAgentMatchedScenarioTallyComparisonCodecError::InvalidValue)
+    };
+    let observer = parse_u8(values[1].expect("observer header is collected"))?;
+    let baseline_pair_count = parse_u8(values[2].expect("baseline pair header is collected"))?;
+    let baseline_observation_count =
+      parse_u8(values[3].expect("baseline observation header is collected"))?;
+    let candidate_pair_count = parse_u8(values[4].expect("candidate pair header is collected"))?;
+    let candidate_observation_count =
+      parse_u8(values[5].expect("candidate observation header is collected"))?;
+    for (pair_count, observation_count) in [
+      (baseline_pair_count, baseline_observation_count),
+      (candidate_pair_count, candidate_observation_count),
+    ] {
+      if !(1..=MAX_SCRIPTED_AGENT_MATCHED_SCENARIO_SAMPLES).contains(&usize::from(pair_count))
+        || observation_count != pair_count * 2
+      {
+        return Err(ScriptedAgentMatchedScenarioTallyComparisonCodecError::InvalidValue);
+      }
+    }
+    let entries_count = values[6]
+      .expect("entries header is collected")
+      .parse::<usize>()
+      .map_err(|_| ScriptedAgentMatchedScenarioTallyComparisonCodecError::InvalidValue)?;
+    if !(1..=MAX_SCRIPTED_AGENT_BATCH_MANIFESTS).contains(&entries_count) {
+      return Err(ScriptedAgentMatchedScenarioTallyComparisonCodecError::InvalidValue);
+    }
+    let expected_line_count = 7 + entries_count;
+    if lines.len() != expected_line_count {
+      return Err(
+        ScriptedAgentMatchedScenarioTallyComparisonCodecError::UnexpectedLineCount {
+          expected: expected_line_count,
+          actual: lines.len(),
+        },
+      );
+    }
+    let mut entries = Vec::with_capacity(entries_count);
+    for line in lines.iter().skip(7) {
+      let (key, row) = line
+        .split_once('=')
+        .ok_or(ScriptedAgentMatchedScenarioTallyComparisonCodecError::InvalidValue)?;
+      if key != "row" {
+        if expected_keys.contains(&key) {
+          return Err(ScriptedAgentMatchedScenarioTallyComparisonCodecError::DuplicateField);
+        }
+        return Err(ScriptedAgentMatchedScenarioTallyComparisonCodecError::UnknownField);
+      }
+      let fields = row.split('|').collect::<Vec<_>>();
+      if fields.len() != 12 || fields.iter().any(|value| value.is_empty()) {
+        return Err(ScriptedAgentMatchedScenarioTallyComparisonCodecError::InvalidValue);
+      }
+      let profile = ScriptedAgentProfile::parse_id(fields[0])
+        .map_err(|_| ScriptedAgentMatchedScenarioTallyComparisonCodecError::InvalidValue)?;
+      if profile.evaluation_rule() != fields[1] {
+        return Err(ScriptedAgentMatchedScenarioTallyComparisonCodecError::InvalidValue);
+      }
+      let mut counts = [0_u8; 10];
+      for (index, value) in fields.iter().skip(2).enumerate() {
+        counts[index] = parse_u8(value)?;
+      }
+      let baseline_total = counts[..5]
+        .iter()
+        .map(|value| u16::from(*value))
+        .sum::<u16>();
+      let candidate_total = counts[5..]
+        .iter()
+        .map(|value| u16::from(*value))
+        .sum::<u16>();
+      if baseline_total != u16::from(baseline_observation_count)
+        || candidate_total != u16::from(candidate_observation_count)
+      {
+        return Err(ScriptedAgentMatchedScenarioTallyComparisonCodecError::InvalidValue);
+      }
+      entries.push(ScriptedAgentMatchedScenarioTallyComparisonEntry {
+        profile_id: profile.profile_id(),
+        evaluation_rule: profile.evaluation_rule(),
+        baseline_stabilize_count: counts[0],
+        baseline_contest_count: counts[1],
+        baseline_yield_count: counts[2],
+        baseline_recall_count: counts[3],
+        baseline_withdraw_count: counts[4],
+        candidate_stabilize_count: counts[5],
+        candidate_contest_count: counts[6],
+        candidate_yield_count: counts[7],
+        candidate_recall_count: counts[8],
+        candidate_withdraw_count: counts[9],
+      });
+    }
+    Ok(Self {
+      schema: SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_COMPARISON_SCHEMA,
+      observer: ActorId::new(observer),
+      baseline_pair_count,
+      baseline_observation_count,
+      candidate_pair_count,
+      candidate_observation_count,
+      entries,
+    })
   }
 
   pub const fn regression_rule(&self) -> &'static str {
@@ -5156,6 +5358,62 @@ mod tests {
     assert_eq!(
       comparison.schema(),
       "m6-scripted-agent-matched-scenario-tally-compare-v1"
+    );
+    let encoded = comparison.encode();
+    assert_eq!(
+      encoded,
+      "schema=m6-scripted-agent-matched-scenario-tally-compare-v1\nobserver=1\nbaseline_pair_count=4\nbaseline_observation_count=8\ncandidate_pair_count=4\ncandidate_observation_count=8\nentries=3\nrow=cautious-laner-v1|threat-first-pressure-aware-fixed-score-v1|7|0|0|0|1|5|0|0|0|3\nrow=risk-taking-laner-v1|contest-first-fixed-score-v1|0|8|0|0|0|0|8|0|0|0\nrow=yielding-laner-v1|yield-first-fixed-score-v1|0|0|8|0|0|0|0|8|0|0\n"
+    );
+    assert_eq!(
+      ScriptedAgentMatchedScenarioTallyComparisonReport::decode(&encoded, &comparison),
+      Ok(comparison.clone())
+    );
+    for (malformed, error) in [
+      (
+        encoded.replacen(
+          "schema=m6-scripted-agent-matched-scenario-tally-compare-v1",
+          "schema=wrong-v1",
+          1,
+        ),
+        ScriptedAgentMatchedScenarioTallyComparisonCodecError::UnsupportedSchema,
+      ),
+      (
+        encoded.replacen("entries=3", "unknown=3", 1),
+        ScriptedAgentMatchedScenarioTallyComparisonCodecError::UnknownField,
+      ),
+      (
+        encoded.replacen("observer=1", "schema=wrong-v1", 1),
+        ScriptedAgentMatchedScenarioTallyComparisonCodecError::DuplicateField,
+      ),
+      (
+        encoded.lines().take(6).collect::<Vec<_>>().join("\n"),
+        ScriptedAgentMatchedScenarioTallyComparisonCodecError::MissingField,
+      ),
+      (
+        encoded.replacen("|7|0|0|0|1|5|0|0|0|3\n", "|6|0|0|0|1|5|0|0|0|3\n", 1),
+        ScriptedAgentMatchedScenarioTallyComparisonCodecError::InvalidValue,
+      ),
+      (
+        format!("{encoded}extra=x\n"),
+        ScriptedAgentMatchedScenarioTallyComparisonCodecError::UnexpectedLineCount {
+          expected: 10,
+          actual: 11,
+        },
+      ),
+      (
+        "x".repeat(MAX_SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_COMPARISON_BYTES + 1),
+        ScriptedAgentMatchedScenarioTallyComparisonCodecError::Oversized,
+      ),
+    ] {
+      assert_eq!(
+        ScriptedAgentMatchedScenarioTallyComparisonReport::decode(&malformed, &comparison),
+        Err(error)
+      );
+    }
+    let tampered = encoded.replacen("|7|0|0|0|1|5|0|0|0|3\n", "|6|0|0|0|2|5|0|0|0|3\n", 1);
+    assert_eq!(
+      ScriptedAgentMatchedScenarioTallyComparisonReport::decode(&tampered, &comparison),
+      Err(ScriptedAgentMatchedScenarioTallyComparisonCodecError::InputMismatch)
     );
     assert_eq!(comparison.observer(), baseline.observer());
     assert_eq!(comparison.baseline_pair_count(), 4);
