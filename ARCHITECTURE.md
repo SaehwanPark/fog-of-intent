@@ -151,6 +151,9 @@ replay identity, and persistence outside the protocol contract.
 `ActorTranscriptDto` is provider-neutral compatibility metadata only; runtime
 transport logging, prompt/model details, and durable retention remain outer
 adapter concerns.
+`ActorToolCapability` is pure ordinary-versus-privileged labeling metadata;
+the current catalog contains only ordinary actor tools and grants no runtime
+authority.
 
 `src/session.rs` owns immutable ordinary-actor session freshness and lifecycle
 metadata only. It cannot validate an intent, submit a transition, or mutate
