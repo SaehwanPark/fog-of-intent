@@ -173,6 +173,9 @@ renders the same verified fields without I/O or additional authority.
 verified reports with bounded ordered deltas; it is caller-declared evidence,
 not independent build provenance or causal attribution. Its fixed no-change
 gate is a pure equality check over those fields and adds no threshold authority.
+An optional `ScriptedAgentBuildId` pair retains distinct caller-declared numeric
+labels on the comparison; it does not verify source/package identity or infer
+causality.
 `ScriptedAgentRunDispositionRecord` is a caller-declared, payload-free status
 envelope for completed, crashed, timed-out, missing-branch, and inconclusive
 runs. Its closed codec preserves only categorical status metadata; it does not

@@ -110,6 +110,9 @@ pub const SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_COMPARISON_SCHEMA: &str =
 pub const SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_REGRESSION_RULE: &str =
   "m6-fixed-frequency-no-change-v1";
 
+/// Versioned identity for caller-declared build labels on comparisons.
+pub const SCRIPTED_AGENT_BUILD_ID_SCHEMA: &str = "m6-scripted-agent-build-id-v1";
+
 /// Versioned identity for bounded matched-scenario selected-intent tallies.
 pub const SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_SCHEMA: &str =
   "m6-scripted-agent-matched-scenario-tally-v1";
@@ -817,6 +820,30 @@ impl ScriptedAgentFixtureScenarioFrequencyEntry {
   }
 }
 
+/// A caller-declared numeric label for one comparison build.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentBuildId(u32);
+
+impl ScriptedAgentBuildId {
+  pub const fn new(value: u32) -> Self {
+    Self(value)
+  }
+
+  pub const fn schema(self) -> &'static str {
+    SCRIPTED_AGENT_BUILD_ID_SCHEMA
+  }
+
+  pub const fn value(self) -> u32 {
+    self.0
+  }
+}
+
+/// Bounded failures from a labeled frequency comparison.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentBuildComparisonError {
+  MatchingBuildIds,
+}
+
 /// Bounded frequency evidence over one validated fixed-fixture selection.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct ScriptedAgentFixtureScenarioFrequencyReport {
@@ -868,6 +895,8 @@ impl ScriptedAgentFixtureScenarioFrequencyComparisonEntry {
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct ScriptedAgentFixtureScenarioFrequencyComparisonReport {
   schema: &'static str,
+  baseline_build_id: Option<ScriptedAgentBuildId>,
+  candidate_build_id: Option<ScriptedAgentBuildId>,
   baseline_selection_count: u8,
   candidate_selection_count: u8,
   entries: [ScriptedAgentFixtureScenarioFrequencyComparisonEntry; 2],
@@ -881,6 +910,8 @@ impl ScriptedAgentFixtureScenarioFrequencyComparisonReport {
   ) -> Self {
     Self {
       schema: SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_COMPARISON_SCHEMA,
+      baseline_build_id: None,
+      candidate_build_id: None,
       baseline_selection_count: baseline.selection_count,
       candidate_selection_count: candidate.selection_count,
       entries: [
@@ -898,8 +929,32 @@ impl ScriptedAgentFixtureScenarioFrequencyComparisonReport {
     }
   }
 
+  /// Compare verified reports while retaining distinct caller-declared labels.
+  pub fn from_reports_with_build_ids(
+    baseline: &ScriptedAgentFixtureScenarioFrequencyReport,
+    candidate: &ScriptedAgentFixtureScenarioFrequencyReport,
+    baseline_build_id: ScriptedAgentBuildId,
+    candidate_build_id: ScriptedAgentBuildId,
+  ) -> Result<Self, ScriptedAgentBuildComparisonError> {
+    if baseline_build_id == candidate_build_id {
+      return Err(ScriptedAgentBuildComparisonError::MatchingBuildIds);
+    }
+    let mut comparison = Self::from_reports(baseline, candidate);
+    comparison.baseline_build_id = Some(baseline_build_id);
+    comparison.candidate_build_id = Some(candidate_build_id);
+    Ok(comparison)
+  }
+
   pub const fn schema(&self) -> &'static str {
     self.schema
+  }
+
+  pub const fn baseline_build_id(&self) -> Option<ScriptedAgentBuildId> {
+    self.baseline_build_id
+  }
+
+  pub const fn candidate_build_id(&self) -> Option<ScriptedAgentBuildId> {
+    self.candidate_build_id
   }
 
   pub const fn baseline_selection_count(&self) -> u8 {
@@ -3924,6 +3979,8 @@ mod tests {
       comparison.schema(),
       "m6-scripted-agent-fixture-frequency-compare-v1"
     );
+    assert_eq!(comparison.baseline_build_id(), None);
+    assert_eq!(comparison.candidate_build_id(), None);
     assert_eq!(comparison.baseline_selection_count(), 2);
     assert_eq!(comparison.candidate_selection_count(), 4);
     assert_eq!(comparison.entries()[0].scenario_id(), "safe-fixture-v1");
@@ -3953,6 +4010,63 @@ mod tests {
     let unchanged =
       ScriptedAgentFixtureScenarioFrequencyComparisonReport::from_reports(&baseline, &baseline);
     assert!(unchanged.passes_no_change_gate());
+    let baseline_build = ScriptedAgentBuildId::new(140);
+    let candidate_build = ScriptedAgentBuildId::new(141);
+    assert_eq!(baseline_build.schema(), "m6-scripted-agent-build-id-v1");
+    assert_eq!(baseline_build.value(), 140);
+    let labeled =
+      ScriptedAgentFixtureScenarioFrequencyComparisonReport::from_reports_with_build_ids(
+        &baseline,
+        &candidate,
+        baseline_build,
+        candidate_build,
+      )
+      .expect("distinct build labels compare");
+    assert_eq!(labeled.baseline_build_id(), Some(baseline_build));
+    assert_eq!(labeled.candidate_build_id(), Some(candidate_build));
+    assert_eq!(labeled.entries(), comparison.entries());
+    assert_eq!(
+      labeled.baseline_selection_count(),
+      comparison.baseline_selection_count()
+    );
+    assert_eq!(
+      labeled.candidate_selection_count(),
+      comparison.candidate_selection_count()
+    );
+    assert_eq!(
+      labeled.passes_no_change_gate(),
+      comparison.passes_no_change_gate()
+    );
+    assert_eq!(
+      labeled,
+      ScriptedAgentFixtureScenarioFrequencyComparisonReport::from_reports_with_build_ids(
+        &baseline,
+        &candidate,
+        baseline_build,
+        candidate_build,
+      )
+      .expect("repeated labeled comparison is stable")
+    );
+    let labeled_unchanged =
+      ScriptedAgentFixtureScenarioFrequencyComparisonReport::from_reports_with_build_ids(
+        &baseline,
+        &baseline,
+        baseline_build,
+        candidate_build,
+      )
+      .expect("distinct labels retain unchanged comparison");
+    assert_eq!(labeled_unchanged.baseline_selection_count(), 2);
+    assert_eq!(labeled_unchanged.candidate_selection_count(), 2);
+    assert!(labeled_unchanged.passes_no_change_gate());
+    assert_eq!(
+      ScriptedAgentFixtureScenarioFrequencyComparisonReport::from_reports_with_build_ids(
+        &baseline,
+        &candidate,
+        baseline_build,
+        baseline_build,
+      ),
+      Err(ScriptedAgentBuildComparisonError::MatchingBuildIds)
+    );
     let redistributed_selection = ScriptedAgentFixtureScenarioSelection::from_ids(
       &[
         SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,

@@ -98,6 +98,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.142 — 2026-08-08
+
+### Added
+
+- Added `m6-scripted-agent-build-id-v1` labels to verified fixed-fixture
+  comparisons, preserving distinct caller-declared baseline and candidate IDs
+  without claiming independent build provenance or causal attribution.
+
+### Known limits
+
+- Source/package verification, causal attribution, durable export, population
+  sampling, distributional/outcome/strategic metrics, providers, calibration,
+  and human evidence remain open.
+
 ## 0.1.141 — 2026-08-08
 
 ### Added

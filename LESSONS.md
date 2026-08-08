@@ -1055,3 +1055,15 @@ canonical policy instead of duplicating it.
   status IDs and no payload, diagnostic, decision, or result fields.
 - Prevention: Describe this as status preservation only; add detection,
   diagnostics, attachment, or durable result records under separate contracts.
+
+## Label build comparisons without claiming provenance
+
+- Context: A declared baseline comparison becomes easier to audit when callers
+  can retain which build labels they intended to compare.
+- Symptom: Treating caller-supplied labels as verified binaries or causal
+  identities overstates what a pure report comparison can establish.
+- Resolution: Store distinct bounded numeric labels alongside the existing
+  ordered verified-report deltas while leaving the unlabeled constructor and
+  equality gate unchanged.
+- Prevention: Call these build labels, not build provenance; require separate
+  source/package verification and causal evidence before interpreting a delta.
