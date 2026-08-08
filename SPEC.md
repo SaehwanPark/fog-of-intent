@@ -993,7 +993,7 @@ transport-integrated sessions and broader protocol compatibility remain open.
   snapshot fields, session lifecycle/error cases, codec round-trips and
   malformed-input rejection, and exhaustive codec/session error projections.
   The focused evidence is 26 protocol tests and 12 session tests within the
-  228-unit, 7-binary, and 3-Rustdoc suite; host evidence includes the
+  229-unit, 7-binary, and 3-Rustdoc suite; host evidence includes the
   authorization/redaction matrix and CLI/protocol parity regressions.
 - `CliScenarioHost::validate_actor_action` checks one DTO against the current
   actor-visible receipt and existing lane validator without mutating history,
@@ -1016,6 +1016,12 @@ transport-integrated sessions and broader protocol compatibility remain open.
   observation IDs, empty/control/overlong text, and decoding repeats the exact
   schema/field/line/numeric checks. It does not authenticate actors, route or
   deliver messages, or add transition/history authority.
+- `ScriptedAgentExperimentManifest` defines `m6-experiment-manifest-v1` for
+  the bounded two-window fixture. It records the constructor-owned scripted
+  profile, exact evaluation/selection rules, and explicit policy seed bundle
+  in an eight-line codec; it does not run agents, sample populations, or
+  produce metrics. Unknown profiles/rules, malformed IDs, and malformed codec
+  fields fail closed.
 - `CliScenarioHost::actor_draft` returns the requesting actor's present
   actor-protocol-staged `ActorDraftDto` values in stable
   message/plan/contingency order. It is active window-only, read-only with

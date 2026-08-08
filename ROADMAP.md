@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.126`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.127`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1259,7 +1259,7 @@ echoes values or claims communication delivery. The provider-neutral
 `m5-actor-transcript-v1` record captures only closed tool/schema IDs and an
 accepted/rejected result for an actor receipt; it is not a runtime log or
 replay record. Focused evidence is 26 protocol tests,
-12 session tests, and 34 host tests within the 228-unit, 7-binary, and
+12 session tests, and 34 host tests within the 229-unit, 7-binary, and
 3-Rustdoc suite. The host observation projection is a
 pure actor-visible DTO mapping, rejects inactive lifecycle states, and leaves
 the internal receipt private. The history DTO is a bounded status summary,
@@ -1368,7 +1368,8 @@ representative replays, and an evidence-limited report.
 
 ### Scope
 
-- [ ] Define versioned experiment manifests and seed bundles.
+- [x] Define a versioned bounded experiment manifest for the scripted fixture
+  and explicit policy seed bundle; batch execution and sampling remain open.
 - [ ] Implement a local batch runner and resumable run directory.
 - [ ] Add population and matched-scenario sampling.
 - [ ] Record ruleset, scenario, profile, prompt, tool-schema, model, and extractor
