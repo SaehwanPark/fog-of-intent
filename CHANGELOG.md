@@ -98,6 +98,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.164 — 2026-08-08
+
+### Added
+
+- Added `m6-scripted-agent-tally-replay-reference-v1`, which selects the first
+  caller-declared replay record whose verified profile, rule, and selected
+  intent match a largest-delta candidate.
+
+### Known limits
+
+- The reference is not representative-replay proof or scenario-wide replay;
+  calibrated outlier definitions, causality, persistence, providers, and
+  human evidence remain open.
+
 ## 0.1.163 — 2026-08-08
 
 ### Added

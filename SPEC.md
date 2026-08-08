@@ -1232,6 +1232,14 @@ transport-integrated sessions and broader protocol compatibility remain open.
   provisional fixed-fixture signal, not calibrated outlier detection,
   representative replay selection, causal attribution, population inference,
   or outcome/strategic evidence.
+- `ScriptedAgentTallyReplayReference` defines
+  `m6-scripted-agent-tally-replay-reference-v1` under
+  `m6-first-verified-candidate-replay-v1`. It selects the first
+  caller-declared replay record whose verified profile, evaluation rule, and
+  selected intent match a largest-delta candidate, returning only the
+  candidate labels and observation ID. This is a reproducible reference, not
+  representative-replay proof, scenario-wide replay, causal attribution,
+  build provenance, or persistence authority.
 - `ScriptedAgentOperationalLogSequenceReport` defines
   `m6-scripted-agent-operational-log-sequence-v1` under the fixed
   `m6-operational-start-chunk-finish-v1` rule. It classifies complete,

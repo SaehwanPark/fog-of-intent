@@ -1249,9 +1249,11 @@ canonical policy instead of duplicating it.
   causal explanation, or representative behavior claim.
 - Resolution: Expose only the first largest absolute signed delta from a
   verified comparison, then classify it with a clearly provisional fixed
-  threshold rather than naming it an outlier.
+  threshold rather than naming it an outlier; a matching replay may be
+  referenced only by caller-declared profile/rule/intent labels.
 - Prevention: Keep calibrated outlier definitions, replay selection,
-  population inference, causality, persistence, and human evidence separate.
+  representativeness, population inference, causality, persistence, and human
+  evidence separate.
 
 ## Keep event-order checks separate from causal traces
 

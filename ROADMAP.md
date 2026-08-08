@@ -1430,6 +1430,9 @@ representative replays, and an evidence-limited report.
 - [x] Emit a provisional inclusive fixed-fixture threshold signal over the
   verified largest-delta candidate; calibrated outlier detection and
   representative replay selection remain open.
+- [x] Select the first caller-declared verified replay reference matching a
+  largest-delta candidate by profile, rule, and intent; representative replay
+  proof and scenario-wide replay remain open.
 - [ ] Calibrate outlier detection and select representative replays
   deterministically.
 - [x] Classify caller-declared operational `batch_started` →

@@ -134,6 +134,14 @@ pub const SCRIPTED_AGENT_TALLY_OUTLIER_THRESHOLD_RULE: &str =
 /// Provisional inclusive magnitude threshold over signed intent-count deltas.
 pub const SCRIPTED_AGENT_TALLY_OUTLIER_THRESHOLD_MAGNITUDE: u16 = 2;
 
+/// Versioned identity for a caller-declared candidate replay reference.
+pub const SCRIPTED_AGENT_TALLY_REPLAY_REFERENCE_SCHEMA: &str =
+  "m6-scripted-agent-tally-replay-reference-v1";
+
+/// Stable identity for first matching verified replay selection.
+pub const SCRIPTED_AGENT_TALLY_REPLAY_REFERENCE_RULE: &str =
+  "m6-first-verified-candidate-replay-v1";
+
 /// Versioned identity for caller-declared build labels on comparisons.
 pub const SCRIPTED_AGENT_BUILD_ID_SCHEMA: &str = "m6-scripted-agent-build-id-v1";
 
@@ -3692,6 +3700,102 @@ impl ScriptedAgentReplayRecord {
   }
 }
 
+/// Bounded failures from candidate-to-replay reference selection.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentTallyReplayReferenceError {
+  NoMatchingReplay,
+  DecisionMismatch,
+}
+
+/// Caller-declared reference to the first verified replay matching one tally candidate.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentTallyReplayReference {
+  schema: &'static str,
+  selection_rule: &'static str,
+  row_index: u8,
+  profile_id: &'static str,
+  evaluation_rule: &'static str,
+  intent: LaneIntent,
+  delta: i16,
+  magnitude: u16,
+  observation_id: ObservationId,
+}
+
+impl ScriptedAgentTallyReplayReference {
+  /// Select the first caller-declared replay whose verified decision matches the candidate.
+  pub fn from_candidate_and_records(
+    candidate: ScriptedAgentMatchedScenarioTallyOutlierCandidate,
+    records: &[ScriptedAgentReplayRecord],
+  ) -> Result<Self, ScriptedAgentTallyReplayReferenceError> {
+    let mut matching_mismatch = false;
+    for record in records {
+      if record.profile().profile_id() != candidate.profile_id()
+        || record.profile().evaluation_rule() != candidate.evaluation_rule()
+        || record.selected_intent() != candidate.intent()
+      {
+        continue;
+      }
+      match record.replay() {
+        Ok(_) => {
+          return Ok(Self {
+            schema: SCRIPTED_AGENT_TALLY_REPLAY_REFERENCE_SCHEMA,
+            selection_rule: SCRIPTED_AGENT_TALLY_REPLAY_REFERENCE_RULE,
+            row_index: candidate.row_index(),
+            profile_id: candidate.profile_id(),
+            evaluation_rule: candidate.evaluation_rule(),
+            intent: candidate.intent(),
+            delta: candidate.delta(),
+            magnitude: candidate.magnitude(),
+            observation_id: record.observation_id(),
+          });
+        }
+        Err(ScriptedAgentReplayError::DecisionMismatch) => matching_mismatch = true,
+      }
+    }
+    Err(if matching_mismatch {
+      ScriptedAgentTallyReplayReferenceError::DecisionMismatch
+    } else {
+      ScriptedAgentTallyReplayReferenceError::NoMatchingReplay
+    })
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn selection_rule(self) -> &'static str {
+    self.selection_rule
+  }
+
+  pub const fn row_index(self) -> u8 {
+    self.row_index
+  }
+
+  pub const fn profile_id(self) -> &'static str {
+    self.profile_id
+  }
+
+  pub const fn evaluation_rule(self) -> &'static str {
+    self.evaluation_rule
+  }
+
+  pub const fn intent(self) -> LaneIntent {
+    self.intent
+  }
+
+  pub const fn delta(self) -> i16 {
+    self.delta
+  }
+
+  pub const fn magnitude(self) -> u16 {
+    self.magnitude
+  }
+
+  pub const fn observation_id(self) -> ObservationId {
+    self.observation_id
+  }
+}
+
 /// One actor-safe row in a scripted-agent comparison report.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct ScriptedAgentComparisonEntry {
@@ -6650,6 +6754,115 @@ mod tests {
       ScriptedAgentTallyOutlierThresholdStatus::NoCandidate
     );
     assert_eq!(unchanged_report.status().id(), "no_candidate");
+  }
+
+  #[test]
+  fn tally_candidate_replay_reference_selects_first_verified_match() {
+    let manifest = [ScriptedAgentExperimentManifest::new(
+      ScriptedAgentProfile::cautious_v1(),
+      ScriptedAgentSeedBundle::new(101, StreamId::new(102), DrawId::new(103)),
+    )];
+    let baseline = ScriptedAgentFixtureScenarioPopulation::generate_from_scenario_ids(
+      &[
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+      ],
+      540,
+    )
+    .expect("baseline population builds")
+    .matched_tally(&manifest)
+    .expect("baseline tally builds");
+    let candidate = ScriptedAgentFixtureScenarioPopulation::generate_from_scenario_ids(
+      &[
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+      ],
+      548,
+    )
+    .expect("candidate population builds")
+    .matched_tally(&manifest)
+    .expect("candidate tally builds");
+    let comparison =
+      ScriptedAgentMatchedScenarioTallyComparisonReport::from_reports(&baseline, &candidate)
+        .expect("verified tallies compare");
+    let candidate = comparison
+      .largest_delta_candidate()
+      .expect("largest candidate exists");
+    let state = LaneSnapshot::initial();
+    let first_observation = observe_player(&state, ObservationId::new(600)).observation();
+    let selected_observation = observe_player(&state, ObservationId::new(601)).observation();
+    let later_observation = observe_player(&state, ObservationId::new(602)).observation();
+    let noise = ScriptedAgentReplayRecord::capture(
+      ScriptedAgent::risk_taking_v1(),
+      first_observation,
+      LaneIntent::Contest,
+      None,
+    );
+    let first_match = ScriptedAgentReplayRecord::capture(
+      ScriptedAgent::cautious_v1(),
+      selected_observation,
+      LaneIntent::Stabilize,
+      None,
+    );
+    let later_match = ScriptedAgentReplayRecord::capture(
+      ScriptedAgent::cautious_v1(),
+      later_observation,
+      LaneIntent::Stabilize,
+      None,
+    );
+    let reference = ScriptedAgentTallyReplayReference::from_candidate_and_records(
+      candidate,
+      &[noise, first_match.clone(), later_match],
+    )
+    .expect("first verified matching replay is selected");
+    assert_eq!(
+      reference.schema(),
+      "m6-scripted-agent-tally-replay-reference-v1"
+    );
+    assert_eq!(
+      reference.selection_rule(),
+      "m6-first-verified-candidate-replay-v1"
+    );
+    assert_eq!(reference.row_index(), candidate.row_index());
+    assert_eq!(reference.profile_id(), candidate.profile_id());
+    assert_eq!(reference.evaluation_rule(), candidate.evaluation_rule());
+    assert_eq!(reference.intent(), candidate.intent());
+    assert_eq!(reference.delta(), candidate.delta());
+    assert_eq!(reference.magnitude(), candidate.magnitude());
+    assert_eq!(reference.observation_id(), ObservationId::new(601));
+
+    let mut mismatched = first_match.clone();
+    mismatched
+      .decision
+      .candidates
+      .iter_mut()
+      .find(|candidate| candidate.intent() == LaneIntent::Stabilize)
+      .expect("selected candidate exists")
+      .score += 1;
+    let later_reference = ScriptedAgentTallyReplayReference::from_candidate_and_records(
+      candidate,
+      &[mismatched.clone(), first_match.clone()],
+    )
+    .expect("later verified matching replay is selected");
+    assert_eq!(later_reference.observation_id(), ObservationId::new(601));
+    assert_eq!(
+      ScriptedAgentTallyReplayReference::from_candidate_and_records(candidate, &[mismatched]),
+      Err(ScriptedAgentTallyReplayReferenceError::DecisionMismatch)
+    );
+    let no_match = ScriptedAgentReplayRecord::capture(
+      ScriptedAgent::yielding_v1(),
+      first_observation,
+      LaneIntent::Yield,
+      None,
+    );
+    assert_eq!(
+      ScriptedAgentTallyReplayReference::from_candidate_and_records(candidate, &[no_match]),
+      Err(ScriptedAgentTallyReplayReferenceError::NoMatchingReplay)
+    );
   }
 
   #[test]

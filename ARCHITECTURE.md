@@ -249,6 +249,9 @@ scenario-wide replay, persistence, recovery, provider, or history authority.
 fixed-fixture threshold over verified signed count deltas; it does not infer
 outliers, select replays, or add causal, population, persistence, provider,
 or history authority.
+`ScriptedAgentTallyReplayReference` selects a first caller-declared verified
+record matching candidate profile/rule/intent labels. It is a reference only,
+not representative replay proof or a scenario-wide replay authority.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO
