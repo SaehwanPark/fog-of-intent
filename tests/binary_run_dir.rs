@@ -110,7 +110,7 @@ fn binary_argument_failures_are_non_success_and_path_free() {
   assert!(stderr.contains("--run-dir may be provided only once"));
   assert!(!stderr.contains("private-run-directory"));
 
-  for token in ["--help", "--run-dir"] {
+  for token in ["--help", "--run-dir", "--unknown"] {
     let output = Command::new(binary_path())
       .arg("--run-dir")
       .arg(token)
