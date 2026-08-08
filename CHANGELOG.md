@@ -95,6 +95,23 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.108 — 2026-08-08
+
+### Added
+
+- Added `m5-actor-draft-receipt-v1`, a bounded acknowledgement containing only
+  the bound actor, observation, and staged-field identity after successful
+  host-owned draft staging.
+- Added exact receipt codec coverage and first/second-window host evidence;
+  the receipt does not echo metadata or add communication, transition, or
+  history authority.
+
+### Known limits
+
+- Draft receipts remain library-level acknowledgements; transport delivery,
+  simultaneous actors, persistence/reconnect, and richer plan/communication
+  semantics remain open.
+
 ## 0.1.107 — 2026-08-08
 
 ### Added

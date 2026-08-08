@@ -628,3 +628,16 @@ canonical policy instead of duplicating it.
 - Prevention: Test zero history mutation, unchanged observation, second-commit
   rejection, stale/wrong-actor/complete/closed boundaries, and mismatch
   redaction before adding transport or simultaneous ordering.
+
+## Acknowledge draft staging without echoing payloads
+
+- Context: An actor protocol client needs confirmation that a message, plan, or
+  contingency was accepted by the host draft boundary.
+- Symptom: Reusing the free-form draft command as a response would echo
+  metadata and blur acknowledgement with communication delivery.
+- Resolution: Return a versioned receipt containing only the bound actor,
+  observation ID, and closed field identity, while delegating all validation to
+  the existing host staging method.
+- Prevention: Keep receipt construction after successful staging, assert no
+  history/observation mutation, and defer transport, delivery, and richer plan
+  semantics to separate contracts.
