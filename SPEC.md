@@ -848,6 +848,10 @@ external adapters remain open.
   `yielding-laner-v1` profiles. Each profile records candidate, evaluation, and
   selection rule identities so a decision can be inspected without treating
   policy behavior as hidden simulation state.
+- `ScriptedAgentRole` labels the policy postures as `Anchor`, `Duelist`, and
+  `Pacer` with stable IDs `anchor-v1`, `duelist-v1`, and `pacer-v1`. These are
+  transparent policy metadata, not the M2 `LaneActorRole` roster and not claims
+  about human or scenario role behavior.
 - `ScriptedAgent` consumes only a `LanerObservation`, copies its advertised
   legal intents, adds the observation's optional visible threat response, and
   evaluates candidates with the profile-specific fixed

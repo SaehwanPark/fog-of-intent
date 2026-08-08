@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.84`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.85`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1030,7 +1030,9 @@ strategy while remaining bound to actor-visible information.
 
 - [x] Implement three actor-visible deterministic scripted profiles for the
   bounded fixture; broader scripted populations remain open.
-- [ ] Implement transparent role heuristics.
+- [x] Implement three transparent policy-role labels (`Anchor`, `Duelist`,
+  `Pacer`) over the fixed profile heuristics; scenario roles and broader role
+  populations remain open.
 - [ ] Define policy inputs, memory, candidate actions, utility features, and
   action evaluations.
 - [ ] Separate candidate generation, evaluation error, top-k or nucleus
@@ -1072,6 +1074,8 @@ strategy while remaining bound to actor-visible information.
   fixed intents and all requests remain host-valid.
 - [x] Emit the versioned `m4-scripted-agent-metrics-v1` comparison report with
   profile/rule IDs, selected intent/score, and bounded candidate counts.
+- [x] Bind policy-role IDs (`anchor-v1`, `duelist-v1`, `pacer-v1`) to the three
+  profiles without conflating them with the lane scenario actor roster.
 
 This is a three-profile library-only comparison and bounded metric report. It
 does not establish a

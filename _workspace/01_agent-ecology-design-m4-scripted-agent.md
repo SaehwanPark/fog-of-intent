@@ -98,6 +98,8 @@ hidden state to explain.
   bounded sensitivity regression; all profile requests remain host-valid.
 - The `m4-scripted-agent-metrics-v1` report records only bounded profile/rule
   IDs, selected intent/score, candidate count, and observation identity.
+- `ScriptedAgentRole` provides `Anchor`, `Duelist`, and `Pacer` policy labels;
+  they are not the M2 scenario actor roles.
 - No policy method accepts true state or resolved execution inputs.
 
 ## Open Questions
