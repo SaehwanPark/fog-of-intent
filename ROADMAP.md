@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.82`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.83`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1048,7 +1048,8 @@ strategy while remaining bound to actor-visible information.
   non-monotonic.
 - [ ] Measure legality, action distribution, strategic diversity,
   communication, coordination, plan interruption, and outcome distributions.
-- [ ] Add profile sensitivity and adversarial edge-case tests.
+- [x] Add one visible-threat profile-sensitivity regression; broader
+  adversarial edge-case matrices remain open.
 
 ### Current bounded scripted-agent evidence
 
@@ -1066,6 +1067,9 @@ strategy while remaining bound to actor-visible information.
   validation, with reproducibility tests for identical observations.
 - [x] Compare three fixed profiles on one identical initial observation and
   verify distinct legal intents without changing the host boundary.
+- [x] Check profile sensitivity when a visible RiverSide threat is advertised:
+  cautious changes to `Withdraw`, while risk-taking and yielding retain their
+  fixed intents and all requests remain host-valid.
 
 This is a three-profile library-only comparison. It does not establish a
 population, role heuristics, memory, communication, randomness, matched-

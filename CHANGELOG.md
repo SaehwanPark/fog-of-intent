@@ -95,6 +95,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.83 — 2026-08-08
+
+### Added
+
+- Added visible-threat profile-sensitivity evidence over safe and RiverSide
+  observations, showing cautious response changes while risk-taking and
+  yielding fixed preferences remain stable.
+- Added host-validation assertions for all six profile/observation requests.
+
+### Known limits
+
+- Sensitivity covers two library fixture observations only; adversarial edge
+  matrices, scenario outcomes, strategic quality, and human realism remain
+  deferred.
+
 ## 0.1.82 — 2026-08-08
 
 ### Added

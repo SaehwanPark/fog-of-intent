@@ -304,3 +304,15 @@ canonical policy instead of duplicating it.
   single matched-observation regression before expanding the catalog.
 - Prevention: Require each new profile to share the actor-visible candidate and
   host-validation boundary, and report fixture-sized comparisons honestly.
+
+## Test profile sensitivity at an information boundary
+
+- Context: The catalog needed evidence that profiles respond differently when
+  the actor-visible threat report changes.
+- Symptom: A matched-input comparison alone cannot show whether a profile
+  reacts to newly visible information or merely returns a fixed label.
+- Resolution: Compare safe and RiverSide observations for all three profiles,
+  assert the cautious threat response and the other fixed preferences, and
+  validate every request through the host boundary.
+- Prevention: Keep sensitivity tests tied to visible observation changes and
+  avoid treating selection differences as outcome or balance evidence.

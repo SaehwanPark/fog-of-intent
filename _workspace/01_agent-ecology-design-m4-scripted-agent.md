@@ -94,6 +94,8 @@ hidden state to explain.
   focused tests.
 - The matched initial observation yields three distinct profile intents and
   all requests pass the same host validator.
+- A visible RiverSide threat changes only the cautious profile selection in the
+  bounded sensitivity regression; all profile requests remain host-valid.
 - No policy method accepts true state or resolved execution inputs.
 
 ## Open Questions
