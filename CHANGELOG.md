@@ -99,8 +99,9 @@ not increment the package version.
 
 ### Added
 
-- Bound the `max-score-stable-order-v1` selection rule with exact profile IDs
-  and an equal-score regression proving first-advertised tie behavior.
+- Bound the `max-score-stable-order-v1` selection rule with exact rule-ID
+  assertions for all three profiles and an equal-score regression proving
+  first-advertised tie behavior.
 
 ### Known limits
 
