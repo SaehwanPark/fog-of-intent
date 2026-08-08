@@ -2,12 +2,14 @@
 
 ## Target slice
 
-Expose the requesting actor's currently staged message, plan, and contingency
-metadata through the existing observation-bound `m5-actor-draft-v1` DTO.
+Expose the requesting actor's actor-protocol-staged message, plan, and
+contingency metadata through the existing observation-bound `m5-actor-draft-v1`
+DTO, while preserving the legacy CLI draft grammar separately.
 
 ## Required behavior
 
-- Return present staged fields in stable message, plan, contingency order with
+- Return present actor-protocol-staged fields in stable message, plan,
+  contingency order with
   the current actor observer and observation identity.
 - Return no fields for an active empty draft without mutating host state.
 - Reject committed, complete, and closed hosts with the existing bounded

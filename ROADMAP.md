@@ -1201,9 +1201,10 @@ control over simulation resolution.
 - [x] Stage observation-bound actor draft metadata through the host-owned draft
   boundary with replacement and committed-window checks; communication
   delivery remains open.
-- [x] Read back the requesting actor's staged message, plan, and contingency
-  metadata through existing observation-bound draft DTOs; recipient delivery,
-  simultaneous drafts, and communication semantics remain open.
+- [x] Read back the requesting actor's actor-protocol-staged message, plan,
+  and contingency metadata through existing observation-bound draft DTOs;
+  recipient delivery, simultaneous drafts, and communication semantics remain
+  open.
 - [x] Expose the active actor-visible receipt through the versioned observation
   DTO, rejecting closed/complete hosts without mutating history; transport and
   simultaneous actors remain open.
@@ -1274,8 +1275,9 @@ remain private. The `CliScenarioHost::actor_replay_debrief_records_from_run`
 adapter validates an injected saved run, restores and verifies it locally,
 requires two records, and returns the same categorical debrief records without
 mutating the receiving host. The `CliScenarioHost::actor_draft` readback
-returns only the requesting actor's existing staged values in stable field
-order and does not deliver them to another actor. The `m5-actor-draft-status-v1` projection reports only the
+  returns only the requesting actor's actor-protocol-staged values in stable
+  field order and does not reinterpret legacy CLI draft text or deliver values
+  to another actor. The `m5-actor-draft-status-v1` projection reports only the
 active observation binding and aggregate `present`/`absent` bits for message,
 plan, and contingency; it never echoes draft values or claims delivery.
 The `m5-actor-draft-clear-v1` command carries only the active observer and

@@ -842,9 +842,9 @@ canonical policy instead of duplicating it.
   contingency values while communication delivery remains unimplemented.
 - Symptom: Returning staged metadata through an adapter can be mistaken for
   delivery or a second actor's visibility if ownership and order are implicit.
-- Resolution: Read only the requesting actor's active draft, return existing
-  bounded DTOs in a fixed field order, and preserve observation, commit, and
-  history state.
+- Resolution: Read only the requesting actor's actor-protocol draft, return
+  existing bounded DTOs in a fixed field order, preserve observation, commit,
+  and history state, and keep legacy CLI draft text on its existing path.
 - Prevention: Treat draft readback as local metadata inspection; introduce
   recipients, transport, and simultaneous visibility only through a separate
   communication contract.

@@ -3,8 +3,9 @@
 ## Outcome
 
 Implementation is complete; independent three-pass review is pending.
-The new host readback exposes only the requesting actor's staged metadata
-through existing bounded draft DTOs and does not mutate host state.
+The new host readback exposes only the requesting actor's actor-protocol-staged
+metadata through existing bounded draft DTOs and does not mutate host state;
+legacy CLI draft text remains on its existing path.
 
 ## Verification target
 

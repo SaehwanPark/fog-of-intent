@@ -103,8 +103,9 @@ not increment the package version.
 ### Added
 
 - Added `CliScenarioHost::actor_draft`, an observation-bound readback of the
-  requesting actor's staged message, plan, and contingency values using the
-  existing bounded draft DTO.
+  requesting actor's actor-protocol-staged message, plan, and contingency
+  values using the existing bounded draft DTO; legacy CLI draft text remains
+  on its existing path.
 - Added focused evidence for stable field ordering, exact binding, unchanged
   host state, and committed/complete/closed lifecycle rejection.
 

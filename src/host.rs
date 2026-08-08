@@ -39,6 +39,14 @@ struct HostDraft {
 }
 
 impl HostDraft {
+  fn empty() -> Self {
+    Self {
+      message: None,
+      plan: None,
+      contingency: None,
+    }
+  }
+
   fn is_empty(&self) -> bool {
     self.message.is_none() && self.plan.is_none() && self.contingency.is_none()
   }
@@ -131,6 +139,7 @@ pub struct CliScenarioHost {
   history: LaneScenarioHistory,
   execution_inputs: [LaneResolvedInputs; 2],
   draft: HostDraft,
+  protocol_draft: HostDraft,
   committed_intent: Option<LaneIntent>,
   saved: Option<SavedRun>,
   store: Option<CliRunStore>,
@@ -144,11 +153,8 @@ impl CliScenarioHost {
       history: LaneScenarioHistory::new(crate::lane::LaneSnapshot::initial())
         .expect("initial lane fixture must be valid"),
       execution_inputs,
-      draft: HostDraft {
-        message: None,
-        plan: None,
-        contingency: None,
-      },
+      draft: HostDraft::empty(),
+      protocol_draft: HostDraft::empty(),
       committed_intent: None,
       saved: None,
       store: None,
@@ -456,9 +462,18 @@ impl CliScenarioHost {
       ));
     }
     match draft.field() {
-      ActorDraftField::Message => self.draft.message = Some(draft.value().to_owned()),
-      ActorDraftField::Plan => self.draft.plan = Some(draft.value().to_owned()),
-      ActorDraftField::Contingency => self.draft.contingency = Some(draft.value().to_owned()),
+      ActorDraftField::Message => {
+        self.draft.message = Some(draft.value().to_owned());
+        self.protocol_draft.message = Some(draft.value().to_owned());
+      }
+      ActorDraftField::Plan => {
+        self.draft.plan = Some(draft.value().to_owned());
+        self.protocol_draft.plan = Some(draft.value().to_owned());
+      }
+      ActorDraftField::Contingency => {
+        self.draft.contingency = Some(draft.value().to_owned());
+        self.protocol_draft.contingency = Some(draft.value().to_owned());
+      }
     }
     Ok(CliHostOutput::DraftStaged {
       field: draft.field().id(),
@@ -477,7 +492,7 @@ impl CliScenarioHost {
     Ok(ActorDraftReceiptDto::new(observer, observation_id, field))
   }
 
-  /// Return the requesting actor's staged draft metadata without mutating host state.
+  /// Return actor-protocol-staged metadata without mutating host state.
   pub fn actor_draft(&self) -> Result<Vec<ActorDraftDto>, ActorProtocolError> {
     if self.closed {
       return Err(ActorProtocolError::new(
@@ -502,11 +517,14 @@ impl CliScenarioHost {
     let observation_id = receipt.observation().observation_id().value();
     let mut drafts = Vec::new();
     for (field, value) in [
-      (ActorDraftField::Message, self.draft.message.as_deref()),
-      (ActorDraftField::Plan, self.draft.plan.as_deref()),
+      (
+        ActorDraftField::Message,
+        self.protocol_draft.message.as_deref(),
+      ),
+      (ActorDraftField::Plan, self.protocol_draft.plan.as_deref()),
       (
         ActorDraftField::Contingency,
-        self.draft.contingency.as_deref(),
+        self.protocol_draft.contingency.as_deref(),
       ),
     ] {
       if let Some(value) = value {
@@ -606,15 +624,11 @@ impl CliScenarioHost {
     let result = ActorDraftClearReceiptDto::new(
       clear.observer(),
       clear.observation_id(),
-      presence(&self.draft.message),
-      presence(&self.draft.plan),
-      presence(&self.draft.contingency),
+      presence(&self.protocol_draft.message),
+      presence(&self.protocol_draft.plan),
+      presence(&self.protocol_draft.contingency),
     );
-    self.draft = HostDraft {
-      message: None,
-      plan: None,
-      contingency: None,
-    };
+    self.clear_drafts();
     Ok(result)
   }
 
@@ -663,11 +677,7 @@ impl CliScenarioHost {
       ));
     }
     self.committed_intent = Some(commit.to_lane_intent());
-    self.draft = HostDraft {
-      message: None,
-      plan: None,
-      contingency: None,
-    };
+    self.clear_drafts();
     Ok(ActorCommitResultDto::new(commit.intent()))
   }
 
@@ -676,17 +686,17 @@ impl CliScenarioHost {
     &mut self,
     commit: ActorCommitDto,
   ) -> Result<ActorDraftCommitReceiptDto, ActorProtocolError> {
-    let message = if self.draft.message.is_some() {
+    let message = if self.protocol_draft.message.is_some() {
       ActorDraftPresence::Present
     } else {
       ActorDraftPresence::Absent
     };
-    let plan = if self.draft.plan.is_some() {
+    let plan = if self.protocol_draft.plan.is_some() {
       ActorDraftPresence::Present
     } else {
       ActorDraftPresence::Absent
     };
-    let contingency = if self.draft.contingency.is_some() {
+    let contingency = if self.protocol_draft.contingency.is_some() {
       ActorDraftPresence::Present
     } else {
       ActorDraftPresence::Absent
@@ -842,6 +852,7 @@ impl CliScenarioHost {
         if self.committed_intent.is_some() {
           return Err(CliHostError::CommittedBoundary { verb: "message" });
         }
+        self.protocol_draft = HostDraft::empty();
         self.draft.message = Some(text.to_owned());
         Ok(CliHostOutput::DraftStaged { field: "message" })
       }
@@ -849,6 +860,7 @@ impl CliScenarioHost {
         if self.committed_intent.is_some() {
           return Err(CliHostError::CommittedBoundary { verb: "plan" });
         }
+        self.protocol_draft = HostDraft::empty();
         self.draft.plan = Some(text.to_owned());
         Ok(CliHostOutput::DraftStaged { field: "plan" })
       }
@@ -858,6 +870,7 @@ impl CliScenarioHost {
             verb: "contingency",
           });
         }
+        self.protocol_draft = HostDraft::empty();
         self.draft.contingency = Some(text.to_owned());
         Ok(CliHostOutput::DraftStaged {
           field: "contingency",
@@ -876,11 +889,7 @@ impl CliScenarioHost {
           text: text.to_owned(),
         })?;
         self.committed_intent = Some(intent);
-        self.draft = HostDraft {
-          message: None,
-          plan: None,
-          contingency: None,
-        };
+        self.clear_drafts();
         Ok(CliHostOutput::Committed { intent })
       }
       CliWriteRequest::Advance => self.advance(),
@@ -1005,11 +1014,7 @@ impl CliScenarioHost {
           return Err(CliHostError::ReplayRejected);
         }
         self.history = self.restore_artifact(&artifact)?;
-        self.draft = HostDraft {
-          message: None,
-          plan: None,
-          contingency: None,
-        };
+        self.clear_drafts();
         self.committed_intent = None;
         Ok(CliHostOutput::Loaded {
           run_id: requested.to_owned(),
@@ -1023,11 +1028,7 @@ impl CliScenarioHost {
         if self.draft.is_empty() {
           return Err(CliHostError::NothingToUndo);
         }
-        self.draft = HostDraft {
-          message: None,
-          plan: None,
-          contingency: None,
-        };
+        self.clear_drafts();
         Ok(CliHostOutput::Undone)
       }
       CliSessionRequest::Quit => {
@@ -1122,11 +1123,7 @@ impl CliScenarioHost {
       .append(&receipt, &request, inputs)
       .map_err(|_| CliHostError::AdvanceRejected)?;
     self.committed_intent = None;
-    self.draft = HostDraft {
-      message: None,
-      plan: None,
-      contingency: None,
-    };
+    self.clear_drafts();
     let window = match index {
       0 => ScenarioWindow::First,
       1 => ScenarioWindow::Second,
@@ -1140,6 +1137,11 @@ impl CliScenarioHost {
 
   fn next_observation_id(&self) -> ObservationId {
     self.next_observation_id_for(&self.history)
+  }
+
+  fn clear_drafts(&mut self) {
+    self.draft = HostDraft::empty();
+    self.protocol_draft = HostDraft::empty();
   }
 
   fn next_observation_id_for(&self, history: &LaneScenarioHistory) -> ObservationId {
@@ -2455,6 +2457,17 @@ mod tests {
     assert_eq!(host.observation(), observation);
     assert_eq!(host.record_count(), 0);
     assert_eq!(host.committed_intent, None);
+
+    let mut cli_draft = CliScenarioHost::fixture();
+    assert_eq!(
+      cli_draft.apply_line("plan ???"),
+      Ok(CliHostOutput::DraftStaged { field: "plan" })
+    );
+    assert_eq!(cli_draft.actor_draft(), Ok(Vec::new()));
+    cli_draft
+      .apply_line(&format!("message {}", "x".repeat(257)))
+      .expect("CLI accepts legacy draft text");
+    assert_eq!(cli_draft.actor_draft(), Ok(Vec::new()));
 
     host
       .commit_actor_draft(ActorCommitDto::new(

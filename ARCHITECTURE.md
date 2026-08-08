@@ -146,8 +146,9 @@ history append.
 `ActorDraftDto` remains a bounded metadata envelope in the protocol edge, while
 `src/host.rs` owns its observation-bound pre-commit staging and its
 `ActorDraftReceiptDto` acknowledgement. `CliScenarioHost::actor_draft` reads
-the host-owned staged values back to the requesting actor in stable field order
-without delivering them to a recipient or changing host state. `ActorDraftStatusDto`
+the actor-protocol-staged values back to the requesting actor in stable field
+order without reinterpreting legacy CLI draft text, delivering them to a
+recipient, or changing host state. `ActorDraftStatusDto`
 adds only the active binding and aggregate field-presence bits; the status and
 receipt DTOs contain no draft value. The receipt contains no draft value;
 staging replaces one internal draft field but does not add communication

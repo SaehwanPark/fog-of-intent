@@ -1010,10 +1010,11 @@ transport-integrated sessions and broader protocol compatibility remain open.
   contingency metadata envelope. Values are observation-bound, non-empty,
   control-free, capped at 256 bytes, and plans use the closed intent IDs; the
   DTO does not stage host drafts or add communication authority.
-- `CliScenarioHost::actor_draft` returns the requesting actor's present staged
-  `ActorDraftDto` values in stable message/plan/contingency order. It is active
-  window-only, read-only with respect to host mutation, and does not deliver
-  metadata to another actor or add transition/history authority.
+- `CliScenarioHost::actor_draft` returns the requesting actor's present
+  actor-protocol-staged `ActorDraftDto` values in stable
+  message/plan/contingency order. It is active window-only, read-only with
+  respect to host mutation, and does not reinterpret legacy CLI draft text,
+  deliver metadata to another actor, or add transition/history authority.
 - `CliScenarioHost::stage_actor_draft` binds that DTO to the current actor
   observation and replaces one internal draft field before commit. It rejects
   stale, wrong-actor, committed, complete, and closed edits without changing
