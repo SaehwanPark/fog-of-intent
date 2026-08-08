@@ -634,22 +634,20 @@ fn batch_input_fingerprint(
   hasher.finish()
 }
 
-#[derive(Default)]
 struct FnvHasher(u64);
+
+impl Default for FnvHasher {
+  fn default() -> Self {
+    Self(0xcbf29ce484222325)
+  }
+}
 
 impl Hasher for FnvHasher {
   fn finish(&self) -> u64 {
-    if self.0 == 0 {
-      0xcbf29ce484222325
-    } else {
-      self.0
-    }
+    self.0
   }
 
   fn write(&mut self, bytes: &[u8]) {
-    if self.0 == 0 {
-      self.0 = 0xcbf29ce484222325;
-    }
     for byte in bytes {
       self.0 ^= u64::from(*byte);
       self.0 = self.0.wrapping_mul(0x100000001b3);
