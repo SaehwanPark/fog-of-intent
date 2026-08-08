@@ -3122,6 +3122,12 @@ mod tests {
       ActorMessageDto::new(1, 3, 36, &"x".repeat(MAX_ACTOR_DRAFT_VALUE_BYTES + 1)),
       Err(ActorProtocolCodecError::InvalidValue)
     );
+    let max_message = ActorMessageDto::new(1, 3, 36, &"x".repeat(MAX_ACTOR_DRAFT_VALUE_BYTES))
+      .expect("the inclusive message bound is accepted");
+    assert_eq!(
+      ActorMessageDto::decode(&max_message.encode()),
+      Ok(max_message)
+    );
 
     let valid = message.encode();
     for malformed in [
