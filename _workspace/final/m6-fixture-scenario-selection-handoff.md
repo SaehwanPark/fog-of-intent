@@ -2,7 +2,8 @@
 
 ## Outcome
 
-Pending independent domain QA and final handoff review.
+PASS — independent domain QA and final handoff review found no actionable
+findings at implementation/evidence head `bcd5b4d`.
 
 ## Delivered contract
 
@@ -16,13 +17,14 @@ matched-scenario sample pipeline. It is not a population generator or random
 sampler and owns no transition, history, replay, persistence, provider, or
 outcome authority.
 
-## Verification target
+## Verification
 
 The focused selection test covers literal catalog IDs, stable IDs/order,
 visible-threat difference, repeated equality, all malformed/boundary cases, and
-the four-selection cap, alongside the expected 22 focused agent tests,
-235-unit, 7-binary, and 3-RustDoc suite, formatter, Clippy warnings denied,
-repository checker, 15 Python policy tests, and diff checks.
+the four-selection cap. The full evidence is one focused selector test within
+22 focused agent tests, 235 unit tests, 7 binary tests, and 3 RustDoc tests,
+plus formatter, Clippy warnings denied, repository checker, 15 Python policy
+tests, and diff checks; all pass at reviewed head `bcd5b4d`.
 
 ## Open boundaries
 

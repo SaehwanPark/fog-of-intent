@@ -2,7 +2,8 @@
 
 ## Disposition
 
-Pending independent three-pass review of the implementation and evidence.
+PASS — independent three-pass review found no actionable findings at
+implementation/evidence head `bcd5b4d`.
 
 ## Scope reviewed
 
@@ -13,15 +14,16 @@ observations, and composes the existing matched-scenario sample contract. It
 does not add random sampling, transition/history/replay, persistence, provider,
 or outcome authority.
 
-## Evidence target
+## Evidence
 
 The focused fixture-scenario selection test binds both literal IDs, proves
 stable order and visible-threat projection, repeats the selection, accepts the
 four-entry inclusive cap, and rejects unknown, empty, length-mismatch,
-duplicate-ID, and over-capacity inputs. The expected full evidence is one
-focused selector test within 22 focused agent tests, 235 Rust unit tests, 7
-binary tests, and 3 RustDoc tests, plus formatter, Clippy warnings denied,
-repository checker, 15 Python policy tests, and diff checks.
+duplicate-ID, and over-capacity inputs. The full evidence is one focused
+selector test within 22 focused agent tests, 235 Rust unit tests, 7 binary
+tests, and 3 RustDoc tests, plus formatter, Clippy warnings denied, repository
+checker, 15 Python policy tests, and diff checks; all pass at reviewed head
+`bcd5b4d`.
 
 ## Review limits
 
