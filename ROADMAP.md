@@ -1416,8 +1416,9 @@ representative replays, and an evidence-limited report.
 - [x] Record applicable ruleset, scenario, scripted-policy, and profile version
   identities in a metadata-only catalog; prompt, model, tool-schema, and
   extractor versions are explicitly not applicable to this in-process slice.
-- [ ] Generate broader population-level aggregate/distributional, outcome, and
-  strategic metrics beyond the delivered selected-intent tally.
+- [x] Add a bounded 10,000-point intent-share projection over each verified
+  profile-aware selected-intent tally row; broader population-level
+  distributional, outcome, and strategic metrics remain open.
 - [ ] Add illegal-command, exploit-seeking, communication-abuse, and degenerate
   policy populations.
 - [ ] Detect outliers and select representative replays deterministically.
