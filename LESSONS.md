@@ -68,3 +68,16 @@ canonical policy instead of duplicating it.
   explicit extraction returns `None` for unknown values.
 - Prevention: Keep actor-visible redactions uninhabited in adapter DTOs and add
   tests that exercise both the label and payload boundary.
+
+## Commit boundaries should consume editable drafts
+
+- Context: The CLI needed pre-commit edits and undo without allowing a future
+  adapter operation to rewrite committed lane history.
+- Symptom: A mutable draft/session value could accidentally retain edit or undo
+  operations after the caller believed it had committed choices.
+- Cause: A runtime flag does not make the post-commit operation set visible or
+  enforceable at the type boundary.
+- Resolution: Keep `CliDraft` editable, make `undo()` clear only that value,
+  and consume it into `CliCommittedDraft`, which exposes only read-only getters.
+- Prevention: Model irreversible adapter boundaries with consuming operations
+  and marker types before adding host or persistence integration.

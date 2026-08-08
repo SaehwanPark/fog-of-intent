@@ -34,7 +34,10 @@ persisting, or invoking the simulation. Its versioned information-label schema
 (`m3-cli-information-labels-v1`) distinguishes `observed`, `believed`,
 `inferred`, `reported`, and `unknown`; the typed `CliInformation<T>` wrapper
 cannot carry a payload for `unknown` and does not change the actor-visible
-projection boundary.
+projection boundary. The `m3-cli-precommit-draft-v1` contract adds local
+last-write-wins staging, clear-all undo, and a consuming `CliCommittedDraft`
+marker with read-only getters; it does not edit committed history or authorize
+domain commands.
 
 The target architecture is one authoritative Rust simulation product with thin
 human, agent, and research adapters. The strongest boundary is:

@@ -767,6 +767,11 @@ playability, or human-experience evidence.
   provenance while returning the payload, and `Unknown` remains payload-free.
   This is adapter metadata only; no renderer, inference engine, host flow, or
   external compatibility guarantee exists.
+- `CliDraft` stages borrowed message, plan, and contingency payloads with
+  last-write-wins edits, clear-all `undo()`, and fail-closed empty/commit/
+  advance checks. `commit()` consumes the editable value and returns a
+  read-only `CliCommittedDraft`; no host command or committed history is
+  created by this adapter marker.
 
 ## Future
 
