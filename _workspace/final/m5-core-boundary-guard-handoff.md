@@ -16,8 +16,8 @@ that list.
 
 One focused checker test complements 15 Python policy tests. The standard Rust
 format, Clippy with warnings denied, 211 unit tests, 7 binary integration tests,
-3 RustDoc compile-fail tests, repository checker, and `git diff --check` are the
-required gates.
+3 RustDoc compile-fail tests, repository checker, and `git diff --check` pass at
+the reviewed head.
 
 ## Limits
 
