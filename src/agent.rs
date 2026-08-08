@@ -5226,6 +5226,8 @@ mod tests {
     .expect("changed-total verified tallies compare");
     assert_eq!(changed_total.baseline_pair_count(), 4);
     assert_eq!(changed_total.candidate_pair_count(), 3);
+    assert_eq!(changed_total.baseline_observation_count(), 8);
+    assert_eq!(changed_total.candidate_observation_count(), 6);
     assert!(!changed_total.passes_no_change_gate());
 
     let redistributed_population =
@@ -5247,6 +5249,8 @@ mod tests {
         .expect("same-total verified tallies compare");
     assert_eq!(same_total_redistribution.baseline_pair_count(), 4);
     assert_eq!(same_total_redistribution.candidate_pair_count(), 4);
+    assert_eq!(same_total_redistribution.baseline_observation_count(), 8);
+    assert_eq!(same_total_redistribution.candidate_observation_count(), 8);
     assert_eq!(
       same_total_redistribution.entries()[0].baseline_counts(),
       [7, 0, 0, 0, 1]
