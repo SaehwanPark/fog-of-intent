@@ -2,16 +2,17 @@
 
 ## Outcome
 
-Implementation and evidence are pending independent three-pass review at the
-implementation/evidence head.
+Implementation and evidence are complete at head `ea01976`; the independent
+three-pass review passed with no actionable findings. The slice binds all three
+closed profile rows to one fixed-fixture population tally.
 
-## Verification target
+## Verification
 
-One focused profile-aware population tally regression should cover stable
+One focused profile-aware population tally regression covers stable
 cautious/risk-taking/yielding rows, exact 7/1, 8, and 8 counts, row sums of
-eight, and existing safe-heavy composition. The full target is 29 focused
+eight, and existing safe-heavy composition. The full evidence is 29 focused
 agent tests within 242 Rust unit + 7 binary + 3 RustDoc tests, plus 15 Python
-tests and formatter, Clippy, repository, and diff gates.
+tests; formatter, Clippy, repository, and diff gates pass at `ea01976`.
 
 ## Limits
 

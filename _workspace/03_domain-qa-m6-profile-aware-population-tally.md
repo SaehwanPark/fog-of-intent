@@ -2,22 +2,23 @@
 
 ## Disposition
 
-Pending independent three-pass review at the implementation/evidence head.
+PASS: the independent three-pass review found no actionable findings at
+implementation/evidence head `ea01976`.
 
-## Scope to review
+## Scope reviewed
 
-- Does the regression preserve cautious/risk-taking/yielding row order?
-- Does it bind exact 7/1 cautious, 8 contest, and 8 yield counts with row sums
-  of eight?
-- Does the adapter remain pure aggregation over actor-visible verified samples?
+- The regression preserves cautious/risk-taking/yielding row order.
+- It binds exact 7/1 cautious, 8 contest, and 8 yield counts with row sums of
+  eight.
+- The adapter remains pure aggregation over actor-visible verified samples.
 
-## Evidence target
+## Evidence
 
-One focused profile-aware population tally regression should cover row IDs,
-exact counts, row sums, and existing safe-heavy composition. The full gate
-target is 29 focused agent tests within 242 Rust unit + 7 binary + 3 RustDoc,
-15 Python tests, formatter, Clippy with warnings denied, repository checker,
-and diff checks.
+One focused profile-aware population tally regression covers row IDs, exact
+counts, row sums, and existing safe-heavy composition. The full evidence is 29
+focused agent tests within 242 Rust unit + 7 binary + 3 RustDoc, 15 Python
+tests, formatter, Clippy with warnings denied, repository checker, and diff
+checks, all passing at `ea01976`.
 
 ## Limits
 
@@ -27,4 +28,6 @@ persistence, provider, or human-behavior claim is allowed.
 
 ## Required fixes
 
-To be completed after independent review.
+None. Profile calibration, broader population metrics, random/distributional
+sampling, outcomes, strategic quality, persistence, providers, and human
+evidence remain open.
