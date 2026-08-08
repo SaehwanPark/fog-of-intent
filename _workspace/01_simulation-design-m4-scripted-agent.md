@@ -19,7 +19,8 @@ sole simulation and transition authority.
 ## Policy flow
 
 1. Copy the four intents advertised by `LanerObservation::available_intents`.
-2. Add `available_threat_response` when present and not already advertised.
+2. Add `available_threat_response` when present and not already advertised;
+   safe and RiverSide observations therefore expose four and five candidates.
 3. Score a visible threat response at 100, `Stabilize` at 80 plus the observed
    wave-pressure value, `Contest` at 60, `Yield` at 40, `Recall` at 20, and
    `Withdraw` as a non-threat fallback at 10. The pressure value is bounded to

@@ -859,6 +859,10 @@ open.
   `threat-first-pressure-aware-fixed-score-v1`, `contest-first-fixed-score-v1`, or
   `yield-first-fixed-score-v1` table. Selection is the stable maximum-score
   candidate in advertised order.
+- Candidate breadth is the actor-visible advertised intent count plus one
+  distinct visible threat response when present; it is not random sampling or
+  strategic diversity evidence. The safe fixture exposes four candidates and
+  the RiverSide fixture exposes five.
 - Public `evaluate_candidate` rejects an intent that is not in the advertised
   candidate set with `ScriptedAgentEvaluationError::UnavailableIntent`; this
   is a policy-boundary error and does not duplicate host legality.

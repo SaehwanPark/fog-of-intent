@@ -36,7 +36,9 @@ freshness and source binding remain host-owned.
 ## Candidate Generation, Evaluation, and Selection
 
 Candidate generation copies the observation's advertised intents and adds a
-distinct visible threat response. Evaluation applies either the cautious
+distinct visible threat response. Safe and RiverSide fixtures therefore expose
+four and five unique candidates respectively; this is breadth evidence, not
+strategic diversity. Evaluation applies either the cautious
 `threat-first-pressure-aware-fixed-score-v1`, risk-taking `contest-first-fixed-score-v1`, or
 yielding `yield-first-fixed-score-v1` table and labels each candidate as a
 threat response, risk preference, yield preference, stable default, or

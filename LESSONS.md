@@ -365,3 +365,15 @@ canonical policy instead of duplicating it.
 - Prevention: Describe fixture tallies as bounded action evidence and defer
   population, outcome, strategic-quality, and human-behavior claims until those
   datasets and contracts exist.
+
+## Treat candidate breadth as separate from action diversity
+
+- Context: M4 needed a creativity contract without introducing random policy
+  choices or a population sampler.
+- Symptom: Counting generated candidates can be mistaken for strategic or
+  behavioral diversity if the observation's advertised options are not shown.
+- Resolution: Compare safe and visible-threat observations, assert four versus
+  five unique candidates, and require every candidate to come from the
+  actor-visible intent or threat-response fields.
+- Prevention: Call this candidate-generation evidence only; defer transformed
+  candidates, random sampling, population distributions, and outcome claims.

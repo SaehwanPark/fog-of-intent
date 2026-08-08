@@ -95,6 +95,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.88 — 2026-08-08
+
+### Added
+
+- Added candidate-breadth evidence proving the scripted policy exposes four
+  safe candidates and five candidates when the actor-visible RiverSide threat
+  response is advertised, with unique actor-valid intents and unchanged stable
+  selection.
+
+### Known limits
+
+- Candidate breadth is fixture-sized generation evidence, not strategic
+  diversity, population variation, randomness, outcomes, or human behavior.
+
 ## 0.1.87 — 2026-08-08
 
 ### Added

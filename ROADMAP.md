@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.87`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.88`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1041,8 +1041,9 @@ strategy while remaining bound to actor-visible information.
   open.
 - [ ] Define risk preference, loss aversion, planning horizon, attention, trust,
   communication response, confidence, and pressure/tilt only as required.
-- [ ] Define creativity as candidate breadth or transformation, not random
-  selection of inferior actions.
+- [x] Define bounded creativity evidence as candidate breadth from actor-visible
+  advertisements rather than random inferior-action selection; broader
+  candidate transformation remains open.
 - [x] Create a small three-profile versioned baseline catalog; broader profiles
   remain open.
 - [ ] Use explicit policy random streams and reproducible seed bundles.
@@ -1064,7 +1065,8 @@ strategy while remaining bound to actor-visible information.
   `cautious-laner-v1`, `risk-taking-laner-v1`, and `yielding-laner-v1` profile
   identities.
 - [x] Generate candidates only from the actor-visible `LanerObservation`
-  legal-intent set plus its visible threat-response option.
+  legal-intent set plus its visible threat-response option, with safe/threat
+  breadth evidence of four versus five candidates.
 - [x] Reject public evaluation requests for intents outside that advertised
   candidate set with a bounded policy error.
 - [x] Evaluate candidates with the profile-specific fixed, inspectable
