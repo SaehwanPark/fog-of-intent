@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs` | Placeholder `Hello, world!` binary |
-| Package | `Cargo.toml` | Version `0.1.68`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.69`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -855,7 +855,8 @@ API access.
 - [x] Define stable in-session grammar as a typed, dependency-free adapter
   contract.
 - [x] Implement `observe`, bounded actor-visible `inspect`, and contextual help
-  as typed adapter read requests; terminal rendering remains open.
+  as typed adapter read requests; plain text projection is covered while
+  terminal I/O remains open.
 - [x] Define typed adapter requests for `message`, `plan`, contingency,
   `commit`, and `advance`; the bounded host fixture executes only the existing
   two-window scenario.
@@ -875,9 +876,11 @@ API access.
   through a typed local draft boundary.
 - [x] Add validated human-readable run identifiers to save/load/replay/export
   adapter requests; persistence execution remains open.
-- [x] Keep terminal rendering outside the authoritative domain; current CLI
-  code remains a pure adapter contract with no rendering or I/O.
-- [ ] Add transcript-based acceptance tests for a complete run and common errors.
+- [x] Keep terminal rendering outside the authoritative domain; the pure
+  `src/terminal.rs` projection consumes actor-valid host values and performs no
+  terminal I/O.
+- [x] Add transcript-based acceptance tests for a complete library-host run and
+  common errors.
 - [ ] Check keyboard-only flow and screen-reader-oriented text structure.
 
 ### Current bounded information-label evidence
@@ -891,9 +894,9 @@ API access.
   returns payloads without changing M2 state, hashes, replay, or transition
   behavior.
 
-This establishes provenance metadata for future CLI projections only. Rendering,
-inference, belief computation, host execution, persistence, and human
-distinction remain open.
+This establishes provenance metadata for future CLI projections only. Inference,
+belief computation, persistence, terminal I/O, and human distinction remain
+open.
 
 ### Current bounded pre-commit edit/undo evidence
 
@@ -917,9 +920,9 @@ persist a session, or rewrite authoritative lane history.
 - [x] Assign any future rendering to an outer adapter that consumes
   actor-valid projections and cannot authorize commands or mutate history.
 
-This verifies a structural boundary plus a bounded library-only host flow. A
-terminal renderer, persistent backend, and keyboard/screen-reader inspection
-remain open.
+This verifies a structural boundary, bounded library-only host flow, and pure
+text projection. Terminal I/O, a user-facing command loop, persistent backend,
+and keyboard/screen-reader inspection remain open.
 
 ### Current bounded run-identifier evidence
 
@@ -939,8 +942,8 @@ handling, storage, resume behavior, and human discoverability remain open.
   write, process, and session request mappings.
 - [x] Cover common parser, malformed request, invalid run-ID, and privilege
   errors before host boundaries.
-- [ ] Complete a host-backed scenario transcript with save/resume, replay,
-  debrief, and terminal output.
+- [x] Complete a host-backed scenario transcript with save/resume, replay,
+  debrief, and deterministic plain-text output.
 
 The checked items are grammar-level acceptance only and do not satisfy the M3
 complete-run exit evidence.
@@ -955,8 +958,17 @@ complete-run exit evidence.
 - [ ] Add terminal rendering and persistent storage around the host contract;
   keyboard-only and screen-reader inspection remain open.
 
-This is host-backed scenario evidence, but not a user-facing command loop or
-the complete M3 terminal/accessibility evidence.
+This is host-backed scenario and text-projection evidence, but not a
+user-facing command loop or the complete M3 terminal/accessibility evidence.
+
+### Current bounded terminal-text evidence
+
+- [x] Render every host output and host error as stable labeled plain text
+  without ANSI styling, terminal I/O, or hidden-state lookup.
+- [x] Sanitize control characters in echoed user context and keep domain
+  failures redacted to the bounded host error categories.
+- [ ] Validate a real terminal command loop, keyboard/focus behavior, and
+  screen-reader semantics with human-oriented inspection.
 
 ### Deliverables
 

@@ -5,3 +5,4 @@ pub mod host;
 pub mod kernel;
 pub mod lane;
 pub mod serialization;
+pub mod terminal;

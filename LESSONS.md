@@ -110,3 +110,18 @@ canonical policy instead of duplicating it.
 - Prevention: Resolve randomness at the edge, pass inputs into the pure
   transition contract, and label in-memory host behavior as fixture evidence
   rather than persistence or terminal UX evidence.
+
+## Keep text renderers downstream of redacted projections
+
+- Context: The first terminal-facing text surface needed to make host results
+  understandable before a command loop or terminal integration existed.
+- Symptom: Rendering raw transition/domain errors or snapshots would make a
+  convenient presentation helper an accidental hidden-state channel.
+- Cause: A renderer that accepts authoritative values has no structural reason
+  to preserve actor information boundaries.
+- Resolution: Render only `CliHostOutput`/`CliHostError` values whose host API
+  already excludes snapshots, hashes, and raw domain failures; sanitize echoed
+  control characters and use stable labeled lines.
+- Prevention: Keep presentation downstream of actor-valid DTOs, make errors
+  actionable but bounded, and treat plain text/accessibility structure as
+  evidence separate from terminal I/O or human usability claims.
