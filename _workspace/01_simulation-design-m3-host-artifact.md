@@ -13,13 +13,15 @@ replaying the current explicit inputs through the lane contract.
 The versioned schema is `m3-cli-host-artifact-v1`. The header records the
 artifact schema, the fixed `m2-two-window-scenario-v3` replay identity, the
 validated run identifier, and the number of committed records. Each record
-contains its contiguous index, intent, prior-state hash, and resulting
-state-hash. Only the bounded two-window fixture is accepted.
+contains its contiguous index, intent, prior-state hash, resulting state hash,
+and the lane-record identity that binds intent, explicit inputs, and result.
+Only the bounded two-window fixture is accepted.
 
 Encoding is deterministic and uses one space-delimited header followed by one
 record per committed window. Run IDs use the existing 1–64-byte ASCII
-identifier contract. Unknown fields, duplicate fields, invalid enums, extra
-lines, unsupported versions, and hash mismatches fail closed.
+identifier contract. The decoder accepts at most 4096 bytes and three lines;
+unknown fields, duplicate fields, invalid enums, extra lines, unsupported
+versions, and hash mismatches fail closed.
 
 ## Restore contract
 

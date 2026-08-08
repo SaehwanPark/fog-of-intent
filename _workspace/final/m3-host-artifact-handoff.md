@@ -2,9 +2,11 @@
 
 ## Delivered
 
-- Versioned `m3-cli-host-artifact-v1` text encoding for bounded saved runs.
+- Versioned `m3-cli-host-artifact-v1` text encoding for bounded saved runs,
+  including lane-record identity binding.
 - Fail-closed decoding and replay/hash validation during host restore.
-- Divergent-input and malformed-artifact regression coverage.
+- Byte/line-bounded decoding, malformed-artifact, divergent-input, and
+  valid-intent-tampering regression coverage.
 - Core docs and lessons synchronized with the pure in-process boundary.
 
 ## Open boundaries
@@ -15,6 +17,6 @@ keyboard/screen-reader inspection remain open.
 
 ## Verification
 
-Four focused artifact/restore tests, the existing command-loop and host
-transcripts, 134 Rust tests plus one compile-fail RustDoc test, repository
+Six focused artifact/restore tests, the existing command-loop and host
+transcripts, 138 Rust tests plus one compile-fail RustDoc test, repository
 checks, 14 Python checks, and diff checks pass.

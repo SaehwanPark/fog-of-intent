@@ -101,8 +101,8 @@ not increment the package version.
 
 - Added the versioned `m3-cli-host-artifact-v1` pure text artifact for bounded
   host save/load. It records validated run IDs, replay identity, committed
-  intents, and state hashes, then restores only after deterministic replay
-  validation.
+  intents, lane-record identity, and state hashes, then restores only after
+  deterministic replay validation with bounded decoding.
 
 ### Known limits
 

@@ -8,9 +8,10 @@ versioned, replay-verifiable text artifact contract.
 ## In scope
 
 - Encode a validated run identifier, the bounded host replay identity, each
-  committed intent, and the prior/result state hashes for the two-window
-  fixture.
+  committed intent, the prior/result state hashes, and the full lane-record
+  identity for the two-window fixture.
 - Decode the artifact with bounded, fail-closed syntax and version checks.
+- Enforce the documented byte and line bounds before allocating parsed lines.
 - Rebuild a host history from the explicit fixture inputs and reject artifacts
   whose replay hashes do not match the current fixture inputs.
 - Keep artifact handling pure and dependency-free; the command loop and binary
@@ -31,5 +32,7 @@ versioned, replay-verifiable text artifact contract.
 - A saved one-window host artifact decodes and restores one committed record
   after the current host has advanced to a second window.
 - Tampered schema, run ID, record ordering, or hashes fail closed.
+- A valid-intent substitution fails through the lane-record identity even when
+  the resulting state hash happens to be unchanged.
 - The artifact cannot load under divergent resolved fixture inputs.
 - Existing actor-visible host and command-loop transcripts remain unchanged.

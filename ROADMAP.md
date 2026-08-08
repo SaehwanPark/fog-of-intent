@@ -31,13 +31,13 @@ sequencing or checklist differs from this file, this file governs current work.
 | --- | --- | --- |
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
-| Executable | `src/main.rs`, `src/command_loop.rs` | Line-oriented bounded fixture loop; no scenario selection or persistence |
+| Executable | `src/main.rs`, `src/command_loop.rs` | Line-oriented bounded fixture loop; no scenario selection or durable file persistence/storage |
 | Package | `Cargo.toml` | Version `0.1.71`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
 | Internal kernel/replay fixture | `src/kernel.rs`, `src/serialization.rs` | M1 complete; not playable |
-| Scenario, CLI, MCP, research, GUI | Grammar, bounded host, pure text, and fixture loop; no scenario selection or persistence | Not implemented as complete user-facing flows |
+| Scenario, CLI, MCP, research, GUI | Grammar, bounded host, pure text, fixture loop, and in-process artifacts; no scenario selection or durable file persistence/storage | Not implemented as complete user-facing flows |
 
 ## Milestone Map
 

@@ -6,14 +6,17 @@
 
 use crate::cli::{CliRunId, CliRunIdError};
 use crate::kernel::StateHash;
-use crate::lane::{LaneIntent, LaneScenarioHistory, M2_TWO_WINDOW_REPLAY_ID};
+use crate::lane::{LaneIntent, LaneScenarioHistory, M2_TWO_WINDOW_REPLAY_ID, lane_record_identity};
 
 /// Versioned schema for a bounded host save artifact.
 pub const CLI_HOST_ARTIFACT_SCHEMA: &str = "m3-cli-host-artifact-v1";
+/// Maximum encoded artifact size accepted by the bounded decoder.
+pub const MAX_CLI_HOST_ARTIFACT_BYTES: usize = 4096;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum CliHostArtifactError {
   EmptyInput,
+  InputTooLarge,
   UnexpectedLineCount { expected: usize, actual: usize },
   MalformedLine { line: usize },
   MissingField { line: usize, field: &'static str },
@@ -36,6 +39,7 @@ pub struct CliHostArtifactRecord {
   intent: LaneIntent,
   prior_hash: StateHash,
   state_hash: StateHash,
+  identity_hash: StateHash,
 }
 
 impl CliHostArtifactRecord {
@@ -53,6 +57,10 @@ impl CliHostArtifactRecord {
 
   pub const fn state_hash(self) -> StateHash {
     self.state_hash
+  }
+
+  pub const fn identity_hash(self) -> StateHash {
+    self.identity_hash
   }
 }
 
@@ -86,6 +94,7 @@ impl CliHostArtifact {
         intent: record.transition().command().intent(),
         prior_hash: record.transition().prior_state_hash(),
         state_hash: record.transition().result().state_hash(),
+        identity_hash: lane_record_identity(record.transition()),
       })
       .collect::<Vec<_>>();
     let artifact = Self {
@@ -98,7 +107,24 @@ impl CliHostArtifact {
 
   /// Decode and validate a bounded host artifact without restoring state.
   pub fn decode(input: &str) -> Result<Self, CliHostArtifactError> {
-    let lines = input.lines().collect::<Vec<_>>();
+    if input.len() > MAX_CLI_HOST_ARTIFACT_BYTES {
+      return Err(CliHostArtifactError::InputTooLarge);
+    }
+    let mut line_iter = input.lines();
+    let mut lines = Vec::with_capacity(3);
+    for _ in 0..3 {
+      if let Some(line) = line_iter.next() {
+        lines.push(line);
+      } else {
+        break;
+      }
+    }
+    if line_iter.next().is_some() {
+      return Err(CliHostArtifactError::UnexpectedLineCount {
+        expected: 3,
+        actual: 4,
+      });
+    }
     if lines.is_empty() {
       return Err(CliHostArtifactError::EmptyInput);
     }
@@ -134,11 +160,13 @@ impl CliHostArtifact {
       let intent = parse_intent(field_value(&record, line_number, "intent")?)?;
       let prior_hash = parse_hash(field_value(&record, line_number, "prior_hash")?)?;
       let state_hash = parse_hash(field_value(&record, line_number, "state_hash")?)?;
+      let identity_hash = parse_hash(field_value(&record, line_number, "identity_hash")?)?;
       records.push(CliHostArtifactRecord {
         index,
         intent,
         prior_hash,
         state_hash,
+        identity_hash,
       });
     }
 
@@ -172,11 +200,12 @@ impl CliHostArtifact {
     for record in &self.records {
       text.push('\n');
       text.push_str(&format!(
-        "record index={} intent={} prior_hash={} state_hash={}",
+        "record index={} intent={} prior_hash={} state_hash={} identity_hash={}",
         record.index,
         intent_name(record.intent),
         record.prior_hash.value(),
-        record.state_hash.value()
+        record.state_hash.value(),
+        record.identity_hash.value()
       ));
     }
     text
@@ -184,7 +213,13 @@ impl CliHostArtifact {
 }
 
 const HEADER_FIELDS: [&str; 4] = ["schema", "replay_id", "run_id", "records"];
-const RECORD_FIELDS: [&str; 4] = ["index", "intent", "prior_hash", "state_hash"];
+const RECORD_FIELDS: [&str; 5] = [
+  "index",
+  "intent",
+  "prior_hash",
+  "state_hash",
+  "identity_hash",
+];
 
 fn fields<'a>(
   line_number: usize,
@@ -315,7 +350,7 @@ mod tests {
 
   #[test]
   fn artifact_rejects_malformed_and_tampered_text() {
-    let malformed = "artifact schema=m3-cli-host-artifact-v1 replay_id=m2-two-window-scenario-v3 run_id=run records=1\nrecord index=1 intent=contest prior_hash=1 state_hash=2";
+    let malformed = "artifact schema=m3-cli-host-artifact-v1 replay_id=m2-two-window-scenario-v3 run_id=run records=1\nrecord index=1 intent=contest prior_hash=1 state_hash=2 identity_hash=3";
     assert_eq!(
       CliHostArtifact::decode(malformed),
       Err(CliHostArtifactError::NonContiguousRecord)
@@ -325,5 +360,98 @@ mod tests {
       CliHostArtifact::decode(&unknown_intent),
       Err(CliHostArtifactError::InvalidIntent)
     );
+  }
+
+  #[test]
+  fn artifact_decoder_rejects_contract_variants() {
+    let valid = "artifact schema=m3-cli-host-artifact-v1 replay_id=m2-two-window-scenario-v3 run_id=run records=0";
+    assert!(matches!(
+      CliHostArtifact::decode(&valid.replace("records=0", "records=0 extra=x")),
+      Err(CliHostArtifactError::UnexpectedField { .. })
+    ));
+    assert!(matches!(
+      CliHostArtifact::decode(&valid.replace("records=0", "records=0 records=0")),
+      Err(CliHostArtifactError::DuplicateField { .. })
+    ));
+    assert!(matches!(
+      CliHostArtifact::decode(&valid.replace(" records=0", "")),
+      Err(CliHostArtifactError::MissingField {
+        field: "records",
+        ..
+      })
+    ));
+    assert!(matches!(
+      CliHostArtifact::decode(&valid.replace("schema=m3-cli-host-artifact-v1", "schema=old")),
+      Err(CliHostArtifactError::UnsupportedSchema)
+    ));
+    assert!(matches!(
+      CliHostArtifact::decode(
+        &valid.replace("replay_id=m2-two-window-scenario-v3", "replay_id=old")
+      ),
+      Err(CliHostArtifactError::UnsupportedReplayId)
+    ));
+
+    let too_long_id = format!("run_id={}", "a".repeat(65));
+    assert!(matches!(
+      CliHostArtifact::decode(&valid.replace("run_id=run", &too_long_id)),
+      Err(CliHostArtifactError::InvalidRunId {
+        error: CliRunIdError::TooLong
+      })
+    ));
+    assert!(matches!(
+      CliHostArtifact::decode(&valid.replace("run_id=run", "run_id=run/id")),
+      Err(CliHostArtifactError::InvalidRunId {
+        error: CliRunIdError::InvalidCharacter { character: '/' }
+      })
+    ));
+
+    let record = "\nrecord index=0 intent=contest prior_hash=1 state_hash=2 identity_hash=3";
+    assert!(
+      CliHostArtifact::decode(&format!(
+        "{}{}",
+        valid.replace("records=0", "records=1"),
+        record
+      ))
+      .is_ok()
+    );
+    assert!(matches!(
+      CliHostArtifact::decode(&format!(
+        "{}{}",
+        valid.replace("records=0", "records=1"),
+        record.replace("prior_hash=1", "prior_hash=nope")
+      )),
+      Err(CliHostArtifactError::InvalidHash)
+    ));
+    assert!(matches!(
+      CliHostArtifact::decode(&format!(
+        "{}{}\nextra",
+        valid.replace("records=0", "records=1"),
+        record
+      )),
+      Err(CliHostArtifactError::UnexpectedLineCount { .. })
+    ));
+  }
+
+  #[test]
+  fn artifact_decoder_enforces_size_and_line_bounds() {
+    let valid = "artifact schema=m3-cli-host-artifact-v1 replay_id=m2-two-window-scenario-v3 run_id=run records=0";
+    assert!(valid.len() < MAX_CLI_HOST_ARTIFACT_BYTES);
+    let at_limit = format!(
+      "{}{}",
+      valid,
+      " ".repeat(MAX_CLI_HOST_ARTIFACT_BYTES - valid.len())
+    );
+    assert!(CliHostArtifact::decode(&at_limit).is_ok());
+
+    let oversized = "x".repeat(MAX_CLI_HOST_ARTIFACT_BYTES + 1);
+    assert_eq!(
+      CliHostArtifact::decode(&oversized),
+      Err(CliHostArtifactError::InputTooLarge)
+    );
+    let many_lines = format!("{valid}\n\n\n");
+    assert!(matches!(
+      CliHostArtifact::decode(&many_lines),
+      Err(CliHostArtifactError::UnexpectedLineCount { .. })
+    ));
   }
 }

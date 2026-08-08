@@ -400,7 +400,13 @@ impl CliScenarioHost {
       let result = history
         .append(&receipt, &request, inputs)
         .map_err(|_| CliHostError::ReplayRejected)?;
-      if result.state_hash() != record.state_hash() {
+      let restored_record = history
+        .records()
+        .last()
+        .ok_or(CliHostError::ReplayRejected)?;
+      if result.state_hash() != record.state_hash()
+        || crate::lane::lane_record_identity(restored_record.transition()) != record.identity_hash()
+      {
         return Err(CliHostError::ReplayRejected);
       }
     }
@@ -607,6 +613,50 @@ mod tests {
   }
 
   #[test]
+  fn artifact_restore_rejects_valid_intent_tampering() {
+    let mut source = CliScenarioHost::fixture();
+    for command in ["plan stabilize", "commit", "advance"] {
+      source.apply_line(command).expect("source fixture command");
+    }
+    let artifact = CliHostArtifact::encode("first-window", source.history_for_artifact_test())
+      .expect("artifact encodes")
+      .replace("intent=stabilize", "intent=yield");
+    let mut tampered = CliScenarioHost::fixture();
+    tampered.saved = Some(SavedRun {
+      run_id: "first-window".to_owned(),
+      artifact,
+    });
+
+    assert_eq!(
+      tampered.apply_line("load first-window"),
+      Err(CliHostError::ReplayRejected)
+    );
+  }
+
+  #[test]
+  fn artifact_restore_rejects_hash_tampering() {
+    let mut source = CliScenarioHost::fixture();
+    for command in ["plan contest", "commit", "advance"] {
+      source.apply_line(command).expect("source fixture command");
+    }
+    let artifact = CliHostArtifact::encode("first-window", source.history_for_artifact_test())
+      .expect("artifact encodes");
+
+    for field in ["prior_hash", "state_hash", "identity_hash"] {
+      let mut tampered = CliScenarioHost::fixture();
+      tampered.saved = Some(SavedRun {
+        run_id: "first-window".to_owned(),
+        artifact: replace_artifact_field(&artifact, field, "0"),
+      });
+      assert_eq!(
+        tampered.apply_line("load first-window"),
+        Err(CliHostError::ReplayRejected),
+        "tampered {field} must fail closed"
+      );
+    }
+  }
+
+  #[test]
   fn host_rejects_invalid_plan_and_pre_host_errors() {
     let mut host = CliScenarioHost::fixture();
     assert_eq!(
@@ -653,6 +703,26 @@ mod tests {
       host.apply_line("branch point-0"),
       Err(CliHostError::UnsupportedCommand { verb: "branch" })
     );
+  }
+
+  fn replace_artifact_field(artifact: &str, field: &str, value: &str) -> String {
+    artifact
+      .lines()
+      .map(|line| {
+        line
+          .split_whitespace()
+          .map(|word| {
+            if word.starts_with(&format!("{field}=")) {
+              format!("{field}={value}")
+            } else {
+              word.to_owned()
+            }
+          })
+          .collect::<Vec<_>>()
+          .join(" ")
+      })
+      .collect::<Vec<_>>()
+      .join("\n")
   }
 
   #[test]

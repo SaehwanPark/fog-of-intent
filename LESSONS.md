@@ -149,8 +149,9 @@ canonical policy instead of duplicating it.
   fixture load the same run with silently different outcomes and hashes.
 - Cause: Intent text is not sufficient to identify the deterministic execution
   that produced a committed history.
-- Resolution: Encode the replay identity and each record's prior/result hashes,
-  then rebuild through the current explicit inputs and reject any mismatch.
+- Resolution: Encode the replay identity, each record's prior/result hashes,
+  and the full lane-record identity, then rebuild through the current explicit
+  inputs and reject any mismatch.
 - Prevention: Treat artifacts as compatibility contracts, validate them before
   replacing host history, and keep filesystem placement/atomicity as a separate
   outer-edge concern.
