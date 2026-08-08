@@ -110,14 +110,15 @@ quit: status=closed
 
 The default binary is intentionally a bounded fixture adapter: it supports one
 versioned fixture ID, but has no scenario catalog, regenerated/graph branching,
-or complete accessibility inspection. To persist bounded artifacts between
-processes, provide an explicit directory:
+or complete accessibility inspection.
 
 To inspect the package version without starting a session, run:
 
 ```sh
 cargo run -- --version
 ```
+
+To persist bounded artifacts between processes, provide an explicit directory:
 
 ```sh
 printf 'plan contest\ncommit\nadvance\nsave run\nquit\n' \\
