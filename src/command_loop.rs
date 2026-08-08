@@ -1,8 +1,9 @@
 //! Line-oriented application-edge loop for the bounded CLI fixture.
 //!
-//! The loop owns stdin/stdout integration only. It delegates command
-//! authority to [`crate::host::CliScenarioHost`] and delegates formatting to
-//! [`crate::terminal`], so the kernel and lane remain synchronous and pure.
+//! This module owns the bounded process-argument helper and stdin/stdout
+//! integration. It delegates command authority to
+//! [`crate::host::CliScenarioHost`] and formatting to [`crate::terminal`], so
+//! the kernel and lane remain synchronous and pure.
 
 use std::ffi::OsString;
 use std::io::{self, BufRead, Write};
@@ -83,6 +84,9 @@ pub fn parse_application_args(
         }
         if args[index].is_empty() {
           return Err(CliApplicationArgsError::EmptyRunDirectory);
+        }
+        if args[index].to_string_lossy().starts_with('-') {
+          return Err(CliApplicationArgsError::UnexpectedArgument);
         }
         run_dir = Some(PathBuf::from(&args[index]));
       }
@@ -203,6 +207,13 @@ mod tests {
       parse_application_args(&[OsString::from("--unknown")]),
       Err(CliApplicationArgsError::UnexpectedArgument)
     );
+    for token in ["--help", "--run-dir", "--unknown"] {
+      let args = [OsString::from("--run-dir"), OsString::from(token)];
+      assert_eq!(
+        parse_application_args(&args),
+        Err(CliApplicationArgsError::UnexpectedArgument)
+      );
+    }
   }
 
   #[test]

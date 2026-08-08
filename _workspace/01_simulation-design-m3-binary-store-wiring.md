@@ -2,18 +2,20 @@
 
 ## Boundary
 
-`src/main.rs` owns process arguments and process exit status. The line-oriented
-loop remains responsible only for buffered input/output and delegates lifecycle
-and persistence to `CliScenarioHost`. `CliRunStore` remains an injected outer
-adapter; the kernel and lane receive no path, argument, or filesystem state.
+`src/main.rs` owns process invocation and process exit status, while
+`src/command_loop.rs` provides the pure bounded argument helper and the
+line-oriented buffered I/O loop. The loop delegates lifecycle and persistence
+to `CliScenarioHost`. `CliRunStore` remains an injected outer adapter; the
+kernel and lane receive no path, argument, or filesystem state.
 
 ## Contract
 
 The executable accepts no options or one `--run-dir <path>` option. `--help`
 prints a bounded usage string and exits successfully. Missing or empty option values,
-duplicate `--run-dir`, and unknown/positional arguments print a bounded error
-and exit unsuccessfully. The parser preserves the supplied `OsString` as a
-`PathBuf` and does not echo it in failures.
+duplicate `--run-dir`, option-shaped values, and unknown/positional arguments
+print a bounded error and exit unsuccessfully. The parser preserves the
+supplied `OsString` as a `PathBuf` and does not echo it in failures; a real
+dash-prefixed directory can be written as `./-name`.
 
 With no `--run-dir`, `CliCommandLoop::fixture()` constructs the existing
 in-memory host. With `--run-dir`, the binary constructs

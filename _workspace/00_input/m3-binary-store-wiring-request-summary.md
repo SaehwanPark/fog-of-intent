@@ -12,7 +12,8 @@ in a later process.
   grammar or simulation authority.
 - Preserve the no-argument binary default as an in-memory fixture loop.
 - Add bounded `--help`, missing/empty-option, duplicate-option, and unknown-argument
-  behavior with stable process exit status.
+  behavior with stable process exit status; option-shaped values are rejected as
+  paths.
 - Construct `CliCommandLoop` with `CliScenarioHost::fixture_with_store` only
   when the option is present.
 - Add parser tests and a two-process smoke test for save/load across process

@@ -752,11 +752,13 @@ remain open.
   typed borrowed write requests; the adapter does not map them to `LaneIntent`,
   validate legality, execute a turn, or mutate history.
 - `review`, `debrief`, `replay`, and `branch` map to distinct typed borrowed
-  process requests (`CliProcessRequest`); host flow execution, history inspection,
-  and branch derivation remain open.
+  process requests (`CliProcessRequest`); the adapter remains host-agnostic,
+  while bounded fixture execution, history inspection, and branch rejection
+  are covered by the host evidence below.
 - `save`, `load`, `undo`, and `quit` map to distinct typed borrowed session
-  requests (`CliSessionRequest`); persistence, uncommitted choice editing, and
-  session lifecycle execution remain open.
+  requests (`CliSessionRequest`); the adapter remains host-agnostic, while
+  bounded persistence, uncommitted choice editing, and session lifecycle
+  execution are covered by the host/store evidence below.
 - Top-level process commands (`play`, `replay`, `branch`, `experiment`, `export`,
   `validate`, `mcp`, `help`, `version`) parse positional and flag options, map
   to typed requests (`CliTopLevelRequest`), enforce interaction modes (`Guided`,
@@ -788,9 +790,10 @@ remain open.
 - `src/command_loop.rs` provides the versioned `m3-cli-command-loop-v1` edge
   adapter. It reads newline-delimited input, continues after bounded errors,
   renders each result through the pure text projection, and stops on `quit` or
-  end-of-input. It does not select scenarios, parse process paths, or add
-  prompts/styling; `src/main.rs` accepts one explicit `--run-dir <path>` option
-  and injects the host's configured artifact store.
+  end-of-input. It does not select scenarios, authorize host actions, or add
+  prompts/styling; its bounded process-argument helper parses `--run-dir`
+  without echoing paths, and `src/main.rs` invokes it to inject the host's
+  configured artifact store.
 - `CliRunId<'a>` is the versioned `m3-cli-run-id-v1` borrowed identifier for
   save/load/replay/export requests. It accepts bounded human-readable ASCII
   forms and rejects malformed values before host execution; it does not create

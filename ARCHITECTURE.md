@@ -109,7 +109,7 @@ _workspace/
 `src/lib.rs`, `src/cli.rs`, `src/host.rs`, `src/host_artifact.rs`, `src/run_store.rs`, `src/terminal.rs`, `src/kernel.rs`,
 `src/lane/`, and `src/serialization.rs` are the current internal
 kernel/adapter/fixture surface;
-`src/main.rs` runs the bounded fixture loop. The lane surface is split into private responsibility-oriented
+`src/main.rs` parses bounded process options and runs the fixture loop. The lane surface is split into private responsibility-oriented
 modules behind the existing `crate::lane::*` facade: `evaluation.rs` owns
 authoritative state evaluation, `projection.rs` owns ordered event/effect
 projection, `result.rs` owns transition result/debrief assembly, and

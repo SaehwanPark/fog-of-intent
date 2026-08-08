@@ -109,6 +109,15 @@ fn binary_argument_failures_are_non_success_and_path_free() {
   let stderr = String::from_utf8(output.stderr).expect("argument stderr UTF-8");
   assert!(stderr.contains("--run-dir may be provided only once"));
   assert!(!stderr.contains("private-run-directory"));
+
+  for token in ["--help", "--run-dir"] {
+    let output = Command::new(binary_path())
+      .arg("--run-dir")
+      .arg(token)
+      .output()
+      .expect("run option-shaped path parser");
+    assert!(!output.status.success());
+  }
 }
 
 #[test]

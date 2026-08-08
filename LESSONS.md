@@ -177,8 +177,9 @@ canonical policy instead of duplicating it.
 - Symptom: Adding an implicit directory would make ordinary fixture runs write
   to an environment-dependent location and turn a library boundary into a
   deployment policy.
-- Resolution: Parse one bounded `--run-dir <path>` option at `src/main.rs`,
-  retain the no-argument in-memory default, and verify save/load with two
+- Resolution: Have `src/main.rs` invoke one bounded `--run-dir <path>` parser
+  from the application-edge loop module, retain the no-argument in-memory
+  default, reject option-shaped path values, and verify save/load with two
   separate binary processes.
 - Prevention: Keep process configuration outside the session grammar and add a
   cross-process smoke test whenever persistence becomes executable behavior.
