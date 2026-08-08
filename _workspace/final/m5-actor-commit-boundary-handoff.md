@@ -20,14 +20,17 @@ history, or refreshing the observation.
 
 ## Verification
 
-Pending final full-gate snapshot: expected current evidence is 16 focused
-protocol, 5 session, and 21 host tests within 198 Rust unit tests, 7 binary
-integration tests, and 1 RustDoc test, plus formatter, Clippy with warnings
-denied, repository checker, 14 Python checks, and diff check.
+Final evidence at PR #113 head `dc5908a` includes one focused host commit test
+and one focused protocol commit codec test. Current protocol/session/host
+evidence is 16 protocol, 5 session, and 21 host tests within 198 Rust unit
+tests, 7 binary integration tests, and 1 RustDoc compile-fail test. Formatter,
+Clippy with warnings denied, the repository checker, 14 Python checks, and
+`git diff --check` all pass.
 
 ## Domain QA Disposition
 
-Pending the required independent three-pass review at PR handoff.
+PASS after the required independent three-pass review. The review found no
+remaining actionable issues.
 
 ## Limits and Next Dependencies
 
