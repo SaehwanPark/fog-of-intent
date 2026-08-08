@@ -10,4 +10,5 @@ pub mod lane;
 pub mod protocol;
 pub mod run_store;
 pub mod serialization;
+pub mod session;
 pub mod terminal;

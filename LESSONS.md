@@ -453,3 +453,15 @@ canonical policy instead of duplicating it.
   actions back to host-bound requests without validating them in the adapter.
 - Prevention: Keep transport, lifecycle, plan/message metadata, and host
   legality outside the DTO module until each has its own versioned contract.
+
+## Keep actor-session freshness separate from legality
+
+- Context: M5 needed a session lifecycle before transport or MCP orchestration.
+- Symptom: Letting the session adapter validate intents or commit submissions
+  would create a second simulation authority and blur stale-window recovery.
+- Resolution: Use immutable session transitions for actor binding, current
+  observation identity, duplicate submission, and close state only; return
+  host-bound requests for the host to validate.
+- Prevention: Keep session freshness and actor capability checks bounded at the
+  protocol edge, while legality, transition, history, replay, and repair remain
+  explicit host/adapter contracts.

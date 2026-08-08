@@ -97,6 +97,7 @@ src/run_store.rs
 src/terminal.rs
 src/command_loop.rs
 src/protocol.rs
+src/session.rs
 src/kernel.rs
 src/lane/
 src/serialization.rs
@@ -111,7 +112,7 @@ docs/
 _workspace/
 ```
 
-`src/lib.rs`, `src/cli.rs`, `src/host.rs`, `src/host_artifact.rs`, `src/run_store.rs`, `src/terminal.rs`, `src/protocol.rs`, `src/kernel.rs`,
+`src/lib.rs`, `src/cli.rs`, `src/host.rs`, `src/host_artifact.rs`, `src/run_store.rs`, `src/terminal.rs`, `src/protocol.rs`, `src/session.rs`, `src/kernel.rs`,
 `src/lane/`, and `src/serialization.rs` are the current internal
 kernel/adapter/fixture surface;
 `src/main.rs` parses bounded process options and runs the fixture loop. The lane surface is split into private responsibility-oriented
@@ -133,6 +134,10 @@ outside transition, host history, and durable persistence authority.
 maps primitive actor-visible fields and closed intent IDs without exposing
 internal observation/request types as a transport contract; host validation
 still owns legality.
+
+`src/session.rs` owns immutable ordinary-actor session freshness and lifecycle
+metadata only. It cannot validate an intent, submit a transition, or mutate
+history.
 
 ## Target Components
 
