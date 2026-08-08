@@ -806,6 +806,12 @@ mod tests {
       assert_eq!(dto.schema(), "m5-actor-draft-v1");
       assert_eq!(dto.field().id(), field.id());
       assert_eq!(dto.value(), value);
+      if field == ActorDraftField::Message {
+        assert_eq!(
+          dto.encode(),
+          "schema=m5-actor-draft-v1\nobserver=1\nobservation_id=36\nfield=message\nvalue=ping ally\n"
+        );
+      }
       assert_eq!(ActorDraftDto::decode(&dto.encode()), Ok(dto.clone()));
       assert!(!format!("{dto:?}").contains("hash"));
     }
@@ -813,6 +819,8 @@ mod tests {
 
   #[test]
   fn actor_draft_codec_rejects_unbounded_or_noncanonical_values() {
+    let max_value = "x".repeat(MAX_ACTOR_DRAFT_VALUE_BYTES);
+    assert!(ActorDraftDto::new(1, 36, ActorDraftField::Message, &max_value).is_ok());
     assert_eq!(
       ActorDraftDto::new(1, 36, ActorDraftField::Message, ""),
       Err(ActorProtocolCodecError::InvalidValue)
