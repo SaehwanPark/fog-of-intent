@@ -966,6 +966,9 @@ transport-integrated sessions and broader protocol compatibility remain open.
   failure into a closed actor-safe code and deterministic repair hint. The
   projection contains no raw payload, actor ID, state hash, domain error, or
   transport detail; hints are advisory and do not rewrite, retry, or submit.
+- `ActorReplayDto` exposes only `m5-actor-replay-v1`, a bounded record count,
+  and the closed `verified` result after host-owned immutable-history replay;
+  records, hashes, resolved inputs, and traces remain private.
 - The repository checker statically scans every deterministic core module for
   async syntax/runtime imports, wall-clock imports, and network transport types;
   the guard has focused fixture tests and leaves synchronous I/O at edge modules.
@@ -973,8 +976,8 @@ transport-integrated sessions and broader protocol compatibility remain open.
   conversion through the existing validator, absence of state-hash or
   snapshot fields, session lifecycle/error cases, codec round-trips and
   malformed-input rejection, and exhaustive codec/session error projections.
-  The focused evidence is 19 protocol tests and 12 session tests within the
-  211-unit, 7-binary, and 3-Rustdoc suite; host evidence includes the
+  The focused evidence is 20 protocol tests and 12 session tests within the
+  213-unit, 7-binary, and 3-Rustdoc suite; host evidence includes the
   authorization/redaction matrix and CLI/protocol parity regressions.
 - `CliScenarioHost::validate_actor_action` checks one DTO against the current
   actor-visible receipt and existing lane validator without mutating history,

@@ -63,6 +63,9 @@ pub const ACTOR_TRANSCRIPT_SCHEMA: &str = "m5-actor-transcript-v1";
 /// Versioned actor-visible bounded history-status identity.
 pub const ACTOR_HISTORY_SCHEMA: &str = "m5-actor-history-v1";
 
+/// Versioned actor-visible replay-verification identity.
+pub const ACTOR_REPLAY_SCHEMA: &str = "m5-actor-replay-v1";
+
 /// Versioned line-oriented codec identity for the bounded DTOs.
 pub const ACTOR_PROTOCOL_CODEC_SCHEMA: &str = "m5-actor-codec-v1";
 
@@ -1468,6 +1471,103 @@ impl ActorHistoryDto {
   }
 }
 
+/// Closed actor-visible replay-verification result.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ActorReplayVerification {
+  Verified,
+}
+
+impl ActorReplayVerification {
+  pub const fn id(self) -> &'static str {
+    "verified"
+  }
+
+  fn parse_id(value: &str) -> Result<Self, ActorProtocolCodecError> {
+    match value {
+      "verified" => Ok(Self::Verified),
+      _ => Err(ActorProtocolCodecError::InvalidValue),
+    }
+  }
+}
+
+/// Bounded actor-visible replay status without records, hashes, or inputs.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ActorReplayDto {
+  schema: &'static str,
+  records: u8,
+  verification: ActorReplayVerification,
+}
+
+impl ActorReplayDto {
+  pub fn new(records: u8) -> Result<Self, ActorProtocolCodecError> {
+    if records > 2 {
+      return Err(ActorProtocolCodecError::InvalidValue);
+    }
+    Ok(Self {
+      schema: ACTOR_REPLAY_SCHEMA,
+      records,
+      verification: ActorReplayVerification::Verified,
+    })
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn records(self) -> u8 {
+    self.records
+  }
+
+  pub const fn verification(self) -> ActorReplayVerification {
+    self.verification
+  }
+
+  /// Encode replay status without exposing record contents or provenance.
+  pub fn encode(self) -> String {
+    format!(
+      "schema={}\nrecords={}\nverification={}\n",
+      self.schema,
+      self.records,
+      self.verification.id(),
+    )
+  }
+
+  /// Decode replay status without replay or transition authority.
+  pub fn decode(input: &str) -> Result<Self, ActorProtocolCodecError> {
+    let fields = parse_fields(input, 3)?;
+    let mut schema = None;
+    let mut records = None;
+    let mut verification = None;
+    for (key, value) in fields {
+      let slot = match key {
+        "schema" => &mut schema,
+        "records" => &mut records,
+        "verification" => &mut verification,
+        _ => return Err(ActorProtocolCodecError::UnknownField),
+      };
+      if slot.is_some() {
+        return Err(ActorProtocolCodecError::DuplicateField);
+      }
+      *slot = Some(value);
+    }
+    if schema != Some(ACTOR_REPLAY_SCHEMA) {
+      return Err(ActorProtocolCodecError::UnsupportedSchema);
+    }
+    let records = records
+      .ok_or(ActorProtocolCodecError::MissingField)?
+      .parse::<u8>()
+      .map_err(|_| ActorProtocolCodecError::InvalidValue)?;
+    let verification = ActorReplayVerification::parse_id(
+      verification.ok_or(ActorProtocolCodecError::MissingField)?,
+    )?;
+    let dto = Self::new(records)?;
+    if dto.verification != verification {
+      return Err(ActorProtocolCodecError::InvalidValue);
+    }
+    Ok(dto)
+  }
+}
+
 /// Bounded protocol codec failures.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ActorProtocolCodecError {
@@ -2392,6 +2492,54 @@ mod tests {
     );
     assert_eq!(
       ActorHistoryDto::decode("schema=m5-actor-history-v1\nrecords=0\nstatus=open\nextra=x\n"),
+      Err(ActorProtocolCodecError::UnexpectedLineCount {
+        expected: 3,
+        actual: 4,
+      })
+    );
+  }
+
+  #[test]
+  fn actor_replay_codec_round_trips_bounded_verification_status() {
+    for records in [0, 1, 2] {
+      let dto = ActorReplayDto::new(records).expect("replay count is bounded");
+      assert_eq!(dto.schema(), "m5-actor-replay-v1");
+      assert_eq!(dto.records(), records);
+      assert_eq!(dto.verification(), ActorReplayVerification::Verified);
+      assert_eq!(
+        dto.encode(),
+        format!("schema=m5-actor-replay-v1\nrecords={records}\nverification=verified\n")
+      );
+      assert_eq!(ActorReplayDto::decode(&dto.encode()), Ok(dto));
+    }
+    assert_eq!(
+      ActorReplayDto::new(3),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ActorReplayDto::decode("schema=m5-actor-replay-v1\nrecords=3\nverification=verified\n"),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ActorReplayDto::decode("schema=m5-actor-replay-v1\nrecords=0\nverification=unknown\n"),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ActorReplayDto::decode("schema=m5-actor-replay-v1\nrecords=0\nrecords=1\n"),
+      Err(ActorProtocolCodecError::DuplicateField)
+    );
+    assert_eq!(
+      ActorReplayDto::decode("schema=m5-actor-replay-v1\nrecords=0\n"),
+      Err(ActorProtocolCodecError::MissingField)
+    );
+    assert_eq!(
+      ActorReplayDto::decode("schema=m5-actor-replay-v0\nrecords=0\nverification=verified\n"),
+      Err(ActorProtocolCodecError::UnsupportedSchema)
+    );
+    assert_eq!(
+      ActorReplayDto::decode(
+        "schema=m5-actor-replay-v1\nrecords=0\nverification=verified\nextra=x\n"
+      ),
       Err(ActorProtocolCodecError::UnexpectedLineCount {
         expected: 3,
         actual: 4,

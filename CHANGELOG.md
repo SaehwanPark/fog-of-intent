@@ -98,6 +98,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.116 — 2026-08-08
+
+### Added
+
+- Added `m5-actor-replay-v1`, a bounded actor-visible replay-verification DTO
+  and host projection carrying only verified status and record count.
+- Added focused codec and host regressions for successful, closed, and tampered
+  history paths without exposing records, hashes, resolved inputs, or traces.
+
+### Known limits
+
+- Replay records, durable/scenario replay integration, detailed causal review,
+  messages, plans, contingencies, and complete MCP transport remain open.
+
 ## 0.1.115 — 2026-08-08
 
 ### Added

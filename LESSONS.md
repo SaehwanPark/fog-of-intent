@@ -734,3 +734,15 @@ canonical policy instead of duplicating it.
   transport types there; test both rejection and clean-core paths.
 - Prevention: Treat the guard as ownership evidence, not as proof of complete
   transport behavior, and keep adapter-edge I/O and future MCP work separate.
+
+## Expose replay verification without exposing replay data
+
+- Context: Actor clients need to know whether the host's immutable history was
+  verified before relying on bounded debrief/status projections.
+- Symptom: Returning records, hashes, resolved inputs, or traces would widen the
+  actor information boundary and couple the protocol to internal replay data.
+- Resolution: Add a versioned replay DTO with only categorical `verified` status
+  and bounded record count; keep verification host-owned and map failures through
+  existing actor-safe errors.
+- Prevention: Treat this as status evidence, not replay transport, persistence,
+  causal debrief, or a second transition authority.

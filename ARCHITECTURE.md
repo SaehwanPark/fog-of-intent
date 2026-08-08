@@ -171,6 +171,9 @@ MCP transport or provider authority.
 metadata only. Its `m5-actor-session-v2` boundary maps encoded malformed,
 stale, duplicate, timeout, and disconnect events into bounded actor-safe
 outcomes; it cannot validate an intent, submit a transition, or mutate history.
+`ActorReplayDto` is a read-only host projection of successful current-history
+verification; it exposes only a categorical result and bounded record count,
+never replay records, hashes, resolved inputs, or traces.
 
 ## Target Components
 
