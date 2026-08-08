@@ -98,6 +98,22 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.134 — 2026-08-08
+
+### Added
+
+- Added a bounded line-oriented codec for
+  `m6-scripted-agent-matched-scenario-tally-v1`, preserving ordered
+  actor-safe rows and rejecting malformed, unknown, duplicate, missing,
+  wrong-rule, count-mismatch, extra-line, and oversized input.
+- Added canonical round-trip and malformed-input evidence without adding
+  durable export, policy execution, population, outcome, or provider paths.
+
+### Known limits
+
+- Durable report export/pipelines, population/distributional sampling, outcome
+  and strategic metrics, persistence, providers, and calibration remain open.
+
 ## 0.1.133 — 2026-08-08
 
 ### Added

@@ -958,3 +958,14 @@ canonical policy instead of duplicating it.
 - Prevention: Keep aggregation actor-safe and fixture-sized; defer population
   distributions, outcomes, strategic metrics, and persistence to separate
   verified inputs and reports.
+
+## Keep machine-readable evidence bounded and closed
+
+- Context: M6 needed a portable tally representation before any durable report
+  export pipeline was authorized.
+- Symptom: An open-ended row format can admit unknown fields, stale rules, or
+  unbounded text that is difficult to validate and reproduce.
+- Resolution: Encode fixed top-level metadata and ordered closed rows under a
+  4096-byte bound, validating profile/rule identity and count totals on decode.
+- Prevention: Treat the codec as evidence transport only; keep durable export,
+  population metrics, and provider/report pipelines outside the core.

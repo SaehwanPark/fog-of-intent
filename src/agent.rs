@@ -82,6 +82,9 @@ pub const SCRIPTED_AGENT_MATCHED_SCENARIO_SAMPLE_SCHEMA: &str =
 pub const SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_SCHEMA: &str =
   "m6-scripted-agent-matched-scenario-tally-v1";
 
+/// Maximum encoded matched-scenario tally size before parsing or allocation.
+pub const MAX_SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_BYTES: usize = 4096;
+
 /// Maximum number of caller-supplied matched pairs in one sample set.
 pub const MAX_SCRIPTED_AGENT_MATCHED_SCENARIO_SAMPLES: usize = 4;
 
@@ -724,6 +727,19 @@ pub struct ScriptedAgentMatchedScenarioTallyReport {
   entries: Vec<ScriptedAgentMatchedScenarioTally>,
 }
 
+/// Bounded failures from the selected-intent tally codec.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentMatchedScenarioTallyCodecError {
+  Oversized,
+  UnexpectedLineCount { expected: usize, actual: usize },
+  UnknownField,
+  DuplicateField,
+  MissingField,
+  UnsupportedSchema,
+  InvalidValue,
+  InputMismatch,
+}
+
 impl ScriptedAgentMatchedScenarioTallyReport {
   /// Aggregate a validated sample set without rerunning policy evaluation.
   pub fn from_sample(sample: &ScriptedAgentMatchedScenarioSample) -> Self {
@@ -786,6 +802,183 @@ impl ScriptedAgentMatchedScenarioTallyReport {
 
   pub fn entries(&self) -> &[ScriptedAgentMatchedScenarioTally] {
     &self.entries
+  }
+
+  /// Encode the verified selected-intent tally as bounded line-oriented text.
+  pub fn encode(&self) -> String {
+    let mut encoded = format!(
+      "schema={}\nobserver={}\npair_count={}\nobservation_count={}\nentries={}\n",
+      self.schema,
+      self.observer.value(),
+      self.pair_count,
+      self.observation_count,
+      self.entries.len(),
+    );
+    for entry in &self.entries {
+      encoded.push_str(&format!(
+        "row={}|{}|{}|{}|{}|{}|{}\n",
+        entry.profile_id,
+        entry.evaluation_rule,
+        entry.stabilize_count,
+        entry.contest_count,
+        entry.yield_count,
+        entry.recall_count,
+        entry.withdraw_count,
+      ));
+    }
+    encoded
+  }
+
+  /// Decode and validate a tally against an already verified report.
+  pub fn decode(
+    input: &str,
+    expected: &Self,
+  ) -> Result<Self, ScriptedAgentMatchedScenarioTallyCodecError> {
+    let decoded = Self::decode_unverified(input)?;
+    if decoded != *expected {
+      return Err(ScriptedAgentMatchedScenarioTallyCodecError::InputMismatch);
+    }
+    Ok(decoded)
+  }
+
+  fn decode_unverified(input: &str) -> Result<Self, ScriptedAgentMatchedScenarioTallyCodecError> {
+    if input.len() > MAX_SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_BYTES {
+      return Err(ScriptedAgentMatchedScenarioTallyCodecError::Oversized);
+    }
+    let lines = input.lines().collect::<Vec<_>>();
+    let mut schema = None;
+    let mut observer = None;
+    let mut pair_count = None;
+    let mut observation_count = None;
+    let mut entries_count = None;
+    let mut rows = Vec::new();
+    for line in lines.iter() {
+      let (key, value) = line
+        .split_once('=')
+        .ok_or(ScriptedAgentMatchedScenarioTallyCodecError::InvalidValue)?;
+      if key.is_empty() || value.is_empty() {
+        return Err(ScriptedAgentMatchedScenarioTallyCodecError::InvalidValue);
+      }
+      match key {
+        "schema" => {
+          if schema.is_some() {
+            return Err(ScriptedAgentMatchedScenarioTallyCodecError::DuplicateField);
+          }
+          schema = Some(value);
+        }
+        "observer" => {
+          if observer.is_some() {
+            return Err(ScriptedAgentMatchedScenarioTallyCodecError::DuplicateField);
+          }
+          observer = Some(value);
+        }
+        "pair_count" => {
+          if pair_count.is_some() {
+            return Err(ScriptedAgentMatchedScenarioTallyCodecError::DuplicateField);
+          }
+          pair_count = Some(value);
+        }
+        "observation_count" => {
+          if observation_count.is_some() {
+            return Err(ScriptedAgentMatchedScenarioTallyCodecError::DuplicateField);
+          }
+          observation_count = Some(value);
+        }
+        "entries" => {
+          if entries_count.is_some() {
+            return Err(ScriptedAgentMatchedScenarioTallyCodecError::DuplicateField);
+          }
+          entries_count = Some(value);
+        }
+        "row" => rows.push(value),
+        _ => return Err(ScriptedAgentMatchedScenarioTallyCodecError::UnknownField),
+      }
+    }
+    if schema != Some(SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_SCHEMA) {
+      return Err(ScriptedAgentMatchedScenarioTallyCodecError::UnsupportedSchema);
+    }
+    let observer = observer
+      .ok_or(ScriptedAgentMatchedScenarioTallyCodecError::MissingField)?
+      .parse::<u8>()
+      .map_err(|_| ScriptedAgentMatchedScenarioTallyCodecError::InvalidValue)?;
+    let pair_count = pair_count
+      .ok_or(ScriptedAgentMatchedScenarioTallyCodecError::MissingField)?
+      .parse::<u8>()
+      .map_err(|_| ScriptedAgentMatchedScenarioTallyCodecError::InvalidValue)?;
+    if !(1..=MAX_SCRIPTED_AGENT_MATCHED_SCENARIO_SAMPLES).contains(&usize::from(pair_count)) {
+      return Err(ScriptedAgentMatchedScenarioTallyCodecError::InvalidValue);
+    }
+    let observation_count = observation_count
+      .ok_or(ScriptedAgentMatchedScenarioTallyCodecError::MissingField)?
+      .parse::<u8>()
+      .map_err(|_| ScriptedAgentMatchedScenarioTallyCodecError::InvalidValue)?;
+    if observation_count != pair_count * 2 {
+      return Err(ScriptedAgentMatchedScenarioTallyCodecError::InvalidValue);
+    }
+    let entries_count = entries_count
+      .ok_or(ScriptedAgentMatchedScenarioTallyCodecError::MissingField)?
+      .parse::<usize>()
+      .map_err(|_| ScriptedAgentMatchedScenarioTallyCodecError::InvalidValue)?;
+    if !(1..=MAX_SCRIPTED_AGENT_BATCH_MANIFESTS).contains(&entries_count) {
+      return Err(ScriptedAgentMatchedScenarioTallyCodecError::InvalidValue);
+    }
+    let expected = 5 + entries_count;
+    if lines.len() != expected || rows.len() != entries_count {
+      return Err(
+        ScriptedAgentMatchedScenarioTallyCodecError::UnexpectedLineCount {
+          expected,
+          actual: lines.len(),
+        },
+      );
+    }
+    let entries = rows
+      .into_iter()
+      .map(|row| {
+        let fields = row.split('|').collect::<Vec<_>>();
+        if fields.len() != 7 {
+          return Err(ScriptedAgentMatchedScenarioTallyCodecError::InvalidValue);
+        }
+        let profile = ScriptedAgentProfile::parse_id(fields[0])
+          .map_err(|_| ScriptedAgentMatchedScenarioTallyCodecError::InvalidValue)?;
+        if profile.evaluation_rule() != fields[1] {
+          return Err(ScriptedAgentMatchedScenarioTallyCodecError::InvalidValue);
+        }
+        let parse_count = |value: &str| {
+          value
+            .parse::<u8>()
+            .map_err(|_| ScriptedAgentMatchedScenarioTallyCodecError::InvalidValue)
+        };
+        let counts = [
+          parse_count(fields[2])?,
+          parse_count(fields[3])?,
+          parse_count(fields[4])?,
+          parse_count(fields[5])?,
+          parse_count(fields[6])?,
+        ];
+        if counts.iter().map(|value| u16::from(*value)).sum::<u16>() != u16::from(observation_count)
+        {
+          return Err(ScriptedAgentMatchedScenarioTallyCodecError::InvalidValue);
+        }
+        Ok(ScriptedAgentMatchedScenarioTally {
+          profile_id: profile.profile_id(),
+          evaluation_rule: profile.evaluation_rule(),
+          pair_count,
+          observation_count,
+          stabilize_count: counts[0],
+          contest_count: counts[1],
+          yield_count: counts[2],
+          recall_count: counts[3],
+          withdraw_count: counts[4],
+        })
+      })
+      .collect::<Result<Vec<_>, _>>()?;
+    Ok(Self {
+      schema: SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_SCHEMA,
+      observer: ActorId::new(observer),
+      pair_count,
+      observation_count,
+      entries,
+    })
   }
 }
 
@@ -2484,6 +2677,136 @@ mod tests {
     assert_eq!(
       tally,
       ScriptedAgentMatchedScenarioTallyReport::from_sample(&sample)
+    );
+    let encoded = tally.encode();
+    assert_eq!(
+      encoded,
+      "schema=m6-scripted-agent-matched-scenario-tally-v1\nobserver=1\npair_count=2\nobservation_count=4\nentries=2\nrow=cautious-laner-v1|threat-first-pressure-aware-fixed-score-v1|2|0|0|0|2\nrow=yielding-laner-v1|yield-first-fixed-score-v1|0|0|4|0|0\n"
+    );
+    assert_eq!(
+      ScriptedAgentMatchedScenarioTallyReport::decode(&encoded, &tally),
+      Ok(tally.clone())
+    );
+    for malformed in [
+      (
+        encoded.replacen(
+          "schema=m6-scripted-agent-matched-scenario-tally-v1",
+          "schema=other",
+          1,
+        ),
+        ScriptedAgentMatchedScenarioTallyCodecError::UnsupportedSchema,
+      ),
+      (
+        encoded.replacen("entries=2", "unknown=2", 1),
+        ScriptedAgentMatchedScenarioTallyCodecError::UnknownField,
+      ),
+      (
+        encoded.replacen("cautious-laner-v1", "unknown-profile", 1),
+        ScriptedAgentMatchedScenarioTallyCodecError::InvalidValue,
+      ),
+      (
+        encoded.replacen(
+          "entries=2",
+          "schema=m6-scripted-agent-matched-scenario-tally-v1",
+          1,
+        ),
+        ScriptedAgentMatchedScenarioTallyCodecError::DuplicateField,
+      ),
+      (
+        encoded.replacen("entries=2\n", "", 1),
+        ScriptedAgentMatchedScenarioTallyCodecError::MissingField,
+      ),
+      (
+        format!(
+          "{encoded}row=cautious-laner-v1|threat-first-pressure-aware-fixed-score-v1|2|0|0|0|2\n"
+        ),
+        ScriptedAgentMatchedScenarioTallyCodecError::UnexpectedLineCount {
+          expected: 7,
+          actual: 8,
+        },
+      ),
+      (
+        encoded.replacen(
+          "row=cautious-laner-v1|threat-first-pressure-aware-fixed-score-v1|2|0|0|0|2",
+          "row=cautious-laner-v1|threat-first-pressure-aware-fixed-score-v1|oops|0|0|0|2",
+          1,
+        ),
+        ScriptedAgentMatchedScenarioTallyCodecError::InvalidValue,
+      ),
+      (
+        encoded.replacen(
+          "yielding-laner-v1|yield-first-fixed-score-v1",
+          "yielding-laner-v1|contest-first-fixed-score-v1",
+          1,
+        ),
+        ScriptedAgentMatchedScenarioTallyCodecError::InvalidValue,
+      ),
+      (
+        encoded.replacen(
+          "row=cautious-laner-v1|threat-first-pressure-aware-fixed-score-v1|2|0|0|0|2",
+          "row=cautious-laner-v1|threat-first-pressure-aware-fixed-score-v1|1|0|0|0|2",
+          1,
+        ),
+        ScriptedAgentMatchedScenarioTallyCodecError::InvalidValue,
+      ),
+      (
+        encoded.replacen("pair_count=2", "pair_count=0", 1),
+        ScriptedAgentMatchedScenarioTallyCodecError::InvalidValue,
+      ),
+      (
+        encoded.replacen("pair_count=2", "pair_count=5", 1),
+        ScriptedAgentMatchedScenarioTallyCodecError::InvalidValue,
+      ),
+      (
+        encoded.replacen("observation_count=4", "observation_count=3", 1),
+        ScriptedAgentMatchedScenarioTallyCodecError::InvalidValue,
+      ),
+      (
+        encoded.replacen("entries=2", "entries=0", 1),
+        ScriptedAgentMatchedScenarioTallyCodecError::InvalidValue,
+      ),
+      (
+        encoded.replacen("entries=2", "entries=17", 1),
+        ScriptedAgentMatchedScenarioTallyCodecError::InvalidValue,
+      ),
+      (
+        encoded.replacen(
+          "row=cautious-laner-v1|threat-first-pressure-aware-fixed-score-v1|2|0|0|0|2",
+          "row=cautious-laner-v1|threat-first-pressure-aware-fixed-score-v1|2|0|0",
+          1,
+        ),
+        ScriptedAgentMatchedScenarioTallyCodecError::InvalidValue,
+      ),
+    ] {
+      assert_eq!(
+        ScriptedAgentMatchedScenarioTallyReport::decode(&malformed.0, &tally),
+        Err(malformed.1)
+      );
+    }
+    assert_eq!(
+      ScriptedAgentMatchedScenarioTallyReport::decode(
+        &"x".repeat(MAX_SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_BYTES + 1),
+        &tally,
+      ),
+      Err(ScriptedAgentMatchedScenarioTallyCodecError::Oversized)
+    );
+    assert_eq!(
+      ScriptedAgentMatchedScenarioTallyReport::decode(
+        &encoded.replacen("observer=1", "observer=255", 1),
+        &tally,
+      ),
+      Err(ScriptedAgentMatchedScenarioTallyCodecError::InputMismatch)
+    );
+    assert_eq!(
+      ScriptedAgentMatchedScenarioTallyReport::decode(
+        &encoded.replacen(
+          "row=yielding-laner-v1|yield-first-fixed-score-v1|0|0|4|0|0",
+          "row=yielding-laner-v1|yield-first-fixed-score-v1|0|0|2|2|0",
+          1,
+        ),
+        &tally,
+      ),
+      Err(ScriptedAgentMatchedScenarioTallyCodecError::InputMismatch)
     );
 
     let at_capacity = [
