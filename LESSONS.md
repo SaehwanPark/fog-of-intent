@@ -491,3 +491,17 @@ canonical policy instead of duplicating it.
   omit raw payloads, IDs, hashes, and domain errors, and keep hints advisory.
 - Prevention: Treat host-legality error redaction, automatic repair, transport
   retry, and reconnect as separate contracts with their own evidence.
+
+## Validate actor actions without submitting them
+
+- Context: M5 needed a host-legality boundary after DTO and session freshness
+  contracts were established.
+- Symptom: Letting a protocol adapter append a request or close a window while
+  checking an actor action would move simulation authority out of the host and
+  make rejected requests hard to audit.
+- Resolution: Add a read-only host method that binds observer and observation
+  identity, delegates to the existing lane validator, and maps failures to
+  actor-safe codes while preserving history and observation state.
+- Prevention: Keep action submission, execution resolution, window closure,
+  and detailed host-error projections behind separate authority and evidence
+  contracts.

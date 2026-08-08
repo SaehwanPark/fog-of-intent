@@ -367,6 +367,8 @@ pub enum ActorProtocolErrorCode {
   StaleObservation,
   DuplicateSubmission,
   ClosedSession,
+  WindowClosed,
+  HostValidationRejected,
 }
 
 impl ActorProtocolErrorCode {
@@ -385,6 +387,8 @@ impl ActorProtocolErrorCode {
       Self::StaleObservation => "stale_observation",
       Self::DuplicateSubmission => "duplicate_submission",
       Self::ClosedSession => "closed_session",
+      Self::WindowClosed => "window_closed",
+      Self::HostValidationRejected => "host_validation_rejected",
     }
   }
 }
@@ -403,6 +407,7 @@ pub enum ActorProtocolRepairHint {
   RequestFreshObservation,
   AwaitNextObservation,
   StartNewSession,
+  ResendAdvertisedAction,
 }
 
 impl ActorProtocolRepairHint {
@@ -419,6 +424,7 @@ impl ActorProtocolRepairHint {
       Self::RequestFreshObservation => "request_fresh_observation",
       Self::AwaitNextObservation => "await_next_observation",
       Self::StartNewSession => "start_new_session",
+      Self::ResendAdvertisedAction => "resend_advertised_action",
     }
   }
 }

@@ -95,6 +95,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.98 — 2026-08-08
+
+### Added
+
+- Added a read-only host adapter for validating actor action DTOs against the
+  current actor-visible receipt and existing lane validator.
+- Added actor-safe mismatch, stale-observation, closed-window, and generic
+  host-validation rejection projections without exposing raw lane errors or
+  mutating history.
+
+### Known limits
+
+- Actor action submission/window closure, finer host-legality error taxonomy,
+  transport integration, retry/reconnect, and privileged tools remain open.
+
 ## 0.1.97 — 2026-08-08
 
 ### Added
