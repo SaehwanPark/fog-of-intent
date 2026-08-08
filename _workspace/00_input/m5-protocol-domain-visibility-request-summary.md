@@ -14,8 +14,8 @@ M5 — Model-Agnostic MCP Play, bounded actor-protocol library evidence.
 
 - Make the lane observation projection and actor-action request conversion
   crate-private implementation adapters.
-- Add compile-fail RustDoc evidence that public consumers cannot call those
-  domain conversions.
+- Add two independent compile-fail RustDoc checks proving public consumers
+  cannot call those domain conversions.
 - Synchronize the current package and canonical/workspace boundary claims.
 
 ## Non-Goals
@@ -27,7 +27,8 @@ M5 — Model-Agnostic MCP Play, bounded actor-protocol library evidence.
 ## Expected Outputs
 
 - Public DTO-only protocol surface for observation and action construction.
-- One compile-fail RustDoc boundary test and synchronized documentation.
+- Two independent compile-fail RustDoc boundary tests and synchronized
+  documentation.
 
 ## Verification
 

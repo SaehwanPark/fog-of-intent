@@ -22,6 +22,6 @@ transport authentication and provider compatibility remain outside the slice.
 ## Verification Contract
 
 - Public protocol consumers cannot call either domain conversion adapter.
-- The compile-fail RustDoc boundary is green alongside the existing DTO and
-  full-suite evidence.
+- Two independent compile-fail RustDoc boundaries are green alongside the
+  existing DTO and full-suite evidence.
 - No DTO wire shape or schema ID changes.

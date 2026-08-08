@@ -12,9 +12,10 @@ host/lane implementation.
 
 ## Verification
 
-The current evidence includes one compile-fail RustDoc boundary, 19 protocol,
+The current evidence includes two independent compile-fail RustDoc boundaries,
+19 protocol,
 5 session, and 23 host tests within 203 Rust unit tests, 7 binary integration
-tests, and 2 RustDoc compile-fail tests. Formatter, Clippy with warnings
+tests, and 3 RustDoc compile-fail tests. Formatter, Clippy with warnings
 denied, repository checker, 14 Python checks, and `git diff --check` pass.
 
 ## Limits

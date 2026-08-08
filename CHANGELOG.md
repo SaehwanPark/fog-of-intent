@@ -103,8 +103,8 @@ not increment the package version.
 ### Added
 
 - Kept authoritative lane observation/request conversion behind crate-private
-  protocol adapters, with a compile-fail RustDoc boundary proving public DTO
-  consumers cannot call those domain conversions directly.
+  protocol adapters, with two independent compile-fail RustDoc boundaries
+  proving public DTO consumers cannot call those domain conversions directly.
 
 ### Known limits
 

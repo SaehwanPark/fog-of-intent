@@ -10,10 +10,15 @@
 //!
 //! ```compile_fail
 //! use fog_of_intent::lane::LanerObservation;
-//! use fog_of_intent::protocol::{ActorActionDto, ActorObservationDto, ActorProtocolIntent};
+//! use fog_of_intent::protocol::ActorObservationDto;
 //!
 //! let observation: LanerObservation = todo!();
 //! let _ = ActorObservationDto::from_observation(observation);
+//! ```
+//!
+//! ```compile_fail
+//! use fog_of_intent::protocol::{ActorActionDto, ActorProtocolIntent};
+//!
 //! let action = ActorActionDto::new(1, 1, ActorProtocolIntent::Contest);
 //! let _ = action.to_lane_request();
 //! ```

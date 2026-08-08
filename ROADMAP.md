@@ -1220,7 +1220,7 @@ values or deliver them to another actor. The provider-neutral
 accepted/rejected result for an actor receipt; it is not a runtime log or
 replay record. Focused evidence is 19 protocol tests,
 5 session tests, and 23 host tests within the 203-unit, 7-binary, and
-2-Rustdoc suite. The host observation projection is a
+3-Rustdoc suite. The host observation projection is a
 pure actor-visible DTO mapping, rejects inactive lifecycle states, and leaves
 the internal receipt private. The history DTO is a bounded status summary,
 while the debrief DTO is a completion-gated committed-facts summary rather
