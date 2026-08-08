@@ -153,6 +153,10 @@ distribution, outcome, transition, history, or provider authority.
 `ScriptedAgentMatchedScenarioTallyReport` aggregates only the selected intents
 from a verified sample set into bounded profile/rule counts; it does not rerun
 policies or own population, outcome, persistence, or provider authority.
+Its line-oriented codec is bounded and closed-field validated for
+machine-readable evidence; decoding is accepted only when it matches an
+already verified report, and it is not durable export or an external report
+pipeline.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

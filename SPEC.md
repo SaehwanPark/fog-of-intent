@@ -1179,6 +1179,13 @@ transport-integrated sessions and broader protocol compatibility remain open.
   rows, and bounded counts for the five closed intents; each row totals at most
   eight observations. This is fixture-sized selected-intent aggregation, not a
   population distribution, outcome metric, persistence, or provider contract.
+- The tally report's line-oriented codec uses the same
+  `m6-scripted-agent-matched-scenario-tally-v1` identity, a 4096-byte bound,
+  fixed top-level fields, and ordered pipe-delimited rows. It rejects unknown,
+  duplicate, missing, malformed, wrong-rule, count-mismatch, and extra-line
+  input before comparing the candidate with an already verified report.
+  Mismatches are rejected before a trusted report is returned; this is
+  machine-readable evidence, not durable export or a report pipeline.
 
 ## Future
 
