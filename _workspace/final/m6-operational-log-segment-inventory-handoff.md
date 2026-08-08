@@ -2,17 +2,19 @@
 
 ## Outcome
 
-Implementation is pending independent review. The slice adds an observational
-stable inventory for recognized caller-declared operational-log segments; it
-does not infer rotation or crash state.
+Implementation and evidence are complete at head `0aa9a51`; the independent
+three-pass review passed with no actionable findings. The slice adds an
+observational stable inventory for recognized caller-declared operational-log
+segments; it does not infer rotation or crash state.
 
-## Verification target
+## Verification
 
-One focused batch/store regression should prove stable `[0, 1, 3]` discovery,
-base/segment coexistence, missing-root and invalid-run failures, and existing
-segment bounds. The expected full evidence is 27 focused agent tests within
-240 Rust unit tests, 7 binary tests, and 3 RustDoc tests, plus 15 Python tests
-and the formatter, Clippy, repository, and diff gates.
+One focused batch/store regression covers stable `[0, 1, 3]` discovery,
+base/segment coexistence, canonical leading-zero/temp/out-of-range and
+non-file filtering, missing-root and invalid-run failures, and existing
+segment bounds. The full evidence is 27 focused agent tests within 240 Rust
+unit tests, 7 binary tests, and 3 RustDoc tests, plus 15 Python tests;
+formatter, Clippy, repository, and diff gates pass at `0aa9a51`.
 
 ## Limits
 
