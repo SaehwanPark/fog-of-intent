@@ -1212,6 +1212,10 @@ transport-integrated sessions and broader protocol compatibility remain open.
   `m6-scripted-agent-fixture-frequency-compare-v1`, preserving ordered counts
   and signed candidate-minus-baseline deltas. It does not establish independent
   build provenance or causal attribution.
+- The comparison exposes `m6-fixed-frequency-no-change-v1`, which passes only
+  when both totals and both ordered rows are identical. Its rationale is a
+  deterministic fixed-fixture baseline mismatch check, not a build, balance, or
+  causal claim.
 
 ## Future
 

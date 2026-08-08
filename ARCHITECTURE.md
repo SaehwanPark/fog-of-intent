@@ -171,7 +171,8 @@ already verified report; it is not durable export. Its pure Markdown projection
 renders the same verified fields without I/O or additional authority.
 `ScriptedAgentFixtureScenarioFrequencyComparisonReport` compares two such
 verified reports with bounded ordered deltas; it is caller-declared evidence,
-not independent build provenance or causal attribution.
+not independent build provenance or causal attribution. Its fixed no-change
+gate is a pure equality check over those fields and adds no threshold authority.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

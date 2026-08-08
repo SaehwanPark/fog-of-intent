@@ -100,6 +100,10 @@ pub const MAX_SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_BYTES: usize = 4096;
 pub const SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_COMPARISON_SCHEMA: &str =
   "m6-scripted-agent-fixture-frequency-compare-v1";
 
+/// Stable identity for the fixed-fixture no-change regression gate.
+pub const SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_REGRESSION_RULE: &str =
+  "m6-fixed-frequency-no-change-v1";
+
 /// Versioned identity for bounded matched-scenario selected-intent tallies.
 pub const SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_SCHEMA: &str =
   "m6-scripted-agent-matched-scenario-tally-v1";
@@ -773,6 +777,16 @@ impl ScriptedAgentFixtureScenarioFrequencyComparisonReport {
 
   pub const fn candidate_selection_count(&self) -> u8 {
     self.candidate_selection_count
+  }
+
+  pub const fn regression_rule(&self) -> &'static str {
+    SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_REGRESSION_RULE
+  }
+
+  pub const fn passes_no_change_gate(&self) -> bool {
+    self.baseline_selection_count == self.candidate_selection_count
+      && self.entries[0].baseline_count == self.entries[0].candidate_count
+      && self.entries[1].baseline_count == self.entries[1].candidate_count
   }
 
   pub const fn entries(&self) -> &[ScriptedAgentFixtureScenarioFrequencyComparisonEntry; 2] {
@@ -3715,6 +3729,11 @@ mod tests {
     assert_eq!(comparison.entries()[1].candidate_count(), 2);
     assert_eq!(comparison.entries()[1].delta(), 1);
     assert_eq!(
+      comparison.regression_rule(),
+      "m6-fixed-frequency-no-change-v1"
+    );
+    assert!(!comparison.passes_no_change_gate());
+    assert_eq!(
       comparison,
       ScriptedAgentFixtureScenarioFrequencyComparisonReport::from_reports(&baseline, &candidate)
     );
@@ -3722,6 +3741,9 @@ mod tests {
       ScriptedAgentFixtureScenarioFrequencyComparisonReport::from_reports(&candidate, &baseline);
     assert_eq!(reversed.entries()[0].delta(), -1);
     assert_eq!(reversed.entries()[1].delta(), -1);
+    let unchanged =
+      ScriptedAgentFixtureScenarioFrequencyComparisonReport::from_reports(&baseline, &baseline);
+    assert!(unchanged.passes_no_change_gate());
   }
 
   #[test]

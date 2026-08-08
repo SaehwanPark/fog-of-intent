@@ -1398,7 +1398,8 @@ representative replays, and an evidence-limited report.
   policy populations.
 - [ ] Detect outliers and select representative replays deterministically.
 - [ ] Check causal-trace completeness and replay identity for sampled runs.
-- [ ] Define provisional regression gates with written threshold rationale.
+- [x] Define one provisional fixed-fixture regression gate with written
+  threshold rationale; broader gates remain open.
 - [ ] Separate operational logs from committed simulation artifacts.
 - [x] Export bounded machine-readable data and a concise pure Markdown
   evidence report for the verified fixed-fixture frequency slice; durable
@@ -1406,6 +1407,9 @@ representative replays, and an evidence-limited report.
 - [x] Compare caller-declared verified fixed-fixture frequency reports with
   bounded ordered row deltas; independent build provenance and causal
   attribution remain open.
+- [x] Define one written-rationale fixed-fixture no-change regression gate;
+  broader thresholds, independent build provenance, and causal attribution
+  remain open.
 - [ ] Preserve crashes, timeouts, missing branches, and inconclusive results.
 - [ ] Compare build-to-build behavior against a declared baseline.
 
