@@ -294,6 +294,7 @@ impl ScriptedAgentComparisonReport {
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ScriptedAgentActionTallyError {
   MismatchedObserver,
+  DuplicateObservationId,
 }
 
 /// One actor-safe selected-action tally for a catalog profile.
@@ -348,6 +349,7 @@ impl ScriptedAgentActionTally {
 pub struct ScriptedAgentActionTallyReport {
   schema: &'static str,
   observer: crate::kernel::ActorId,
+  observation_ids: [crate::lane::ObservationId; 2],
   entries: [ScriptedAgentActionTally; 3],
 }
 
@@ -359,9 +361,16 @@ impl ScriptedAgentActionTallyReport {
     if observations[0].observer() != observations[1].observer() {
       return Err(ScriptedAgentActionTallyError::MismatchedObserver);
     }
+    if observations[0].observation_id() == observations[1].observation_id() {
+      return Err(ScriptedAgentActionTallyError::DuplicateObservationId);
+    }
     Ok(Self {
       schema: SCRIPTED_AGENT_ACTION_TALLY_SCHEMA,
       observer: observations[0].observer(),
+      observation_ids: [
+        observations[0].observation_id(),
+        observations[1].observation_id(),
+      ],
       entries: [
         Self::entry(ScriptedAgent::cautious_v1(), observations),
         Self::entry(ScriptedAgent::risk_taking_v1(), observations),
@@ -376,6 +385,10 @@ impl ScriptedAgentActionTallyReport {
 
   pub const fn observer(&self) -> crate::kernel::ActorId {
     self.observer
+  }
+
+  pub const fn observation_ids(&self) -> &[crate::lane::ObservationId; 2] {
+    &self.observation_ids
   }
 
   pub const fn entries(&self) -> &[ScriptedAgentActionTally; 3] {
@@ -962,7 +975,7 @@ mod tests {
       JungleThreatTruth::RiverSide,
     );
     let safe_receipt = observe_player(&initial, ObservationId::new(14));
-    let threat_receipt = observe_player(&threat_state, ObservationId::new(14));
+    let threat_receipt = observe_player(&threat_state, ObservationId::new(15));
     let report = ScriptedAgentActionTallyReport::from_observations([
       safe_receipt.observation(),
       threat_receipt.observation(),
@@ -983,6 +996,10 @@ mod tests {
     );
     assert_eq!(report.schema(), SCRIPTED_AGENT_ACTION_TALLY_SCHEMA);
     assert_eq!(report.observer(), safe_receipt.observation().observer());
+    assert_eq!(
+      report.observation_ids(),
+      &[ObservationId::new(14), ObservationId::new(15)]
+    );
     assert_eq!(report.entries().len(), 3);
     assert_eq!(
       report
@@ -1053,6 +1070,13 @@ mod tests {
         mixed_observer,
       ]),
       Err(ScriptedAgentActionTallyError::MismatchedObserver)
+    );
+    assert_eq!(
+      ScriptedAgentActionTallyReport::from_observations([
+        safe_receipt.observation(),
+        observe_player(&threat_state, ObservationId::new(14)).observation(),
+      ]),
+      Err(ScriptedAgentActionTallyError::DuplicateObservationId)
     );
   }
 

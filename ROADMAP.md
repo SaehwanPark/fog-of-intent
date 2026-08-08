@@ -1089,8 +1089,9 @@ strategy while remaining bound to actor-visible information.
 - [x] Verify Anchor's `Stabilize` score rises from 80 to 83 as the observed
   wave-pressure value rises from 0 to 3, while requests remain host-valid.
 - [x] Emit the versioned `m4-scripted-agent-action-tally-v1` report for the
-  two fixture observations, reject mixed observers, and retain only bounded
-  profile/rule IDs and selected-intent counts.
+  two uniquely identified fixture observations, reject mixed observers and
+  duplicate IDs, and retain only bounded profile/rule IDs and selected-intent
+  counts.
 
 This is a three-profile library-only comparison with bounded score and
 selected-action reports. It

@@ -95,6 +95,18 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.90 — 2026-08-08
+
+### Added
+
+- Bound the two-observation action tally to its actor-visible observation IDs,
+  exposing both IDs and rejecting duplicate IDs before policy evaluation.
+
+### Known limits
+
+- Observation-ID binding covers the fixed two-observation fixture only; broader
+  replay provenance, scenario sampling, populations, and outcomes remain open.
+
 ## 0.1.89 — 2026-08-08
 
 ### Added

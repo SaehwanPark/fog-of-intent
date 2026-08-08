@@ -882,9 +882,10 @@ open.
   observation ID; it does not expose state, hashes, or execution inputs.
 - `ScriptedAgentActionTallyReport` provides the versioned
   `m4-scripted-agent-action-tally-v1` actor-safe aggregate over exactly two
-  observations. It exposes only profile/rule IDs, the shared observer, the
-  bounded observation count, and selected-intent counts; mixed observers are
-  rejected before report construction.
+  uniquely identified observations. It exposes only profile/rule IDs, the
+  shared observer, the bounded observation count and observation IDs, and
+  selected-intent counts; mixed observers and duplicate IDs are rejected before
+  report construction.
 - A matched initial observation selects `Stabilize`, `Contest`, and `Yield`
   for the cautious, risk-taking, and yielding profiles respectively, while all
   requests pass the existing lane validator. This demonstrates a reproducible
