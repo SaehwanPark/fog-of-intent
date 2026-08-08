@@ -95,6 +95,24 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.106 — 2026-08-08
+
+### Added
+
+- Added bounded `m5-actor-debrief-v1` output for an active completed fixture,
+  exposing only first/second intent, categorical outcome, objective
+  dispositions, final objective, and committed-facts attribution.
+- Added exact debrief codec coverage and completion/closed host projection
+  checks; the current `m5-actor-error-v2` codec carries the dedicated
+  `debrief_unavailable`/`await_completion` pair without exposing internal
+  report details, while v1 remains the historical pre-debrief vocabulary.
+
+### Known limits
+
+- The debrief remains a synchronous committed-facts summary; detailed causal
+  review, replay-linked records, transport, persistence, simultaneous actors,
+  and broader MCP compatibility remain open.
+
 ## 0.1.105 — 2026-08-08
 
 ### Added

@@ -1,11 +1,15 @@
 //! Versioned actor-protocol DTOs at the M5 adapter boundary.
 //!
-//! The DTOs contain only bounded actor-visible observation and intent data.
-//! They do not validate legality, resolve execution, mutate history, or
-//! depend on a transport, async runtime, or provider SDK.
+//! The DTOs contain only bounded actor-visible observation, action, metadata,
+//! lifecycle, result, and committed-facts review data. They do not validate
+//! legality, resolve execution, mutate history, or depend on a transport,
+//! async runtime, or provider SDK.
 
 use crate::kernel::ActorId;
-use crate::lane::{LaneIntent, LaneIntentRequest, LanerObservation, ObservationId};
+use crate::lane::{
+  LaneIntent, LaneIntentRequest, LaneOutcome, LanerObservation, ObjectiveDisposition,
+  ObservationId, ScenarioDebriefReport, ScenarioWindow,
+};
 use std::fmt::Write as _;
 
 /// Versioned actor-protocol vocabulary for this bounded slice.
@@ -20,6 +24,9 @@ pub const ACTOR_ACTION_SCHEMA: &str = "m5-actor-action-v1";
 /// Versioned actor-safe action-result identity.
 pub const ACTOR_ACTION_RESULT_SCHEMA: &str = "m5-actor-action-result-v1";
 
+/// Versioned actor-visible completed-run debrief summary identity.
+pub const ACTOR_DEBRIEF_SCHEMA: &str = "m5-actor-debrief-v1";
+
 /// Versioned actor message/plan/contingency metadata identity.
 pub const ACTOR_DRAFT_SCHEMA: &str = "m5-actor-draft-v1";
 
@@ -29,8 +36,11 @@ pub const ACTOR_HISTORY_SCHEMA: &str = "m5-actor-history-v1";
 /// Versioned line-oriented codec identity for the bounded DTOs.
 pub const ACTOR_PROTOCOL_CODEC_SCHEMA: &str = "m5-actor-codec-v1";
 
-/// Versioned actor-facing validation-error identity.
-pub const ACTOR_PROTOCOL_ERROR_SCHEMA: &str = "m5-actor-error-v1";
+/// Historical actor-facing validation-error identity from the initial closed vocabulary.
+pub const ACTOR_PROTOCOL_ERROR_SCHEMA_V1: &str = "m5-actor-error-v1";
+
+/// Current actor-facing validation-error identity after the debrief error pair was added.
+pub const ACTOR_PROTOCOL_ERROR_SCHEMA: &str = "m5-actor-error-v2";
 
 /// Maximum encoded DTO size accepted by the bounded parser.
 pub const MAX_ACTOR_PROTOCOL_BYTES: usize = 4096;
@@ -400,6 +410,14 @@ impl ActorActionResultOutcome {
       _ => Err(ActorProtocolCodecError::InvalidValue),
     }
   }
+
+  const fn from_lane_outcome(outcome: LaneOutcome) -> Self {
+    match outcome {
+      LaneOutcome::HeldSpace => Self::HeldSpace,
+      LaneOutcome::YieldedSpace => Self::YieldedSpace,
+      LaneOutcome::ForcedOut => Self::ForcedOut,
+    }
+  }
 }
 
 /// Bounded actor-safe result returned after a successful actor action.
@@ -466,6 +484,254 @@ impl ActorActionResultDto {
       ActorActionResultWindow::parse_id(window.ok_or(ActorProtocolCodecError::MissingField)?)?,
       ActorActionResultOutcome::parse_id(outcome.ok_or(ActorProtocolCodecError::MissingField)?)?,
     ))
+  }
+}
+
+/// Closed objective dispositions in an actor-visible debrief summary.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ActorDebriefObjective {
+  GoalAchieved,
+  GoalPartiallyAchieved,
+  GoalMissed,
+}
+
+impl ActorDebriefObjective {
+  pub const fn id(self) -> &'static str {
+    match self {
+      Self::GoalAchieved => "goal_achieved",
+      Self::GoalPartiallyAchieved => "goal_partially_achieved",
+      Self::GoalMissed => "goal_missed",
+    }
+  }
+
+  fn parse_id(value: &str) -> Result<Self, ActorProtocolCodecError> {
+    match value {
+      "goal_achieved" => Ok(Self::GoalAchieved),
+      "goal_partially_achieved" => Ok(Self::GoalPartiallyAchieved),
+      "goal_missed" => Ok(Self::GoalMissed),
+      _ => Err(ActorProtocolCodecError::InvalidValue),
+    }
+  }
+
+  const fn from_lane_disposition(disposition: ObjectiveDisposition) -> Self {
+    match disposition {
+      ObjectiveDisposition::GoalAchieved => Self::GoalAchieved,
+      ObjectiveDisposition::GoalPartiallyAchieved => Self::GoalPartiallyAchieved,
+      ObjectiveDisposition::GoalMissed => Self::GoalMissed,
+    }
+  }
+}
+
+/// Static attribution boundary carried by an actor-visible debrief summary.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ActorDebriefAttributionLimit {
+  CommittedFactsOnly,
+}
+
+impl ActorDebriefAttributionLimit {
+  pub const fn id(self) -> &'static str {
+    "committed_facts_only"
+  }
+
+  fn parse_id(value: &str) -> Result<Self, ActorProtocolCodecError> {
+    match value {
+      "committed_facts_only" => Ok(Self::CommittedFactsOnly),
+      _ => Err(ActorProtocolCodecError::InvalidValue),
+    }
+  }
+}
+
+/// One fixed-window actor-visible debrief summary.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ActorDebriefWindow {
+  window: ActorActionResultWindow,
+  intent: ActorProtocolIntent,
+  outcome: ActorActionResultOutcome,
+  objective: ActorDebriefObjective,
+}
+
+impl ActorDebriefWindow {
+  pub const fn new(
+    window: ActorActionResultWindow,
+    intent: ActorProtocolIntent,
+    outcome: ActorActionResultOutcome,
+    objective: ActorDebriefObjective,
+  ) -> Self {
+    Self {
+      window,
+      intent,
+      outcome,
+      objective,
+    }
+  }
+
+  pub const fn window(self) -> ActorActionResultWindow {
+    self.window
+  }
+
+  pub const fn intent(self) -> ActorProtocolIntent {
+    self.intent
+  }
+
+  pub const fn outcome(self) -> ActorActionResultOutcome {
+    self.outcome
+  }
+
+  pub const fn objective(self) -> ActorDebriefObjective {
+    self.objective
+  }
+
+  fn from_report_window(window: crate::lane::VisibleWindowDebriefSummary) -> Self {
+    let window_id = match window.window() {
+      ScenarioWindow::First => ActorActionResultWindow::First,
+      ScenarioWindow::Second => ActorActionResultWindow::Second,
+    };
+    Self::new(
+      window_id,
+      ActorProtocolIntent::from_lane_intent(window.intent()),
+      ActorActionResultOutcome::from_lane_outcome(window.outcome()),
+      ActorDebriefObjective::from_lane_disposition(window.objective()),
+    )
+  }
+
+  fn encode_value(self) -> String {
+    format!(
+      "{},{},{}",
+      self.intent.id(),
+      self.outcome.id(),
+      self.objective.id()
+    )
+  }
+
+  fn decode_value(
+    window: ActorActionResultWindow,
+    value: &str,
+  ) -> Result<Self, ActorProtocolCodecError> {
+    let parts = value.split(',').collect::<Vec<_>>();
+    if parts.len() != 3 {
+      return Err(ActorProtocolCodecError::InvalidValue);
+    }
+    Ok(Self::new(
+      window,
+      ActorProtocolIntent::parse_id(parts[0])?,
+      ActorActionResultOutcome::parse_id(parts[1])?,
+      ActorDebriefObjective::parse_id(parts[2])?,
+    ))
+  }
+}
+
+/// Bounded actor-visible committed-facts summary for the completed fixture.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ActorDebriefDto {
+  schema: &'static str,
+  first: ActorDebriefWindow,
+  second: ActorDebriefWindow,
+  final_objective: ActorDebriefObjective,
+  attribution_limit: ActorDebriefAttributionLimit,
+}
+
+impl ActorDebriefDto {
+  pub fn new(
+    first: ActorDebriefWindow,
+    second: ActorDebriefWindow,
+    final_objective: ActorDebriefObjective,
+  ) -> Result<Self, ActorProtocolCodecError> {
+    if first.window() != ActorActionResultWindow::First
+      || second.window() != ActorActionResultWindow::Second
+    {
+      return Err(ActorProtocolCodecError::InvalidValue);
+    }
+    Ok(Self {
+      schema: ACTOR_DEBRIEF_SCHEMA,
+      first,
+      second,
+      final_objective,
+      attribution_limit: ActorDebriefAttributionLimit::CommittedFactsOnly,
+    })
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn first(self) -> ActorDebriefWindow {
+    self.first
+  }
+
+  pub const fn second(self) -> ActorDebriefWindow {
+    self.second
+  }
+
+  pub const fn final_objective(self) -> ActorDebriefObjective {
+    self.final_objective
+  }
+
+  pub const fn attribution_limit(self) -> ActorDebriefAttributionLimit {
+    self.attribution_limit
+  }
+
+  pub(crate) fn from_report(report: ScenarioDebriefReport) -> Self {
+    let windows = report.windows();
+    Self::new(
+      ActorDebriefWindow::from_report_window(windows[0]),
+      ActorDebriefWindow::from_report_window(windows[1]),
+      ActorDebriefObjective::from_lane_disposition(report.final_objective()),
+    )
+    .expect("scenario debrief report contains first and second windows")
+  }
+
+  /// Encode the completed-run summary as exact bounded line-oriented text.
+  pub fn encode(self) -> String {
+    format!(
+      "schema={}\nfirst={}\nsecond={}\nfinal_objective={}\nattribution={}\n",
+      self.schema,
+      self.first.encode_value(),
+      self.second.encode_value(),
+      self.final_objective.id(),
+      self.attribution_limit.id(),
+    )
+  }
+
+  /// Decode the completed-run summary without state, replay, or transition authority.
+  pub fn decode(input: &str) -> Result<Self, ActorProtocolCodecError> {
+    let fields = parse_fields(input, 5)?;
+    let mut schema = None;
+    let mut first = None;
+    let mut second = None;
+    let mut final_objective = None;
+    let mut attribution = None;
+    for (key, value) in fields {
+      let slot = match key {
+        "schema" => &mut schema,
+        "first" => &mut first,
+        "second" => &mut second,
+        "final_objective" => &mut final_objective,
+        "attribution" => &mut attribution,
+        _ => return Err(ActorProtocolCodecError::UnknownField),
+      };
+      if slot.is_some() {
+        return Err(ActorProtocolCodecError::DuplicateField);
+      }
+      *slot = Some(value);
+    }
+    if schema != Some(ACTOR_DEBRIEF_SCHEMA) {
+      return Err(ActorProtocolCodecError::UnsupportedSchema);
+    }
+    let first = ActorDebriefWindow::decode_value(
+      ActorActionResultWindow::First,
+      first.ok_or(ActorProtocolCodecError::MissingField)?,
+    )?;
+    let second = ActorDebriefWindow::decode_value(
+      ActorActionResultWindow::Second,
+      second.ok_or(ActorProtocolCodecError::MissingField)?,
+    )?;
+    let final_objective = ActorDebriefObjective::parse_id(
+      final_objective.ok_or(ActorProtocolCodecError::MissingField)?,
+    )?;
+    ActorDebriefAttributionLimit::parse_id(
+      attribution.ok_or(ActorProtocolCodecError::MissingField)?,
+    )?;
+    Self::new(first, second, final_objective)
   }
 }
 
@@ -740,6 +1006,7 @@ pub enum ActorProtocolErrorCode {
   HostValidationRejected,
   HostTransitionRejected,
   DraftBoundary,
+  DebriefUnavailable,
 }
 
 impl ActorProtocolErrorCode {
@@ -762,6 +1029,7 @@ impl ActorProtocolErrorCode {
       Self::HostValidationRejected => "host_validation_rejected",
       Self::HostTransitionRejected => "host_transition_rejected",
       Self::DraftBoundary => "draft_boundary",
+      Self::DebriefUnavailable => "debrief_unavailable",
     }
   }
 
@@ -784,6 +1052,7 @@ impl ActorProtocolErrorCode {
       "host_validation_rejected" => Ok(Self::HostValidationRejected),
       "host_transition_rejected" => Ok(Self::HostTransitionRejected),
       "draft_boundary" => Ok(Self::DraftBoundary),
+      "debrief_unavailable" => Ok(Self::DebriefUnavailable),
       _ => Err(ActorProtocolCodecError::InvalidValue),
     }
   }
@@ -804,6 +1073,7 @@ pub enum ActorProtocolRepairHint {
   AwaitNextObservation,
   StartNewSession,
   ResendAdvertisedAction,
+  AwaitCompletion,
 }
 
 impl ActorProtocolRepairHint {
@@ -821,6 +1091,7 @@ impl ActorProtocolRepairHint {
       Self::AwaitNextObservation => "await_next_observation",
       Self::StartNewSession => "start_new_session",
       Self::ResendAdvertisedAction => "resend_advertised_action",
+      Self::AwaitCompletion => "await_completion",
     }
   }
 
@@ -838,6 +1109,7 @@ impl ActorProtocolRepairHint {
       "await_next_observation" => Ok(Self::AwaitNextObservation),
       "start_new_session" => Ok(Self::StartNewSession),
       "resend_advertised_action" => Ok(Self::ResendAdvertisedAction),
+      "await_completion" => Ok(Self::AwaitCompletion),
       _ => Err(ActorProtocolCodecError::InvalidValue),
     }
   }
@@ -1118,6 +1390,73 @@ mod tests {
   }
 
   #[test]
+  fn actor_debrief_codec_round_trips_committed_facts_summary() {
+    let dto = ActorDebriefDto::new(
+      ActorDebriefWindow::new(
+        ActorActionResultWindow::First,
+        ActorProtocolIntent::Contest,
+        ActorActionResultOutcome::HeldSpace,
+        ActorDebriefObjective::GoalAchieved,
+      ),
+      ActorDebriefWindow::new(
+        ActorActionResultWindow::Second,
+        ActorProtocolIntent::Stabilize,
+        ActorActionResultOutcome::YieldedSpace,
+        ActorDebriefObjective::GoalPartiallyAchieved,
+      ),
+      ActorDebriefObjective::GoalPartiallyAchieved,
+    )
+    .expect("window order is bounded");
+    assert_eq!(dto.schema(), "m5-actor-debrief-v1");
+    assert_eq!(
+      dto.encode(),
+      "schema=m5-actor-debrief-v1\nfirst=contest,held_space,goal_achieved\nsecond=stabilize,yielded_space,goal_partially_achieved\nfinal_objective=goal_partially_achieved\nattribution=committed_facts_only\n"
+    );
+    assert_eq!(ActorDebriefDto::decode(&dto.encode()), Ok(dto));
+    assert_eq!(
+      ActorDebriefDto::decode(
+        "schema=m5-actor-debrief-v1\nfirst=contest,held_space,unknown\nsecond=stabilize,yielded_space,goal_missed\nfinal_objective=goal_missed\nattribution=committed_facts_only\n"
+      ),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ActorDebriefDto::decode(
+        "schema=m5-actor-debrief-v1\nfirst=contest,held_space,goal_achieved\nsecond=stabilize,yielded_space,goal_missed\nfinal_objective=goal_missed\nattribution=other\n"
+      ),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ActorDebriefDto::decode(
+        "schema=m5-actor-debrief-v1\nfirst=contest,held_space,goal_achieved\nfirst=stabilize,yielded_space,goal_missed\nfinal_objective=goal_missed\nattribution=committed_facts_only\n"
+      ),
+      Err(ActorProtocolCodecError::DuplicateField)
+    );
+    assert_eq!(
+      ActorDebriefDto::decode(
+        "schema=m5-actor-debrief-v1\nfirst=contest,held_space,goal_achieved\nsecond=stabilize,yielded_space,goal_missed\nfinal_objective=goal_missed\n"
+      ),
+      Err(ActorProtocolCodecError::MissingField)
+    );
+    assert_eq!(
+      ActorDebriefDto::decode(
+        "schema=m5-actor-debrief-v2\nfirst=contest,held_space,goal_achieved\nsecond=stabilize,yielded_space,goal_missed\nfinal_objective=goal_missed\nattribution=committed_facts_only\n"
+      ),
+      Err(ActorProtocolCodecError::UnsupportedSchema)
+    );
+    assert_eq!(
+      ActorDebriefDto::decode(
+        "schema=m5-actor-debrief-v1\nfirst=contest,held_space,goal_achieved\nsecond=stabilize,yielded_space,goal_missed\nfinal_objective=goal_missed\nattribution=committed_facts_only\nextra=x\n"
+      ),
+      Err(ActorProtocolCodecError::UnexpectedLineCount {
+        expected: 5,
+        actual: 6,
+      })
+    );
+    assert!(!format!("{dto:?}").contains("StateHash"));
+    assert!(!format!("{dto:?}").contains("trace"));
+  }
+
+  #[test]
   fn protocol_intent_ids_are_closed_and_stable() {
     assert_eq!(ActorProtocolIntent::Stabilize.id(), "stabilize");
     assert_eq!(ActorProtocolIntent::Contest.id(), "contest");
@@ -1256,6 +1595,8 @@ mod tests {
 
   #[test]
   fn actor_error_codec_round_trips_all_closed_ids_without_raw_detail() {
+    assert_eq!(ACTOR_PROTOCOL_ERROR_SCHEMA_V1, "m5-actor-error-v1");
+    assert_eq!(ACTOR_PROTOCOL_ERROR_SCHEMA, "m5-actor-error-v2");
     let codes = [
       ActorProtocolErrorCode::OversizedInput,
       ActorProtocolErrorCode::UnexpectedLineCount,
@@ -1274,6 +1615,7 @@ mod tests {
       ActorProtocolErrorCode::HostValidationRejected,
       ActorProtocolErrorCode::HostTransitionRejected,
       ActorProtocolErrorCode::DraftBoundary,
+      ActorProtocolErrorCode::DebriefUnavailable,
     ];
     for code in codes {
       let error = ActorProtocolError::new(code, ActorProtocolRepairHint::ResendValidPayload);
@@ -1293,6 +1635,7 @@ mod tests {
       ActorProtocolRepairHint::AwaitNextObservation,
       ActorProtocolRepairHint::StartNewSession,
       ActorProtocolRepairHint::ResendAdvertisedAction,
+      ActorProtocolRepairHint::AwaitCompletion,
     ];
     for repair in repairs {
       let error = ActorProtocolError::new(ActorProtocolErrorCode::InvalidValue, repair);
@@ -1304,21 +1647,39 @@ mod tests {
     );
     assert_eq!(
       canonical.encode(),
-      "schema=m5-actor-error-v1\ncode=stale_observation\nrepair=request_fresh_observation\n"
+      "schema=m5-actor-error-v2\ncode=stale_observation\nrepair=request_fresh_observation\n"
     );
     assert_eq!(
       ActorProtocolError::decode(
-        "schema=m5-actor-error-v1\ncode=unknown\nrepair=request_observation\n"
+        "schema=m5-actor-error-v2\ncode=unknown\nrepair=request_observation\n"
       ),
       Err(ActorProtocolCodecError::InvalidValue)
     );
+    let debrief_unavailable = ActorProtocolError::new(
+      ActorProtocolErrorCode::DebriefUnavailable,
+      ActorProtocolRepairHint::AwaitCompletion,
+    );
     assert_eq!(
-      ActorProtocolError::decode("schema=m5-actor-error-v1\ncode=invalid_value\nrepair=unknown\n"),
+      debrief_unavailable.encode(),
+      "schema=m5-actor-error-v2\ncode=debrief_unavailable\nrepair=await_completion\n"
+    );
+    assert_eq!(
+      ActorProtocolError::decode(&debrief_unavailable.encode()),
+      Ok(debrief_unavailable)
+    );
+    assert_eq!(
+      ActorProtocolError::decode(
+        "schema=m5-actor-error-v1\ncode=stale_observation\nrepair=request_fresh_observation\n"
+      ),
+      Err(ActorProtocolCodecError::UnsupportedSchema)
+    );
+    assert_eq!(
+      ActorProtocolError::decode("schema=m5-actor-error-v2\ncode=invalid_value\nrepair=unknown\n"),
       Err(ActorProtocolCodecError::InvalidValue)
     );
     assert_eq!(
       ActorProtocolError::decode(
-        "schema=m5-actor-error-v1\ncode=invalid_value\nrepair=resend_valid_payload\nextra=x\n"
+        "schema=m5-actor-error-v2\ncode=invalid_value\nrepair=resend_valid_payload\nextra=x\n"
       ),
       Err(ActorProtocolCodecError::UnexpectedLineCount {
         expected: 3,
@@ -1424,7 +1785,7 @@ mod tests {
     ];
     for (error, code, repair) in cases {
       let projected = error.to_actor_error();
-      assert_eq!(projected.schema(), "m5-actor-error-v1");
+      assert_eq!(projected.schema(), "m5-actor-error-v2");
       assert_eq!(projected.code().id(), code);
       assert_eq!(projected.repair().id(), repair);
       let debug = format!("{projected:?}");
