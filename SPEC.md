@@ -1186,6 +1186,14 @@ transport-integrated sessions and broader protocol compatibility remain open.
   input before comparing the candidate with an already verified report.
   Mismatches are rejected before a trusted report is returned; this is
   machine-readable evidence, not durable export or a report pipeline.
+- `ScriptedAgentFixtureScenarioSelection` defines
+  `m6-scripted-agent-fixture-scenarios-v1` over the closed
+  `safe-fixture-v1` and `river-side-threat-v1` IDs. It binds one or more
+  caller-supplied observation-ID pairs, preserves ordered repeated selections,
+  and projects only actor-visible observations into the existing matched-sample
+  contract. It is a deterministic fixed-fixture selector, not population
+  generation, random sampling, distributional evidence, or transition/history
+  authority.
 
 ## Future
 
