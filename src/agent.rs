@@ -710,6 +710,50 @@ mod tests {
   }
 
   #[test]
+  fn candidate_breadth_tracks_only_actor_visible_advertisements() {
+    let initial = LaneSnapshot::initial();
+    let threat_state = LaneSnapshot::new(
+      initial.ruleset(),
+      initial.turn(),
+      LaneStatus::Open,
+      initial.player(),
+      initial.opponent(),
+      initial.wave(),
+      JungleThreatTruth::RiverSide,
+    );
+    let safe = observe_player(&initial, ObservationId::new(18)).observation();
+    let threat = observe_player(&threat_state, ObservationId::new(18)).observation();
+    let agent = ScriptedAgent::cautious_v1();
+    let safe_candidates = agent.generate_candidates(safe);
+    let threat_candidates = agent.generate_candidates(threat);
+
+    assert_eq!(safe_candidates.len(), 4);
+    assert_eq!(threat_candidates.len(), 5);
+    assert_eq!(safe_candidates, safe.available_intents().to_vec());
+    assert!(safe_candidates.iter().all(|intent| {
+      safe.available_intents().contains(intent) || safe.available_threat_response() == Some(*intent)
+    }));
+    assert!(threat_candidates.iter().all(|intent| {
+      threat.available_intents().contains(intent)
+        || threat.available_threat_response() == Some(*intent)
+    }));
+    assert_eq!(
+      threat_candidates
+        .iter()
+        .filter(|intent| **intent == LaneIntent::Withdraw)
+        .count(),
+      1
+    );
+    for candidates in [safe_candidates, threat_candidates] {
+      for (index, candidate) in candidates.iter().enumerate() {
+        assert!(!candidates[index + 1..].contains(candidate));
+      }
+    }
+    assert_eq!(agent.choose(safe).selected_intent(), LaneIntent::Stabilize);
+    assert_eq!(agent.choose(threat).selected_intent(), LaneIntent::Withdraw);
+  }
+
+  #[test]
   fn matched_observation_distinguishes_three_profiles() {
     let state = LaneSnapshot::initial();
     let receipt = observe_player(&state, ObservationId::new(12));
