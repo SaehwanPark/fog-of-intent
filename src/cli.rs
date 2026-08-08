@@ -102,7 +102,7 @@ pub enum CliDraftStageError {
 }
 
 /// Borrowed choices that may still be edited or cleared before commitment.
-#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct CliDraft<'a> {
   message: Option<&'a str>,
   plan: Option<&'a str>,
@@ -150,6 +150,17 @@ impl<'a> CliDraft<'a> {
   }
 
   /// Close this draft and return a read-only committed marker.
+  ///
+  /// Committing consumes the editable draft, so using it again is rejected by
+  /// the type system:
+  ///
+  /// ```compile_fail
+  /// use fog_of_intent::cli::CliDraft;
+  ///
+  /// let mut draft = CliDraft::new();
+  /// let _committed = draft.commit();
+  /// draft.undo();
+  /// ```
   pub const fn commit(self) -> CliCommittedDraft<'a> {
     CliCommittedDraft {
       message: self.message,
