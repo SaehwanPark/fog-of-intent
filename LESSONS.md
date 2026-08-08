@@ -1251,3 +1251,14 @@ canonical policy instead of duplicating it.
   verified comparison, with literal rule/schema IDs and stable row/intent ties.
 - Prevention: Keep outlier definitions, calibration, replay selection,
   population inference, causality, persistence, and human evidence separate.
+
+## Keep event-order checks separate from causal traces
+
+- Context: M6 needed a deterministic completeness signal for caller-declared
+  operational labels before runtime tracing and replay identity were in scope.
+- Symptom: A complete start/chunk/finish sequence can be mistaken for proof of
+  causal completeness or runtime success.
+- Resolution: Classify only the closed event order, allowing optional
+  checkpoint/resume labels, with no event production or replay inspection.
+- Prevention: Keep causal links, record identity, runtime diagnostics,
+  persistence, recovery, and human operational evidence in separate contracts.

@@ -1224,6 +1224,13 @@ transport-integrated sessions and broader protocol compatibility remain open.
   every delta is zero. This is metric-side fixed-fixture evidence, not outlier
   detection, threshold calibration, representative replay selection, causal
   attribution, population inference, or outcome/strategic evidence.
+- `ScriptedAgentOperationalLogSequenceReport` defines
+  `m6-scripted-agent-operational-log-sequence-v1` under the fixed
+  `m6-operational-start-chunk-finish-v1` rule. It classifies complete,
+  missing-start, missing-chunk, missing-finish, and invalid-order labels while
+  permitting checkpoint/resume events between chunk and finish. It is a pure
+  operational-label check, not causal-trace completeness, replay-identity
+  verification, runtime detection, persistence, or recovery authority.
 - `ScriptedAgentFixtureScenarioSelection` defines
   `m6-scripted-agent-fixture-scenarios-v1` over the closed
   `safe-fixture-v1` and `river-side-threat-v1` IDs. It binds one or more

@@ -98,6 +98,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.161 — 2026-08-08
+
+### Added
+
+- Added `m6-scripted-agent-operational-log-sequence-v1`, a pure categorical
+  status over the fixed `m6-operational-start-chunk-finish-v1` lifecycle with
+  optional checkpoint/resume labels.
+
+### Known limits
+
+- The status checks payload-free label order only; causal-trace completeness,
+  replay identity, runtime production/detection, diagnostics, recovery,
+  persistence, providers, and human evidence remain open.
+
 ## 0.1.160 — 2026-08-08
 
 ### Added
