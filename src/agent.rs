@@ -1053,6 +1053,17 @@ impl ScriptedAgentOperationalLog {
         actual: lines.len(),
       });
     }
+    let first_key = lines[0].split_once('=').map(|(key, _)| key);
+    let second_key = lines[1].split_once('=').map(|(key, _)| key);
+    if first_key != Some("schema")
+      || second_key != Some("entries")
+      || lines
+        .iter()
+        .skip(2)
+        .any(|line| line.split_once('=').map(|(key, _)| key) != Some("event"))
+    {
+      return Err(ScriptedAgentOperationalLogCodecError::InvalidValue);
+    }
     let entries = event_ids
       .into_iter()
       .map(|id| {
@@ -3412,10 +3423,36 @@ mod tests {
         ScriptedAgentOperationalLogCodecError::InvalidValue,
       ),
       (
+        "not-a-field".to_owned(),
+        ScriptedAgentOperationalLogCodecError::InvalidValue,
+      ),
+      (
+        "schema=\nentries=0\n".to_owned(),
+        ScriptedAgentOperationalLogCodecError::InvalidValue,
+      ),
+      (
+        encoded.replacen("entries=5", "entries=not-a-number", 1),
+        ScriptedAgentOperationalLogCodecError::InvalidValue,
+      ),
+      (
+        encoded.replacen("entries=5", "entries=17", 1),
+        ScriptedAgentOperationalLogCodecError::InvalidValue,
+      ),
+      (
         format!("{encoded}event=batch_started\n"),
         ScriptedAgentOperationalLogCodecError::UnexpectedLineCount {
           expected: 7,
           actual: 8,
+        },
+      ),
+      (
+        format!(
+          "schema=m6-scripted-agent-operational-log-v1\nentries=16\n{}",
+          "event=batch_started\n".repeat(17)
+        ),
+        ScriptedAgentOperationalLogCodecError::UnexpectedLineCount {
+          expected: 18,
+          actual: 19,
         },
       ),
     ] {
@@ -3424,6 +3461,16 @@ mod tests {
         Err(expected)
       );
     }
+    let swapped_headers = "entries=5\nschema=m6-scripted-agent-operational-log-v1\nevent=batch_started\nevent=chunk_completed\nevent=checkpoint_saved\nevent=batch_resumed\nevent=batch_finished\n";
+    assert_eq!(
+      ScriptedAgentOperationalLog::decode(swapped_headers),
+      Err(ScriptedAgentOperationalLogCodecError::InvalidValue)
+    );
+    let event_before_headers = "event=batch_started\nentries=5\nschema=m6-scripted-agent-operational-log-v1\nevent=chunk_completed\nevent=checkpoint_saved\nevent=batch_resumed\nevent=batch_finished\n";
+    assert_eq!(
+      ScriptedAgentOperationalLog::decode(event_before_headers),
+      Err(ScriptedAgentOperationalLogCodecError::InvalidValue)
+    );
     assert_eq!(MAX_SCRIPTED_AGENT_OPERATIONAL_LOG_BYTES, 4096);
     assert_eq!(
       SCRIPTED_AGENT_OPERATIONAL_LOG_SCHEMA,
@@ -3656,6 +3703,17 @@ mod tests {
     operational_store
       .save("resume", &operational_log)
       .expect("operational log saves beside checkpoint");
+    assert_eq!(
+      host_store
+        .load("resume")
+        .expect("host artifact survives log save"),
+      host_artifact
+    );
+    assert_eq!(
+      store.load("resume").expect("checkpoint survives log save"),
+      checkpoint
+    );
+    assert!(root.join("resume.foi-operational-log").is_file());
     assert_eq!(
       operational_store
         .load("resume")

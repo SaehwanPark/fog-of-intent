@@ -184,14 +184,14 @@ own execution, persistence, provider, or experiment authority.
 `ScriptedAgentOperationalLog` is a separate bounded in-memory container for
 ordered payload-free batch lifecycle event labels. It is non-authoritative and
 does not reconstruct history, emit runtime logs, inspect time/process state, or
-persist operational data.
+durably persist operational data.
 The batch runner can append a caller-driven start/chunk/finish trio only after
 validation and capacity preflight; this producer preserves batch decision
 parity and does not provide checkpoint, failure-detection, or transport
 authority.
 The injected checkpoint store similarly appends save/resume labels only after
 successful bounded storage operations and one-slot preflight; it does not make
-filesystem activity a runtime diagnostic or persist the operational log.
+filesystem activity a runtime diagnostic or durably persist the operational log.
 `ScriptedAgentOperationalLogStore` uses a separate bounded codec and file
 suffix, so operational labels cannot collide with host artifacts or batch
 cursor files; crash recovery and rotation remain outer concerns.
