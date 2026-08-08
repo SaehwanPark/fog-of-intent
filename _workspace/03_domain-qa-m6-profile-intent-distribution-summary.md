@@ -2,9 +2,10 @@
 
 ## Disposition
 
-Pending independent three-pass review of implementation head.
+PASS — independent three-pass review found no actionable findings at
+implementation/evidence head `91aae88`.
 
-## Scope to review
+## Scope reviewed
 
 - Existing tally schema, profile/rule order, counts, and codec behavior remain
   unchanged.
@@ -14,14 +15,15 @@ Pending independent three-pass review of implementation head.
   ordered shares; it adds no policy, host, lane, history, persistence, or
   provider authority.
 
-## Evidence target
+## Evidence
 
-One focused profile-aware tally regression should cover exact cautious 7/1,
-risk-taking 8/0, and yielding 8/0 rows, stable profile/rule order, exact
-shares, 10,000-point row sums, and complete exact Markdown. Expected full
-evidence is 31 focused agent tests within 244 Rust unit tests, 7 binary tests,
-3 RustDoc tests, 15 Python tests, formatter, Clippy with warnings denied,
-repository checker, and diff checks.
+One focused profile-aware tally regression covers exact cautious 7/1,
+risk-taking 8/0, and yielding 8/0 rows, a three-pair cautious 5/1 remainder
+case, stable profile/rule order, exact shares, 10,000-point row sums, and
+complete exact Markdown. The full evidence is one focused tally test within 31
+focused agent tests and 244 Rust unit tests, 7 binary tests, and 3 RustDoc
+tests, plus 15 Python tests, formatter, Clippy with warnings denied,
+repository checker, and diff checks; all pass at reviewed head `91aae88`.
 
 ## Limits
 
@@ -32,5 +34,5 @@ open.
 
 ## Required fixes
 
-To be determined by independent review. The projection must remain pure,
-deterministic, ordered, and denominator-bound.
+None. The projection remains pure, deterministic, ordered, and
+denominator-bound.
