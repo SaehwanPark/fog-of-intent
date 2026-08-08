@@ -98,6 +98,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.112 — 2026-08-08
+
+### Added
+
+- Added `m5-actor-simultaneous-window-v1`, an immutable two-actor collection
+  boundary with one shared observation ID, one submission per actor, bounded
+  freshness errors, and readiness only after both actions arrive.
+- Kept collected intents out of public debug/readiness surfaces; no transition,
+  history, replay, transport, or ordering authority is added.
+
+### Known limits
+
+- Host-owned simultaneous ordering/resolution, private transport delivery,
+  reconnect, persistence, and broader multi-actor coordination remain open.
+
 ## 0.1.111 — 2026-08-08
 
 ### Added

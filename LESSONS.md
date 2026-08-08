@@ -687,3 +687,15 @@ canonical policy instead of duplicating it.
 - Prevention: Treat public protocol constructors, accessors, and codecs as the
   compatibility surface; expose domain conversions only through host-owned
   implementation paths.
+
+## Keep simultaneous submissions private until resolution
+
+- Context: Two actors may need to submit against one observation before a host
+  resolves either action.
+- Symptom: Returning or debugging the partial collector can reveal one actor's
+  intent before the simultaneous decision is complete.
+- Resolution: Store both intents in an immutable collection boundary, expose
+  bounded binding metadata plus lifecycle/readiness, and make debug output omit
+  collected values.
+- Prevention: Add host-owned ordering and transition resolution as a separate
+  contract; do not smuggle it into the protocol collector.

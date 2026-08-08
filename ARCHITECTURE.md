@@ -157,6 +157,11 @@ authority. Public protocol compatibility is DTO-only: authoritative lane
 observation projection and action-request conversion stay behind crate-private
 adapters, keeping domain types out of the provider-facing contract.
 
+`ActorSimultaneousWindow` is a pure two-actor collection boundary. It binds one
+shared observation ID, rejects stale/cross-actor/duplicate submissions, and
+reveals bounded binding metadata plus readiness; the host still owns ordering,
+transition resolution, history, and replay.
+
 `src/session.rs` owns immutable ordinary-actor session freshness and lifecycle
 metadata only. It cannot validate an intent, submit a transition, or mutate
 history; its freshness failures use the same bounded protocol error
