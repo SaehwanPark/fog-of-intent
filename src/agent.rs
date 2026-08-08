@@ -55,7 +55,7 @@ impl ScriptedAgentProfile {
 pub enum ScriptedAgentReason {
   ThreatResponse,
   StableDefault,
-  AvailableFallback,
+  AvailableAlternative,
 }
 
 /// One candidate produced from actor-visible information and its fixed score.
@@ -166,12 +166,12 @@ impl ScriptedAgent {
     } else if intent == LaneIntent::Stabilize {
       ScriptedAgentReason::StableDefault
     } else {
-      ScriptedAgentReason::AvailableFallback
+      ScriptedAgentReason::AvailableAlternative
     };
     let score = match reason {
       ScriptedAgentReason::ThreatResponse => 100,
       ScriptedAgentReason::StableDefault => 80,
-      ScriptedAgentReason::AvailableFallback => match intent {
+      ScriptedAgentReason::AvailableAlternative => match intent {
         LaneIntent::Contest => 60,
         LaneIntent::Yield => 40,
         LaneIntent::Recall => 20,
@@ -245,6 +245,10 @@ mod tests {
     assert_eq!(decision.selected_intent(), LaneIntent::Stabilize);
     assert_eq!(decision.candidates().len(), 4);
     assert_eq!(decision.request().intent(), LaneIntent::Stabilize);
+    assert!(decision.candidates().iter().any(|candidate| {
+      candidate.intent() == LaneIntent::Contest
+        && candidate.reason() == ScriptedAgentReason::AvailableAlternative
+    }));
     validate_lane_request(&state, &receipt, &decision.request()).expect("policy request is legal");
   }
 

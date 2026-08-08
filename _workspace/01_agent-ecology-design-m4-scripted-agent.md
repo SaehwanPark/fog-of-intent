@@ -36,7 +36,7 @@ binding remain host-owned.
 Candidate generation copies the observation's advertised intents and adds a
 distinct visible threat response. Evaluation applies the fixed score table and
 labels each candidate as a threat response, stable default, or available
-fallback. Selection chooses the highest score with stable advertised-order
+alternative. Selection chooses the highest score with stable advertised-order
 tie-breaking. The policy returns a request; it does not validate, execute, or
 commit that request.
 
