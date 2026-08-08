@@ -477,6 +477,52 @@ impl CliScenarioHost {
     Ok(ActorDraftReceiptDto::new(observer, observation_id, field))
   }
 
+  /// Return the requesting actor's staged draft metadata without mutating host state.
+  pub fn actor_draft(&self) -> Result<Vec<ActorDraftDto>, ActorProtocolError> {
+    if self.closed {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ));
+    }
+    if self.is_complete() {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::WindowClosed,
+        ActorProtocolRepairHint::StartNewSession,
+      ));
+    }
+    if self.committed_intent.is_some() {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::DraftBoundary,
+        ActorProtocolRepairHint::AwaitNextObservation,
+      ));
+    }
+    let receipt = observe_player(&self.history.current_state(), self.next_observation_id());
+    let observer = receipt.observation().observer().value();
+    let observation_id = receipt.observation().observation_id().value();
+    let mut drafts = Vec::new();
+    for (field, value) in [
+      (ActorDraftField::Message, self.draft.message.as_deref()),
+      (ActorDraftField::Plan, self.draft.plan.as_deref()),
+      (
+        ActorDraftField::Contingency,
+        self.draft.contingency.as_deref(),
+      ),
+    ] {
+      if let Some(value) = value {
+        drafts.push(
+          ActorDraftDto::new(observer, observation_id, field, value).map_err(|_| {
+            ActorProtocolError::new(
+              ActorProtocolErrorCode::HostTransitionRejected,
+              ActorProtocolRepairHint::StartNewSession,
+            )
+          })?,
+        );
+      }
+    }
+    Ok(drafts)
+  }
+
   /// Return aggregate presence for the active actor draft without payloads.
   pub fn actor_draft_status(&self) -> Result<ActorDraftStatusDto, ActorProtocolError> {
     if self.closed {
@@ -2353,6 +2399,101 @@ mod tests {
     host.apply_line("quit").expect("complete host closes");
     assert_eq!(
       host.actor_draft_status(),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
+    );
+  }
+
+  #[test]
+  fn actor_draft_readback_is_bound_ordered_and_read_only() {
+    let mut host = CliScenarioHost::fixture();
+    let observation = host.observation();
+    assert_eq!(host.actor_draft(), Ok(Vec::new()));
+    for (field, value) in [
+      (ActorDraftField::Message, "ping ally"),
+      (ActorDraftField::Plan, "contest"),
+      (ActorDraftField::Contingency, "retreat if threat"),
+    ] {
+      host
+        .stage_actor_draft(
+          ActorDraftDto::new(
+            observation.observer().value(),
+            observation.observation_id().value(),
+            field,
+            value,
+          )
+          .expect("draft value is bounded"),
+        )
+        .expect("draft stages");
+    }
+    let expected = vec![
+      ActorDraftDto::new(
+        observation.observer().value(),
+        observation.observation_id().value(),
+        ActorDraftField::Message,
+        "ping ally",
+      )
+      .expect("message is bounded"),
+      ActorDraftDto::new(
+        observation.observer().value(),
+        observation.observation_id().value(),
+        ActorDraftField::Plan,
+        "contest",
+      )
+      .expect("plan is bounded"),
+      ActorDraftDto::new(
+        observation.observer().value(),
+        observation.observation_id().value(),
+        ActorDraftField::Contingency,
+        "retreat if threat",
+      )
+      .expect("contingency is bounded"),
+    ];
+    assert_eq!(host.actor_draft(), Ok(expected));
+    assert_eq!(host.observation(), observation);
+    assert_eq!(host.record_count(), 0);
+    assert_eq!(host.committed_intent, None);
+
+    host
+      .commit_actor_draft(ActorCommitDto::new(
+        observation.observer().value(),
+        observation.observation_id().value(),
+        crate::protocol::ActorProtocolIntent::Contest,
+      ))
+      .expect("draft commits");
+    assert_eq!(
+      host.actor_draft(),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::DraftBoundary,
+        ActorProtocolRepairHint::AwaitNextObservation,
+      ))
+    );
+
+    let mut complete = CliScenarioHost::fixture();
+    for command in [
+      "plan contest",
+      "commit",
+      "advance",
+      "plan stabilize",
+      "commit",
+      "advance",
+    ] {
+      complete.apply_line(command).expect("fixture completes");
+    }
+    assert_eq!(
+      complete.actor_draft(),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::WindowClosed,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
+    );
+
+    let mut closed = CliScenarioHost::fixture();
+    closed.apply_line("quit").expect("host closes");
+    assert_eq!(
+      closed.actor_draft(),
       Err(ActorProtocolError::new(
         ActorProtocolErrorCode::ClosedSession,
         ActorProtocolRepairHint::StartNewSession,

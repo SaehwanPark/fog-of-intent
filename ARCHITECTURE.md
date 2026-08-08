@@ -138,16 +138,18 @@ internal observation/request types as a transport contract; host validation
 still owns legality. It also maps codec failures to the versioned,
 actor-safe `m5-actor-error-v2` code/repair vocabulary and its bounded codec
 without retaining raw input or parser details. `src/host.rs` owns the
-actor-observation, actor-commit, draft-status, draft-clear, history-status, replay-status,
+actor-observation, actor-commit, draft-readback, draft-status, draft-clear, history-status, replay-status,
 replay-record, saved-replay-record, action-result, and completion-gated debrief
 projections plus actor-action validation and submission entry points: it delegates legality to the lane
 validator and closes a fixture window only after successful validation and
 history append.
 `ActorDraftDto` remains a bounded metadata envelope in the protocol edge, while
 `src/host.rs` owns its observation-bound pre-commit staging and its
-`ActorDraftReceiptDto` acknowledgement. `ActorDraftStatusDto` adds only the
-active binding and aggregate field-presence bits; neither DTO contains draft
-values. The receipt contains no draft value;
+`ActorDraftReceiptDto` acknowledgement. `CliScenarioHost::actor_draft` reads
+the host-owned staged values back to the requesting actor in stable field order
+without delivering them to a recipient or changing host state. `ActorDraftStatusDto`
+adds only the active binding and aggregate field-presence bits; the status and
+receipt DTOs contain no draft value. The receipt contains no draft value;
 staging replaces one internal draft field but does not add communication
 authority or transition authority. `ActorDraftClearDto` and
 `ActorDraftClearReceiptDto` bind an idempotent clear to the active observation

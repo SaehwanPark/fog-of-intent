@@ -98,6 +98,22 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.124 — 2026-08-08
+
+### Added
+
+- Added `CliScenarioHost::actor_draft`, an observation-bound readback of the
+  requesting actor's staged message, plan, and contingency values using the
+  existing bounded draft DTO.
+- Added focused evidence for stable field ordering, exact binding, unchanged
+  host state, and committed/complete/closed lifecycle rejection.
+
+### Known limits
+
+- This is actor-owned in-process metadata readback only; recipient delivery,
+  simultaneous drafts, transport, persistence, reconnect, provider behavior,
+  and richer plan semantics remain open.
+
 ## 0.1.123 — 2026-08-08
 
 ### Added

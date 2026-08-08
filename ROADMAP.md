@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.123`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.124`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1201,6 +1201,9 @@ control over simulation resolution.
 - [x] Stage observation-bound actor draft metadata through the host-owned draft
   boundary with replacement and committed-window checks; communication
   delivery remains open.
+- [x] Read back the requesting actor's staged message, plan, and contingency
+  metadata through existing observation-bound draft DTOs; recipient delivery,
+  simultaneous drafts, and communication semantics remain open.
 - [x] Expose the active actor-visible receipt through the versioned observation
   DTO, rejecting closed/complete hosts without mutating history; transport and
   simultaneous actors remain open.
@@ -1249,7 +1252,7 @@ echoes values or claims communication delivery. The provider-neutral
 `m5-actor-transcript-v1` record captures only closed tool/schema IDs and an
 accepted/rejected result for an actor receipt; it is not a runtime log or
 replay record. Focused evidence is 25 protocol tests,
-12 session tests, and 32 host tests within the 225-unit, 7-binary, and
+12 session tests, and 33 host tests within the 226-unit, 7-binary, and
 3-Rustdoc suite. The host observation projection is a
 pure actor-visible DTO mapping, rejects inactive lifecycle states, and leaves
 the internal receipt private. The history DTO is a bounded status summary,
@@ -1270,7 +1273,9 @@ verification; hashes, resolved inputs, execution traces, and causal detail
 remain private. The `CliScenarioHost::actor_replay_debrief_records_from_run`
 adapter validates an injected saved run, restores and verifies it locally,
 requires two records, and returns the same categorical debrief records without
-mutating the receiving host. The `m5-actor-draft-status-v1` projection reports only the
+mutating the receiving host. The `CliScenarioHost::actor_draft` readback
+returns only the requesting actor's existing staged values in stable field
+order and does not deliver them to another actor. The `m5-actor-draft-status-v1` projection reports only the
 active observation binding and aggregate `present`/`absent` bits for message,
 plan, and contingency; it never echoes draft values or claims delivery.
 The `m5-actor-draft-clear-v1` command carries only the active observer and
@@ -1285,7 +1290,7 @@ transition authority.
 - [ ] Define remaining integration/contracts for messages, plans,
   contingencies, durable/scenario replay-linked records, and detailed
   outcome/debrief review;
-  bounded observation/action/commit/draft/draft-status/draft-clear/history/replay/replay-record/saved-replay-record/replay-debrief-record/saved-replay-debrief-record/debrief projections
+  bounded observation/action/commit/draft/draft-readback/draft-status/draft-clear/history/replay/replay-record/saved-replay-record/replay-debrief-record/saved-replay-debrief-record/debrief projections
   are delivered.
 - [x] Keep authoritative lane observation/request conversion behind crate-private
   protocol adapters; public protocol compatibility exposes DTOs only.

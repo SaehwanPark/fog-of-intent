@@ -835,3 +835,16 @@ canonical policy instead of duplicating it.
   builder, and return only its categorical actor-safe records.
 - Prevention: Keep completion gating after replay verification and before
   projection; leave durable/scenario-wide causal replay as a separate slice.
+
+## Keep draft readback actor-owned and non-delivering
+
+- Context: The host already stores observation-bound message, plan, and
+  contingency values while communication delivery remains unimplemented.
+- Symptom: Returning staged metadata through an adapter can be mistaken for
+  delivery or a second actor's visibility if ownership and order are implicit.
+- Resolution: Read only the requesting actor's active draft, return existing
+  bounded DTOs in a fixed field order, and preserve observation, commit, and
+  history state.
+- Prevention: Treat draft readback as local metadata inspection; introduce
+  recipients, transport, and simultaneous visibility only through a separate
+  communication contract.

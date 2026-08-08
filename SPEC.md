@@ -993,7 +993,7 @@ transport-integrated sessions and broader protocol compatibility remain open.
   snapshot fields, session lifecycle/error cases, codec round-trips and
   malformed-input rejection, and exhaustive codec/session error projections.
   The focused evidence is 25 protocol tests and 12 session tests within the
-  225-unit, 7-binary, and 3-Rustdoc suite; host evidence includes the
+  226-unit, 7-binary, and 3-Rustdoc suite; host evidence includes the
   authorization/redaction matrix and CLI/protocol parity regressions.
 - `CliScenarioHost::validate_actor_action` checks one DTO against the current
   actor-visible receipt and existing lane validator without mutating history,
@@ -1010,6 +1010,10 @@ transport-integrated sessions and broader protocol compatibility remain open.
   contingency metadata envelope. Values are observation-bound, non-empty,
   control-free, capped at 256 bytes, and plans use the closed intent IDs; the
   DTO does not stage host drafts or add communication authority.
+- `CliScenarioHost::actor_draft` returns the requesting actor's present staged
+  `ActorDraftDto` values in stable message/plan/contingency order. It is active
+  window-only, read-only with respect to host mutation, and does not deliver
+  metadata to another actor or add transition/history authority.
 - `CliScenarioHost::stage_actor_draft` binds that DTO to the current actor
   observation and replaces one internal draft field before commit. It rejects
   stale, wrong-actor, committed, complete, and closed edits without changing
