@@ -1194,6 +1194,14 @@ transport-integrated sessions and broader protocol compatibility remain open.
   contract. It is a deterministic fixed-fixture selector, not population
   generation; broader/random scenario generation, distributional evidence, and
   transition/history authority remain outside this contract.
+- `ScriptedAgentFixtureScenarioPopulation` defines
+  `m6-scripted-agent-fixture-population-v1` as a deterministic generator of one
+  to four entries from that closed catalog. It alternates the safe and
+  RiverSide-threat IDs, derives checked sequential observation-ID pairs from a
+  caller-supplied starting ID in stable order, and composes the existing
+  verified matched-sample path. It does not perform
+  random or broad population sampling, infer a distribution, or own outcome,
+  transition, history, persistence, provider, or human-behavior authority.
 - `ScriptedAgentFixtureScenarioFrequencyReport` defines
   `m6-scripted-agent-fixture-frequency-v1` with the two catalog rows in stable
   order and bounded counts over a validated selection. It counts explicit

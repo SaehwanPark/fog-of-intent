@@ -1383,8 +1383,11 @@ representative replays, and an evidence-limited report.
 - [x] Emit a bounded fixed-fixture scenario-frequency report over validated
   selections and a verified-report-bound machine-readable codec; it is explicit
   selection evidence, not a population distribution or durable export.
-- [ ] Add population generation, broader scenario selection, and distributional
-  sampling evidence.
+- [x] Add a bounded deterministic fixed-fixture population generator over the
+  closed scenario catalog; it is capped at four alternating entries and uses
+  a caller-supplied starting observation ID to derive checked sequential pairs.
+- [ ] Add broader scenario selection and distributional sampling evidence;
+  population diversity and representative sampling remain open.
 - [x] Emit bounded selected-intent tallies over caller-supplied sample sets;
   population distributions, outcomes, and strategic metrics remain open.
 - [x] Encode the selected-intent tally with a bounded machine-readable codec;

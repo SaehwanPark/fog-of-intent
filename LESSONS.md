@@ -995,6 +995,21 @@ canonical policy instead of duplicating it.
 - Prevention: Leave population, random/distributional, outcome, strategic, and
   calibration metrics behind separate contracts and evidence gates.
 
+## Keep fixed-fixture population generation separate from sampling
+
+- Context: M6 needed a bounded population-shaped input for composition evidence
+  while broad scenario selection and distributional sampling remained open.
+- Symptom: Calling a deterministic fixture list a population can imply random
+  coverage, representativeness, or behavioral realism that the generator does
+  not provide.
+- Resolution: Generate at most four alternating closed fixture IDs, derive each
+  pair from a caller-supplied starting observation ID with checked sequential
+  arithmetic, and reuse the verified matched-sample path without adding
+  randomness or host authority.
+- Prevention: Keep broader/random generation, distributional metrics, outcomes,
+  persistence, providers, and human evidence behind separate contracts and
+  evidence gates.
+
 ## Bind aggregate codecs to verified reports
 
 - Context: A bounded frequency summary needed machine-readable transport before
