@@ -11,6 +11,10 @@ evidence-backed changes are preferred over broad framework work.
 - Keep simulation authority, actor-visible information, deterministic inputs,
   and evidence limits explicit.
 - Do not add third-party game assets, proprietary content, or unverified claims.
+- Use two-space indentation with spaces only. Run `cargo fmt --all -- --check`
+  and the repository checks before requesting review.
+- Read [LESSONS.md](LESSONS.md) before coding. Add a lesson only when the cause,
+  resolution, and prevention are verified and likely to recur.
 
 ## Changes and review
 

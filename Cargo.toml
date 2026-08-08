@@ -1,8 +1,11 @@
 [package]
 name = "fog-of-intent"
-version = "0.1.62"
+version = "0.1.63"
 edition = "2024"
 rust-version = "1.96"
 license = "MIT"
+
+[lints.clippy]
+as_conversions = "deny"
 
 [dependencies]

@@ -29,7 +29,7 @@ jobs:
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
 
       - name: Check formatting
-        run: cargo +1.96.0 fmt --check
+        run: cargo +1.96.0 fmt --all -- --check
 
       - name: Check lint
         run: cargo +1.96.0 clippy --locked --all-targets --all-features -- -D warnings

@@ -19,107 +19,107 @@ pub(crate) const LANE_ABORT_CONDITION_HASH_TAG: u8 = 0x41;
 pub(crate) const LANE_FALLBACK_BEHAVIOR_HASH_TAG: u8 = 0x46;
 
 pub(crate) fn phase_tag(phase: LanePhase) -> u8 {
-    match phase {
-        LanePhase::Open => 0,
-        LanePhase::Resolved => 1,
-    }
+  match phase {
+    LanePhase::Open => 0,
+    LanePhase::Resolved => 1,
+  }
 }
 
 pub(crate) fn position_tag(position: LanePosition) -> u8 {
-    match position {
-        LanePosition::NearTower => 0,
-        LanePosition::Center => 1,
-        LanePosition::FarSide => 2,
-    }
+  match position {
+    LanePosition::NearTower => 0,
+    LanePosition::Center => 1,
+    LanePosition::FarSide => 2,
+  }
 }
 
 pub(crate) fn posture_tag(posture: OpponentPosture) -> u8 {
-    match posture {
-        OpponentPosture::Aggressive => 0,
-        OpponentPosture::Passive => 1,
-    }
+  match posture {
+    OpponentPosture::Aggressive => 0,
+    OpponentPosture::Passive => 1,
+  }
 }
 
 pub(crate) fn threat_tag(threat: JungleThreatTruth) -> u8 {
-    match threat {
-        JungleThreatTruth::Absent => 0,
-        JungleThreatTruth::RiverSide => 1,
-        JungleThreatTruth::InLane => 2,
-    }
+  match threat {
+    JungleThreatTruth::Absent => 0,
+    JungleThreatTruth::RiverSide => 1,
+    JungleThreatTruth::InLane => 2,
+  }
 }
 
 pub(crate) fn outcome_tag(outcome: Option<LaneOutcome>) -> u8 {
-    match outcome {
-        None => 0,
-        Some(LaneOutcome::HeldSpace) => 1,
-        Some(LaneOutcome::YieldedSpace) => 2,
-        Some(LaneOutcome::ForcedOut) => 3,
-    }
+  match outcome {
+    None => 0,
+    Some(LaneOutcome::HeldSpace) => 1,
+    Some(LaneOutcome::YieldedSpace) => 2,
+    Some(LaneOutcome::ForcedOut) => 3,
+  }
 }
 pub(crate) fn window_tag(window: LaneWindow) -> u8 {
-    match window {
-        LaneWindow::OneBeat => 0,
-        LaneWindow::TwoBeats => 1,
-    }
+  match window {
+    LaneWindow::OneBeat => 0,
+    LaneWindow::TwoBeats => 1,
+  }
 }
 pub(crate) fn intent_tag(intent: LaneIntent) -> u8 {
-    match intent {
-        LaneIntent::Stabilize => 0,
-        LaneIntent::Contest => 1,
-        LaneIntent::Recall => 2,
-        LaneIntent::Withdraw => 3,
-        LaneIntent::Yield => 4,
-    }
+  match intent {
+    LaneIntent::Stabilize => 0,
+    LaneIntent::Contest => 1,
+    LaneIntent::Recall => 2,
+    LaneIntent::Withdraw => 3,
+    LaneIntent::Yield => 4,
+  }
 }
 
 pub(crate) fn wave_result_tag(result: LaneWaveResult) -> u8 {
-    match result {
-        LaneWaveResult::Advanced => 0,
-        LaneWaveResult::Held => 1,
-        LaneWaveResult::Lost => 2,
-    }
+  match result {
+    LaneWaveResult::Advanced => 0,
+    LaneWaveResult::Held => 1,
+    LaneWaveResult::Lost => 2,
+  }
 }
 
 pub(crate) fn target_focus_tag(focus: LaneTargetFocus) -> u8 {
-    match focus {
-        LaneTargetFocus::Minions => 0,
-        LaneTargetFocus::OpposingLaner => 1,
-        LaneTargetFocus::Tower => 2,
-    }
+  match focus {
+    LaneTargetFocus::Minions => 0,
+    LaneTargetFocus::OpposingLaner => 1,
+    LaneTargetFocus::Tower => 2,
+  }
 }
 
 pub(crate) fn commitment_tag(commitment: LaneCommitment) -> u8 {
-    match commitment {
-        LaneCommitment::Standard => 0,
-        LaneCommitment::Cautious => 1,
-        LaneCommitment::Aggressive => 2,
-    }
+  match commitment {
+    LaneCommitment::Standard => 0,
+    LaneCommitment::Cautious => 1,
+    LaneCommitment::Aggressive => 2,
+  }
 }
 
 pub(crate) fn ping_signal_tag(signal: LanePingSignal) -> u8 {
-    match signal {
-        LanePingSignal::None => 0,
-        LanePingSignal::Danger => 1,
-        LanePingSignal::OnMyWay => 2,
-        LanePingSignal::Assist => 3,
-        LanePingSignal::EnemyMissing => 4,
-    }
+  match signal {
+    LanePingSignal::None => 0,
+    LanePingSignal::Danger => 1,
+    LanePingSignal::OnMyWay => 2,
+    LanePingSignal::Assist => 3,
+    LanePingSignal::EnemyMissing => 4,
+  }
 }
 
 pub(crate) fn abort_condition_tag(condition: LaneAbortCondition) -> u8 {
-    match condition {
-        LaneAbortCondition::None => 0,
-        LaneAbortCondition::HealthThreshold => 1,
-        LaneAbortCondition::ThreatSpotted => 2,
-        LaneAbortCondition::ResourceDepleted => 3,
-    }
+  match condition {
+    LaneAbortCondition::None => 0,
+    LaneAbortCondition::HealthThreshold => 1,
+    LaneAbortCondition::ThreatSpotted => 2,
+    LaneAbortCondition::ResourceDepleted => 3,
+  }
 }
 
 pub(crate) fn fallback_behavior_tag(behavior: LaneFallbackBehavior) -> u8 {
-    match behavior {
-        LaneFallbackBehavior::MaintainPlan => 0,
-        LaneFallbackBehavior::RetreatToTower => 1,
-        LaneFallbackBehavior::SafeFarm => 2,
-        LaneFallbackBehavior::ConserveResources => 3,
-    }
+  match behavior {
+    LaneFallbackBehavior::MaintainPlan => 0,
+    LaneFallbackBehavior::RetreatToTower => 1,
+    LaneFallbackBehavior::SafeFarm => 2,
+    LaneFallbackBehavior::ConserveResources => 3,
+  }
 }

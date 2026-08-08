@@ -9,7 +9,7 @@
 use std::fmt;
 
 use crate::kernel::{
-    ActorId, DrawId, InputTrace, RulesetId, StateHash, StreamId, Turn, hash_bytes,
+  ActorId, DrawId, InputTrace, RulesetId, StateHash, StreamId, Turn, hash_bytes,
 };
 
 mod branch;
@@ -44,6 +44,9 @@ pub use state::*;
 pub use transition::*;
 pub use validation::*;
 pub use values::*;
+
+#[cfg(test)]
+mod test_support;
 
 #[cfg(test)]
 mod tests;

@@ -30,15 +30,20 @@ Keep this file short and repo-wide. Detailed project workflows live in
 - Use the repo-local `fog-intent-*` skills only for project-specific simulation,
   agent-ecology, playtest, or domain-QA work. Use global skills for generic Rust,
   testing, UX, documentation, review, release, and git workflows.
+- Read [LESSONS.md](LESSONS.md) before coding and add only verified, reusable
+  lessons after resolving a recurring project trap.
 - Keep the authoritative transition synchronous and deterministic. Resolve
   randomness before transition evaluation; keep I/O, async work, persistence,
   presentation, MCP, and model-provider code at the edges.
+- Use two-space indentation with spaces only; run the repository checks before
+  handing off a change.
 - Preserve the distinctions between true state, actor belief, observation,
   report, intent, execution, command, event, and attributed effect.
 - Prefer the smallest complete vertical slice. A roadmap item is sequencing
   guidance, not authorization to implement unrelated future phases.
-- Current verification commands are `cargo fmt --check`,
-  `cargo clippy --all-targets --all-features -- -D warnings`, and `cargo test`.
+- Current verification commands are `cargo +1.96.0 fmt --all -- --check`,
+  `cargo +1.96.0 clippy --locked --all-targets --all-features -- -D warnings`,
+  and `cargo +1.96.0 test --locked`.
 - Keep spec-oriented documents synchronized when their claims change. Record
   docs-only work in `CHANGELOG.md` without changing the package version, per the
   versioning policy in `README.md`.

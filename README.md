@@ -77,7 +77,7 @@ players?
 | --- | --- |
 | Current roadmap milestone | M2 — One-Lane Vertical Slice (Active) |
 | Repository governance and canonical docs | Complete — M0 |
-| Rust package | `0.1.62`, edition 2024, Rust `1.96`, no dependencies, single package |
+| Rust package | `0.1.63`, edition 2024, Rust `1.96`, no dependencies, single package |
 | Executable behavior | Prints `Hello, world!` |
 | Deterministic kernel | M1 fixture/codec complete; M2 v3 internal lane-window, explicit four-actor roster, retained-resource aggregate, intent, observation, branch, coordination, objective, strategy-fixture, scenario, replay, delayed-origin provenance, debrief, advance-condition, and belief/report contracts implemented |
 | One-lane scenario | Internal diagnostic windows and fixtures cover bounded intents, observations, coordination, resources, replay, and debrief projections — full scenario not complete |
@@ -107,9 +107,9 @@ Hello, world!
 Repository checks:
 
 ```sh
-cargo fmt --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test
+cargo fmt --all -- --check
+cargo clippy --locked --all-targets --all-features -- -D warnings
+cargo test --locked
 python3 scripts/check_repository.py
 python3 -m unittest discover -s scripts -p 'test_*.py'
 ```
@@ -125,6 +125,7 @@ milestone adds a user-facing host.
 - [Architecture](ARCHITECTURE.md) — current structure and explicitly labeled
   target boundaries.
 - [Changelog](CHANGELOG.md) — meaningful contributor- and user-visible history.
+- [Lessons](LESSONS.md) — verified, reusable project traps and preventions.
 - [Design principles](DESIGN_PRINCIPLES.md) — concise implementation invariants.
 - [Terminology](docs/TERMINOLOGY.md) — authoritative domain vocabulary.
 - [Architecture decision records](docs/adr/) — consequential boundary decisions.
@@ -153,7 +154,9 @@ milestone adds a user-facing host.
    outside the deterministic transition boundary.
 5. Add focused tests or inspection evidence and reconcile affected project-state
    documents.
-6. Run the repository checks and review the final diff for contradictions or
+6. Use two-space indentation and spaces only; the repository checker and pinned
+   Rust formatter enforce this policy.
+7. Run the repository checks and review the final diff for contradictions or
    unsupported capability claims.
 
 The repo-local harness owns only Fog of Intent domain judgment. Generic Rust,
@@ -172,6 +175,7 @@ ROADMAP.md                   Canonical execution plan
 SPEC.md                      Current project state
 ARCHITECTURE.md              Current and target system boundaries
 CHANGELOG.md                 Meaningful history
+LESSONS.md                   Verified contributor lessons
 LICENSE / NOTICE.md          Source license and distribution boundaries
 ```
 

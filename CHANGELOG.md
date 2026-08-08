@@ -44,6 +44,27 @@ not increment the package version.
   vision/belief remains deferred; the bounded automatic-advance condition
   contract is now explicit while host scheduling remains deferred.
 
+## 0.1.63 — 2026-08-08
+
+### Added
+
+- Added repository-wide two-space formatting policy, hard-tab rejection, and
+  dependency-free checker tests for Rust, Python, and authored text.
+- Added the verified contributor lessons ledger in `LESSONS.md`.
+
+### Changed
+
+- Converted textual lane test inclusions into formatter-visible test modules
+  without changing production contracts or test behavior.
+- Replaced unchecked numeric casts and data-dependent transition assertions with
+  checked bounded operations and typed error paths; Clippy now denies
+  `as_conversions`.
+
+### Known limits
+
+- Markdown syntax-sensitive indentation and versioned compatibility fixtures
+  remain formatting-policy exceptions; hard tabs remain forbidden.
+
 ## 0.1.50 — 2026-08-06
 
 ### Changed
