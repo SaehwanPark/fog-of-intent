@@ -4026,6 +4026,18 @@ mod tests {
     assert_eq!(labeled.candidate_build_id(), Some(candidate_build));
     assert_eq!(labeled.entries(), comparison.entries());
     assert_eq!(
+      labeled.baseline_selection_count(),
+      comparison.baseline_selection_count()
+    );
+    assert_eq!(
+      labeled.candidate_selection_count(),
+      comparison.candidate_selection_count()
+    );
+    assert_eq!(
+      labeled.passes_no_change_gate(),
+      comparison.passes_no_change_gate()
+    );
+    assert_eq!(
       labeled,
       ScriptedAgentFixtureScenarioFrequencyComparisonReport::from_reports_with_build_ids(
         &baseline,
@@ -4035,6 +4047,17 @@ mod tests {
       )
       .expect("repeated labeled comparison is stable")
     );
+    let labeled_unchanged =
+      ScriptedAgentFixtureScenarioFrequencyComparisonReport::from_reports_with_build_ids(
+        &baseline,
+        &baseline,
+        baseline_build,
+        candidate_build,
+      )
+      .expect("distinct labels retain unchanged comparison");
+    assert_eq!(labeled_unchanged.baseline_selection_count(), 2);
+    assert_eq!(labeled_unchanged.candidate_selection_count(), 2);
+    assert!(labeled_unchanged.passes_no_change_gate());
     assert_eq!(
       ScriptedAgentFixtureScenarioFrequencyComparisonReport::from_reports_with_build_ids(
         &baseline,

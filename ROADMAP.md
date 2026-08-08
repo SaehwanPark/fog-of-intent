@@ -1410,9 +1410,9 @@ representative replays, and an evidence-limited report.
 - [x] Preserve caller-declared crashes, timeouts, missing branches, and
   inconclusive results in a bounded status envelope; automatic runtime
   detection and process diagnostics remain open.
-- [x] Compare caller-declared build-labeled behavior against a declared
-  baseline; independent source/build verification and causal attribution
-  remain open.
+- [x] Attach distinct caller-declared build labels to a fixed-fixture frequency
+  baseline comparison; independent source/build verification and causal
+  attribution remain open.
 
 ### Deliverables
 
