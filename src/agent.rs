@@ -851,7 +851,7 @@ impl ScriptedAgentFixtureScenarioFrequencyReport {
         .parse::<u8>()
         .map_err(|_| ScriptedAgentFixtureScenarioFrequencyCodecError::InvalidValue)?;
     }
-    if entries[0].count + entries[1].count != selection_count {
+    if u16::from(entries[0].count) + u16::from(entries[1].count) != u16::from(selection_count) {
       return Err(ScriptedAgentFixtureScenarioFrequencyCodecError::InvalidValue);
     }
     Ok(Self {
@@ -3522,6 +3522,10 @@ mod tests {
       ),
       (
         encoded.replacen("row=safe-fixture-v1|2", "row=safe-fixture-v1|1", 1),
+        ScriptedAgentFixtureScenarioFrequencyCodecError::InvalidValue,
+      ),
+      (
+        encoded.replacen("row=safe-fixture-v1|2", "row=safe-fixture-v1|255", 1),
         ScriptedAgentFixtureScenarioFrequencyCodecError::InvalidValue,
       ),
       (
