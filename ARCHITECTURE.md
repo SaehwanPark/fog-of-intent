@@ -162,6 +162,11 @@ shared observation ID, rejects stale/cross-actor/duplicate submissions, and
 reveals bounded binding metadata plus readiness; the host still owns ordering,
 transition resolution, history, and replay.
 
+The host regression compares the existing CLI observation and
+plan/commit/advance path with the actor DTO projection and action-result path on
+the same fixture. This proves bounded CLI/protocol parity without introducing
+MCP transport or provider authority.
+
 `src/session.rs` owns immutable ordinary-actor session freshness and lifecycle
 metadata only. It cannot validate an intent, submit a transition, or mutate
 history; its freshness failures use the same bounded protocol error

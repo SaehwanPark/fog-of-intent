@@ -2142,6 +2142,82 @@ mod tests {
   }
 
   #[test]
+  fn cli_and_actor_protocol_paths_preserve_observation_and_action_parity() {
+    let mut cli_host = CliScenarioHost::fixture();
+    let cli_observation = match cli_host.apply_line("observe").expect("CLI observes") {
+      CliHostOutput::Observation(observation) => observation,
+      output => panic!("unexpected CLI observation output: {output:?}"),
+    };
+    let actor_observation = cli_host
+      .actor_observation()
+      .expect("active host projects actor observation");
+    assert_eq!(
+      actor_observation.observer(),
+      cli_observation.observer().value()
+    );
+    assert_eq!(actor_observation.turn(), cli_observation.turn().value());
+    assert_eq!(
+      actor_observation.observation_id(),
+      cli_observation.observation_id().value()
+    );
+    let cli_intents = cli_observation
+      .available_intents()
+      .iter()
+      .map(|intent| match intent {
+        LaneIntent::Stabilize => crate::protocol::ActorProtocolIntent::Stabilize,
+        LaneIntent::Contest => crate::protocol::ActorProtocolIntent::Contest,
+        LaneIntent::Yield => crate::protocol::ActorProtocolIntent::Yield,
+        LaneIntent::Recall => crate::protocol::ActorProtocolIntent::Recall,
+        LaneIntent::Withdraw => crate::protocol::ActorProtocolIntent::Withdraw,
+      })
+      .collect::<Vec<_>>();
+    assert_eq!(
+      actor_observation.available_actions(),
+      cli_intents.as_slice()
+    );
+    assert_eq!(
+      actor_observation.visible_threat_response(),
+      cli_observation
+        .available_threat_response()
+        .map(|intent| match intent {
+          LaneIntent::Stabilize => crate::protocol::ActorProtocolIntent::Stabilize,
+          LaneIntent::Contest => crate::protocol::ActorProtocolIntent::Contest,
+          LaneIntent::Yield => crate::protocol::ActorProtocolIntent::Yield,
+          LaneIntent::Recall => crate::protocol::ActorProtocolIntent::Recall,
+          LaneIntent::Withdraw => crate::protocol::ActorProtocolIntent::Withdraw,
+        })
+    );
+
+    let cli_advanced = {
+      cli_host.apply_line("plan contest").expect("CLI plan");
+      cli_host.apply_line("commit").expect("CLI commit");
+      match cli_host.apply_line("advance").expect("CLI advance") {
+        CliHostOutput::Advanced { window, outcome } => (window, outcome),
+        output => panic!("unexpected CLI advance output: {output:?}"),
+      }
+    };
+    let mut actor_host = CliScenarioHost::fixture();
+    let observation = actor_host.observation();
+    let actor_result = actor_host
+      .submit_actor_action_result(ActorActionDto::new(
+        observation.observer().value(),
+        observation.observation_id().value(),
+        crate::protocol::ActorProtocolIntent::Contest,
+      ))
+      .expect("actor protocol action");
+    assert_eq!(cli_advanced.0, ScenarioWindow::First);
+    assert_eq!(actor_result.window(), ActorActionResultWindow::First);
+    let expected_outcome = match cli_advanced.1 {
+      LaneOutcome::HeldSpace => ActorActionResultOutcome::HeldSpace,
+      LaneOutcome::YieldedSpace => ActorActionResultOutcome::YieldedSpace,
+      LaneOutcome::ForcedOut => ActorActionResultOutcome::ForcedOut,
+    };
+    assert_eq!(actor_result.outcome(), expected_outcome);
+    assert_eq!(cli_host.record_count(), actor_host.record_count());
+    assert_eq!(cli_host.observation(), actor_host.observation());
+  }
+
+  #[test]
   fn malformed_resolved_inputs_return_redacted_host_errors() {
     let mut host = CliScenarioHost::new([
       fixture_inputs(8, LaneWaveResult::Advanced, 3),
