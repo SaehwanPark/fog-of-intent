@@ -81,6 +81,13 @@ pub enum ScriptedAgentReason {
   AvailableAlternative,
 }
 
+/// Bounded error returned when a caller evaluates an intent outside the
+/// observation's actor-visible candidate set.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentEvaluationError {
+  UnavailableIntent,
+}
+
 /// One candidate produced from actor-visible information and its fixed score.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct ScriptedAgentCandidate {
@@ -190,6 +197,22 @@ impl ScriptedAgent {
     self,
     observation: LanerObservation,
     intent: LaneIntent,
+  ) -> Result<ScriptedAgentCandidate, ScriptedAgentEvaluationError> {
+    if !self.candidate_is_advertised(observation, intent) {
+      return Err(ScriptedAgentEvaluationError::UnavailableIntent);
+    }
+    Ok(self.score_candidate(observation, intent))
+  }
+
+  fn candidate_is_advertised(self, observation: LanerObservation, intent: LaneIntent) -> bool {
+    observation.available_intents().contains(&intent)
+      || observation.available_threat_response() == Some(intent)
+  }
+
+  fn score_candidate(
+    self,
+    observation: LanerObservation,
+    intent: LaneIntent,
   ) -> ScriptedAgentCandidate {
     let threat_response = observation.available_threat_response() == Some(intent);
     let reason = if self.profile.evaluation == ScriptedAgentEvaluationRule::ContestFirst
@@ -228,7 +251,7 @@ impl ScriptedAgent {
     let candidates = self
       .generate_candidates(observation)
       .into_iter()
-      .map(|intent| self.evaluate_candidate(observation, intent))
+      .map(|intent| self.score_candidate(observation, intent))
       .collect::<Vec<_>>();
     let selected = candidates
       .iter()
@@ -287,6 +310,17 @@ mod tests {
         && candidate.reason() == ScriptedAgentReason::AvailableAlternative
     }));
     validate_lane_request(&state, &receipt, &decision.request()).expect("policy request is legal");
+  }
+
+  #[test]
+  fn evaluation_rejects_intents_outside_the_actor_visible_candidate_set() {
+    let state = LaneSnapshot::initial();
+    let observation = observe_player(&state, ObservationId::new(13)).observation();
+
+    assert_eq!(
+      ScriptedAgent::cautious_v1().evaluate_candidate(observation, LaneIntent::Withdraw),
+      Err(ScriptedAgentEvaluationError::UnavailableIntent)
+    );
   }
 
   #[test]

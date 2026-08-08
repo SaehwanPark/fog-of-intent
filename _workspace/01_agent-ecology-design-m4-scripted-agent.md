@@ -86,6 +86,8 @@ explain.
 - `SCRIPTED_AGENT_SCHEMA` and profile/rule IDs are stable constants.
 - Candidate generation is bounded by the four advertised intents plus one
   visible threat response.
+- Public evaluation rejects intents outside that candidate set with a bounded
+  policy error; selection only scores generated candidates.
 - The selected request carries the observation actor and ID.
 - The existing `validate_lane_request` accepts the initial decision.
 - Threat response priority and repeated-observation equality are covered by

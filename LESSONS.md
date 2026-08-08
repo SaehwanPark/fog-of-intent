@@ -281,3 +281,15 @@ canonical policy instead of duplicating it.
   through the existing host/lane boundary.
 - Prevention: Keep matched-input comparisons separate from outcome or human
   realism claims; add new scenarios and metrics only with their own evidence.
+
+## Reject policy evaluation outside advertised candidates
+
+- Context: Public policy helpers can be called independently of the normal
+  generate-then-select path.
+- Symptom: Scoring an intent that the observation did not advertise can make a
+  policy result look legal even though the actor never had that candidate.
+- Resolution: Check the actor-visible candidate set before scoring and return a
+  bounded `UnavailableIntent` policy error; internal selection scores only its
+  generated candidates.
+- Prevention: Keep policy errors distinct from host legality errors and fail
+  closed before any request reaches transition or history authority.

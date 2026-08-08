@@ -95,6 +95,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.81 — 2026-08-08
+
+### Added
+
+- Added a bounded `ScriptedAgentEvaluationError::UnavailableIntent` result for
+  public candidate evaluation outside an actor-visible advertised set.
+- Added focused rejection evidence while keeping internal selection limited to
+  generated candidates and leaving host legality/transition authority intact.
+
+### Known limits
+
+- Evaluation errors are policy-boundary plumbing only; they do not provide
+  scenario outcomes, memory, communication, randomness, population metrics,
+  strategic-quality, human-realism, or external-agent evidence.
+
 ## 0.1.80 — 2026-08-08
 
 ### Added
