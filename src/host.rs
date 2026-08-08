@@ -761,6 +761,22 @@ fn fixture_inputs(
 }
 
 #[cfg(test)]
+fn forced_out_inputs(stream: u8) -> LaneResolvedInputs {
+  LaneResolvedInputs::new(
+    InputTrace::new(StreamId::new(stream), DrawId::new(1)),
+    InputTrace::new(StreamId::new(stream), DrawId::new(2)),
+    InputTrace::new(StreamId::new(stream), DrawId::new(3)),
+    InputTrace::new(StreamId::new(stream), DrawId::new(4)),
+    crate::lane::LaneExecutionInputs::new(
+      InputTrace::new(StreamId::new(stream), DrawId::new(5)),
+      LaneDamage::new(8).expect("forced-out fixture damage is bounded"),
+      LaneDamage::zero(),
+      LaneWaveResult::Held,
+    ),
+  )
+}
+
+#[cfg(test)]
 mod tests {
   use super::*;
   use std::sync::atomic::{AtomicU64, Ordering};
@@ -1109,12 +1125,13 @@ mod tests {
   fn actor_action_result_projection_is_bounded_and_host_owned() {
     let mut host = CliScenarioHost::fixture();
     let first = host.observation();
+    let first_action = ActorActionDto::new(
+      first.observer().value(),
+      first.observation_id().value(),
+      crate::protocol::ActorProtocolIntent::Contest,
+    );
     let first_result = host
-      .submit_actor_action_result(ActorActionDto::new(
-        first.observer().value(),
-        first.observation_id().value(),
-        crate::protocol::ActorProtocolIntent::Contest,
-      ))
+      .submit_actor_action_result(first_action)
       .expect("first action result projects");
     assert_eq!(
       first_result,
@@ -1129,6 +1146,13 @@ mod tests {
       Ok(first_result)
     );
     assert!(!format!("{first_result:?}").contains("hash"));
+    assert_eq!(
+      host.submit_actor_action_result(first_action),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::StaleObservation,
+        ActorProtocolRepairHint::RequestFreshObservation,
+      ))
+    );
 
     let second = host.observation();
     let second_result = host
@@ -1146,6 +1170,26 @@ mod tests {
       )
     );
     assert_eq!(host.record_count(), 2);
+
+    let mut forced = CliScenarioHost::new([
+      forced_out_inputs(1),
+      fixture_inputs(0, LaneWaveResult::Held, 2),
+    ]);
+    let forced_observation = forced.observation();
+    let forced_result = forced
+      .submit_actor_action_result(ActorActionDto::new(
+        forced_observation.observer().value(),
+        forced_observation.observation_id().value(),
+        crate::protocol::ActorProtocolIntent::Contest,
+      ))
+      .expect("forced-out result projects");
+    assert_eq!(
+      forced_result,
+      ActorActionResultDto::new(
+        ActorActionResultWindow::First,
+        ActorActionResultOutcome::ForcedOut,
+      )
+    );
   }
 
   #[test]
