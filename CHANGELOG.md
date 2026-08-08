@@ -95,6 +95,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.96 — 2026-08-08
+
+### Added
+
+- Added the bounded `m5-actor-codec-v1` line-oriented codec for versioned
+  observation and intent-action DTOs.
+- Added fail-closed size, exact-field, duplicate/unknown/missing-field,
+  closed-intent, and host-validation regressions without adding transport I/O.
+
+### Known limits
+
+- Codec persistence, transport integration, session wire framing, plan/message
+  payloads, and provider-neutral transcripts remain open.
+
 ## 0.1.95 — 2026-08-08
 
 ### Added

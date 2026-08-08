@@ -465,3 +465,16 @@ canonical policy instead of duplicating it.
 - Prevention: Keep session freshness and actor capability checks bounded at the
   protocol edge, while legality, transition, history, replay, and repair remain
   explicit host/adapter contracts.
+
+## Bound protocol codecs before adding transport
+
+- Context: M5 needed reproducible DTO exchange evidence without introducing an
+  MCP runtime or file/network I/O.
+- Symptom: An unbounded parser or permissive field decoder can turn a protocol
+  adapter into an allocation or compatibility escape hatch.
+- Resolution: Version the line-oriented DTO codec, cap input bytes, require
+  exact bounded fields, reject duplicates/unknowns/missing values and closed-
+  enum violations, then hand decoded actions to host validation.
+- Prevention: Keep codec parsing pure and bounded; add transport framing,
+  persistence, repair, and provider compatibility only behind separate tests
+  and schemas.
