@@ -1090,8 +1090,8 @@ strategy while remaining bound to actor-visible information.
   wave-pressure value rises from 0 to 3, while requests remain host-valid.
 - [x] Emit the versioned `m4-scripted-agent-action-tally-v2` report for the
   two uniquely identified fixture observations, reject mixed observers and
-  duplicate IDs, and retain only bounded profile/rule IDs and selected-intent
-  counts.
+  duplicate IDs, and retain only the shared observer, bounded observation,
+  profile, and rule IDs, observation count, and selected-intent counts.
 
 This is a three-profile library-only comparison with bounded score and
 selected-action reports. It
