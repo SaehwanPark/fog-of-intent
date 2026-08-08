@@ -252,6 +252,10 @@ or history authority.
 `ScriptedAgentTallyReplayReference` selects a first caller-declared verified
 record matching candidate profile/rule/intent labels. It is a reference only,
 not representative replay proof or a scenario-wide replay authority.
+`ScriptedAgentDegeneratePolicyPopulationReport` checks one to four
+caller-declared actor-visible observations against the fixed cautious
+`Stabilize` selection. It adds no adversarial search, prevalence, outcome,
+history, persistence, provider, or human-behavior authority.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

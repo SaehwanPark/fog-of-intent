@@ -98,6 +98,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.165 — 2026-08-08
+
+### Added
+
+- Added `m6-scripted-agent-degenerate-policy-population-v1`, a bounded
+  caller-declared fixed population of repeated cautious `Stabilize` decisions
+  over actor-visible observations.
+
+### Known limits
+
+- This is fixture-sized degenerate-policy evidence only; illegal-command,
+  exploit-seeking, communication-abuse, broad adversarial populations,
+  prevalence, outcomes, persistence, providers, and human evidence remain
+  open.
+
 ## 0.1.164 — 2026-08-08
 
 ### Added

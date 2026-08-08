@@ -1186,6 +1186,13 @@ transport-integrated sessions and broader protocol compatibility remain open.
   degenerate count are metadata-only; actual adversarial populations, exploit
   search, prevalence, outcomes, persistence, providers, and human evidence
   remain open.
+- `ScriptedAgentDegeneratePolicyPopulationReport` defines
+  `m6-scripted-agent-degenerate-policy-population-v1` as a bounded
+  caller-declared population of one to four actor-visible observations where
+  the cautious fixed policy selects `Stabilize` for every member. Empty,
+  over-capacity, observer, duplicate-ID, and unexpected-intent inputs fail
+  closed. This is fixture-sized degenerate evidence, not adversarial search,
+  prevalence, outcomes, persistence, providers, or human behavior.
 - Each tally row can expose ordered 10,000-point intent shares in
   `[Stabilize, Contest, Yield, Recall, Withdraw]` order. The first four shares
   use floor division and Withdraw receives the remainder, so each row sums to

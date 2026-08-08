@@ -1422,8 +1422,11 @@ representative replays, and an evidence-limited report.
 - [x] Add a bounded caller-declared four-case stress matrix over existing
   validation, freshness, message-codec, and deterministic-policy boundaries;
   actual adversarial/degenerate populations and exploit search remain open.
-- [ ] Add illegal-command, exploit-seeking, communication-abuse, and degenerate
-  policy populations.
+- [ ] Add illegal-command, exploit-seeking, and communication-abuse policy
+  populations.
+- [x] Add a bounded caller-declared degenerate-policy population over repeated
+  actor-visible `Stabilize` selections; broad adversarial populations,
+  prevalence, and outcomes remain open.
 - [x] Rank a caller-declared largest absolute intent-count candidate from
   verified profile-aware comparison rows with stable row/intent ties; actual
   outlier detection and representative replay selection remain open.
