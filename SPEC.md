@@ -1194,6 +1194,11 @@ transport-integrated sessions and broader protocol compatibility remain open.
   intent deltas. This is caller-declared selected-intent evidence only; it
   does not establish build provenance, causality, population distributions,
   outcomes, strategic quality, persistence, or provider behavior.
+- The comparison codec uses the same schema, a 4096-byte bound, seven fixed
+  positional metadata lines, and ordered pipe-delimited rows. It parses into a
+  private candidate and returns a value only when it exactly matches an
+  already verified comparison; malformed or tampered text is rejected before
+  trusted evidence is returned. It is evidence transport, not durable export.
 - The comparison exposes `m6-fixed-profile-tally-no-change-v1`, a provisional
   equality gate that passes only when baseline/candidate pair and observation
   counts and every ordered row's five intent counts match. It is a fixed

@@ -1400,6 +1400,9 @@ representative replays, and an evidence-limited report.
 - [x] Compare two caller-declared verified profile-aware tally reports with
   ordered row identities and signed count deltas; build provenance, causality,
   broader metrics, and outcomes remain open.
+- [x] Round-trip the profile-aware tally comparison through a bounded
+  provenance-bound codec; durable export and arbitrary report pipelines remain
+  open.
 - [x] Define a provisional profile-aware fixed-fixture no-change gate over
   exact ordered counts; broader thresholds, balance, causality, and outcomes
   remain open.

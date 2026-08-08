@@ -98,6 +98,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.156 — 2026-08-08
+
+### Added
+
+- Added a bounded provenance-bound codec for
+  `m6-scripted-agent-matched-scenario-tally-compare-v1`, preserving fixed
+  metadata and ordered profile-row count deltas while rejecting malformed or
+  tampered text.
+
+### Known limits
+
+- The codec remains evidence transport only; durable export, arbitrary report
+  pipelines, broader metrics/distributions, outcomes, persistence, providers,
+  calibration, and human evidence remain open.
+
 ## 0.1.155 — 2026-08-08
 
 ### Added
