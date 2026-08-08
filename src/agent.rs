@@ -46,6 +46,9 @@ pub const SCRIPTED_AGENT_EXPERIMENT_SCENARIO_ID: &str = "m3-two-window-fixture-v
 /// Maximum encoded experiment-manifest size.
 pub const MAX_SCRIPTED_AGENT_MANIFEST_BYTES: usize = 4096;
 
+/// Maximum number of manifests evaluated by one in-process batch.
+pub const MAX_SCRIPTED_AGENT_BATCH_MANIFESTS: usize = 16;
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum ScriptedAgentEvaluationRule {
   Threat,
@@ -348,6 +351,42 @@ impl ScriptedAgentExperimentManifest {
       profile,
       ScriptedAgentSeedBundle::new(seed, StreamId::new(policy_stream), DrawId::new(policy_draw)),
     ))
+  }
+}
+
+/// Bounded failures from the deterministic local batch runner.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentBatchError {
+  EmptyBatch,
+  BatchTooLarge { max: usize, actual: usize },
+}
+
+/// Deterministic in-process evaluation of declared scripted-agent manifests.
+pub struct ScriptedAgentBatchRunner;
+
+impl ScriptedAgentBatchRunner {
+  /// Evaluate manifests in order using only one actor-visible observation.
+  pub fn run(
+    observation: LanerObservation,
+    manifests: &[ScriptedAgentExperimentManifest],
+  ) -> Result<Vec<ScriptedAgentDecision>, ScriptedAgentBatchError> {
+    if manifests.is_empty() {
+      return Err(ScriptedAgentBatchError::EmptyBatch);
+    }
+    if manifests.len() > MAX_SCRIPTED_AGENT_BATCH_MANIFESTS {
+      return Err(ScriptedAgentBatchError::BatchTooLarge {
+        max: MAX_SCRIPTED_AGENT_BATCH_MANIFESTS,
+        actual: manifests.len(),
+      });
+    }
+    let mut decisions = Vec::with_capacity(manifests.len());
+    for manifest in manifests {
+      let agent = ScriptedAgent {
+        profile: manifest.profile(),
+      };
+      decisions.push(agent.choose_with_seed(observation, manifest.seed_bundle()));
+    }
+    Ok(decisions)
   }
 }
 
@@ -1138,6 +1177,51 @@ mod tests {
     assert_eq!(
       ScriptedAgentExperimentManifest::decode(&"x".repeat(MAX_SCRIPTED_AGENT_MANIFEST_BYTES + 1)),
       Err(ScriptedAgentManifestError::Oversized)
+    );
+  }
+
+  #[test]
+  fn bounded_batch_runner_preserves_order_and_reproducibility() {
+    let state = LaneSnapshot::initial();
+    let observation = observe_player(&state, ObservationId::new(44)).observation();
+    let manifests = [
+      ScriptedAgentExperimentManifest::new(
+        ScriptedAgentProfile::cautious_v1(),
+        ScriptedAgentSeedBundle::new(1, StreamId::new(2), DrawId::new(3)),
+      ),
+      ScriptedAgentExperimentManifest::new(
+        ScriptedAgentProfile::yielding_v1(),
+        ScriptedAgentSeedBundle::new(4, StreamId::new(5), DrawId::new(6)),
+      ),
+    ];
+    let first = ScriptedAgentBatchRunner::run(observation, &manifests).expect("batch runs");
+    let second = ScriptedAgentBatchRunner::run(observation, &manifests).expect("batch repeats");
+    assert_eq!(first, second);
+    assert_eq!(first.len(), 2);
+    assert_eq!(first[0].profile(), manifests[0].profile());
+    assert_eq!(first[1].profile(), manifests[1].profile());
+    assert_eq!(first[0].seed_bundle(), Some(manifests[0].seed_bundle()));
+    assert_eq!(first[1].seed_bundle(), Some(manifests[1].seed_bundle()));
+    assert_eq!(
+      ScriptedAgentBatchRunner::run(observation, &[]),
+      Err(ScriptedAgentBatchError::EmptyBatch)
+    );
+    let at_capacity = [manifests[0]; MAX_SCRIPTED_AGENT_BATCH_MANIFESTS];
+    let capacity_decisions =
+      ScriptedAgentBatchRunner::run(observation, &at_capacity).expect("inclusive cap runs");
+    assert_eq!(capacity_decisions.len(), MAX_SCRIPTED_AGENT_BATCH_MANIFESTS);
+    assert!(
+      capacity_decisions
+        .iter()
+        .all(|decision| decision.seed_bundle() == Some(manifests[0].seed_bundle()))
+    );
+    let too_many = [manifests[0]; MAX_SCRIPTED_AGENT_BATCH_MANIFESTS + 1];
+    assert_eq!(
+      ScriptedAgentBatchRunner::run(observation, &too_many),
+      Err(ScriptedAgentBatchError::BatchTooLarge {
+        max: MAX_SCRIPTED_AGENT_BATCH_MANIFESTS,
+        actual: MAX_SCRIPTED_AGENT_BATCH_MANIFESTS + 1,
+      })
     );
   }
 

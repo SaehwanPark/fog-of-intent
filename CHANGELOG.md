@@ -98,6 +98,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.128 — 2026-08-08
+
+### Added
+
+- Added `ScriptedAgentBatchRunner` for deterministic in-process evaluation of
+  one actor-visible observation against an ordered list of up to 16 explicit
+  experiment manifests.
+- Added focused order/reproducibility, seed-retention, empty-batch, and
+  capacity-bound evidence.
+
+### Known limits
+
+- Resumable run directories, persistence, populations, sampling, metrics,
+  report export, providers, and calibration remain open.
+
 ## 0.1.127 — 2026-08-08
 
 ### Added
