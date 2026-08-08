@@ -695,6 +695,17 @@ canonical policy instead of duplicating it.
 - Prevention: Keep status read-only and payload-free; leave delivery,
   transport, and richer plan semantics to separate contracts.
 
+## Bind draft clearing to the active observation
+
+- Context: An actor may need to discard staged metadata before committing an
+  intent, but an unbound clear could erase a newer observation's draft.
+- Symptom: A generic clear operation would blur stale/wrong-actor rejection
+  with an ordinary empty clear and could mutate a later draft.
+- Resolution: Require observer and observation ID, reject wrong/stale,
+  committed, complete, and closed requests, and report only pre-clear presence.
+- Prevention: Keep empty clears idempotent, clear only after all checks pass,
+  and preserve delivery and communication semantics as separate contracts.
+
 ## Test authorization and redaction together
 
 - Context: Adding actor DTOs incrementally can leave each operation locally
