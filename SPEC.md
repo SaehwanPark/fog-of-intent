@@ -1208,6 +1208,9 @@ transport-integrated sessions and broader protocol compatibility remain open.
   selected-intent tally report without rerunning policy evaluation; the result
   preserves the caller's ordered manifest/profile rows and remains fixture-sized
   actor-visible evidence rather than a broader metric.
+  Its existing bounded line-oriented codec round-trips this verified report and
+  rejects tampered rows before returning a trusted value; it remains evidence
+  transport rather than durable export.
 - `ScriptedAgentFixtureScenarioFrequencyReport` defines
   `m6-scripted-agent-fixture-frequency-v1` with the two catalog rows in stable
   order and bounded counts over a validated selection. It counts explicit
