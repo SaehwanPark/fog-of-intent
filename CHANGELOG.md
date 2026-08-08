@@ -95,6 +95,22 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.84 — 2026-08-08
+
+### Added
+
+- Added the versioned `m4-scripted-agent-metrics-v1` actor-safe comparison
+  report for the three profiles, exposing bounded profile/rule IDs, selected
+  intent/score, candidate count, and observation identity.
+- Added reproducibility and bounded-row tests without exposing state, hashes,
+  execution inputs, or changing host authority.
+
+### Known limits
+
+- The report is a library metric schema over one fixture observation; broad
+  action distributions, outcome metrics, population comparisons, strategic
+  quality, and human realism remain deferred.
+
 ## 0.1.83 — 2026-08-08
 
 ### Added

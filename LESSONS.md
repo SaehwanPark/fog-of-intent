@@ -316,3 +316,14 @@ canonical policy instead of duplicating it.
   validate every request through the host boundary.
 - Prevention: Keep sensitivity tests tied to visible observation changes and
   avoid treating selection differences as outcome or balance evidence.
+
+## Keep comparison metrics actor-safe and bounded
+
+- Context: M4 needed a machine-readable comparison artifact for the three
+  fixed profiles without turning metrics into a second authority path.
+- Symptom: A report that carries state hashes, execution inputs, or raw domain
+  errors can leak privileged truth and become an accidental replay interface.
+- Resolution: Version the report and expose only profile/rule IDs, selected
+  intent/score, candidate count, and observer/observation identity.
+- Prevention: Keep metric schemas derived from actor-visible policy decisions and
+  state their fixture-sized limits before adding outcome or population fields.
