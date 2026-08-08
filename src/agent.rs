@@ -13,6 +13,15 @@ pub const SCRIPTED_AGENT_SCHEMA: &str = "m4-scripted-agent-v1";
 /// Stable profile identity for the cautious deterministic baseline.
 pub const SCRIPTED_AGENT_PROFILE_ID: &str = "cautious-laner-v1";
 
+/// Stable profile identity for the risk-taking deterministic comparison.
+pub const RISK_TAKING_SCRIPTED_AGENT_PROFILE_ID: &str = "risk-taking-laner-v1";
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+enum ScriptedAgentEvaluationRule {
+  ThreatFirst,
+  ContestFirst,
+}
+
 /// Versioned profile and policy-rule metadata.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct ScriptedAgentProfile {
@@ -20,6 +29,7 @@ pub struct ScriptedAgentProfile {
   candidate_rule: &'static str,
   evaluation_rule: &'static str,
   selection_rule: &'static str,
+  evaluation: ScriptedAgentEvaluationRule,
 }
 
 impl ScriptedAgentProfile {
@@ -30,6 +40,18 @@ impl ScriptedAgentProfile {
       candidate_rule: "actor-visible-intents-v1",
       evaluation_rule: "threat-first-fixed-score-v1",
       selection_rule: "max-score-stable-order-v1",
+      evaluation: ScriptedAgentEvaluationRule::ThreatFirst,
+    }
+  }
+
+  /// Return the risk-taking matched-input comparison profile.
+  pub const fn risk_taking_v1() -> Self {
+    Self {
+      profile_id: RISK_TAKING_SCRIPTED_AGENT_PROFILE_ID,
+      candidate_rule: "actor-visible-intents-v1",
+      evaluation_rule: "contest-first-fixed-score-v1",
+      selection_rule: "max-score-stable-order-v1",
+      evaluation: ScriptedAgentEvaluationRule::ContestFirst,
     }
   }
 
@@ -54,6 +76,7 @@ impl ScriptedAgentProfile {
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ScriptedAgentReason {
   ThreatResponse,
+  RiskPreference,
   StableDefault,
   AvailableAlternative,
 }
@@ -137,6 +160,13 @@ impl ScriptedAgent {
     }
   }
 
+  /// Construct the risk-taking matched-input comparison profile.
+  pub const fn risk_taking_v1() -> Self {
+    Self {
+      profile: ScriptedAgentProfile::risk_taking_v1(),
+    }
+  }
+
   pub const fn profile(self) -> ScriptedAgentProfile {
     self.profile
   }
@@ -161,17 +191,24 @@ impl ScriptedAgent {
     observation: LanerObservation,
     intent: LaneIntent,
   ) -> ScriptedAgentCandidate {
-    let reason = if observation.available_threat_response() == Some(intent) {
+    let threat_response = observation.available_threat_response() == Some(intent);
+    let reason = if self.profile.evaluation == ScriptedAgentEvaluationRule::ContestFirst
+      && intent == LaneIntent::Contest
+    {
+      ScriptedAgentReason::RiskPreference
+    } else if threat_response {
       ScriptedAgentReason::ThreatResponse
     } else if intent == LaneIntent::Stabilize {
       ScriptedAgentReason::StableDefault
     } else {
       ScriptedAgentReason::AvailableAlternative
     };
-    let score = match reason {
-      ScriptedAgentReason::ThreatResponse => 100,
-      ScriptedAgentReason::StableDefault => 80,
-      ScriptedAgentReason::AvailableAlternative => match intent {
+    let score = match (self.profile.evaluation, reason) {
+      (_, ScriptedAgentReason::RiskPreference) => 100,
+      (ScriptedAgentEvaluationRule::ThreatFirst, ScriptedAgentReason::ThreatResponse) => 100,
+      (ScriptedAgentEvaluationRule::ContestFirst, ScriptedAgentReason::ThreatResponse) => 90,
+      (_, ScriptedAgentReason::StableDefault) => 80,
+      (_, ScriptedAgentReason::AvailableAlternative) => match intent {
         LaneIntent::Contest => 60,
         LaneIntent::Yield => 40,
         LaneIntent::Recall => 20,
@@ -282,5 +319,27 @@ mod tests {
     let agent = ScriptedAgent::cautious_v1();
 
     assert_eq!(agent.choose(observation), agent.choose(observation));
+  }
+
+  #[test]
+  fn matched_observation_distinguishes_cautious_and_risk_taking_profiles() {
+    let state = LaneSnapshot::initial();
+    let receipt = observe_player(&state, ObservationId::new(12));
+    let cautious = ScriptedAgent::cautious_v1().choose(receipt.observation());
+    let risk_taking = ScriptedAgent::risk_taking_v1().choose(receipt.observation());
+
+    assert_eq!(cautious.selected_intent(), LaneIntent::Stabilize);
+    assert_eq!(risk_taking.selected_intent(), LaneIntent::Contest);
+    assert_eq!(
+      risk_taking.profile().profile_id(),
+      RISK_TAKING_SCRIPTED_AGENT_PROFILE_ID
+    );
+    assert!(risk_taking.candidates().iter().any(|candidate| {
+      candidate.intent() == LaneIntent::Contest
+        && candidate.reason() == ScriptedAgentReason::RiskPreference
+        && candidate.score() == 100
+    }));
+    validate_lane_request(&state, &receipt, &cautious.request()).expect("cautious is legal");
+    validate_lane_request(&state, &receipt, &risk_taking.request()).expect("risk-taking is legal");
   }
 }

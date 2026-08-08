@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.79`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.80`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1028,8 +1028,8 @@ strategy while remaining bound to actor-visible information.
 
 ### Scope
 
-- [x] Implement one actor-visible deterministic scripted agent for the bounded
-  fixture; broader scripted populations remain open.
+- [x] Implement two actor-visible deterministic scripted profiles for the
+  bounded fixture; broader scripted populations remain open.
 - [ ] Implement transparent role heuristics.
 - [ ] Define policy inputs, memory, candidate actions, utility features, and
   action evaluations.
@@ -1039,9 +1039,11 @@ strategy while remaining bound to actor-visible information.
   communication response, confidence, and pressure/tilt only as required.
 - [ ] Define creativity as candidate breadth or transformation, not random
   selection of inferior actions.
-- [ ] Create a small versioned baseline profile catalog.
+- [x] Create a small two-profile versioned baseline catalog; broader profiles
+  remain open.
 - [ ] Use explicit policy random streams and reproducible seed bundles.
-- [ ] Add matched-scenario and matched-input comparisons.
+- [x] Add one matched-input comparison over the same actor-visible observation;
+  matched-scenario populations remain open.
 - [ ] Define expected monotonic effects or document interactions that make them
   non-monotonic.
 - [ ] Measure legality, action distribution, strategic diversity,
@@ -1051,17 +1053,21 @@ strategy while remaining bound to actor-visible information.
 ### Current bounded scripted-agent evidence
 
 - [x] Define the versioned `m4-scripted-agent-v1` policy boundary and the
-  `cautious-laner-v1` profile identity.
+  `cautious-laner-v1` and `risk-taking-laner-v1` profile identities.
 - [x] Generate candidates only from the actor-visible `LanerObservation`
   legal-intent set plus its visible threat-response option.
-- [x] Evaluate candidates with the fixed, inspectable
-  `threat-first-fixed-score-v1` rule and select by stable maximum score.
+- [x] Evaluate candidates with the profile-specific fixed, inspectable
+  `threat-first-fixed-score-v1` or `contest-first-fixed-score-v1` rule and
+  select by stable maximum score.
 - [x] Return an actor-bound `LaneIntentRequest` for host-side legality
   validation, with reproducibility tests for identical observations.
+- [x] Compare the two fixed profiles on one identical initial observation and
+  verify distinct legal intents without changing the host boundary.
 
-This is one library-only scripted baseline. It does not establish a population,
-role heuristics, memory, communication, randomness, matched-scenario metrics,
-strategic quality, human realism, or an executable agent adapter.
+This is a two-profile library-only comparison. It does not establish a
+population, role heuristics, memory, communication, randomness, matched-
+scenario metrics, strategic quality, human realism, or an executable agent
+adapter.
 
 ### Deliverables
 

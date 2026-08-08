@@ -269,3 +269,15 @@ canonical policy instead of duplicating it.
 - Prevention: Keep policy outputs inspectable and actor-validatable; defer
   memory, communication, randomness, population comparisons, and strategic or
   human-realism claims until each has its own evidence contract.
+
+## Compare profiles on matched actor-visible inputs
+
+- Context: A second scripted profile was needed to show interpretable policy
+  differences without adding scenario, execution, or population complexity.
+- Symptom: Comparing profiles across different observations would confound
+  policy differences with information differences and weaken reproducibility.
+- Resolution: Run cautious and risk-taking fixed rules over one identical
+  observation, assert distinct selected intents, and validate both requests
+  through the existing host/lane boundary.
+- Prevention: Keep matched-input comparisons separate from outcome or human
+  realism claims; add new scenarios and metrics only with their own evidence.

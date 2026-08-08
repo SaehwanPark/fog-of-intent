@@ -95,6 +95,23 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.80 — 2026-08-08
+
+### Added
+
+- Added the versioned `risk-taking-laner-v1` profile beside the cautious
+  scripted baseline, sharing actor-visible candidate generation and host
+  validation while using a distinct fixed contest-first score rule.
+- Added a matched-input regression proving the two profiles choose distinct
+  legal intents from the same observation without changing transition or
+  history authority.
+
+### Known limits
+
+- The comparison is library-only and covers two profiles on one fixture input;
+  role populations, memory, communication, randomness, metrics, strategic
+  quality, and external agent adapters remain deferred.
+
 ## 0.1.79 — 2026-08-08
 
 ### Added
