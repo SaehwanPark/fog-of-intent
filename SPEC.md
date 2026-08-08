@@ -968,7 +968,8 @@ transport-integrated sessions and broader protocol compatibility remain open.
   snapshot fields, session lifecycle/error cases, codec round-trips and
   malformed-input rejection, and exhaustive codec/session error projections.
   The focused evidence is 17 protocol tests and 5 session tests within the
-  200-unit, 7-binary, and 1-Rustdoc suite.
+  201-unit, 7-binary, and 1-Rustdoc suite; host evidence includes the
+  authorization/redaction matrix regression.
 - `CliScenarioHost::validate_actor_action` checks one DTO against the current
   actor-visible receipt and existing lane validator without mutating history,
   staging a plan, resolving execution, or closing a window. It projects only
@@ -993,6 +994,11 @@ transport-integrated sessions and broader protocol compatibility remain open.
   staged-field identity. `CliScenarioHost::stage_actor_draft_receipt` delegates
   all checks to existing staging and returns the receipt only after success;
   it does not deliver metadata or change lifecycle/history state.
+- The host authorization/redaction matrix proves wrong-actor action, draft,
+  commit, and draft-receipt requests fail as `actor_mismatch` without changing
+  the observation or record count, and checks actor-visible DTOs/results for
+  absence of state, hash, execution, and raw provenance markers. This is
+  library evidence, not network authentication or simultaneous-actor privacy.
 - `ActorCommitDto` and `ActorCommitResultDto` define `m5-actor-commit-v1` and
   `m5-actor-commit-result-v1` for an observer/receipt-bound explicit intent and
   bounded intent acknowledgement. `CliScenarioHost::commit_actor_draft`

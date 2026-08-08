@@ -1680,6 +1680,115 @@ mod tests {
   }
 
   #[test]
+  fn actor_authorization_and_redaction_matrix_fails_closed() {
+    let mut host = CliScenarioHost::fixture();
+    let observation = host.observation();
+    let observation_id = observation.observation_id().value();
+    let wrong_action = ActorActionDto::new(
+      2,
+      observation_id,
+      crate::protocol::ActorProtocolIntent::Contest,
+    );
+    let wrong_draft = ActorDraftDto::new(2, observation_id, ActorDraftField::Message, "ping")
+      .expect("wrong-actor draft is structurally valid");
+    let wrong_commit = ActorCommitDto::new(
+      2,
+      observation_id,
+      crate::protocol::ActorProtocolIntent::Contest,
+    );
+
+    for error in [
+      host
+        .validate_actor_action(wrong_action)
+        .expect_err("wrong actor action rejects"),
+      host
+        .stage_actor_draft(wrong_draft.clone())
+        .expect_err("wrong actor draft rejects"),
+      host
+        .commit_actor_draft(wrong_commit)
+        .expect_err("wrong actor commit rejects"),
+      host
+        .stage_actor_draft_receipt(wrong_draft)
+        .expect_err("wrong actor draft receipt rejects"),
+    ] {
+      assert_eq!(error.code(), ActorProtocolErrorCode::ActorMismatch);
+      assert_eq!(error.repair(), ActorProtocolRepairHint::UseBoundActor);
+      assert!(!format!("{error:?}").contains("StateHash"));
+      assert!(!error.encode().contains("health"));
+      assert_eq!(host.record_count(), 0);
+      assert_eq!(host.observation(), observation);
+    }
+
+    let values = [
+      format!(
+        "{:?} {}",
+        ActorObservationDto::from_observation(
+          observe_player(
+            &crate::lane::LaneSnapshot::initial(),
+            ObservationId::new(observation_id),
+          )
+          .observation()
+        ),
+        ActorObservationDto::from_observation(
+          observe_player(
+            &crate::lane::LaneSnapshot::initial(),
+            ObservationId::new(observation_id),
+          )
+          .observation()
+        )
+        .encode()
+      ),
+      format!(
+        "{:?} {}",
+        ActorHistoryDto::new(0, ActorHistoryStatus::Open).expect("open history is bounded"),
+        ActorHistoryDto::new(0, ActorHistoryStatus::Open)
+          .expect("open history is bounded")
+          .encode()
+      ),
+      format!(
+        "{:?} {}",
+        ActorActionResultDto::new(
+          ActorActionResultWindow::First,
+          ActorActionResultOutcome::HeldSpace,
+        ),
+        ActorActionResultDto::new(
+          ActorActionResultWindow::First,
+          ActorActionResultOutcome::HeldSpace,
+        )
+        .encode()
+      ),
+      format!(
+        "{:?} {}",
+        ActorCommitResultDto::new(crate::protocol::ActorProtocolIntent::Contest),
+        ActorCommitResultDto::new(crate::protocol::ActorProtocolIntent::Contest).encode()
+      ),
+      format!(
+        "{:?} {}",
+        ActorDraftReceiptDto::new(1, observation_id, ActorDraftField::Message),
+        ActorDraftReceiptDto::new(1, observation_id, ActorDraftField::Message).encode()
+      ),
+    ];
+    for value in values {
+      for marker in [
+        "StateHash",
+        "state_hash",
+        "health",
+        "position",
+        "wave",
+        "execution",
+        "trace",
+        "source_",
+        "resolved",
+      ] {
+        assert!(
+          !value.contains(marker),
+          "actor value leaked marker {marker}: {value}"
+        );
+      }
+    }
+  }
+
+  #[test]
   fn artifact_restore_rejects_divergent_resolved_inputs() {
     let mut source = CliScenarioHost::fixture();
     for command in ["plan contest", "commit", "advance"] {

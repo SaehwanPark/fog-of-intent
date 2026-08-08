@@ -48,6 +48,9 @@ not increment the package version.
   modules evaluate validated inputs, and the current CLI adapter owns no
   terminal I/O, rendering loop, or mutable runtime presentation state; a future
   renderer remains an outer adapter concern.
+- Added a bounded M5 authorization/redaction regression matrix over wrong-actor
+  action, draft, commit, and draft-receipt requests; actor-visible DTOs remain
+  free of hidden-state, hash, execution, and raw provenance fields.
 
 ## 0.1.64 — 2026-08-08
 
