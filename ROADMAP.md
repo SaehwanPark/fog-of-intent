@@ -1406,8 +1406,9 @@ representative replays, and an evidence-limited report.
 - [x] Define a provisional profile-aware fixed-fixture no-change gate over
   exact ordered counts; broader thresholds, balance, causality, and outcomes
   remain open.
-- [ ] Add broader scenario selection and distributional sampling evidence;
-  population diversity and representative sampling remain open.
+- [x] Add a bounded 10,000-point distribution projection over caller-declared
+  fixed-fixture selections; broader/random scenario generation and sampling,
+  population diversity, and representative sampling remain open.
 - [x] Emit bounded selected-intent tallies over caller-supplied sample sets;
   population distributions, outcomes, and strategic metrics remain open.
 - [x] Encode the selected-intent tally with a bounded machine-readable codec;

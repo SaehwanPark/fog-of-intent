@@ -1242,6 +1242,11 @@ transport-integrated sessions and broader protocol compatibility remain open.
 - The report's `to_markdown` projection emits only its schema, selection count,
   and ordered catalog rows as a concise in-process evidence summary; it performs
   no I/O and is not a durable report pipeline.
+- Its `distribution_basis_points` and `to_distribution_markdown` projections
+  expose caller-declared row shares at a 10,000-point scale. The first row is
+  floor-divided and the final row receives the integer remainder, so the shares
+  sum exactly to 10,000. This is a bounded distribution summary, not random or
+  representative sampling or a population-level metric.
 - `ScriptedAgentFixtureScenarioFrequencyComparisonReport` compares two
   caller-declared verified frequency reports under
   `m6-scripted-agent-fixture-frequency-compare-v1`, preserving ordered counts
