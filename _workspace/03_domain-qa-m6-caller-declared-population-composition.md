@@ -5,14 +5,14 @@
 PASS: the independent three-pass review found no actionable findings at
 implementation/evidence head `ba2ab2a`.
 
-## Scope to review
+## Scope reviewed
 
-- Does the helper accept only the two closed IDs, preserve caller order, derive
-  checked sequential observation pairs, and retain the four-entry bound?
-- Does safe-heavy composition produce exact explicit 3/1 frequency evidence?
-- Does matched-sample composition reuse existing actor-visible validation with
-  no policy, host, lane, history, replay, persistence, provider, or outcome
-  authority?
+- The helper accepts only the two closed IDs, preserves caller order, derives
+  checked sequential observation pairs, and retains the four-entry bound.
+- Safe-heavy composition produces exact explicit 3/1 frequency evidence.
+- Matched-sample composition reuses existing actor-visible validation with no
+  policy, host, lane, history, replay, persistence, provider, or outcome
+  authority.
 
 ## Evidence
 
