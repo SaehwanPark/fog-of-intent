@@ -130,7 +130,7 @@ authoritative history. An opt-in seeded tie path accepts only an explicit
 policy seed bundle, and the library-only decision replay record remains
 outside transition, host history, and durable persistence authority.
 
-`src/protocol.rs` owns the bounded actor observation/action/commit/draft-receipt/
+`src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO
 projection. It
 maps primitive actor-visible fields and closed intent IDs without exposing
@@ -143,7 +143,10 @@ replay-record, saved-replay-record, saved-debrief-summary, action-result, and co
 projections plus actor-action validation and submission entry points: it delegates legality to the lane
 validator and closes a fixture window only after successful validation and
 history append.
-`ActorDraftDto` remains a bounded metadata envelope in the protocol edge, while
+`ActorMessageDto` is a bounded recipient-scoped envelope for actor-authored
+text; it binds sender, recipient, and observation identity without routing or
+delivery authority. `ActorDraftDto` remains a bounded metadata envelope in the
+protocol edge, while
 `src/host.rs` owns its observation-bound pre-commit staging and its
 `ActorDraftReceiptDto` acknowledgement. `CliScenarioHost::actor_draft` reads
 the actor-protocol-staged values back to the requesting actor in stable field

@@ -54,6 +54,9 @@ pub const ACTOR_COMMIT_RESULT_SCHEMA: &str = "m5-actor-commit-result-v1";
 /// Versioned actor message/plan/contingency metadata identity.
 pub const ACTOR_DRAFT_SCHEMA: &str = "m5-actor-draft-v1";
 
+/// Versioned recipient-scoped actor message envelope identity.
+pub const ACTOR_MESSAGE_SCHEMA: &str = "m5-actor-message-v1";
+
 /// Versioned actor draft-staging acknowledgement identity.
 pub const ACTOR_DRAFT_RECEIPT_SCHEMA: &str = "m5-actor-draft-receipt-v1";
 
@@ -1202,6 +1205,114 @@ impl ActorDraftDto {
       observation_id,
       field,
       value.ok_or(ActorProtocolCodecError::MissingField)?,
+    )
+  }
+}
+
+/// Bounded actor-authored message metadata with explicit recipient binding.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct ActorMessageDto {
+  schema: &'static str,
+  sender: u8,
+  recipient: u8,
+  observation_id: u64,
+  message: String,
+}
+
+impl ActorMessageDto {
+  /// Build a message envelope without routing or delivering it.
+  pub fn new(
+    sender: u8,
+    recipient: u8,
+    observation_id: u64,
+    message: &str,
+  ) -> Result<Self, ActorProtocolCodecError> {
+    if sender == 0
+      || recipient == 0
+      || sender == recipient
+      || observation_id == 0
+      || message.is_empty()
+      || message.len() > MAX_ACTOR_DRAFT_VALUE_BYTES
+      || message.chars().any(char::is_control)
+    {
+      return Err(ActorProtocolCodecError::InvalidValue);
+    }
+    Ok(Self {
+      schema: ACTOR_MESSAGE_SCHEMA,
+      sender,
+      recipient,
+      observation_id,
+      message: message.to_owned(),
+    })
+  }
+
+  pub const fn schema(&self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn sender(&self) -> u8 {
+    self.sender
+  }
+
+  pub const fn recipient(&self) -> u8 {
+    self.recipient
+  }
+
+  pub const fn observation_id(&self) -> u64 {
+    self.observation_id
+  }
+
+  pub fn message(&self) -> &str {
+    &self.message
+  }
+
+  /// Encode recipient-scoped metadata without adding delivery authority.
+  pub fn encode(&self) -> String {
+    format!(
+      "schema={}\nsender={}\nrecipient={}\nobservation_id={}\nmessage={}\n",
+      self.schema, self.sender, self.recipient, self.observation_id, self.message,
+    )
+  }
+
+  /// Decode the exact bounded envelope without host or transport authority.
+  pub fn decode(input: &str) -> Result<Self, ActorProtocolCodecError> {
+    let fields = parse_fields(input, 5)?;
+    let mut schema = None;
+    let mut sender = None;
+    let mut recipient = None;
+    let mut observation_id = None;
+    let mut message = None;
+    for (key, value) in fields {
+      let slot = match key {
+        "schema" => &mut schema,
+        "sender" => &mut sender,
+        "recipient" => &mut recipient,
+        "observation_id" => &mut observation_id,
+        "message" => &mut message,
+        _ => return Err(ActorProtocolCodecError::UnknownField),
+      };
+      if slot.is_some() {
+        return Err(ActorProtocolCodecError::DuplicateField);
+      }
+      *slot = Some(value);
+    }
+    if schema != Some(ACTOR_MESSAGE_SCHEMA) {
+      return Err(ActorProtocolCodecError::UnsupportedSchema);
+    }
+    Self::new(
+      sender
+        .ok_or(ActorProtocolCodecError::MissingField)?
+        .parse::<u8>()
+        .map_err(|_| ActorProtocolCodecError::InvalidValue)?,
+      recipient
+        .ok_or(ActorProtocolCodecError::MissingField)?
+        .parse::<u8>()
+        .map_err(|_| ActorProtocolCodecError::InvalidValue)?,
+      observation_id
+        .ok_or(ActorProtocolCodecError::MissingField)?
+        .parse::<u64>()
+        .map_err(|_| ActorProtocolCodecError::InvalidValue)?,
+      message.ok_or(ActorProtocolCodecError::MissingField)?,
     )
   }
 }
@@ -2973,6 +3084,77 @@ mod tests {
       ),
       Err(ActorProtocolCodecError::InvalidValue)
     );
+  }
+
+  #[test]
+  fn actor_message_codec_is_recipient_bound_and_closed() {
+    let message = ActorMessageDto::new(1, 3, 36, "ping ally").expect("message is bounded");
+    assert_eq!(message.schema(), "m5-actor-message-v1");
+    assert_eq!(message.sender(), 1);
+    assert_eq!(message.recipient(), 3);
+    assert_eq!(message.observation_id(), 36);
+    assert_eq!(message.message(), "ping ally");
+    assert_eq!(
+      message.encode(),
+      "schema=m5-actor-message-v1\nsender=1\nrecipient=3\nobservation_id=36\nmessage=ping ally\n"
+    );
+    assert_eq!(
+      ActorMessageDto::decode(&message.encode()),
+      Ok(message.clone())
+    );
+    assert!(!format!("{message:?}").contains("StateHash"));
+    assert!(!format!("{message:?}").contains("health"));
+
+    for invalid in [
+      (0, 3, 36, "ping ally"),
+      (1, 0, 36, "ping ally"),
+      (1, 1, 36, "ping ally"),
+      (1, 3, 0, "ping ally"),
+      (1, 3, 36, ""),
+      (1, 3, 36, "line\nfeed"),
+    ] {
+      assert_eq!(
+        ActorMessageDto::new(invalid.0, invalid.1, invalid.2, invalid.3),
+        Err(ActorProtocolCodecError::InvalidValue)
+      );
+    }
+    assert_eq!(
+      ActorMessageDto::new(1, 3, 36, &"x".repeat(MAX_ACTOR_DRAFT_VALUE_BYTES + 1)),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+
+    let valid = message.encode();
+    for malformed in [
+      (
+        valid.replacen("schema=m5-actor-message-v1", "schema=other", 1),
+        ActorProtocolCodecError::UnsupportedSchema,
+      ),
+      (
+        valid.replacen("recipient=3", "unknown=3", 1),
+        ActorProtocolCodecError::UnknownField,
+      ),
+      (
+        valid.replacen("recipient=3", "sender=3", 1),
+        ActorProtocolCodecError::DuplicateField,
+      ),
+      (
+        valid.replacen("recipient=3\n", "", 1),
+        ActorProtocolCodecError::MissingField,
+      ),
+      (
+        valid.replacen("sender=1", "sender=nope", 1),
+        ActorProtocolCodecError::InvalidValue,
+      ),
+      (
+        format!("{valid}extra=line\n"),
+        ActorProtocolCodecError::UnexpectedLineCount {
+          expected: 5,
+          actual: 6,
+        },
+      ),
+    ] {
+      assert_eq!(ActorMessageDto::decode(&malformed.0), Err(malformed.1));
+    }
   }
 
   #[test]

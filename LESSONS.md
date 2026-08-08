@@ -5,6 +5,19 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Keep message envelopes separate from delivery
+
+- Context: M5 needed a recipient-scoped communication shape while transport,
+  authentication, and host routing remained explicitly deferred.
+- Symptom: Reusing a draft value as if it were delivered metadata would blur
+  actor authorship, recipient visibility, and host communication authority.
+- Resolution: Define `ActorMessageDto` as an immutable sender/recipient/
+  observation-bound envelope with bounded text, and keep routing, delivery,
+  ordering, retries, and trust outside the protocol DTO.
+- Prevention: Treat message shape, delivery acceptance, and communication
+  quality as separate contracts with separate evidence before adding queues or
+  session integration.
+
 ## Formatter defaults do not establish project policy
 
 - Context: The repository had a passing `cargo fmt --check` but no formatter or
