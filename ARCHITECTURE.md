@@ -169,6 +169,11 @@ returning it; it is not durable export or an external report pipeline.
 Its `m6-fixed-profile-tally-no-change-v1` gate is a pure equality predicate over
 those bounded counts; it adds no threshold, balance, build, causal, outcome, or
 strategic authority.
+Its `largest_delta_candidate` helper exposes a closed
+`m6-scripted-agent-tally-outlier-candidate-v1` metric projection under
+`m6-largest-absolute-intent-delta-v1`, preserving stable row/intent tie order
+and signed deltas. It does not detect outliers, select replays, inspect true
+state, or add causal, population, persistence, provider, or outcome authority.
 `ScriptedAgentFixtureScenarioSelection` is a closed metadata catalog for the
 safe and RiverSide-threat fixture IDs. It binds caller-supplied observation IDs,
 projects deterministic actor-visible pairs, and composes the existing sample

@@ -98,6 +98,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.160 — 2026-08-08
+
+### Added
+
+- Added the bounded `m6-scripted-agent-tally-outlier-candidate-v1` projection,
+  selecting the first largest absolute signed intent-count delta from a
+  verified profile-aware comparison under
+  `m6-largest-absolute-intent-delta-v1`.
+
+### Known limits
+
+- The candidate is metric-side fixed-fixture evidence only; actual outlier
+  detection, thresholds, representative replay selection, causal attribution,
+  broader populations, persistence, providers, and human evidence remain open.
+
 ## 0.1.159 — 2026-08-08
 
 ### Added

@@ -116,6 +116,13 @@ pub const SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_COMPARISON_SCHEMA: &str =
 pub const SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_REGRESSION_RULE: &str =
   "m6-fixed-frequency-no-change-v1";
 
+/// Versioned identity for the bounded largest-delta candidate projection.
+pub const SCRIPTED_AGENT_TALLY_OUTLIER_CANDIDATE_SCHEMA: &str =
+  "m6-scripted-agent-tally-outlier-candidate-v1";
+
+/// Stable identity for the bounded largest-absolute-delta selection rule.
+pub const SCRIPTED_AGENT_TALLY_OUTLIER_CANDIDATE_RULE: &str = "m6-largest-absolute-intent-delta-v1";
+
 /// Versioned identity for caller-declared build labels on comparisons.
 pub const SCRIPTED_AGENT_BUILD_ID_SCHEMA: &str = "m6-scripted-agent-build-id-v1";
 
@@ -2040,6 +2047,53 @@ impl ScriptedAgentMatchedScenarioTallyComparisonEntry {
   }
 }
 
+/// One deterministic metric-side candidate from a verified tally comparison.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentMatchedScenarioTallyOutlierCandidate {
+  schema: &'static str,
+  selection_rule: &'static str,
+  row_index: u8,
+  profile_id: &'static str,
+  evaluation_rule: &'static str,
+  intent: LaneIntent,
+  delta: i16,
+  magnitude: u16,
+}
+
+impl ScriptedAgentMatchedScenarioTallyOutlierCandidate {
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn selection_rule(self) -> &'static str {
+    self.selection_rule
+  }
+
+  pub const fn row_index(self) -> u8 {
+    self.row_index
+  }
+
+  pub const fn profile_id(self) -> &'static str {
+    self.profile_id
+  }
+
+  pub const fn evaluation_rule(self) -> &'static str {
+    self.evaluation_rule
+  }
+
+  pub const fn intent(self) -> LaneIntent {
+    self.intent
+  }
+
+  pub const fn delta(self) -> i16 {
+    self.delta
+  }
+
+  pub const fn magnitude(self) -> u16 {
+    self.magnitude
+  }
+}
+
 /// Bounded actor-safe count deltas between two verified tally reports.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct ScriptedAgentMatchedScenarioTallyComparisonReport {
@@ -2144,6 +2198,48 @@ impl ScriptedAgentMatchedScenarioTallyComparisonReport {
 
   pub fn entries(&self) -> &[ScriptedAgentMatchedScenarioTallyComparisonEntry] {
     &self.entries
+  }
+
+  /// Select the first largest absolute signed intent-count delta.
+  ///
+  /// Rows retain their declared order and intents use
+  /// `[Stabilize, Contest, Yield, Recall, Withdraw]` order for ties. A
+  /// comparison with no changed intent counts returns `None`; this is a
+  /// metric-side candidate projection, not an outlier or replay judgment.
+  pub fn largest_delta_candidate(
+    &self,
+  ) -> Option<ScriptedAgentMatchedScenarioTallyOutlierCandidate> {
+    let mut best: Option<ScriptedAgentMatchedScenarioTallyOutlierCandidate> = None;
+    for (row_index, entry) in self.entries.iter().enumerate() {
+      let deltas = entry.deltas();
+      for (intent_index, delta) in deltas.into_iter().enumerate() {
+        let magnitude = delta.unsigned_abs();
+        if magnitude == 0 {
+          continue;
+        }
+        if best.is_some_and(|candidate| magnitude <= candidate.magnitude()) {
+          continue;
+        }
+        best = Some(ScriptedAgentMatchedScenarioTallyOutlierCandidate {
+          schema: SCRIPTED_AGENT_TALLY_OUTLIER_CANDIDATE_SCHEMA,
+          selection_rule: SCRIPTED_AGENT_TALLY_OUTLIER_CANDIDATE_RULE,
+          row_index: u8::try_from(row_index).expect("comparison rows fit in u8"),
+          profile_id: entry.profile_id(),
+          evaluation_rule: entry.evaluation_rule(),
+          intent: match intent_index {
+            0 => LaneIntent::Stabilize,
+            1 => LaneIntent::Contest,
+            2 => LaneIntent::Yield,
+            3 => LaneIntent::Recall,
+            4 => LaneIntent::Withdraw,
+            _ => unreachable!("fixed intent count has five entries"),
+          },
+          delta,
+          magnitude,
+        });
+      }
+    }
+    best
   }
 
   /// Encode the verified comparison as bounded positional line-oriented text.
@@ -5993,6 +6089,94 @@ mod tests {
       ScriptedAgentMatchedScenarioTallyComparisonReport::from_reports(&baseline, &alternate),
       Err(ScriptedAgentMatchedScenarioTallyComparisonError::MismatchedObserver)
     );
+  }
+
+  #[test]
+  fn profile_aware_tally_largest_delta_candidate_is_stable_and_bounded() {
+    let manifests = [
+      ScriptedAgentExperimentManifest::new(
+        ScriptedAgentProfile::cautious_v1(),
+        ScriptedAgentSeedBundle::new(81, StreamId::new(82), DrawId::new(83)),
+      ),
+      ScriptedAgentExperimentManifest::new(
+        ScriptedAgentProfile::cautious_v1(),
+        ScriptedAgentSeedBundle::new(84, StreamId::new(85), DrawId::new(86)),
+      ),
+    ];
+    let baseline_population = ScriptedAgentFixtureScenarioPopulation::generate_from_scenario_ids(
+      &[
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+      ],
+      340,
+    )
+    .expect("baseline candidate builds");
+    let candidate_population = ScriptedAgentFixtureScenarioPopulation::generate_from_scenario_ids(
+      &[
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+      ],
+      348,
+    )
+    .expect("candidate population builds");
+    let baseline = baseline_population
+      .matched_tally(&manifests)
+      .expect("baseline tally builds");
+    let candidate = candidate_population
+      .matched_tally(&manifests)
+      .expect("candidate tally builds");
+    let comparison =
+      ScriptedAgentMatchedScenarioTallyComparisonReport::from_reports(&baseline, &candidate)
+        .expect("verified tallies compare");
+    let selected = comparison
+      .largest_delta_candidate()
+      .expect("changed comparison has a candidate");
+    assert_eq!(
+      selected.schema(),
+      "m6-scripted-agent-tally-outlier-candidate-v1"
+    );
+    assert_eq!(
+      selected.selection_rule(),
+      "m6-largest-absolute-intent-delta-v1"
+    );
+    assert_eq!(selected.row_index(), 0);
+    assert_eq!(selected.profile_id(), "cautious-laner-v1");
+    assert_eq!(
+      selected.evaluation_rule(),
+      "threat-first-pressure-aware-fixed-score-v1"
+    );
+    assert_eq!(selected.intent(), LaneIntent::Stabilize);
+    assert_eq!(selected.delta(), -2);
+    assert_eq!(selected.magnitude(), 2);
+    assert_eq!(
+      selected.magnitude(),
+      selected.delta().unsigned_abs(),
+      "magnitude retains the bounded absolute signed delta"
+    );
+    assert_eq!(
+      comparison.largest_delta_candidate(),
+      Some(selected),
+      "repeated ranking is deterministic"
+    );
+
+    let reversed =
+      ScriptedAgentMatchedScenarioTallyComparisonReport::from_reports(&candidate, &baseline)
+        .expect("reversed verified tallies compare");
+    let reversed_selected = reversed
+      .largest_delta_candidate()
+      .expect("reversed changed comparison has a candidate");
+    assert_eq!(reversed_selected.intent(), LaneIntent::Stabilize);
+    assert_eq!(reversed_selected.delta(), 2);
+    assert_eq!(reversed_selected.magnitude(), 2);
+
+    let unchanged =
+      ScriptedAgentMatchedScenarioTallyComparisonReport::from_reports(&baseline, &baseline)
+        .expect("unchanged verified tallies compare");
+    assert_eq!(unchanged.largest_delta_candidate(), None);
   }
 
   #[test]
