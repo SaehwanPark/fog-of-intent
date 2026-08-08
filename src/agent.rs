@@ -1206,6 +1206,15 @@ mod tests {
       ScriptedAgentBatchRunner::run(observation, &[]),
       Err(ScriptedAgentBatchError::EmptyBatch)
     );
+    let at_capacity = [manifests[0]; MAX_SCRIPTED_AGENT_BATCH_MANIFESTS];
+    let capacity_decisions =
+      ScriptedAgentBatchRunner::run(observation, &at_capacity).expect("inclusive cap runs");
+    assert_eq!(capacity_decisions.len(), MAX_SCRIPTED_AGENT_BATCH_MANIFESTS);
+    assert!(
+      capacity_decisions
+        .iter()
+        .all(|decision| decision.seed_bundle() == Some(manifests[0].seed_bundle()))
+    );
     let too_many = [manifests[0]; MAX_SCRIPTED_AGENT_BATCH_MANIFESTS + 1];
     assert_eq!(
       ScriptedAgentBatchRunner::run(observation, &too_many),
