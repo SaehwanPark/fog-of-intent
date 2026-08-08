@@ -8,16 +8,23 @@ authority and information-boundary contracts.
 ## Findings
 
 - `CliScenarioHost` owns lifecycle, draft, in-memory snapshot, and replay/
-  debrief coordination; the lane contract remains the transition authority.
+  debrief coordination; the host remains the sole simulation authority and
+  delegates deterministic validation and evaluation to the lane contract.
 - Resolved execution inputs are supplied at construction. The fixture does not
   create randomness or read hidden state through actor-facing values.
 - `CliHostOutput` returns observations, bounded history counts, window outcomes,
   saved/load identifiers, replay status, and the redacted debrief report. It
   does not return `LaneSnapshot`, transition records, hidden opponent truth, or
   terminal state hashes.
+- Public host errors collapse transition, replay, and debrief failures into
+  bounded categories; malformed explicit inputs cannot reveal hidden health,
+  resource values, or hashes.
 - Plan text is explicitly bounded to existing `LaneIntent` names. Message and
   contingency text is staged metadata and is not silently converted into lane
   state.
+- A committed intent is a closed pre-advance boundary: post-commit edits,
+  recommit, and undo are rejected, and the next window starts with a cleared
+  draft.
 - Replay with a run ID verifies the saved snapshot identified by that ID;
   replay without an ID verifies current history. Save/load is in-memory only.
 - Branch execution, terminal rendering, persistent storage, and

@@ -9,6 +9,8 @@
   quit.
 - Saved-run replay verifies the selected snapshot rather than the mutable
   current session.
+- Host failures are redacted to bounded categories, and committed intents
+  cannot be edited, recommitted, or undone before advancement.
 - Canonical docs, `LESSONS.md`, and roadmap evidence updated to keep the
   terminal/persistence/accessibility limits visible.
 

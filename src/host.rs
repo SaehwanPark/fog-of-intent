@@ -13,8 +13,8 @@ use crate::cli::{
 use crate::kernel::{DrawId, InputTrace, StreamId};
 use crate::lane::{
   LaneDamage, LaneIntent, LaneIntentRequest, LaneOutcome, LaneResolvedInputs, LaneScenarioHistory,
-  LaneWaveResult, ObservationId, PLAYER_LANER, ScenarioDebriefError, ScenarioDebriefReport,
-  ScenarioError, ScenarioWindow, build_scenario_debrief, observe_player,
+  LaneWaveResult, ObservationId, PLAYER_LANER, ScenarioDebriefReport, ScenarioWindow,
+  build_scenario_debrief, observe_player,
 };
 
 /// Versioned contract for the bounded synchronous host fixture.
@@ -90,12 +90,15 @@ pub enum CliHostError<'a> {
   Session(CliSessionError),
   UnsupportedCommand { verb: &'static str },
   InvalidPlan { text: String },
+  CommittedBoundary { verb: &'static str },
   MissingPlan,
   MissingCommittedIntent,
   NothingToUndo,
   RunNotFound { run_id: String },
-  Scenario(ScenarioError),
-  Debrief(ScenarioDebriefError),
+  AdvanceRejected,
+  ReplayRejected,
+  DebriefUnavailable,
+  ScenarioComplete,
 }
 
 /// A bounded host for the existing deterministic two-window lane scenario.
@@ -209,20 +212,34 @@ impl CliScenarioHost {
   ) -> Result<CliHostOutput, CliHostError<'a>> {
     match request {
       CliWriteRequest::Message { text } => {
+        if self.committed_intent.is_some() {
+          return Err(CliHostError::CommittedBoundary { verb: "message" });
+        }
         self.draft.message = Some(text.to_owned());
         Ok(CliHostOutput::DraftStaged { field: "message" })
       }
       CliWriteRequest::Plan { text } => {
+        if self.committed_intent.is_some() {
+          return Err(CliHostError::CommittedBoundary { verb: "plan" });
+        }
         self.draft.plan = Some(text.to_owned());
         Ok(CliHostOutput::DraftStaged { field: "plan" })
       }
       CliWriteRequest::Contingency { text } => {
+        if self.committed_intent.is_some() {
+          return Err(CliHostError::CommittedBoundary {
+            verb: "contingency",
+          });
+        }
         self.draft.contingency = Some(text.to_owned());
         Ok(CliHostOutput::DraftStaged {
           field: "contingency",
         })
       }
       CliWriteRequest::Commit => {
+        if self.committed_intent.is_some() {
+          return Err(CliHostError::CommittedBoundary { verb: "commit" });
+        }
         let text = self
           .draft
           .plan
@@ -254,7 +271,7 @@ impl CliScenarioHost {
       }),
       CliProcessRequest::Debrief => build_scenario_debrief(&self.history)
         .map(|record| CliHostOutput::Debrief(record.report()))
-        .map_err(CliHostError::Debrief),
+        .map_err(|_| CliHostError::DebriefUnavailable),
       CliProcessRequest::Replay { run_id } => {
         let (run_id, records) = if let Some(run_id) = run_id {
           let requested = run_id.as_str();
@@ -268,13 +285,13 @@ impl CliScenarioHost {
           saved
             .history
             .verify_replay()
-            .map_err(CliHostError::Scenario)?;
+            .map_err(|_| CliHostError::ReplayRejected)?;
           (Some(requested.to_owned()), saved.history.records().len())
         } else {
           self
             .history
             .verify_replay()
-            .map_err(CliHostError::Scenario)?;
+            .map_err(|_| CliHostError::ReplayRejected)?;
           (None, self.history.records().len())
         };
         Ok(CliHostOutput::ReplayVerified {
@@ -324,6 +341,9 @@ impl CliScenarioHost {
         })
       }
       CliSessionRequest::Undo => {
+        if self.committed_intent.is_some() {
+          return Err(CliHostError::CommittedBoundary { verb: "undo" });
+        }
         if self.draft.is_empty() {
           return Err(CliHostError::NothingToUndo);
         }
@@ -350,7 +370,7 @@ impl CliScenarioHost {
       .execution_inputs
       .get(index)
       .copied()
-      .ok_or(CliHostError::Scenario(ScenarioError::ScenarioComplete))?;
+      .ok_or(CliHostError::ScenarioComplete)?;
     let state = self.history.current_state();
     let receipt = observe_player(&state, self.next_observation_id());
     let request =
@@ -358,12 +378,17 @@ impl CliScenarioHost {
     let result = self
       .history
       .append(&receipt, &request, inputs)
-      .map_err(CliHostError::Scenario)?;
+      .map_err(|_| CliHostError::AdvanceRejected)?;
     self.committed_intent = None;
+    self.draft = HostDraft {
+      message: None,
+      plan: None,
+      contingency: None,
+    };
     let window = match index {
       0 => ScenarioWindow::First,
       1 => ScenarioWindow::Second,
-      _ => return Err(CliHostError::Scenario(ScenarioError::ScenarioComplete)),
+      _ => return Err(CliHostError::ScenarioComplete),
     };
     Ok(CliHostOutput::Advanced {
       window,
@@ -427,7 +452,11 @@ mod tests {
       "commit",
       "advance",
       "save first-window",
+      "plan stabilize",
+      "commit",
+      "advance",
       "replay first-window",
+      "load first-window",
       "plan stabilize",
       "commit",
       "advance",
@@ -453,6 +482,15 @@ mod tests {
           run_id: Some(run_id),
           records: 2,
         } if run_id == "complete-run"
+      )
+    }));
+    assert!(outputs.iter().any(|output| {
+      matches!(
+        output,
+        CliHostOutput::Loaded {
+          run_id,
+          records: 1,
+        } if run_id == "first-window"
       )
     }));
     assert!(outputs.iter().any(|output| {
@@ -487,6 +525,26 @@ mod tests {
       host.apply_line("advance"),
       Err(CliHostError::MissingCommittedIntent)
     );
+    host.apply_line("plan contest").expect("valid plan staging");
+    host.apply_line("commit").expect("valid commit");
+    for (line, verb) in [
+      ("plan stabilize", "plan"),
+      ("message late", "message"),
+      ("contingency late", "contingency"),
+      ("commit", "commit"),
+      ("undo", "undo"),
+    ] {
+      assert_eq!(
+        host.apply_line(line),
+        Err(CliHostError::CommittedBoundary { verb })
+      );
+    }
+    host.apply_line("advance").expect("first window advances");
+    host
+      .apply_line("plan stabilize")
+      .expect("next-window plan staging");
+    host.apply_line("commit").expect("next-window commit");
+    host.apply_line("advance").expect("second window advances");
     assert_eq!(
       host.apply_line("load missing"),
       Err(CliHostError::RunNotFound {
@@ -497,6 +555,24 @@ mod tests {
       host.apply_line("branch point-0"),
       Err(CliHostError::UnsupportedCommand { verb: "branch" })
     );
+  }
+
+  #[test]
+  fn malformed_resolved_inputs_return_redacted_host_errors() {
+    let mut host = CliScenarioHost::new([
+      fixture_inputs(8, LaneWaveResult::Advanced, 3),
+      fixture_inputs(0, LaneWaveResult::Held, 4),
+    ]);
+    host.apply_line("plan contest").expect("plan staging");
+    host.apply_line("commit").expect("commit");
+    let error = host
+      .apply_line("advance")
+      .expect_err("malformed fixture input must fail closed");
+    assert_eq!(error, CliHostError::AdvanceRejected);
+    let debug = format!("{error:?}");
+    assert!(!debug.contains("OpponentDamageExceedsHealth"));
+    assert!(!debug.contains("health"));
+    assert!(!debug.contains("state_hash"));
   }
 
   #[test]
