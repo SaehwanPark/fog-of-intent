@@ -95,6 +95,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.85 — 2026-08-08
+
+### Added
+
+- Added transparent `ScriptedAgentRole` metadata with versioned `anchor-v1`,
+  `duelist-v1`, and `pacer-v1` IDs bound to the three fixed profiles.
+- Added literal role-binding assertions while keeping policy roles distinct from
+  the lane scenario roster and human-behavior claims.
+
+### Known limits
+
+- Policy-role labels are metadata over one fixture catalog; scenario role
+  behavior, broader populations, outcomes, strategic quality, and human realism
+  remain deferred.
+
 ## 0.1.84 — 2026-08-08
 
 ### Added

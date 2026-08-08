@@ -29,6 +29,24 @@ enum ScriptedAgentEvaluationRule {
   Yield,
 }
 
+/// Transparent policy posture labels, distinct from the scenario actor roster.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentRole {
+  Anchor,
+  Duelist,
+  Pacer,
+}
+
+impl ScriptedAgentRole {
+  pub const fn id(self) -> &'static str {
+    match self {
+      Self::Anchor => "anchor-v1",
+      Self::Duelist => "duelist-v1",
+      Self::Pacer => "pacer-v1",
+    }
+  }
+}
+
 /// Versioned profile and policy-rule metadata.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct ScriptedAgentProfile {
@@ -37,6 +55,7 @@ pub struct ScriptedAgentProfile {
   evaluation_rule: &'static str,
   selection_rule: &'static str,
   evaluation: ScriptedAgentEvaluationRule,
+  role: ScriptedAgentRole,
 }
 
 impl ScriptedAgentProfile {
@@ -48,6 +67,7 @@ impl ScriptedAgentProfile {
       evaluation_rule: "threat-first-fixed-score-v1",
       selection_rule: "max-score-stable-order-v1",
       evaluation: ScriptedAgentEvaluationRule::Threat,
+      role: ScriptedAgentRole::Anchor,
     }
   }
 
@@ -59,6 +79,7 @@ impl ScriptedAgentProfile {
       evaluation_rule: "contest-first-fixed-score-v1",
       selection_rule: "max-score-stable-order-v1",
       evaluation: ScriptedAgentEvaluationRule::Contest,
+      role: ScriptedAgentRole::Duelist,
     }
   }
 
@@ -70,6 +91,7 @@ impl ScriptedAgentProfile {
       evaluation_rule: "yield-first-fixed-score-v1",
       selection_rule: "max-score-stable-order-v1",
       evaluation: ScriptedAgentEvaluationRule::Yield,
+      role: ScriptedAgentRole::Pacer,
     }
   }
 
@@ -87,6 +109,10 @@ impl ScriptedAgentProfile {
 
   pub const fn selection_rule(self) -> &'static str {
     self.selection_rule
+  }
+
+  pub const fn role(self) -> ScriptedAgentRole {
+    self.role
   }
 }
 
@@ -512,6 +538,12 @@ mod tests {
     assert_eq!(cautious.selected_intent(), LaneIntent::Stabilize);
     assert_eq!(risk_taking.selected_intent(), LaneIntent::Contest);
     assert_eq!(yielding.selected_intent(), LaneIntent::Yield);
+    assert_eq!(cautious.profile().role(), ScriptedAgentRole::Anchor);
+    assert_eq!(risk_taking.profile().role(), ScriptedAgentRole::Duelist);
+    assert_eq!(yielding.profile().role(), ScriptedAgentRole::Pacer);
+    assert_eq!(cautious.profile().role().id(), "anchor-v1");
+    assert_eq!(risk_taking.profile().role().id(), "duelist-v1");
+    assert_eq!(yielding.profile().role().id(), "pacer-v1");
     assert_eq!(
       cautious.profile().evaluation_rule(),
       "threat-first-fixed-score-v1"

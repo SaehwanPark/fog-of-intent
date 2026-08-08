@@ -327,3 +327,14 @@ canonical policy instead of duplicating it.
   intent/score, candidate count, and observer/observation identity.
 - Prevention: Keep metric schemas derived from actor-visible policy decisions and
   state their fixture-sized limits before adding outcome or population fields.
+
+## Keep policy roles distinct from scenario roles
+
+- Context: M4 needed transparent posture labels for fixed profiles without
+  changing the lane roster or implying richer role behavior.
+- Symptom: Reusing scenario actor-role names for policy heuristics can blur
+  ownership and make metadata look like hidden simulation state.
+- Resolution: Use versioned `Anchor`, `Duelist`, and `Pacer` policy IDs and
+  assert their profile bindings while leaving `LaneActorRole` untouched.
+- Prevention: Treat policy roles as inspectable labels only until role behavior,
+  populations, and outcomes have separate evidence.
