@@ -95,6 +95,22 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.102 — 2026-08-08
+
+### Added
+
+- Added a host-owned `actor_observation` projection that returns the active
+  actor-visible receipt through `m5-actor-observation-v1` without exposing
+  internal lane types or mutating history; closed and complete hosts return
+  actor-safe lifecycle errors.
+- Added parity and non-mutation coverage across the initial and next fixture
+  observations.
+
+### Known limits
+
+- Observation projection remains a synchronous library boundary; transport,
+  simultaneous actors, persistence, and broader MCP compatibility remain open.
+
 ## 0.1.101 — 2026-08-08
 
 ### Added
