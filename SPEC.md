@@ -1254,7 +1254,9 @@ transport-integrated sessions and broader protocol compatibility remain open.
   preserves the closed five-ID order. `ScriptedAgentOperationalLogStore`
   reuses the existing injected atomic store under a distinct
   `.foi-operational-log` suffix; it does not replace host artifacts or batch
-  checkpoints, and crash recovery/rotation/external export remain open.
+  checkpoints. Its bounded caller-declared segment methods use distinct
+  `.foi-operational-log.segment-*` suffixes; automatic rotation, crash
+  recovery, and external export remain open.
 
 ## Future
 

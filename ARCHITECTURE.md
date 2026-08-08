@@ -194,8 +194,9 @@ The injected checkpoint store similarly appends save/resume labels only after
 successful bounded storage operations and one-slot preflight; it does not make
 filesystem activity a runtime diagnostic or durably persist the operational log.
 `ScriptedAgentOperationalLogStore` uses a separate bounded codec and file
-suffix, so operational labels cannot collide with host artifacts or batch
-cursor files; crash recovery and rotation remain outer concerns.
+suffixes, including caller-declared bounded segments, so operational labels
+cannot collide with host artifacts or batch cursor files; automatic rotation
+and crash recovery remain outer concerns.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

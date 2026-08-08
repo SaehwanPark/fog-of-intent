@@ -3720,6 +3720,85 @@ mod tests {
         .expect("operational log loads"),
       operational_log
     );
+    assert_eq!(
+      crate::agent_operational_store::MAX_SCRIPTED_AGENT_OPERATIONAL_LOG_SEGMENTS,
+      4
+    );
+    let mut first_segment = ScriptedAgentOperationalLog::new();
+    first_segment
+      .append(ScriptedAgentOperationalEvent::BatchStarted)
+      .expect("first segment fits");
+    let mut second_segment = ScriptedAgentOperationalLog::new();
+    second_segment
+      .append(ScriptedAgentOperationalEvent::BatchFinished)
+      .expect("second segment fits");
+    operational_store
+      .save_segment("resume", 0, &first_segment)
+      .expect("first segment saves");
+    operational_store
+      .save_segment("resume", 1, &second_segment)
+      .expect("second segment saves");
+    operational_store
+      .save_segment("resume", 3, &second_segment)
+      .expect("highest segment saves");
+    assert_eq!(
+      operational_store
+        .load_segment("resume", 0)
+        .expect("first segment loads"),
+      first_segment
+    );
+    assert_eq!(
+      operational_store
+        .load_segment("resume", 1)
+        .expect("second segment loads"),
+      second_segment
+    );
+    assert_eq!(
+      operational_store
+        .load_segment("resume", 3)
+        .expect("highest segment loads"),
+      second_segment
+    );
+    assert!(root.join("resume.foi-operational-log.segment-0").is_file());
+    assert!(root.join("resume.foi-operational-log.segment-1").is_file());
+    assert!(root.join("resume.foi-operational-log.segment-3").is_file());
+    assert_eq!(
+      operational_store
+        .load("resume")
+        .expect("base log survives segments"),
+      operational_log
+    );
+    let invalid_segment_root = root.join("invalid-segment");
+    let invalid_segment_store =
+      crate::agent_operational_store::ScriptedAgentOperationalLogStore::new(&invalid_segment_root);
+    assert_eq!(
+      invalid_segment_store.save_segment("resume", 4, &first_segment),
+      Err(
+        crate::agent_operational_store::ScriptedAgentOperationalLogStoreError::InvalidSegment {
+          max: 4,
+        }
+      )
+    );
+    assert!(!invalid_segment_root.exists());
+    assert_eq!(
+      invalid_segment_store.load_segment("resume", 4),
+      Err(
+        crate::agent_operational_store::ScriptedAgentOperationalLogStoreError::InvalidSegment {
+          max: 4,
+        }
+      )
+    );
+    assert!(!invalid_segment_root.exists());
+    assert_eq!(
+      host_store
+        .load("resume")
+        .expect("host artifact survives segments"),
+      host_artifact
+    );
+    assert_eq!(
+      store.load("resume").expect("checkpoint survives segments"),
+      checkpoint
+    );
     std::fs::write(root.join("broken.foi-batch-run"), "bad")
       .expect("malformed checkpoint fixture writes");
     let log_before_decode_error = operational_log.entries().to_vec();

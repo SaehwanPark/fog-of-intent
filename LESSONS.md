@@ -1112,3 +1112,15 @@ canonical policy instead of duplicating it.
   retaining the shared run-ID validation and atomic replacement behavior.
 - Prevention: Keep crash recovery, rotation, export, and runtime diagnostics
   outside this narrow adapter and verify same-root/same-ID coexistence.
+
+## Keep caller-declared log segments storage-only
+
+- Context: A bounded event log may need several independently replaceable
+  files without implying an automatic runtime rotation policy.
+- Symptom: Treating segment numbers as inferred lifecycle state makes a file
+  name look like crash recovery or scheduling authority.
+- Resolution: Accept only a small closed numeric segment range and persist
+  each payload-free log under its own suffix; leave ordering and rotation to
+  the caller.
+- Prevention: Test segment coexistence and invalid-index rejection while
+  keeping automatic rotation, crash recovery, and export explicitly open.

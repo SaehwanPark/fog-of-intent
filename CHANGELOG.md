@@ -98,6 +98,19 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.147 — 2026-08-08
+
+### Added
+
+- Added bounded caller-declared operational-log segments under distinct
+  `.foi-operational-log.segment-*` paths. Segment indices are closed and
+  storage-only; the existing payload-free codec and base log remain unchanged.
+
+### Known limits
+
+- Automatic rotation, crash recovery, external export, runtime diagnostics,
+  and durable scenario-wide event-log pipelines remain open.
+
 ## 0.1.146 — 2026-08-08
 
 ### Added
