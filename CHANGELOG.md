@@ -98,6 +98,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.122 — 2026-08-08
+
+### Added
+
+- Added `CliScenarioHost::actor_replay_records_from_run`, which loads a
+  validated injected-store artifact, verifies its replay, and returns the
+  existing categorical actor replay records without mutating the current host.
+- Added focused fresh-host persistence/replay evidence for successful records,
+  tampered artifacts, and closed-session redaction.
+
+### Known limits
+
+- This is injected in-process file-store evidence only; locking, portability,
+  crash recovery, scenario-wide replay, and durable causal records remain open.
+
 ## 0.1.121 — 2026-08-08
 
 ### Added

@@ -7,7 +7,7 @@
 
 use crate::cli::{
   CliCommand, CliParseError, CliProcessError, CliProcessRequest, CliReadError, CliReadRequest,
-  CliSessionError, CliSessionRequest, CliWriteError, CliWriteRequest, parse_command,
+  CliRunId, CliSessionError, CliSessionRequest, CliWriteError, CliWriteRequest, parse_command,
   process_request, read_request, session_request, write_request,
 };
 use crate::host_artifact::CliHostArtifact;
@@ -258,32 +258,51 @@ impl CliScenarioHost {
         ActorProtocolRepairHint::StartNewSession,
       )
     })?;
-    Ok(
-      self
-        .history
-        .records()
-        .iter()
-        .map(|record| {
-          let window = match record.window() {
-            ScenarioWindow::First => ActorActionResultWindow::First,
-            ScenarioWindow::Second => ActorActionResultWindow::Second,
-          };
-          let intent = match record.transition().command().intent() {
-            LaneIntent::Stabilize => crate::protocol::ActorProtocolIntent::Stabilize,
-            LaneIntent::Contest => crate::protocol::ActorProtocolIntent::Contest,
-            LaneIntent::Yield => crate::protocol::ActorProtocolIntent::Yield,
-            LaneIntent::Recall => crate::protocol::ActorProtocolIntent::Recall,
-            LaneIntent::Withdraw => crate::protocol::ActorProtocolIntent::Withdraw,
-          };
-          let outcome = match record.transition().result().outcome() {
-            LaneOutcome::HeldSpace => ActorActionResultOutcome::HeldSpace,
-            LaneOutcome::YieldedSpace => ActorActionResultOutcome::YieldedSpace,
-            LaneOutcome::ForcedOut => ActorActionResultOutcome::ForcedOut,
-          };
-          ActorReplayRecordDto::new(window, intent, outcome)
-        })
-        .collect(),
-    )
+    Ok(actor_replay_record_dtos(&self.history))
+  }
+
+  /// Load and replay one validated saved run before projecting categorical records.
+  pub fn actor_replay_records_from_run(
+    &self,
+    run_id: CliRunId<'_>,
+  ) -> Result<Vec<ActorReplayRecordDto>, ActorProtocolError> {
+    if self.closed {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ));
+    }
+    let artifact = CliHostArtifact::decode(&self.load_artifact(run_id.as_str()).map_err(|_| {
+      ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      )
+    })?)
+    .map_err(|_| {
+      ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      )
+    })?;
+    if artifact.run_id() != run_id.as_str() {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      ));
+    }
+    let history = self.restore_artifact(&artifact).map_err(|_| {
+      ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      )
+    })?;
+    history.verify_replay().map_err(|_| {
+      ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      )
+    })?;
+    Ok(actor_replay_record_dtos(&history))
   }
 
   /// Return verified categorical debrief records for a completed host.
@@ -1083,6 +1102,32 @@ fn parse_plan_intent(text: &str) -> Option<LaneIntent> {
     "withdraw" => Some(LaneIntent::Withdraw),
     _ => None,
   }
+}
+
+fn actor_replay_record_dtos(history: &LaneScenarioHistory) -> Vec<ActorReplayRecordDto> {
+  history
+    .records()
+    .iter()
+    .map(|record| {
+      let window = match record.window() {
+        ScenarioWindow::First => ActorActionResultWindow::First,
+        ScenarioWindow::Second => ActorActionResultWindow::Second,
+      };
+      let intent = match record.transition().command().intent() {
+        LaneIntent::Stabilize => crate::protocol::ActorProtocolIntent::Stabilize,
+        LaneIntent::Contest => crate::protocol::ActorProtocolIntent::Contest,
+        LaneIntent::Yield => crate::protocol::ActorProtocolIntent::Yield,
+        LaneIntent::Recall => crate::protocol::ActorProtocolIntent::Recall,
+        LaneIntent::Withdraw => crate::protocol::ActorProtocolIntent::Withdraw,
+      };
+      let outcome = match record.transition().result().outcome() {
+        LaneOutcome::HeldSpace => ActorActionResultOutcome::HeldSpace,
+        LaneOutcome::YieldedSpace => ActorActionResultOutcome::YieldedSpace,
+        LaneOutcome::ForcedOut => ActorActionResultOutcome::ForcedOut,
+      };
+      ActorReplayRecordDto::new(window, intent, outcome)
+    })
+    .collect()
 }
 
 fn fixture_inputs(
@@ -2677,6 +2722,50 @@ mod tests {
         run_id: Some("first-window".to_owned()),
         records: 1
       })
+    );
+    let _ = std::fs::remove_dir_all(root);
+  }
+
+  #[test]
+  fn actor_replay_records_load_from_store_without_mutating_current_host() {
+    let root = temporary_store_root();
+    let store = CliRunStore::new(&root);
+    let mut source = CliScenarioHost::fixture_with_store(store.clone());
+    for command in ["plan contest", "commit", "advance", "save first-window"] {
+      source.apply_line(command).expect("source store command");
+    }
+
+    let mut fresh = CliScenarioHost::fixture_with_store(store);
+    let before = fresh.observation();
+    let run_id = CliRunId::parse("first-window").expect("run ID is valid");
+    assert_eq!(
+      fresh.actor_replay_records_from_run(run_id),
+      Ok(vec![ActorReplayRecordDto::new(
+        ActorActionResultWindow::First,
+        crate::protocol::ActorProtocolIntent::Contest,
+        ActorActionResultOutcome::HeldSpace,
+      )])
+    );
+    assert_eq!(fresh.record_count(), 0);
+    assert_eq!(fresh.observation(), before);
+
+    std::fs::write(root.join("first-window.foi-artifact"), "malformed").expect("tamper artifact");
+    assert_eq!(
+      fresh.actor_replay_records_from_run(run_id),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
+    );
+    assert_eq!(fresh.record_count(), 0);
+    assert_eq!(fresh.observation(), before);
+    fresh.apply_line("quit").expect("fresh host closes");
+    assert_eq!(
+      fresh.actor_replay_records_from_run(run_id),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
     );
     let _ = std::fs::remove_dir_all(root);
   }
