@@ -26,9 +26,9 @@ private model data.
 
 ## Candidate Generation, Evaluation, and Selection
 
-Profile metadata records the existing actor-visible candidate rule, exact
-evaluation rule, and stable seeded tie-selection rule. It does not generate or
-select candidates.
+The profile supplies the existing actor-visible candidate and exact evaluation
+rule identities. The manifest records the seeded tie-selection rule required by
+its mandatory seed bundle. Neither contract generates or selects candidates.
 
 ## Communication, Trust, and Team Coordination
 
