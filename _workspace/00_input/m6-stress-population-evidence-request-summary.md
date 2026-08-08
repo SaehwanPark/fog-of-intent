@@ -28,8 +28,8 @@ strategic behavior, or human behavior.
   `illegal-command`, `exploit-seeking`, `communication-abuse`, and
   `degenerate-policy` labels.
 - One deterministic actor-visible fixture input per case.
-- Existing host validation, actor-message codec, and scripted-policy paths
-  reused without new authority.
+- Existing host actor-action validation, actor-message codec, and
+  scripted-policy paths reused without new authority.
 - A pure bounded report of case label plus categorical result ID.
 - Focused tests for stable catalog order, exact IDs, reproducibility, and
   expected boundary outcomes.

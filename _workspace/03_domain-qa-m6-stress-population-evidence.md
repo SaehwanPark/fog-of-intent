@@ -9,7 +9,7 @@ Pending independent three-pass review of implementation head.
 - The closed stress matrix must retain four literal case IDs in stable order:
   illegal-command, exploit-seeking, communication-abuse, and
   degenerate-policy.
-- Existing validation, freshness, message-codec, and deterministic-policy
+- Existing host validation/freshness, message-codec, and deterministic-policy
   boundaries must produce the documented categorical result IDs.
 - The report must remain caller-declared metadata with one bounded degenerate
   count and no new runtime, transition, history, persistence, provider, or

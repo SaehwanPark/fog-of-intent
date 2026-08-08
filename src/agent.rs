@@ -3799,13 +3799,16 @@ impl ScriptedAgent {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::host::CliScenarioHost;
   use crate::kernel::{DrawId, StreamId};
   use crate::lane::{
-    ALLIED_AUTONOMOUS_ACTOR, JungleThreatTruth, LaneIntent, LaneIntentRequest, LaneSnapshot,
-    LaneStatus, M2_LANE_RULESET, ObservationId, WavePressure, WaveState, observe_player,
-    validate_lane_request,
+    ALLIED_AUTONOMOUS_ACTOR, JungleThreatTruth, LaneIntent, LaneSnapshot, LaneStatus,
+    M2_LANE_RULESET, ObservationId, WavePressure, WaveState, observe_player, validate_lane_request,
   };
-  use crate::protocol::{ActorMessageDto, MAX_ACTOR_DRAFT_VALUE_BYTES};
+  use crate::protocol::{
+    ActorActionDto, ActorMessageDto, ActorProtocolCodecError, ActorProtocolIntent,
+    MAX_ACTOR_DRAFT_VALUE_BYTES,
+  };
 
   #[test]
   fn cautious_agent_uses_initial_actor_visible_candidates_and_legal_request() {
@@ -5558,28 +5561,33 @@ mod tests {
     let state = LaneSnapshot::initial();
     let first_receipt = observe_player(&state, ObservationId::new(410));
     let first_observation = first_receipt.observation();
-    let illegal_request = LaneIntentRequest::new(
-      first_observation.observer(),
-      first_observation.observation_id(),
-      LaneIntent::Withdraw,
-    );
-    assert!(validate_lane_request(&state, &first_receipt, &illegal_request).is_err());
+    let host = CliScenarioHost::fixture();
+    let host_observation = host.observation();
+    let illegal_error = host
+      .validate_actor_action(ActorActionDto::new(
+        host_observation.observer().value(),
+        host_observation.observation_id().value(),
+        ActorProtocolIntent::Withdraw,
+      ))
+      .expect_err("illegal actor command is rejected by host validation");
+    assert_eq!(illegal_error.code().id(), "host_validation_rejected");
+    let stale_error = host
+      .validate_actor_action(ActorActionDto::new(
+        host_observation.observer().value(),
+        host_observation.observation_id().value() + 1,
+        ActorProtocolIntent::Stabilize,
+      ))
+      .expect_err("stale actor command is rejected by host freshness");
+    assert_eq!(stale_error.code().id(), "stale_observation");
 
-    let stale_request = LaneIntentRequest::new(
-      first_observation.observer(),
-      ObservationId::new(409),
-      LaneIntent::Stabilize,
-    );
-    assert!(validate_lane_request(&state, &first_receipt, &stale_request).is_err());
-
-    assert!(
+    assert_eq!(
       ActorMessageDto::new(
         first_observation.observer().value(),
         ALLIED_AUTONOMOUS_ACTOR.value(),
         first_observation.observation_id().value(),
         &"x".repeat(MAX_ACTOR_DRAFT_VALUE_BYTES + 1),
-      )
-      .is_err()
+      ),
+      Err(ActorProtocolCodecError::InvalidValue)
     );
 
     let second_receipt = observe_player(&state, ObservationId::new(411));
@@ -5646,6 +5654,11 @@ mod tests {
     );
     assert_eq!(
       ScriptedAgentStressPopulationReport::from_results(results, 0),
+      Err(ScriptedAgentStressPopulationError::InvalidDegenerateCount)
+    );
+    assert!(ScriptedAgentStressPopulationReport::from_results(results, 4).is_ok());
+    assert_eq!(
+      ScriptedAgentStressPopulationReport::from_results(results, 5),
       Err(ScriptedAgentStressPopulationError::InvalidDegenerateCount)
     );
   }

@@ -9,12 +9,12 @@ contracts. This is evidence plumbing, not a behavioral population simulator.
 ## Behavioral Question and Evidence Boundary
 
 The question is whether each named stress case reaches the expected existing
-boundary on a matched actor-visible fixture: illegal intent is rejected by
-host legality, stale/foreign provenance is rejected by host freshness or actor
-binding, oversized/control-containing communication is rejected by the bounded
-message codec, and a degenerate policy retains one repeated legal intent. The
-result proves only these deterministic categorical outcomes and selected count;
-it does not measure exploit rates, communication harm, strategic quality,
+boundary on a matched actor-visible fixture: illegal intent is rejected by the
+host actor-action validator, stale provenance is rejected by host freshness,
+oversized/control-containing communication is rejected by the bounded message
+codec, and a degenerate policy retains one repeated legal intent. The result
+proves only these deterministic categorical outcomes and selected count; it
+does not measure exploit rates, communication harm, strategic quality,
 population diversity, or human behavior.
 
 ## Agent Families and Baselines
@@ -65,10 +65,9 @@ validation/codec/policy paths; assert no hidden-state or host-authority drift.
 ## Expected Effects and Failure Signals
 
 Expected results are `host_validation_rejected`, `stale_observation`,
-`actor_mismatch`, `message_invalid_value`, and `repeated_stabilize` as
-applicable to the four cases. Any need for a new error vocabulary, transition,
-transport, or hidden input is a stop condition rather than an implementation
-choice.
+`message_invalid_value`, and `repeated_stabilize`, in the fixed four-case order.
+Any need for a new error vocabulary, transition, transport, or hidden input is a
+stop condition rather than an implementation choice.
 
 ## Verification Contract
 
