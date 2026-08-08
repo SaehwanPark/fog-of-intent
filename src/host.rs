@@ -1866,9 +1866,22 @@ mod tests {
 
   #[test]
   fn illegal_command_population_is_bounded_and_read_only() {
-    let host = CliScenarioHost::fixture();
+    let mut host = CliScenarioHost::fixture();
     let observation = host.observation();
     assert_eq!(MAX_ACTOR_ILLEGAL_COMMAND_POPULATION, 4);
+    let draft = ActorDraftDto::new(
+      observation.observer().value(),
+      observation.observation_id().value(),
+      ActorDraftField::Message,
+      "keep this draft",
+    )
+    .expect("draft is bounded");
+    host
+      .stage_actor_draft(draft)
+      .expect("draft staging succeeds");
+    let draft_before = host.protocol_draft.clone();
+    let observation_before = host.observation();
+    let history_before = host.record_count();
     let singleton = ActorIllegalCommandPopulationReport::from_host(&host, 1)
       .expect("lower inclusive invalid-command population succeeds");
     assert_eq!(singleton.attempt_count(), 1);
@@ -1890,16 +1903,39 @@ mod tests {
       ActorIllegalCommandPopulationReport::from_host(&host, 4)
         .expect("repeated construction is deterministic")
     );
-    assert_eq!(host.record_count(), 0);
-    assert_eq!(host.observation(), observation);
+    assert_eq!(host.protocol_draft, draft_before);
+    assert_eq!(host.record_count(), history_before);
+    assert_eq!(host.observation(), observation_before);
 
+    let mut committed_host = CliScenarioHost::fixture();
+    let committed_observation = committed_host.observation();
+    committed_host
+      .commit_actor_draft(ActorCommitDto::new(
+        committed_observation.observer().value(),
+        committed_observation.observation_id().value(),
+        crate::protocol::ActorProtocolIntent::Contest,
+      ))
+      .expect("commit remains local before advance");
+    let committed_intent_before = committed_host.committed_intent;
+    let committed_observation_before = committed_host.observation();
+    let committed_history_before = committed_host.record_count();
+    ActorIllegalCommandPopulationReport::from_host(&committed_host, 4)
+      .expect("committed host still validates read-only");
+    assert_eq!(committed_host.committed_intent, committed_intent_before);
+    assert_eq!(committed_host.record_count(), committed_history_before);
+    assert_eq!(committed_host.observation(), committed_observation_before);
+
+    let mut closed_host = CliScenarioHost::fixture();
+    closed_host
+      .apply_line("quit")
+      .expect("fixture closes through the host lifecycle");
     assert_eq!(
-      ActorIllegalCommandPopulationReport::from_host(&host, 0),
+      ActorIllegalCommandPopulationReport::from_host(&closed_host, 0),
       Err(ActorIllegalCommandPopulationError::EmptyPopulation)
     );
     assert_eq!(
       ActorIllegalCommandPopulationReport::from_host(
-        &host,
+        &closed_host,
         MAX_ACTOR_ILLEGAL_COMMAND_POPULATION + 1,
       ),
       Err(ActorIllegalCommandPopulationError::PopulationTooLarge {
