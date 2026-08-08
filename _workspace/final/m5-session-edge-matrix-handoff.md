@@ -2,7 +2,8 @@
 
 ## Outcome
 
-Implementation is complete; pending the required independent three-pass review.
+Implementation and independent three-pass review are complete at head
+`38630eb`; the reviewer found no actionable findings.
 
 ## Intended Contract
 
