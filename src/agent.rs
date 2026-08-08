@@ -102,6 +102,9 @@ pub const SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_SCHEMA: &str =
 /// Maximum encoded scenario-frequency report size before parsing/allocation.
 pub const MAX_SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_BYTES: usize = 4096;
 
+/// Integer basis-point scale for the bounded scenario distribution projection.
+pub const SCRIPTED_AGENT_SCENARIO_DISTRIBUTION_SCALE: u16 = 10_000;
+
 /// Versioned identity for bounded fixed-fixture frequency baseline comparisons.
 pub const SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_COMPARISON_SCHEMA: &str =
   "m6-scripted-agent-fixture-frequency-compare-v1";
@@ -1420,6 +1423,34 @@ impl ScriptedAgentFixtureScenarioFrequencyReport {
       self.entries[0].count,
       self.entries[1].scenario_id,
       self.entries[1].count,
+    )
+  }
+
+  /// Return ordered integer basis-point shares at a 10,000-point scale.
+  ///
+  /// The first row uses floor division and the second row receives the
+  /// remainder, so the two shares always sum to exactly 10,000.
+  pub fn distribution_basis_points(&self) -> [u16; 2] {
+    let selection_count = u16::from(self.selection_count);
+    let first = u16::from(self.entries[0].count) * SCRIPTED_AGENT_SCENARIO_DISTRIBUTION_SCALE
+      / selection_count;
+    [first, SCRIPTED_AGENT_SCENARIO_DISTRIBUTION_SCALE - first]
+  }
+
+  /// Render the bounded distribution projection without performing I/O.
+  pub fn to_distribution_markdown(&self) -> String {
+    let shares = self.distribution_basis_points();
+    format!(
+      "# Scenario Distribution\n\n- schema: {}\n- selection_count: {}\n- share_scale_basis_points: {}\n\n| scenario_id | count | share_basis_points |\n| --- | ---: | ---: |\n| {} | {} | {} |\n| {} | {} | {} |\n",
+      self.schema,
+      self.selection_count,
+      SCRIPTED_AGENT_SCENARIO_DISTRIBUTION_SCALE,
+      self.entries[0].scenario_id,
+      self.entries[0].count,
+      shares[0],
+      self.entries[1].scenario_id,
+      self.entries[1].count,
+      shares[1],
     )
   }
 
@@ -5624,6 +5655,12 @@ mod tests {
       report.entries()[0].count() + report.entries()[1].count(),
       report.selection_count()
     );
+    assert_eq!(SCRIPTED_AGENT_SCENARIO_DISTRIBUTION_SCALE, 10_000);
+    assert_eq!(report.distribution_basis_points(), [5_000, 5_000]);
+    assert_eq!(
+      report.distribution_basis_points().iter().sum::<u16>(),
+      10_000
+    );
     assert_eq!(
       report,
       ScriptedAgentFixtureScenarioFrequencyReport::from_selection(&selection)
@@ -5636,6 +5673,10 @@ mod tests {
     assert_eq!(
       report.to_markdown(),
       "# Scenario Frequency\n\n- schema: m6-scripted-agent-fixture-frequency-v1\n- selection_count: 4\n\n| scenario_id | count |\n| --- | ---: |\n| safe-fixture-v1 | 2 |\n| river-side-threat-v1 | 2 |\n"
+    );
+    assert_eq!(
+      report.to_distribution_markdown(),
+      "# Scenario Distribution\n\n- schema: m6-scripted-agent-fixture-frequency-v1\n- selection_count: 4\n- share_scale_basis_points: 10000\n\n| scenario_id | count | share_basis_points |\n| --- | ---: | ---: |\n| safe-fixture-v1 | 2 | 5000 |\n| river-side-threat-v1 | 2 | 5000 |\n"
     );
     assert_eq!(
       ScriptedAgentFixtureScenarioFrequencyReport::decode(&encoded, &report),
@@ -5663,6 +5704,7 @@ mod tests {
       singleton_report.entries()[0].count() + singleton_report.entries()[1].count(),
       singleton_report.selection_count()
     );
+    assert_eq!(singleton_report.distribution_basis_points(), [10_000, 0]);
     let singleton_encoded = singleton_report.encode();
     assert_eq!(
       singleton_report.to_markdown(),
@@ -5671,6 +5713,68 @@ mod tests {
     assert_eq!(
       ScriptedAgentFixtureScenarioFrequencyReport::decode(&singleton_encoded, &singleton_report,),
       Ok(singleton_report.clone())
+    );
+
+    let skewed_selection = ScriptedAgentFixtureScenarioSelection::from_ids(
+      &[
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+      ],
+      &[
+        [ObservationId::new(142), ObservationId::new(143)],
+        [ObservationId::new(144), ObservationId::new(145)],
+        [ObservationId::new(146), ObservationId::new(147)],
+        [ObservationId::new(148), ObservationId::new(149)],
+      ],
+    )
+    .expect("skewed selection builds");
+    let skewed_report =
+      ScriptedAgentFixtureScenarioFrequencyReport::from_selection(&skewed_selection);
+    assert_eq!(skewed_report.selection_count(), 4);
+    assert_eq!(
+      skewed_report
+        .entries()
+        .iter()
+        .map(|entry| entry.count())
+        .collect::<Vec<_>>(),
+      vec![1, 3]
+    );
+    assert_eq!(skewed_report.distribution_basis_points(), [2_500, 7_500]);
+    assert_eq!(
+      skewed_report
+        .distribution_basis_points()
+        .iter()
+        .sum::<u16>(),
+      SCRIPTED_AGENT_SCENARIO_DISTRIBUTION_SCALE
+    );
+    assert_eq!(
+      skewed_report.to_distribution_markdown(),
+      "# Scenario Distribution\n\n- schema: m6-scripted-agent-fixture-frequency-v1\n- selection_count: 4\n- share_scale_basis_points: 10000\n\n| scenario_id | count | share_basis_points |\n| --- | ---: | ---: |\n| safe-fixture-v1 | 1 | 2500 |\n| river-side-threat-v1 | 3 | 7500 |\n"
+    );
+
+    let all_safe_selection = ScriptedAgentFixtureScenarioSelection::from_ids(
+      &[
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+      ],
+      &[
+        [ObservationId::new(150), ObservationId::new(151)],
+        [ObservationId::new(152), ObservationId::new(153)],
+        [ObservationId::new(154), ObservationId::new(155)],
+        [ObservationId::new(156), ObservationId::new(157)],
+      ],
+    )
+    .expect("all-safe selection builds");
+    let all_safe_report =
+      ScriptedAgentFixtureScenarioFrequencyReport::from_selection(&all_safe_selection);
+    assert_eq!(all_safe_report.distribution_basis_points(), [10_000, 0]);
+    assert_eq!(
+      all_safe_report.to_distribution_markdown(),
+      "# Scenario Distribution\n\n- schema: m6-scripted-agent-fixture-frequency-v1\n- selection_count: 4\n- share_scale_basis_points: 10000\n\n| scenario_id | count | share_basis_points |\n| --- | ---: | ---: |\n| safe-fixture-v1 | 4 | 10000 |\n| river-side-threat-v1 | 0 | 0 |\n"
     );
     for malformed in [
       (

@@ -98,6 +98,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.157 — 2026-08-08
+
+### Added
+
+- Added a pure 10,000-point caller-declared distribution projection to the
+  fixed-fixture scenario-frequency report, with stable row order and exact
+  Markdown evidence.
+
+### Known limits
+
+- The projection summarizes explicit fixture selections only; random or
+  representative sampling, broader scenario generation, population/outcome/
+  strategic metrics, durable export, persistence, providers, calibration, and
+  human evidence remain open.
+
 ## 0.1.156 — 2026-08-08
 
 ### Added

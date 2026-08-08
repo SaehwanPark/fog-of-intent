@@ -173,7 +173,7 @@ strategic authority.
 safe and RiverSide-threat fixture IDs. It binds caller-supplied observation IDs,
 projects deterministic actor-visible pairs, and composes the existing sample
 contract; repeated IDs are explicit ordered samples. It does not generate a
-population, sample a distribution, resolve a transition, or own history,
+population, sample randomly, resolve a transition, or own history,
 replay, persistence, provider, or outcome authority.
 `ScriptedAgentFixtureScenarioPopulation` composes that catalog into one to four
 deterministic alternating entries, deriving checked sequential observation-ID
@@ -182,6 +182,10 @@ also accepts caller-declared closed IDs, preserving skewed fixed-fixture input
 without sampling authority. It is a fixed-fixture generator only; broader/random
 population sampling, distributional metrics, outcomes, and human-behavior
 evidence remain outside the core.
+`ScriptedAgentFixtureScenarioFrequencyReport` also exposes a pure 10,000-point
+caller-declared distribution projection over its two ordered rows. Integer
+remainder handling is deterministic and the projection owns no sampling,
+population, transition, history, persistence, provider, or outcome authority.
 `matched_tally` reuses the existing verified sample/tally path over those
 entries and does not rerun policy evaluation or add population-metric,
 transition, history, persistence, provider, or outcome authority. Multiple

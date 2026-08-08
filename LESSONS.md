@@ -1202,3 +1202,16 @@ canonical policy instead of duplicating it.
   recognized indices, and map scan failures to the generic storage boundary.
 - Prevention: Ignore malformed/temporary names, test invalid-run and missing
   roots, and keep race-hard scanning semantics explicitly deferred.
+
+## Keep distribution summaries caller-declared
+
+- Context: M6 needed a compact distribution view over the existing fixed-fixture
+  frequency report without claiming that the library samples a population.
+- Symptom: Presenting normalized shares without naming their caller-declared
+  denominator can make fixture counts look like representative metrics.
+- Resolution: Derive ordered integer basis-point shares only from the verified
+  selection count, assign the final-row remainder deterministically, and expose
+  the result as a pure in-process projection.
+- Prevention: Keep random/representative sampling, population inference,
+  outcomes, strategic metrics, persistence, providers, and calibration behind
+  separate contracts.
