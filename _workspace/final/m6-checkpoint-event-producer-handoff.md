@@ -2,7 +2,8 @@
 
 ## Outcome
 
-Pending independent domain QA and final handoff review.
+PASS — no actionable findings remain after the independent domain QA and final
+handoff review at implementation/evidence head `c5c2d59`.
 
 ## Delivered contract
 
@@ -12,13 +13,15 @@ Pending independent domain QA and final handoff review.
 operation succeeds. Direct save/load behavior remains unchanged, and failed
 storage, decode, or capacity paths do not mutate the caller-owned log.
 
-## Verification target
+## Verification
 
 The existing focused checkpoint/store test covers successful save/load event
-labels, host-artifact coexistence, and full-log capacity-preflight
-nonmutation. The expected full evidence is 27 focused agent tests within 240
-unit tests, 7 binary tests, and 3 RustDoc tests, plus formatter, Clippy
-warnings denied, repository checker, 15 Python policy tests, and diff checks.
+labels, host-artifact coexistence, storage/decode failure nonmutation, and
+full-log save/load capacity-preflight nonmutation with a distinct replacement
+cursor. The full evidence is 27 focused agent tests within 240 unit tests, 7
+binary tests, and 3 RustDoc tests, plus formatter, Clippy warnings denied,
+repository checker, 15 Python policy tests, and diff checks; all pass at
+reviewed head `c5c2d59`.
 
 ## Open boundaries
 

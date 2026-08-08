@@ -2,9 +2,10 @@
 
 ## Disposition
 
-Pending independent three-pass review at the implementation/evidence head.
+PASS — no actionable findings remain after the independent three-pass review at
+implementation/evidence head `c5c2d59`.
 
-## Scope to review
+## Scope reviewed
 
 The slice adds caller-driven `checkpoint_saved` and `batch_resumed` production
 around the existing injected cursor store. It must preflight one event slot,
@@ -14,13 +15,15 @@ It must not add automatic runtime detection, diagnostics, event-log
 persistence, tracing/transport, scheduling, or policy, transition, history,
 replay, provider, population, or scheduling authority.
 
-## Evidence target
+## Evidence
 
-The existing focused checkpoint/store test must prove successful save/load event
-labels, host-artifact coexistence, and full-log capacity-preflight nonmutation.
-The expected full evidence is 27 focused agent tests within 240 Rust unit tests,
+The existing focused checkpoint/store test proves successful save/load event
+labels, host-artifact coexistence, storage/decode failure nonmutation, and
+full-log save/load capacity-preflight nonmutation with a distinct replacement
+cursor. The full evidence is 27 focused agent tests within 240 Rust unit tests,
 7 binary tests, and 3 RustDoc tests, plus formatter, Clippy warnings denied,
-repository checker, 15 Python policy tests, and diff checks.
+repository checker, 15 Python policy tests, and diff checks; all pass at
+reviewed head `c5c2d59`.
 
 ## Review limits
 
