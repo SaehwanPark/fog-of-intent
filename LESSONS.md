@@ -585,3 +585,16 @@ canonical policy instead of duplicating it.
   fields before any caller can act.
 - Prevention: Keep hints advisory-only and preserve host legality, transition,
   history, and automatic-retry authority outside the codec.
+
+## Project action results without reopening lane authority
+
+- Context: Actor clients need a bounded success response after host-owned action
+  submission, while the CLI host already returns internal window/outcome types.
+- Symptom: Reusing the internal `CliHostOutput::Advanced` value as a protocol
+  contract would expose domain types and make clients depend on transition
+  details.
+- Resolution: Map only the closed fixture-window and categorical-outcome IDs
+  into `m5-actor-action-result-v1` after the existing host submission succeeds;
+  keep validation, execution, and history in the host path.
+- Prevention: Test both windows, exact result wire text, and absence of hashes
+  or execution fields; keep debrief and richer outcome semantics separate.

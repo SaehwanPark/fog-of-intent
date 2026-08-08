@@ -19,8 +19,9 @@ use crate::lane::{
   build_scenario_debrief, observe_player,
 };
 use crate::protocol::{
-  ActorActionDto, ActorDraftDto, ActorDraftField, ActorHistoryDto, ActorHistoryStatus,
-  ActorObservationDto, ActorProtocolError, ActorProtocolErrorCode, ActorProtocolRepairHint,
+  ActorActionDto, ActorActionResultDto, ActorActionResultOutcome, ActorActionResultWindow,
+  ActorDraftDto, ActorDraftField, ActorHistoryDto, ActorHistoryStatus, ActorObservationDto,
+  ActorProtocolError, ActorProtocolErrorCode, ActorProtocolRepairHint,
 };
 use crate::run_store::{CliRunStore, CliRunStoreError};
 
@@ -329,6 +330,27 @@ impl CliScenarioHost {
         })
       }
     }
+  }
+
+  /// Submit one actor action and return only its bounded actor-safe result.
+  pub fn submit_actor_action_result(
+    &mut self,
+    action: ActorActionDto,
+  ) -> Result<ActorActionResultDto, ActorProtocolError> {
+    let output = self.submit_actor_action(action)?;
+    let CliHostOutput::Advanced { window, outcome } = output else {
+      unreachable!("actor action submission succeeds only with an advance result")
+    };
+    let window = match window {
+      ScenarioWindow::First => ActorActionResultWindow::First,
+      ScenarioWindow::Second => ActorActionResultWindow::Second,
+    };
+    let outcome = match outcome {
+      LaneOutcome::HeldSpace => ActorActionResultOutcome::HeldSpace,
+      LaneOutcome::YieldedSpace => ActorActionResultOutcome::YieldedSpace,
+      LaneOutcome::ForcedOut => ActorActionResultOutcome::ForcedOut,
+    };
+    Ok(ActorActionResultDto::new(window, outcome))
   }
 
   /// Return the number of committed scenario windows.
@@ -1081,6 +1103,49 @@ mod tests {
       Ok(CliHostOutput::DraftStaged { field: "plan" })
     );
     assert!(!format!("{transition_error:?}").contains("health"));
+  }
+
+  #[test]
+  fn actor_action_result_projection_is_bounded_and_host_owned() {
+    let mut host = CliScenarioHost::fixture();
+    let first = host.observation();
+    let first_result = host
+      .submit_actor_action_result(ActorActionDto::new(
+        first.observer().value(),
+        first.observation_id().value(),
+        crate::protocol::ActorProtocolIntent::Contest,
+      ))
+      .expect("first action result projects");
+    assert_eq!(
+      first_result,
+      ActorActionResultDto::new(
+        ActorActionResultWindow::First,
+        ActorActionResultOutcome::HeldSpace,
+      )
+    );
+    assert_eq!(host.record_count(), 1);
+    assert_eq!(
+      ActorActionResultDto::decode(&first_result.encode()),
+      Ok(first_result)
+    );
+    assert!(!format!("{first_result:?}").contains("hash"));
+
+    let second = host.observation();
+    let second_result = host
+      .submit_actor_action_result(ActorActionDto::new(
+        second.observer().value(),
+        second.observation_id().value(),
+        crate::protocol::ActorProtocolIntent::Stabilize,
+      ))
+      .expect("second action result projects");
+    assert_eq!(
+      second_result,
+      ActorActionResultDto::new(
+        ActorActionResultWindow::Second,
+        ActorActionResultOutcome::YieldedSpace,
+      )
+    );
+    assert_eq!(host.record_count(), 2);
   }
 
   #[test]
