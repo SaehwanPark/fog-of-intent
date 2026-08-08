@@ -98,6 +98,22 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.118 — 2026-08-08
+
+### Added
+
+- Added `m5-actor-replay-record-v1`, a bounded actor-safe categorical record
+  projection for at most two replay-verified fixture windows.
+- Added focused codec and host regressions for exact record fields, malformed
+  input rejection, successful empty/partial/complete projections, and replay
+  tamper/closed-session redaction.
+
+### Known limits
+
+- Replay records expose only window, intent, outcome, and verified status;
+  hashes, resolved inputs, traces, causal detail, persistence, and transport
+  remain open.
+
 ## 0.1.117 — 2026-08-08
 
 ### Added
