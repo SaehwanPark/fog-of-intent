@@ -128,6 +128,11 @@ authoritative history. An opt-in seeded tie path accepts only an explicit
 policy seed bundle, and the library-only decision replay record remains
 outside transition, host history, and durable persistence authority.
 
+`src/protocol.rs` owns the bounded actor observation/action DTO projection. It
+maps primitive actor-visible fields and closed intent IDs without exposing
+internal observation/request types as a transport contract; host validation
+still owns legality.
+
 ## Target Components
 
 These are ownership boundaries; the bounded kernel, fixture codec, and first

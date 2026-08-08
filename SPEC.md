@@ -930,6 +930,27 @@ open.
   This evidence plus the reproducible comparison report is a bounded library
   metric slice, not a claim of strategic quality or human behavioral realism.
 
+### M5 — First actor-protocol DTO boundary — 2026-08-08
+
+**Status:** Bounded observation/action DTO projection delivered; transport,
+session lifecycle, and broader protocol compatibility remain open.
+
+- `src/protocol.rs` defines the versioned `m5-actor-protocol-v1`,
+  `m5-actor-observation-v1`, and `m5-actor-action-v1` identities with a closed
+  `ActorProtocolIntent` vocabulary.
+- `ActorObservationDto` maps only primitive actor, turn, observation ID, and
+  advertised intent data from `LanerObservation`; it retains at most the four
+  base intents plus one distinct visible threat response. Hidden state, hashes,
+  execution inputs, and internal domain snapshots are not fields in the DTO.
+- `ActorActionDto` carries an observer-bound intent and converts to the
+  existing `LaneIntentRequest`; the adapter does not validate legality or
+  authorize a transition. The host remains the sole legality and transition
+  authority.
+- Focused tests cover stable IDs, safe/threat action breadth, DTO-to-request
+  conversion through the existing validator, and absence of state-hash or
+  snapshot fields. This is a pure library boundary, not an MCP transport or
+  session-completion claim.
+
 ## Future
 
 The detailed and canonical order is in `ROADMAP.md`.
