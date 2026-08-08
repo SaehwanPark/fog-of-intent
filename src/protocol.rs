@@ -57,6 +57,9 @@ pub const ACTOR_DRAFT_SCHEMA: &str = "m5-actor-draft-v1";
 /// Versioned actor draft-staging acknowledgement identity.
 pub const ACTOR_DRAFT_RECEIPT_SCHEMA: &str = "m5-actor-draft-receipt-v1";
 
+/// Versioned actor draft-commit field-presence acknowledgement identity.
+pub const ACTOR_DRAFT_COMMIT_RECEIPT_SCHEMA: &str = "m5-actor-draft-commit-receipt-v1";
+
 /// Versioned provider-neutral actor transcript identity.
 pub const ACTOR_TRANSCRIPT_SCHEMA: &str = "m5-actor-transcript-v1";
 
@@ -531,6 +534,150 @@ impl ActorCommitResultDto {
     Ok(Self::new(ActorProtocolIntent::parse_id(
       intent.ok_or(ActorProtocolCodecError::MissingField)?,
     )?))
+  }
+}
+
+/// Closed actor-draft field-presence values.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ActorDraftPresence {
+  Present,
+  Absent,
+}
+
+impl ActorDraftPresence {
+  pub const fn id(self) -> &'static str {
+    match self {
+      Self::Present => "present",
+      Self::Absent => "absent",
+    }
+  }
+
+  fn parse_id(value: &str) -> Result<Self, ActorProtocolCodecError> {
+    match value {
+      "present" => Ok(Self::Present),
+      "absent" => Ok(Self::Absent),
+      _ => Err(ActorProtocolCodecError::InvalidValue),
+    }
+  }
+}
+
+/// Bounded actor-safe acknowledgement after a host-owned draft commit.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ActorDraftCommitReceiptDto {
+  schema: &'static str,
+  observer: u8,
+  observation_id: u64,
+  intent: ActorProtocolIntent,
+  message: ActorDraftPresence,
+  plan: ActorDraftPresence,
+  contingency: ActorDraftPresence,
+}
+
+impl ActorDraftCommitReceiptDto {
+  pub const fn new(
+    observer: u8,
+    observation_id: u64,
+    intent: ActorProtocolIntent,
+    message: ActorDraftPresence,
+    plan: ActorDraftPresence,
+    contingency: ActorDraftPresence,
+  ) -> Self {
+    Self {
+      schema: ACTOR_DRAFT_COMMIT_RECEIPT_SCHEMA,
+      observer,
+      observation_id,
+      intent,
+      message,
+      plan,
+      contingency,
+    }
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn observer(self) -> u8 {
+    self.observer
+  }
+
+  pub const fn observation_id(self) -> u64 {
+    self.observation_id
+  }
+
+  pub const fn intent(self) -> ActorProtocolIntent {
+    self.intent
+  }
+
+  pub const fn message(self) -> ActorDraftPresence {
+    self.message
+  }
+
+  pub const fn plan(self) -> ActorDraftPresence {
+    self.plan
+  }
+
+  pub const fn contingency(self) -> ActorDraftPresence {
+    self.contingency
+  }
+
+  /// Encode accepted field presence without echoing draft values.
+  pub fn encode(self) -> String {
+    format!(
+      "schema={}\nobserver={}\nobservation_id={}\nintent={}\nmessage={}\nplan={}\ncontingency={}\n",
+      self.schema,
+      self.observer,
+      self.observation_id,
+      self.intent.id(),
+      self.message.id(),
+      self.plan.id(),
+      self.contingency.id(),
+    )
+  }
+
+  /// Decode bounded commit metadata without host or transition authority.
+  pub fn decode(input: &str) -> Result<Self, ActorProtocolCodecError> {
+    let fields = parse_fields(input, 7)?;
+    let mut schema = None;
+    let mut observer = None;
+    let mut observation_id = None;
+    let mut intent = None;
+    let mut message = None;
+    let mut plan = None;
+    let mut contingency = None;
+    for (key, value) in fields {
+      let slot = match key {
+        "schema" => &mut schema,
+        "observer" => &mut observer,
+        "observation_id" => &mut observation_id,
+        "intent" => &mut intent,
+        "message" => &mut message,
+        "plan" => &mut plan,
+        "contingency" => &mut contingency,
+        _ => return Err(ActorProtocolCodecError::UnknownField),
+      };
+      if slot.is_some() {
+        return Err(ActorProtocolCodecError::DuplicateField);
+      }
+      *slot = Some(value);
+    }
+    if schema != Some(ACTOR_DRAFT_COMMIT_RECEIPT_SCHEMA) {
+      return Err(ActorProtocolCodecError::UnsupportedSchema);
+    }
+    Ok(Self::new(
+      observer
+        .ok_or(ActorProtocolCodecError::MissingField)?
+        .parse::<u8>()
+        .map_err(|_| ActorProtocolCodecError::InvalidValue)?,
+      observation_id
+        .ok_or(ActorProtocolCodecError::MissingField)?
+        .parse::<u64>()
+        .map_err(|_| ActorProtocolCodecError::InvalidValue)?,
+      ActorProtocolIntent::parse_id(intent.ok_or(ActorProtocolCodecError::MissingField)?)?,
+      ActorDraftPresence::parse_id(message.ok_or(ActorProtocolCodecError::MissingField)?)?,
+      ActorDraftPresence::parse_id(plan.ok_or(ActorProtocolCodecError::MissingField)?)?,
+      ActorDraftPresence::parse_id(contingency.ok_or(ActorProtocolCodecError::MissingField)?)?,
+    ))
   }
 }
 
@@ -2029,6 +2176,84 @@ mod tests {
     );
     assert!(!format!("{commit:?}").contains("StateHash"));
     assert!(!format!("{result:?}").contains("execution"));
+  }
+
+  #[test]
+  fn actor_draft_commit_receipt_codec_is_exact_and_payload_free() {
+    let receipt = ActorDraftCommitReceiptDto::new(
+      1,
+      41,
+      ActorProtocolIntent::Contest,
+      ActorDraftPresence::Present,
+      ActorDraftPresence::Absent,
+      ActorDraftPresence::Present,
+    );
+    assert_eq!(receipt.schema(), "m5-actor-draft-commit-receipt-v1");
+    assert_eq!(receipt.message(), ActorDraftPresence::Present);
+    assert_eq!(receipt.plan(), ActorDraftPresence::Absent);
+    assert_eq!(receipt.contingency(), ActorDraftPresence::Present);
+    assert_eq!(
+      receipt.encode(),
+      "schema=m5-actor-draft-commit-receipt-v1\nobserver=1\nobservation_id=41\nintent=contest\nmessage=present\nplan=absent\ncontingency=present\n"
+    );
+    assert_eq!(
+      ActorDraftCommitReceiptDto::decode(&receipt.encode()),
+      Ok(receipt)
+    );
+    assert!(!format!("{receipt:?}").contains("ping ally"));
+    assert!(!receipt.encode().contains("retreat if threat"));
+
+    assert_eq!(
+      ActorDraftCommitReceiptDto::decode(
+        "schema=m5-actor-draft-commit-receipt-v1\nobserver=1\nobservation_id=41\nintent=contest\nunknown=present\nplan=absent\ncontingency=present\n"
+      ),
+      Err(ActorProtocolCodecError::UnknownField)
+    );
+    assert_eq!(
+      ActorDraftCommitReceiptDto::decode(
+        "schema=m5-actor-draft-commit-receipt-v1\nobserver=1\nobservation_id=41\nintent=contest\nmessage=present\nmessage=absent\ncontingency=present\n"
+      ),
+      Err(ActorProtocolCodecError::DuplicateField)
+    );
+    assert_eq!(
+      ActorDraftCommitReceiptDto::decode(
+        "schema=m5-actor-draft-commit-receipt-v1\nobserver=1\nobservation_id=41\nintent=contest\nmessage=present\nplan=absent\n"
+      ),
+      Err(ActorProtocolCodecError::MissingField)
+    );
+    assert_eq!(
+      ActorDraftCommitReceiptDto::decode(
+        "schema=m5-actor-draft-commit-receipt-v0\nobserver=1\nobservation_id=41\nintent=contest\nmessage=present\nplan=absent\ncontingency=present\n"
+      ),
+      Err(ActorProtocolCodecError::UnsupportedSchema)
+    );
+    assert_eq!(
+      ActorDraftCommitReceiptDto::decode(
+        "schema=m5-actor-draft-commit-receipt-v1\nobserver=nope\nobservation_id=41\nintent=contest\nmessage=present\nplan=absent\ncontingency=present\n"
+      ),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ActorDraftCommitReceiptDto::decode(
+        "schema=m5-actor-draft-commit-receipt-v1\nobserver=1\nobservation_id=41\nintent=contest\nmessage=unknown\nplan=absent\ncontingency=present\n"
+      ),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ActorDraftCommitReceiptDto::decode(
+        "schema=m5-actor-draft-commit-receipt-v1\nobserver=1\nobservation_id=nope\nintent=contest\nmessage=present\nplan=absent\ncontingency=present\n"
+      ),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ActorDraftCommitReceiptDto::decode(
+        "schema=m5-actor-draft-commit-receipt-v1\nobserver=1\nobservation_id=41\nintent=contest\nmessage=present\nplan=absent\ncontingency=present\nextra=x\n"
+      ),
+      Err(ActorProtocolCodecError::UnexpectedLineCount {
+        expected: 7,
+        actual: 8,
+      })
+    );
   }
 
   #[test]

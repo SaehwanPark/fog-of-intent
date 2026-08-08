@@ -20,9 +20,10 @@ use crate::lane::{
 };
 use crate::protocol::{
   ActorActionDto, ActorActionResultDto, ActorActionResultOutcome, ActorActionResultWindow,
-  ActorCommitDto, ActorCommitResultDto, ActorDebriefDto, ActorDraftDto, ActorDraftField,
-  ActorDraftReceiptDto, ActorHistoryDto, ActorHistoryStatus, ActorObservationDto,
-  ActorProtocolError, ActorProtocolErrorCode, ActorProtocolRepairHint, ActorReplayDto,
+  ActorCommitDto, ActorCommitResultDto, ActorDebriefDto, ActorDraftCommitReceiptDto, ActorDraftDto,
+  ActorDraftField, ActorDraftPresence, ActorDraftReceiptDto, ActorHistoryDto, ActorHistoryStatus,
+  ActorObservationDto, ActorProtocolError, ActorProtocolErrorCode, ActorProtocolRepairHint,
+  ActorReplayDto,
 };
 use crate::run_store::{CliRunStore, CliRunStoreError};
 
@@ -392,6 +393,40 @@ impl CliScenarioHost {
       contingency: None,
     };
     Ok(ActorCommitResultDto::new(commit.intent()))
+  }
+
+  /// Commit one actor intent and report only which draft fields were accepted.
+  pub fn commit_actor_draft_receipt(
+    &mut self,
+    commit: ActorCommitDto,
+  ) -> Result<ActorDraftCommitReceiptDto, ActorProtocolError> {
+    let message = if self.draft.message.is_some() {
+      ActorDraftPresence::Present
+    } else {
+      ActorDraftPresence::Absent
+    };
+    let plan = if self.draft.plan.is_some() {
+      ActorDraftPresence::Present
+    } else {
+      ActorDraftPresence::Absent
+    };
+    let contingency = if self.draft.contingency.is_some() {
+      ActorDraftPresence::Present
+    } else {
+      ActorDraftPresence::Absent
+    };
+    let observer = commit.observer();
+    let observation_id = commit.observation_id();
+    let intent = commit.intent();
+    self.commit_actor_draft(commit)?;
+    Ok(ActorDraftCommitReceiptDto::new(
+      observer,
+      observation_id,
+      intent,
+      message,
+      plan,
+      contingency,
+    ))
   }
 
   /// Validate and submit one actor action, then close the host-owned window.
@@ -1576,6 +1611,108 @@ mod tests {
         ActorProtocolRepairHint::StartNewSession,
       ))
     );
+  }
+
+  #[test]
+  fn actor_draft_commit_receipt_reports_presence_without_payload_or_history_advance() {
+    let mut host = CliScenarioHost::fixture();
+    let observation = host.observation();
+    for (field, value) in [
+      (ActorDraftField::Message, "ping ally"),
+      (ActorDraftField::Plan, "contest"),
+      (ActorDraftField::Contingency, "retreat if threat"),
+    ] {
+      host
+        .stage_actor_draft(
+          ActorDraftDto::new(
+            observation.observer().value(),
+            observation.observation_id().value(),
+            field,
+            value,
+          )
+          .expect("draft value is bounded"),
+        )
+        .expect("draft stages before receipt commit");
+    }
+
+    let commit = ActorCommitDto::new(
+      observation.observer().value(),
+      observation.observation_id().value(),
+      crate::protocol::ActorProtocolIntent::Contest,
+    );
+    let receipt = host
+      .commit_actor_draft_receipt(commit)
+      .expect("matching receipt commit succeeds");
+    assert_eq!(receipt.schema(), "m5-actor-draft-commit-receipt-v1");
+    assert_eq!(receipt.observer(), observation.observer().value());
+    assert_eq!(
+      receipt.observation_id(),
+      observation.observation_id().value()
+    );
+    assert_eq!(
+      receipt.intent(),
+      crate::protocol::ActorProtocolIntent::Contest
+    );
+    assert_eq!(receipt.message(), ActorDraftPresence::Present);
+    assert_eq!(receipt.plan(), ActorDraftPresence::Present);
+    assert_eq!(receipt.contingency(), ActorDraftPresence::Present);
+    assert_eq!(
+      receipt.encode(),
+      "schema=m5-actor-draft-commit-receipt-v1\nobserver=1\nobservation_id=1\nintent=contest\nmessage=present\nplan=present\ncontingency=present\n"
+    );
+    assert_eq!(
+      ActorDraftCommitReceiptDto::decode(&receipt.encode()),
+      Ok(receipt)
+    );
+    assert!(!format!("{receipt:?}").contains("ping ally"));
+    assert!(!format!("{receipt:?}").contains("retreat if threat"));
+    assert!(!receipt.encode().contains("ping ally"));
+    assert!(!receipt.encode().contains("retreat if threat"));
+    assert!(host.draft.is_empty());
+    assert_eq!(host.committed_intent, Some(LaneIntent::Contest));
+    assert_eq!(host.record_count(), 0);
+    assert_eq!(host.observation(), observation);
+
+    let mut empty = CliScenarioHost::fixture();
+    let empty_observation = empty.observation();
+    let empty_receipt = empty
+      .commit_actor_draft_receipt(ActorCommitDto::new(
+        empty_observation.observer().value(),
+        empty_observation.observation_id().value(),
+        crate::protocol::ActorProtocolIntent::Stabilize,
+      ))
+      .expect("commit without metadata succeeds");
+    assert_eq!(empty_receipt.message(), ActorDraftPresence::Absent);
+    assert_eq!(empty_receipt.plan(), ActorDraftPresence::Absent);
+    assert_eq!(empty_receipt.contingency(), ActorDraftPresence::Absent);
+
+    let mut mismatch = CliScenarioHost::fixture();
+    let mismatch_observation = mismatch.observation();
+    mismatch
+      .stage_actor_draft(
+        ActorDraftDto::new(
+          mismatch_observation.observer().value(),
+          mismatch_observation.observation_id().value(),
+          ActorDraftField::Plan,
+          "contest",
+        )
+        .expect("mismatch plan is bounded"),
+      )
+      .expect("mismatch plan stages");
+    assert_eq!(
+      mismatch.commit_actor_draft_receipt(ActorCommitDto::new(
+        mismatch_observation.observer().value(),
+        mismatch_observation.observation_id().value(),
+        crate::protocol::ActorProtocolIntent::Stabilize,
+      )),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::HostValidationRejected,
+        ActorProtocolRepairHint::ResendValidPayload,
+      ))
+    );
+    assert_eq!(mismatch.draft.plan.as_deref(), Some("contest"));
+    assert_eq!(mismatch.committed_intent, None);
+    assert_eq!(mismatch.record_count(), 0);
   }
 
   #[test]

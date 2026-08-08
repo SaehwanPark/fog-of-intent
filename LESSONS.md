@@ -642,6 +642,22 @@ canonical policy instead of duplicating it.
   history/observation mutation, and defer transport, delivery, and richer plan
   semantics to separate contracts.
 
+## Report accepted draft presence without delivering payloads
+
+- Context: M5 needed a commit acknowledgement that distinguishes an intent
+  commit from the metadata accepted alongside it without exposing free-form
+  message, plan, or contingency values.
+- Symptom: Reusing the draft-staging receipt or commit result would either lose
+  which fields were accepted or tempt the protocol boundary to echo payloads
+  and imply communication delivery.
+- Resolution: Capture `present`/`absent` bits before delegating to the existing
+  host commit path, then return a versioned receipt containing only the bound
+  observer, observation ID, intent, and those bits. Failed commits return the
+  existing actor-safe error and leave the draft repairable.
+- Prevention: Construct the receipt only after successful commit, assert draft
+  clearing and unchanged history/observation, and keep delivery, transport,
+  and free-form plan semantics in separate contracts.
+
 ## Test authorization and redaction together
 
 - Context: Adding actor DTOs incrementally can leave each operation locally
