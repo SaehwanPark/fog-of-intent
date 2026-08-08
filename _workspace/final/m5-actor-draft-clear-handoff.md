@@ -8,9 +8,9 @@ pre-clear field presence through its bounded receipt.
 
 ## Verification
 
-The implementation provides two focused protocol codec tests and one focused
+The implementation provides one focused protocol codec test and one focused
 host adapter test. The planned evidence is 223 Rust unit tests, 7 binary tests,
-and 3 RustDoc tests, with 26 protocol, 12 session, and 30 host focused tests;
+and 3 RustDoc tests, with 25 protocol, 12 session, and 30 host focused tests;
 formatter, Clippy with warnings denied, repository checker, 15 Python policy
 tests, and diff checks remain required.
 

@@ -1242,7 +1242,7 @@ committed intent, and `present`/`absent` bits for each draft field; it never
 echoes values or claims communication delivery. The provider-neutral
 `m5-actor-transcript-v1` record captures only closed tool/schema IDs and an
 accepted/rejected result for an actor receipt; it is not a runtime log or
-replay record. Focused evidence is 26 protocol tests,
+replay record. Focused evidence is 25 protocol tests,
 12 session tests, and 30 host tests within the 223-unit, 7-binary, and
 3-Rustdoc suite. The host observation projection is a
 pure actor-visible DTO mapping, rejects inactive lifecycle states, and leaves
