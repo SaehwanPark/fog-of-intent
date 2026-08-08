@@ -3426,6 +3426,19 @@ mod tests {
     }
     assert_eq!(MAX_SCRIPTED_AGENT_OPERATIONAL_LOG_BYTES, 4096);
     assert_eq!(
+      SCRIPTED_AGENT_OPERATIONAL_LOG_SCHEMA,
+      "m6-scripted-agent-operational-log-v1"
+    );
+    let inclusive_size_input = format!("{}\n", "x".repeat(4095));
+    assert_eq!(
+      inclusive_size_input.len(),
+      MAX_SCRIPTED_AGENT_OPERATIONAL_LOG_BYTES
+    );
+    assert_eq!(
+      ScriptedAgentOperationalLog::decode(&inclusive_size_input),
+      Err(ScriptedAgentOperationalLogCodecError::InvalidValue)
+    );
+    assert_eq!(
       ScriptedAgentOperationalLog::decode(&"x".repeat(4097)),
       Err(ScriptedAgentOperationalLogCodecError::Oversized)
     );

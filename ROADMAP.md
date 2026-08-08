@@ -1411,6 +1411,9 @@ representative replays, and an evidence-limited report.
   after successful bounded cursor save/load; capacity preflight and failure
   nonmutation remain explicit, while runtime diagnostics and event-log
   persistence remain open.
+- [x] Encode bounded payload-free operational logs and store them in a distinct
+  injected namespace; crash recovery, rotation, external export, and runtime
+  diagnostics remain open.
 - [x] Export bounded machine-readable data and a concise pure Markdown
   evidence report for the verified fixed-fixture frequency slice; durable
   export, arbitrary report pipelines, and broader metrics remain open.

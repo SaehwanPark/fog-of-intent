@@ -1247,6 +1247,13 @@ transport-integrated sessions and broader protocol compatibility remain open.
   only after successful bounded cursor storage/decode, respectively. Each
   preflights one log slot, and storage, codec, or capacity failures do not
   append an event; the operational log itself remains non-authoritative.
+- `ScriptedAgentOperationalLog::encode/decode` uses the exact bounded
+  `m6-scripted-agent-operational-log-v1` two-header plus event-line shape,
+  rejects unknown/duplicate/missing/schema/value/line/size violations, and
+  preserves the closed five-ID order. `ScriptedAgentOperationalLogStore`
+  reuses the existing injected atomic store under a distinct
+  `.foi-operational-log` suffix; it does not replace host artifacts or batch
+  checkpoints, and crash recovery/rotation/external export remain open.
 
 ## Future
 
