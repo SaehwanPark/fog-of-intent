@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.119`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.120`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1179,6 +1179,9 @@ control over simulation resolution.
 - [x] Define `m5-actor-draft-receipt-v1` as a payload-free acknowledgement for
   accepted observation-bound message, plan, or contingency staging; metadata
   delivery and communication semantics remain open.
+- [x] Define `m5-actor-draft-status-v1` as a bounded aggregate presence
+  projection for the active observation-bound message, plan, and contingency
+  draft; payload delivery and communication semantics remain open.
 - [x] Define `m5-actor-draft-commit-receipt-v1` as a payload-free acknowledgement
   of the committed intent and accepted message/plan/contingency field presence;
   metadata delivery and communication semantics remain open.
@@ -1190,7 +1193,7 @@ control over simulation resolution.
   simultaneous decisions remain open.
 - [x] Define bounded `m5-actor-draft-v1` metadata for message, plan, and
   contingency fields with observation binding and closed plan IDs; host draft
-  staging remains open.
+  staging is delivered while metadata delivery remains open.
 - [x] Stage observation-bound actor draft metadata through the host-owned draft
   boundary with replacement and committed-window checks; communication
   delivery remains open.
@@ -1235,8 +1238,8 @@ committed intent, and `present`/`absent` bits for each draft field; it never
 echoes values or claims communication delivery. The provider-neutral
 `m5-actor-transcript-v1` record captures only closed tool/schema IDs and an
 accepted/rejected result for an actor receipt; it is not a runtime log or
-replay record. Focused evidence is 23 protocol tests,
-12 session tests, and 28 host tests within the 219-unit, 7-binary, and
+replay record. Focused evidence is 24 protocol tests,
+12 session tests, and 29 host tests within the 221-unit, 7-binary, and
 3-Rustdoc suite. The host observation projection is a
 pure actor-visible DTO mapping, rejects inactive lifecycle states, and leaves
 the internal receipt private. The history DTO is a bounded status summary,
@@ -1251,7 +1254,9 @@ most two verified categorical window/intent/outcome entries. The
 `m5-actor-replay-debrief-record-v1` projection adds only categorical objective
 labels and the committed-facts attribution limit after complete-history
 verification; hashes, resolved inputs, execution traces, and causal detail
-remain private.
+remain private. The `m5-actor-draft-status-v1` projection reports only the
+active observation binding and aggregate `present`/`absent` bits for message,
+plan, and contingency; it never echoes draft values or claims delivery.
 
 ### Scope
 
@@ -1260,7 +1265,7 @@ remain private.
 - [ ] Define remaining integration/contracts for messages, plans,
   contingencies, durable/scenario replay-linked records, and detailed
   outcome/debrief review;
-  bounded observation/action/commit/draft/history/replay/replay-record/replay-debrief-record/debrief projections
+  bounded observation/action/commit/draft/draft-status/history/replay/replay-record/replay-debrief-record/debrief projections
   are delivered.
 - [x] Keep authoritative lane observation/request conversion behind crate-private
   protocol adapters; public protocol compatibility exposes DTOs only.

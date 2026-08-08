@@ -98,6 +98,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.120 — 2026-08-08
+
+### Added
+
+- Added `m5-actor-draft-status-v1`, a bounded active-draft projection that
+  reports only observer/observation binding and aggregate message, plan, and
+  contingency presence bits without echoing payloads.
+- Added focused codec and host regressions for exact fields, malformed input,
+  active-window gating, payload redaction, and unchanged history/observation.
+
+### Known limits
+
+- Draft status does not deliver metadata or define communication, transport,
+  persistence, reconnect, simultaneous-draft, or free-form plan semantics.
+
 ## 0.1.119 — 2026-08-08
 
 ### Added

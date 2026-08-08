@@ -684,6 +684,17 @@ canonical policy instead of duplicating it.
   clearing and unchanged history/observation, and keep delivery, transport,
   and free-form plan semantics in separate contracts.
 
+## Report aggregate draft presence without echoing payloads
+
+- Context: An actor client needs to know which message, plan, and contingency
+  fields remain staged before committing an intent.
+- Symptom: Reusing staged values as a response would expose free-form metadata
+  and blur draft inspection with communication delivery.
+- Resolution: Return a versioned status with only the active observation binding
+  and `present`/`absent` bits, rejecting committed, complete, and closed hosts.
+- Prevention: Keep status read-only and payload-free; leave delivery,
+  transport, and richer plan semantics to separate contracts.
+
 ## Test authorization and redaction together
 
 - Context: Adding actor DTOs incrementally can leave each operation locally

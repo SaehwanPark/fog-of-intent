@@ -992,8 +992,8 @@ transport-integrated sessions and broader protocol compatibility remain open.
   conversion through the existing validator, absence of state-hash or
   snapshot fields, session lifecycle/error cases, codec round-trips and
   malformed-input rejection, and exhaustive codec/session error projections.
-  The focused evidence is 23 protocol tests and 12 session tests within the
-  219-unit, 7-binary, and 3-Rustdoc suite; host evidence includes the
+  The focused evidence is 24 protocol tests and 12 session tests within the
+  221-unit, 7-binary, and 3-Rustdoc suite; host evidence includes the
   authorization/redaction matrix and CLI/protocol parity regressions.
 - `CliScenarioHost::validate_actor_action` checks one DTO against the current
   actor-visible receipt and existing lane validator without mutating history,
@@ -1019,6 +1019,11 @@ transport-integrated sessions and broader protocol compatibility remain open.
   staged-field identity. `CliScenarioHost::stage_actor_draft_receipt` delegates
   all checks to existing staging and returns the receipt only after success;
   it does not deliver metadata or change lifecycle/history state.
+- `ActorDraftStatusDto` defines `m5-actor-draft-status-v1` as a six-line,
+  payload-free aggregate presence projection containing the active observer,
+  observation ID, and `present`/`absent` bits for message, plan, and
+  contingency. `CliScenarioHost::actor_draft_status` is active-window-only,
+  read-only, and does not deliver values or add transition/history authority.
 - `ActorDraftCommitReceiptDto` defines `m5-actor-draft-commit-receipt-v1` as a
   seven-line acknowledgement of a successful commit. It exposes only observer,
   observation ID, intent, and field-presence bits; draft values and delivery
