@@ -252,6 +252,10 @@ impl ScriptedAgentExperimentManifest {
     self.seed_bundle
   }
 
+  pub const fn selection_rule(self) -> &'static str {
+    SCRIPTED_AGENT_SEEDED_SELECTION_RULE
+  }
+
   /// Encode reproducibility metadata without observations or experiment output.
   pub fn encode(self) -> String {
     let trace = self.seed_bundle.policy_trace();
@@ -261,7 +265,7 @@ impl ScriptedAgentExperimentManifest {
       self.scenario_id,
       self.profile.profile_id(),
       self.profile.evaluation_rule(),
-      self.profile.selection_rule(),
+      self.selection_rule(),
       self.seed_bundle.seed(),
       trace.stream().value(),
       trace.draw().value(),
@@ -324,7 +328,7 @@ impl ScriptedAgentExperimentManifest {
     let profile =
       ScriptedAgentProfile::parse_id(profile.ok_or(ScriptedAgentManifestError::MissingField)?)?;
     if evaluation_rule != Some(profile.evaluation_rule())
-      || selection_rule != Some(profile.selection_rule())
+      || selection_rule != Some(SCRIPTED_AGENT_SEEDED_SELECTION_RULE)
     {
       return Err(ScriptedAgentManifestError::InvalidValue);
     }
@@ -1048,10 +1052,7 @@ mod tests {
         manifest.profile().evaluation_rule(),
         profile.evaluation_rule()
       );
-      assert_eq!(
-        manifest.profile().selection_rule(),
-        profile.selection_rule()
-      );
+      assert_eq!(manifest.selection_rule(), "max-score-seeded-tie-v1");
       assert_eq!(manifest.seed_bundle(), seed);
       assert_eq!(
         ScriptedAgentExperimentManifest::decode(&manifest.encode()),
@@ -1060,7 +1061,7 @@ mod tests {
     }
     assert_eq!(
       ScriptedAgentExperimentManifest::new(profiles[0], seed).encode(),
-      "schema=m6-experiment-manifest-v1\nscenario=m3-two-window-fixture-v1\nprofile=cautious-laner-v1\nevaluation_rule=threat-first-pressure-aware-fixed-score-v1\nselection_rule=max-score-stable-order-v1\nseed=42\npolicy_stream=7\npolicy_draw=9\n"
+      "schema=m6-experiment-manifest-v1\nscenario=m3-two-window-fixture-v1\nprofile=cautious-laner-v1\nevaluation_rule=threat-first-pressure-aware-fixed-score-v1\nselection_rule=max-score-seeded-tie-v1\nseed=42\npolicy_stream=7\npolicy_draw=9\n"
     );
 
     let valid = ScriptedAgentExperimentManifest::new(profiles[0], seed).encode();
@@ -1077,6 +1078,14 @@ mod tests {
         valid.replacen(
           "evaluation_rule=threat-first-pressure-aware-fixed-score-v1",
           "evaluation_rule=wrong",
+          1,
+        ),
+        ScriptedAgentManifestError::InvalidValue,
+      ),
+      (
+        valid.replacen(
+          "selection_rule=max-score-seeded-tie-v1",
+          "selection_rule=wrong",
           1,
         ),
         ScriptedAgentManifestError::InvalidValue,
