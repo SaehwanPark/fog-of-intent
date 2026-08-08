@@ -585,6 +585,10 @@ mod tests {
     let observation = observe_player(&state, ObservationId::new(16)).observation();
     let report = ScriptedAgentComparisonReport::from_observation(observation);
 
+    assert_eq!(
+      SCRIPTED_AGENT_METRICS_SCHEMA,
+      "m4-scripted-agent-metrics-v1"
+    );
     assert_eq!(report.schema(), SCRIPTED_AGENT_METRICS_SCHEMA);
     assert_eq!(report.observer(), observation.observer());
     assert_eq!(report.observation_id(), observation.observation_id());
@@ -599,6 +603,18 @@ mod tests {
         SCRIPTED_AGENT_PROFILE_ID,
         RISK_TAKING_SCRIPTED_AGENT_PROFILE_ID,
         YIELDING_SCRIPTED_AGENT_PROFILE_ID
+      ]
+    );
+    assert_eq!(
+      report
+        .entries()
+        .iter()
+        .map(|entry| entry.evaluation_rule())
+        .collect::<Vec<_>>(),
+      vec![
+        "threat-first-fixed-score-v1",
+        "contest-first-fixed-score-v1",
+        "yield-first-fixed-score-v1"
       ]
     );
     assert_eq!(
