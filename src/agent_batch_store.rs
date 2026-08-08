@@ -59,7 +59,6 @@ impl ScriptedAgentBatchRunStore {
   }
 }
 
-fn map_store_error(error: CliRunStoreError) -> ScriptedAgentBatchStoreError {
-  let _ = error;
+fn map_store_error(_: CliRunStoreError) -> ScriptedAgentBatchStoreError {
   ScriptedAgentBatchStoreError::StorageUnavailable
 }
