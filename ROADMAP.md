@@ -1400,7 +1400,9 @@ representative replays, and an evidence-limited report.
 - [ ] Check causal-trace completeness and replay identity for sampled runs.
 - [ ] Define provisional regression gates with written threshold rationale.
 - [ ] Separate operational logs from committed simulation artifacts.
-- [ ] Export machine-readable data and a concise Markdown evidence report.
+- [x] Export bounded machine-readable data and a concise pure Markdown
+  evidence report for the verified fixed-fixture frequency slice; durable
+  export, arbitrary report pipelines, and broader metrics remain open.
 - [ ] Preserve crashes, timeouts, missing branches, and inconclusive results.
 - [ ] Compare build-to-build behavior against a declared baseline.
 
@@ -1409,9 +1411,9 @@ representative replays, and an evidence-limited report.
 - Experiment manifest schema and batch runner.
 - Versioned bounded cursor artifacts, matched-observation and matched-scenario
   selected-intent/tally evidence with a machine-readable codec, a closed
-  fixed-fixture scenario catalog/selector and scenario-frequency evidence, and
-  an applicable version catalog; decision/result artifacts and representative
-  replays remain open.
+  fixed-fixture scenario catalog/selector and scenario-frequency evidence with
+  a pure Markdown projection, and an applicable version catalog; decision/result
+  artifacts and representative replays remain open.
 - Regression report template and threshold rationale.
 - CI or scheduled entry point only after runtime cost is measured.
 
