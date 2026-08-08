@@ -2,7 +2,8 @@
 
 ## Outcome
 
-Implementation complete; pending the required independent three-pass review.
+Implementation and independent three-pass review are complete at head
+`1d5e05d`; the reviewer found no actionable findings.
 
 ## Intended Contract
 
@@ -16,7 +17,7 @@ One focused protocol codec test and one host projection test complement 20
 protocol, 12 session, and 25 host tests within 213 Rust unit tests, 7 binary
 integration tests, and 3 RustDoc compile-fail tests. Formatter, Clippy with
 warnings denied, repository checker, 15 Python checks, and `git diff --check`
-are the required gates.
+pass at the reviewed head.
 
 ## Limits
 
