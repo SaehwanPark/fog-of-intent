@@ -782,9 +782,10 @@ remain open.
 - The CLI rendering boundary is now explicit: the application host solely owns
   true-state lifecycle, legality, ordering, history commit, and adapter
   coordination; the pure kernel and lane modules evaluate validated inputs,
-  while `src/cli.rs` remains a request/projection adapter. Current core and CLI
-  code has no terminal I/O, rendering loop, or mutable runtime presentation
-  state. The versioned `m3-cli-terminal-text-v1` projection consumes
+  while `src/cli.rs` remains a request/projection adapter. The kernel, lane,
+  `src/cli.rs`, and `src/terminal.rs` have no terminal I/O, rendering loop, or
+  mutable runtime presentation state; `src/command_loop.rs` is the explicit
+  outer stdin/stdout adapter. The versioned `m3-cli-terminal-text-v1` consumes
   host-projected actor-valid values at the edge without authorizing commands or
   mutating history; complete client and accessibility evidence remain open.
 - The pure text projection has machine-checked representative output and
@@ -796,9 +797,11 @@ remain open.
   renders each result through the pure text projection, and stops on `quit` or
   end-of-input. Its bounded process-argument helper recognizes the one
   versioned `--scenario m3-two-window-fixture-v1` ID and `--run-dir` without
-  echoing values; `src/main.rs` maps the closed scenario enum to the existing
-  fixture and injects the configured artifact store. It does not authorize
-  host actions, add prompts/styling, or load external scenario data.
+  echoing values, plus standalone `--version`/`-V` metadata reporting;
+  `src/main.rs` maps the closed scenario enum to the existing fixture, injects
+  the configured artifact store, and handles metadata before host construction.
+  It does not authorize host actions, add prompts/styling, or load external
+  scenario data.
 - `CliRunId<'a>` is the versioned `m3-cli-run-id-v1` borrowed identifier for
   save/load/replay/export requests. It accepts bounded human-readable ASCII
   forms and rejects malformed values before host execution; it does not create
@@ -826,8 +829,9 @@ remain open.
   output/error variant, control character sanitization, bounded labels, and
   machine-checked representative line structure. The
   fixture command loop covers stdin/stdout recovery and quit/end-of-input
-  behavior. A two-process integration smoke test covers the explicit run
-  directory handoff. Broader scenario catalogs, regenerated/graph branching,
+  behavior, and standalone package-version reporting covers process metadata.
+  A two-process integration smoke test covers the explicit run directory
+  handoff. Broader scenario catalogs, regenerated/graph branching,
   and human keyboard/screen-reader evidence remain unimplemented. Store locking
   and fsync/crash recovery remain open.
 

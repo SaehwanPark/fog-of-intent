@@ -15,9 +15,10 @@ surface.
 ## Overview
 
 Fog of Intent is currently a single Rust 2024 package with no dependencies. The
-binary runs the bounded line-oriented fixture loop and accepts one
-versioned `--scenario m3-two-window-fixture-v1` ID plus an explicit `--run-dir`
-storage option; internal `kernel` and
+binary reports package metadata through standalone `--version`/`-V` and runs
+the bounded line-oriented fixture loop with one versioned
+`--scenario m3-two-window-fixture-v1` ID plus an explicit `--run-dir` storage
+option; internal `kernel` and
 `lane` modules provide bounded deterministic transitions, in-memory history, replay,
 branching, coordination, objective, and debrief fixtures. No playable scenario,
 MCP, research, or GUI component exists yet; an injected
@@ -59,10 +60,11 @@ application host solely owns true-state lifecycle, legality, ordering, history
 commit, and adapter coordination; the kernel and lane modules evaluate only
 validated inputs within that host-owned boundary. The versioned terminal-text
 projection consumes host-projected actor-valid values at the edge and must not
-authorize commands, infer hidden state, or mutate history. The current kernel,
-lane, CLI, and terminal modules own no terminal I/O or rendering loop; the
-CLI's static modes, verbosity policies, and help metadata remain adapter
-contracts.
+authorize commands, infer hidden state, or mutate history. The kernel, lane,
+pure CLI grammar, and terminal projection modules own no terminal I/O or
+rendering loop; `src/command_loop.rs` owns the explicit outer stdin/stdout
+adapter, while the CLI's static modes, verbosity policies, and help metadata
+remain adapter contracts.
 
 The target architecture is one authoritative Rust simulation product with thin
 human, agent, and research adapters. The strongest boundary is:
@@ -361,7 +363,8 @@ and an architecture update or ADR when it changes a consequential boundary.
   artifacts, an injected file store, a pure terminal-text projection, and a
   thin line-oriented fixture loop with explicit versioned fixture selection,
   `--run-dir` wiring, a matched-parent host branch projection, and
-  machine-checked labeled plain text; broader scenario selection,
+  machine-checked labeled plain text, and process-edge package version
+  reporting; broader scenario selection,
   regenerated/graph branching, and human accessibility evidence remain open.
 - M2 still lacks a communication system, full vision geometry, memory decay,
   automatic threat damage, no-choice host scheduling, adaptive pacing, a complete item/resource economy,

@@ -19,8 +19,12 @@ pub const CLI_COMMAND_LOOP_SCHEMA: &str = "m3-cli-command-loop-v1";
 /// The only executable scenario identifier currently supported by the fixture.
 pub const CLI_FIXTURE_SCENARIO_ID: &str = "m3-two-window-fixture-v1";
 
+/// Package-derived version line for standalone executable metadata requests.
+pub const CLI_APPLICATION_VERSION: &str =
+  concat!("fog-of-intent ", env!("CARGO_PKG_VERSION"), "\n");
+
 /// Bounded process-level usage for the executable wrapper.
-pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--run-dir <path>]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1\n  --run-dir <path>  store bounded run artifacts in this directory\n  --help            show this help\n";
+pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--run-dir <path>]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1\n  --run-dir <path>  store bounded run artifacts in this directory\n  --help            show this help\n  --version, -V     show package version\n";
 
 /// Closed set of executable fixture constructors.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
@@ -64,6 +68,7 @@ impl CliApplicationArgsError {
 pub enum CliApplicationCommand {
   Run(CliApplicationOptions),
   Help,
+  Version,
 }
 
 /// Explicit executable configuration for the bounded fixture loop.
@@ -97,6 +102,12 @@ pub fn parse_application_args(
       value if value == "--help" || value == "-h" => {
         if args.len() == 1 {
           return Ok(CliApplicationCommand::Help);
+        }
+        return Err(CliApplicationArgsError::UnexpectedArgument);
+      }
+      value if value == "--version" || value == "-V" => {
+        if args.len() == 1 {
+          return Ok(CliApplicationCommand::Version);
         }
         return Err(CliApplicationArgsError::UnexpectedArgument);
       }
@@ -224,6 +235,7 @@ mod tests {
         assert_eq!(options.run_dir(), Some(Path::new("fixture-runs")));
       }
       CliApplicationCommand::Help => panic!("run arguments must not select help"),
+      CliApplicationCommand::Version => panic!("run arguments must not select version"),
     }
   }
 
@@ -235,7 +247,23 @@ mod tests {
     );
     assert_eq!(
       CLI_APPLICATION_HELP,
-      "usage: fog-of-intent [--scenario <id>] [--run-dir <path>]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1\n  --run-dir <path>  store bounded run artifacts in this directory\n  --help            show this help\n"
+      "usage: fog-of-intent [--scenario <id>] [--run-dir <path>]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1\n  --run-dir <path>  store bounded run artifacts in this directory\n  --help            show this help\n  --version, -V     show package version\n"
+    );
+    assert_eq!(
+      parse_application_args(&[OsString::from("--version")]),
+      Ok(CliApplicationCommand::Version)
+    );
+    assert_eq!(
+      parse_application_args(&[OsString::from("-V")]),
+      Ok(CliApplicationCommand::Version)
+    );
+    assert_eq!(
+      CLI_APPLICATION_VERSION,
+      concat!("fog-of-intent ", env!("CARGO_PKG_VERSION"), "\n")
+    );
+    assert_eq!(
+      parse_application_args(&[OsString::from("--version"), OsString::from("--help")]),
+      Err(CliApplicationArgsError::UnexpectedArgument)
     );
     assert_eq!(
       parse_application_args(&[OsString::from("--scenario")]),
@@ -319,6 +347,7 @@ mod tests {
           assert_eq!(options.run_dir(), Some(Path::new("fixture-runs")));
         }
         CliApplicationCommand::Help => panic!("options must select a run"),
+        CliApplicationCommand::Version => panic!("options must select a run"),
       }
     }
   }

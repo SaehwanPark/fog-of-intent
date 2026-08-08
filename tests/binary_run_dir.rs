@@ -158,9 +158,32 @@ fn binary_help_is_successful_and_bounded() {
   assert!(output.status.success());
   assert_eq!(
     String::from_utf8(output.stdout).expect("help UTF-8 output"),
-    "usage: fog-of-intent [--scenario <id>] [--run-dir <path>]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1\n  --run-dir <path>  store bounded run artifacts in this directory\n  --help            show this help\n"
+    "usage: fog-of-intent [--scenario <id>] [--run-dir <path>]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1\n  --run-dir <path>  store bounded run artifacts in this directory\n  --help            show this help\n  --version, -V     show package version\n"
   );
   assert!(output.stderr.is_empty());
+}
+
+#[test]
+fn binary_version_aliases_are_successful_and_host_free() {
+  let expected = format!("fog-of-intent {}\n", env!("CARGO_PKG_VERSION"));
+  for argument in ["--version", "-V"] {
+    let output = Command::new(binary_path())
+      .arg(argument)
+      .output()
+      .expect("run executable version");
+    assert!(output.status.success());
+    assert_eq!(
+      String::from_utf8(output.stdout).expect("version UTF-8"),
+      expected
+    );
+    assert!(output.stderr.is_empty());
+  }
+
+  let combined = Command::new(binary_path())
+    .args(["--version", "--run-dir", "ignored"])
+    .output()
+    .expect("run combined version arguments");
+  assert!(!combined.status.success());
 }
 
 #[test]

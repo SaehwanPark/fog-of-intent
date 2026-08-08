@@ -228,3 +228,16 @@ canonical policy instead of duplicating it.
   terminal-specific prompts/focus plus human keyboard/screen-reader inspection.
 - Prevention: Name machine-checkable text shape separately from accessibility
   validation in roadmap, QA, and handoff documents.
+
+## Keep process metadata outside the host
+
+- Context: The executable needed a scriptable package-version response alongside
+  scenario and run-directory options.
+- Symptom: Routing `--version` through the command loop would construct host
+  state, read stdin, or make metadata depend on simulation behavior.
+- Cause: Process invocation metadata and session commands have different
+  lifecycles and compatibility concerns.
+- Resolution: Handle standalone `--version`/`-V` in the application edge and
+  derive the output from Cargo package metadata before constructing a host.
+- Prevention: Keep metadata responses bounded and side-effect free, and treat
+  schema negotiation or migrations as separate evidence-gated work.
