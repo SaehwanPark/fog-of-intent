@@ -150,6 +150,9 @@ change manifest, execution, storage, or provider boundaries.
 matched pairs in stable order, requiring one actor and globally distinct
 observation IDs; it generates no scenarios or populations and owns no
 distribution, outcome, transition, history, or provider authority.
+`ScriptedAgentMatchedScenarioTallyReport` aggregates only the selected intents
+from a verified sample set into bounded profile/rule counts; it does not rerun
+policies or own population, outcome, persistence, or provider authority.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

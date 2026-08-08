@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.132`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.133`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1111,8 +1111,8 @@ This is a three-profile library-only comparison with bounded score and
 selected-action reports, an explicit seed bundle, and decision-replay records.
 It does not establish a
 population, broader role heuristics, memory, communication, broad random
-sampling, durable replay persistence, matched-scenario metrics, strategic
-quality, human realism, or an executable agent adapter.
+sampling, durable replay persistence, population-level matched-scenario
+metrics, strategic quality, human realism, or an executable agent adapter.
 
 ### Deliverables
 
@@ -1379,10 +1379,13 @@ representative replays, and an evidence-limited report.
   matched observations without generating scenarios or populations.
 - [ ] Add population generation, scenario selection, and distributional
   sampling evidence.
+- [x] Emit bounded selected-intent tallies over caller-supplied sample sets;
+  population distributions, outcomes, and strategic metrics remain open.
 - [x] Record applicable ruleset, scenario, scripted-policy, and profile version
   identities in a metadata-only catalog; prompt, model, tool-schema, and
   extractor versions are explicitly not applicable to this in-process slice.
-- [ ] Generate aggregate and distributional metrics, not only means.
+- [ ] Generate broader population-level aggregate/distributional, outcome, and
+  strategic metrics beyond the delivered selected-intent tally.
 - [ ] Add illegal-command, exploit-seeking, communication-abuse, and degenerate
   policy populations.
 - [ ] Detect outliers and select representative replays deterministically.
@@ -1397,8 +1400,8 @@ representative replays, and an evidence-limited report.
 
 - Experiment manifest schema and batch runner.
 - Versioned bounded cursor artifacts, matched-observation and matched-scenario
-  selected-intent evidence, and an applicable version catalog; decision/result
-  artifacts and representative replays remain open.
+  selected-intent/tally evidence, and an applicable version catalog;
+  decision/result artifacts and representative replays remain open.
 - Regression report template and threshold rationale.
 - CI or scheduled entry point only after runtime cost is measured.
 
