@@ -95,6 +95,23 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.93 — 2026-08-08
+
+### Added
+
+- Added the versioned `m4-scripted-agent-replay-v1` library record for
+  re-evaluating actor-visible scripted decisions with optional seed
+  provenance.
+- Added expected versus declared-anomalous disposition labels and bounded
+  decision-mismatch detection without making policy replay part of host
+  history or durable persistence.
+
+### Known limits
+
+- Replay records are library-only inspection artifacts; durable persistence,
+  degenerate-policy populations, broad sampling, outcomes, and human-behavior
+  claims remain open.
+
 ## 0.1.92 — 2026-08-08
 
 ### Added

@@ -125,7 +125,8 @@ project-state, design-source, and agent-workflow artifacts.
 actor-visible lane observations and return requests for host validation; they
 do not inspect true state, resolve execution, communicate, or mutate
 authoritative history. An opt-in seeded tie path accepts only an explicit
-policy seed bundle and remains outside transition and replay authority.
+policy seed bundle, and the library-only decision replay record remains
+outside transition, host history, and durable persistence authority.
 
 ## Target Components
 

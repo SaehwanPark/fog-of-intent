@@ -34,6 +34,9 @@ pub const SCRIPTED_AGENT_RANDOMNESS_SCHEMA: &str = "m4-scripted-agent-random-v1"
 /// Stable identity for seeded top-1 tie resolution.
 pub const SCRIPTED_AGENT_SEEDED_SELECTION_RULE: &str = "max-score-seeded-tie-v1";
 
+/// Versioned identity for actor-visible scripted-decision replay records.
+pub const SCRIPTED_AGENT_REPLAY_SCHEMA: &str = "m4-scripted-agent-replay-v1";
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum ScriptedAgentEvaluationRule {
   Threat,
@@ -266,6 +269,112 @@ impl ScriptedAgentDecision {
 
   pub const fn seed_bundle(&self) -> Option<ScriptedAgentSeedBundle> {
     self.seed_bundle
+  }
+}
+
+/// Whether a replayed policy decision matched its declared expectation.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentReplayDisposition {
+  Expected,
+  Anomalous,
+}
+
+/// Bounded failure when a recorded policy decision no longer replays exactly.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentReplayError {
+  DecisionMismatch,
+}
+
+/// Actor-visible scripted-policy decision record for deterministic replay.
+///
+/// The record stores no true state, state hash, execution input, or host
+/// history. It is a library inspection artifact; durable persistence remains an
+/// outer adapter concern.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentReplayRecord {
+  schema: &'static str,
+  observation: LanerObservation,
+  profile: ScriptedAgentProfile,
+  seed_bundle: Option<ScriptedAgentSeedBundle>,
+  decision: ScriptedAgentDecision,
+  expected_intent: LaneIntent,
+  disposition: ScriptedAgentReplayDisposition,
+}
+
+impl ScriptedAgentReplayRecord {
+  /// Capture a decision and classify it against a declared expected intent.
+  pub fn capture(
+    agent: ScriptedAgent,
+    observation: LanerObservation,
+    expected_intent: LaneIntent,
+    seed_bundle: Option<ScriptedAgentSeedBundle>,
+  ) -> Self {
+    let decision = match seed_bundle {
+      Some(seed_bundle) => agent.choose_with_seed(observation, seed_bundle),
+      None => agent.choose(observation),
+    };
+    let disposition = if decision.selected_intent() == expected_intent {
+      ScriptedAgentReplayDisposition::Expected
+    } else {
+      ScriptedAgentReplayDisposition::Anomalous
+    };
+    Self {
+      schema: SCRIPTED_AGENT_REPLAY_SCHEMA,
+      observation,
+      profile: agent.profile(),
+      seed_bundle,
+      decision,
+      expected_intent,
+      disposition,
+    }
+  }
+
+  pub const fn schema(&self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn profile(&self) -> ScriptedAgentProfile {
+    self.profile
+  }
+
+  pub const fn observation_id(&self) -> crate::lane::ObservationId {
+    self.observation.observation_id()
+  }
+
+  pub const fn expected_intent(&self) -> LaneIntent {
+    self.expected_intent
+  }
+
+  pub const fn selected_intent(&self) -> LaneIntent {
+    self.decision.selected_intent()
+  }
+
+  pub const fn disposition(&self) -> ScriptedAgentReplayDisposition {
+    self.disposition
+  }
+
+  pub const fn seed_bundle(&self) -> Option<ScriptedAgentSeedBundle> {
+    self.seed_bundle
+  }
+
+  pub fn decision(&self) -> &ScriptedAgentDecision {
+    &self.decision
+  }
+
+  /// Re-evaluate the actor-visible policy input and verify the recorded result.
+  pub fn replay(&self) -> Result<ScriptedAgentDecision, ScriptedAgentReplayError> {
+    let agent = ScriptedAgent {
+      profile: self.profile,
+    };
+    let decision = match self.seed_bundle() {
+      Some(seed_bundle) => agent.choose_with_seed(self.observation, seed_bundle),
+      None => agent.choose(self.observation),
+    };
+    if decision == self.decision {
+      Ok(decision)
+    } else {
+      Err(ScriptedAgentReplayError::DecisionMismatch)
+    }
   }
 }
 
@@ -866,6 +975,96 @@ mod tests {
     assert_ne!(
       first,
       ScriptedAgent::select_candidate_with_seed(&candidates, next_draw)
+    );
+  }
+
+  #[test]
+  fn decision_replay_classifies_expected_and_declared_anomalous_cases() {
+    let state = LaneSnapshot::initial();
+    let observation = observe_player(&state, ObservationId::new(20)).observation();
+    let expected = ScriptedAgentReplayRecord::capture(
+      ScriptedAgent::cautious_v1(),
+      observation,
+      LaneIntent::Stabilize,
+      None,
+    );
+    let anomalous = ScriptedAgentReplayRecord::capture(
+      ScriptedAgent::cautious_v1(),
+      observation,
+      LaneIntent::Contest,
+      None,
+    );
+    let seeded = ScriptedAgentReplayRecord::capture(
+      ScriptedAgent::cautious_v1(),
+      observation,
+      LaneIntent::Stabilize,
+      Some(ScriptedAgentSeedBundle::new(
+        42,
+        StreamId::new(21),
+        DrawId::new(3),
+      )),
+    );
+
+    assert_eq!(expected.schema(), "m4-scripted-agent-replay-v1");
+    assert_eq!(expected.profile().profile_id(), SCRIPTED_AGENT_PROFILE_ID);
+    assert_eq!(
+      expected.disposition(),
+      ScriptedAgentReplayDisposition::Expected
+    );
+    assert_eq!(expected.expected_intent(), LaneIntent::Stabilize);
+    assert_eq!(expected.selected_intent(), LaneIntent::Stabilize);
+    assert_eq!(expected.replay(), Ok(expected.decision().clone()));
+    assert_eq!(
+      anomalous.disposition(),
+      ScriptedAgentReplayDisposition::Anomalous
+    );
+    assert_eq!(anomalous.expected_intent(), LaneIntent::Contest);
+    assert_eq!(anomalous.selected_intent(), LaneIntent::Stabilize);
+    assert_eq!(anomalous.replay(), Ok(anomalous.decision().clone()));
+    assert_eq!(
+      seeded.disposition(),
+      ScriptedAgentReplayDisposition::Expected
+    );
+    assert!(seeded.seed_bundle().is_some());
+    assert_eq!(seeded.replay(), Ok(seeded.decision().clone()));
+  }
+
+  #[test]
+  fn decision_replay_rejects_tampered_recorded_decision() {
+    let state = LaneSnapshot::initial();
+    let observation = observe_player(&state, ObservationId::new(22)).observation();
+    let mut record = ScriptedAgentReplayRecord::capture(
+      ScriptedAgent::cautious_v1(),
+      observation,
+      LaneIntent::Stabilize,
+      None,
+    );
+    record.decision.selected_intent = LaneIntent::Contest;
+
+    assert_eq!(
+      record.replay(),
+      Err(ScriptedAgentReplayError::DecisionMismatch)
+    );
+
+    let mut seeded_record = ScriptedAgentReplayRecord::capture(
+      ScriptedAgent::cautious_v1(),
+      observation,
+      LaneIntent::Stabilize,
+      Some(ScriptedAgentSeedBundle::new(
+        42,
+        StreamId::new(21),
+        DrawId::new(3),
+      )),
+    );
+    seeded_record.decision.seed_bundle = Some(ScriptedAgentSeedBundle::new(
+      99,
+      StreamId::new(22),
+      DrawId::new(4),
+    ));
+
+    assert_eq!(
+      seeded_record.replay(),
+      Err(ScriptedAgentReplayError::DecisionMismatch)
     );
   }
 

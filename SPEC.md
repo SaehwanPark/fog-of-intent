@@ -917,10 +917,16 @@ open.
   while a changed draw can select a different equal-score tie member; the
   resulting request still passes host validation. This is a policy-edge
   reproducibility check, not broad random-sampling evidence.
+- `ScriptedAgentReplayRecord` stores the actor-visible observation, policy
+  decision, expected intent, disposition, and optional seed provenance under
+  `m4-scripted-agent-replay-v1`. Replay re-evaluates the policy and rejects a
+  decision mismatch without becoming host history or durable persistence;
+  expected and declared-anomalous records are bounded inspection cases.
 - Focused tests cover the initial candidate set, visible-threat prioritization,
   host validation, repeated identical-observation reproducibility, the
   matched profile difference plus unavailable-intent rejection, and the
-  low/high-pressure Anchor score relation, plus seeded tie reproducibility.
+  low/high-pressure Anchor score relation, seeded tie reproducibility, and
+  expected/anomalous decision replay with tamper rejection.
   This evidence plus the reproducible comparison report is a bounded library
   metric slice, not a claim of strategic quality or human behavioral realism.
 
