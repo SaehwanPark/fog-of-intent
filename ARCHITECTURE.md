@@ -163,6 +163,9 @@ projects deterministic actor-visible pairs, and composes the existing sample
 contract; repeated IDs are explicit ordered samples. It does not generate a
 population, sample a distribution, resolve a transition, or own history,
 replay, persistence, provider, or outcome authority.
+`ScriptedAgentFixtureScenarioFrequencyReport` counts those explicit selection
+labels in stable catalog order; it is bounded metadata over validated input,
+not population, outcome, strategic, persistence, or provider evidence.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

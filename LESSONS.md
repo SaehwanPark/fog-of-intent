@@ -982,3 +982,15 @@ canonical policy instead of duplicating it.
 - Prevention: Keep selection metadata separate from transition/history/replay,
   persistence, distribution, provider, and outcome contracts; broaden the
   catalog only with a new bounded schema and independent evidence.
+
+## Count explicit selections without calling them a population
+
+- Context: A fixed-fixture selector can provide useful frequency evidence before
+  population generation or distribution sampling exists.
+- Symptom: Naming counts a distribution can imply representativeness, random
+  sampling, or outcome coverage that the caller-supplied input does not provide.
+- Resolution: Keep a versioned two-row report tied to the validated selection,
+  preserve catalog order, and state that repeated choices are explicit input
+  frequencies only.
+- Prevention: Leave population, random/distributional, outcome, strategic, and
+  calibration metrics behind separate contracts and evidence gates.

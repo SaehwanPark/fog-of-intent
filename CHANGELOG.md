@@ -98,6 +98,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.136 — 2026-08-08
+
+### Added
+
+- Added `m6-scripted-agent-fixture-frequency-v1`, a bounded stable-order report
+  over explicit safe/threat fixture selections. It counts repeated choices from
+  validated input without rerunning policies or claiming a generated
+  population, general distribution, outcomes, persistence, or providers.
+
+### Known limits
+
+- Population generation, random/distributional sampling, outcome and strategic
+  metrics, persistence, providers, calibration, and human evidence remain open.
+
 ## 0.1.135 — 2026-08-08
 
 ### Added
