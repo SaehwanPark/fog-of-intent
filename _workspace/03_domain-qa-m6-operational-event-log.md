@@ -5,7 +5,7 @@
 PASS — no actionable findings remain after the independent three-pass review at
 implementation/evidence head `62d1d53`.
 
-## Scope to review
+## Scope reviewed
 
 The slice adds a bounded, payload-free operational event vocabulary and
 in-memory log container separate from committed simulation history and reports.
