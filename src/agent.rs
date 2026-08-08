@@ -3738,6 +3738,9 @@ mod tests {
     operational_store
       .save_segment("resume", 1, &second_segment)
       .expect("second segment saves");
+    operational_store
+      .save_segment("resume", 3, &second_segment)
+      .expect("highest segment saves");
     assert_eq!(
       operational_store
         .load_segment("resume", 0)
@@ -3750,24 +3753,42 @@ mod tests {
         .expect("second segment loads"),
       second_segment
     );
+    assert_eq!(
+      operational_store
+        .load_segment("resume", 3)
+        .expect("highest segment loads"),
+      second_segment
+    );
     assert!(root.join("resume.foi-operational-log.segment-0").is_file());
     assert!(root.join("resume.foi-operational-log.segment-1").is_file());
+    assert!(root.join("resume.foi-operational-log.segment-3").is_file());
     assert_eq!(
-      operational_store.save_segment("resume", 4, &first_segment),
+      operational_store
+        .load("resume")
+        .expect("base log survives segments"),
+      operational_log
+    );
+    let invalid_segment_root = root.join("invalid-segment");
+    let invalid_segment_store =
+      crate::agent_operational_store::ScriptedAgentOperationalLogStore::new(&invalid_segment_root);
+    assert_eq!(
+      invalid_segment_store.save_segment("resume", 4, &first_segment),
       Err(
         crate::agent_operational_store::ScriptedAgentOperationalLogStoreError::InvalidSegment {
           max: 4,
         }
       )
     );
+    assert!(!invalid_segment_root.exists());
     assert_eq!(
-      operational_store.load_segment("resume", 4),
+      invalid_segment_store.load_segment("resume", 4),
       Err(
         crate::agent_operational_store::ScriptedAgentOperationalLogStoreError::InvalidSegment {
           max: 4,
         }
       )
     );
+    assert!(!invalid_segment_root.exists());
     assert_eq!(
       host_store
         .load("resume")
