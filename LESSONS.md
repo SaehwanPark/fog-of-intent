@@ -183,3 +183,16 @@ canonical policy instead of duplicating it.
   separate binary processes.
 - Prevention: Keep process configuration outside the session grammar and add a
   cross-process smoke test whenever persistence becomes executable behavior.
+
+## Keep counterfactual branches read-only
+
+- Context: The lane already had a deterministic one-window branch contract, but
+  the host still rejected the CLI `branch` request.
+- Symptom: Evaluating an alternate intent through the live scenario history
+  could accidentally replace committed records or make a branch look like the
+  authoritative run.
+- Resolution: Rebuild a temporary verified parent history, use matched-parent
+  branch inputs, and return only an actor-safe comparison while retaining the
+  host draft, history, replay, and saved artifact.
+- Prevention: Treat branch review as a read-only projection until a versioned
+  branch artifact and explicit persistence contract are designed.

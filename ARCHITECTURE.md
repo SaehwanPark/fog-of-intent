@@ -358,8 +358,9 @@ and an architecture update or ADR when it changes a consequential boundary.
   playable scenario, external API, migration framework, or persistence service.
 - M3 has typed command contracts, a bounded host fixture, replay-validated
   artifacts, an injected file store, a pure terminal-text projection, and a
-  thin line-oriented fixture loop with explicit `--run-dir` wiring; scenario
-  selection, branch execution, and complete accessibility evidence remain open.
+  thin line-oriented fixture loop with explicit `--run-dir` wiring and a
+  matched-parent host branch projection; scenario selection,
+  regenerated/graph branching, and complete accessibility evidence remain open.
 - M2 still lacks a communication system, full vision geometry, memory decay,
   automatic threat damage, no-choice host scheduling, adaptive pacing, a complete item/resource economy,
   external scenario serialization, a branch tree, and a broader debrief
