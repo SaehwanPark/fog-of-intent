@@ -711,3 +711,14 @@ canonical policy instead of duplicating it.
   outcome.
 - Prevention: Keep parity evidence at the library boundary and leave transport
   or provider-specific parity to its own contract.
+
+## Make session termination explicit without adding a clock
+
+- Context: Timeout and disconnect behavior must be deterministic before a
+  transport or async runtime exists.
+- Symptom: Treating every closure as an undifferentiated quit loses the caller
+  event, while reading wall time would pull scheduling into the core.
+- Resolution: Record closed-session reasons for client request, explicit
+  timeout, and disconnect; decode malformed actions before session checks.
+- Prevention: Keep timing/reconnect orchestration at the edge and map all
+  malformed, stale, and duplicate failures through the bounded error codec.

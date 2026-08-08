@@ -1,17 +1,21 @@
 //! Immutable actor-session lifecycle at the M5 protocol edge.
 //!
 //! This module binds one ordinary actor to one session and one current
-//! observation at a time. It checks session freshness and duplicate submission
-//! only; host legality, transition, history, and replay remain outside it.
+//! observation at a time, maps bounded encoded-action failures, and records
+//! explicit closure metadata. Host legality, transition, history, and replay
+//! remain outside it.
 
 use crate::protocol::{
-  ActorActionDto, ActorObservationDto, ActorProtocolError, ActorProtocolErrorCode,
-  ActorProtocolRepairHint,
+  ActorActionDto, ActorObservationDto, ActorProtocolCodecError, ActorProtocolError,
+  ActorProtocolErrorCode, ActorProtocolRepairHint,
 };
 use std::fmt;
 
-/// Versioned actor-session contract identity.
-pub const ACTOR_SESSION_SCHEMA: &str = "m5-actor-session-v1";
+/// Historical actor-session contract identity.
+pub const ACTOR_SESSION_SCHEMA_V1: &str = "m5-actor-session-v1";
+
+/// Current actor-session contract identity.
+pub const ACTOR_SESSION_SCHEMA: &str = "m5-actor-session-v2";
 
 /// Lifecycle phases for one actor-bound protocol session.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -42,6 +46,24 @@ pub enum ActorSessionError {
   StaleObservation,
   DuplicateSubmission,
   Closed,
+}
+
+/// Explicit caller-signaled reasons for closing an actor session.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ActorSessionCloseReason {
+  ClientRequested,
+  TimedOut,
+  Disconnected,
+}
+
+impl ActorSessionCloseReason {
+  pub const fn id(self) -> &'static str {
+    match self {
+      Self::ClientRequested => "client_requested",
+      Self::TimedOut => "timed_out",
+      Self::Disconnected => "disconnected",
+    }
+  }
 }
 
 impl ActorSessionError {
@@ -85,6 +107,7 @@ pub struct ActorSession {
   actor: u8,
   phase: ActorSessionPhase,
   observation_id: Option<u64>,
+  close_reason: Option<ActorSessionCloseReason>,
 }
 
 impl ActorSession {
@@ -95,6 +118,7 @@ impl ActorSession {
       actor,
       phase: ActorSessionPhase::Open,
       observation_id: None,
+      close_reason: None,
     }
   }
 
@@ -116,6 +140,10 @@ impl ActorSession {
 
   pub const fn observation_id(self) -> Option<u64> {
     self.observation_id
+  }
+
+  pub const fn close_reason(self) -> Option<ActorSessionCloseReason> {
+    self.close_reason
   }
 
   /// Bind the next actor-visible observation to this session.
@@ -170,11 +198,38 @@ impl ActorSession {
     })
   }
 
-  /// Close the session; later observations and actions fail closed.
+  /// Decode and accept one action, projecting malformed input without details.
+  pub fn accept_encoded_action(self, input: &str) -> Result<Self, ActorProtocolError> {
+    let action = ActorActionDto::decode(input).map_err(ActorProtocolCodecError::to_actor_error)?;
+    self
+      .accept_action(action)
+      .map_err(ActorSessionError::to_actor_error)
+  }
+
+  /// Close the session for an explicit client request.
   pub const fn close(self) -> Self {
-    Self {
-      phase: ActorSessionPhase::Closed,
-      ..self
+    self.close_for(ActorSessionCloseReason::ClientRequested)
+  }
+
+  /// Mark the session timed out by an explicit caller event; no clock is read.
+  pub const fn timeout(self) -> Self {
+    self.close_for(ActorSessionCloseReason::TimedOut)
+  }
+
+  /// Mark the session disconnected by an explicit caller event.
+  pub const fn disconnect(self) -> Self {
+    self.close_for(ActorSessionCloseReason::Disconnected)
+  }
+
+  pub const fn close_for(self, reason: ActorSessionCloseReason) -> Self {
+    if let ActorSessionPhase::Closed = self.phase {
+      self
+    } else {
+      Self {
+        phase: ActorSessionPhase::Closed,
+        close_reason: Some(reason),
+        ..self
+      }
     }
   }
 }
@@ -486,7 +541,7 @@ mod tests {
     let next_action = ActorActionDto::new(1, 27, ActorProtocolIntent::Contest);
     let session = ActorSession::new(7, 1);
 
-    assert_eq!(session.schema(), "m5-actor-session-v1");
+    assert_eq!(session.schema(), "m5-actor-session-v2");
     assert_eq!(session.phase().id(), "open");
     let awaiting = session
       .accept_observation(&first)
@@ -567,6 +622,100 @@ mod tests {
     assert_eq!(
       awaiting.accept_observation(&waiting_observation),
       Err(ActorSessionError::ObservationAlreadyOpen)
+    );
+  }
+
+  #[test]
+  fn session_accepts_encoded_actions_and_maps_malformed_responses() {
+    let state = LaneSnapshot::initial();
+    let observation = ActorObservationDto::from_observation(
+      observe_player(&state, ObservationId::new(32)).observation(),
+    );
+    let session = ActorSession::new(11, observation.observer())
+      .accept_observation(&observation)
+      .expect("observation binds");
+    let valid = ActorActionDto::new(
+      observation.observer(),
+      observation.observation_id(),
+      ActorProtocolIntent::Contest,
+    )
+    .encode();
+    assert_eq!(
+      session
+        .accept_encoded_action(&valid)
+        .expect("encoded action binds")
+        .phase(),
+      ActorSessionPhase::Submitted
+    );
+    let malformed = valid.replacen("intent=contest", "unknown=value", 1);
+    let error = session
+      .accept_encoded_action(&malformed)
+      .expect_err("unknown field is rejected");
+    assert_eq!(error.code().id(), "unknown_field");
+    assert_eq!(error.repair().id(), "resend_exact_payload");
+  }
+
+  #[test]
+  fn session_encoded_actions_reject_duplicate_and_stale_submissions() {
+    let state = LaneSnapshot::initial();
+    let observation = ActorObservationDto::from_observation(
+      observe_player(&state, ObservationId::new(33)).observation(),
+    );
+    let session = ActorSession::new(12, observation.observer())
+      .accept_observation(&observation)
+      .expect("observation binds");
+    let stale = ActorActionDto::new(
+      observation.observer(),
+      observation.observation_id() - 1,
+      ActorProtocolIntent::Contest,
+    )
+    .encode();
+    let stale_error = session
+      .accept_encoded_action(&stale)
+      .expect_err("stale action is rejected");
+    assert_eq!(stale_error.code().id(), "stale_observation");
+    let valid = ActorActionDto::new(
+      observation.observer(),
+      observation.observation_id(),
+      ActorProtocolIntent::Contest,
+    )
+    .encode();
+    let submitted = session
+      .accept_encoded_action(&valid)
+      .expect("valid action binds");
+    let duplicate_error = submitted
+      .accept_encoded_action(&valid)
+      .expect_err("duplicate action is rejected");
+    assert_eq!(duplicate_error.code().id(), "duplicate_submission");
+    assert_eq!(duplicate_error.repair().id(), "await_next_observation");
+  }
+
+  #[test]
+  fn session_termination_reasons_are_explicit_and_fail_closed() {
+    assert_eq!(ACTOR_SESSION_SCHEMA_V1, "m5-actor-session-v1");
+    assert_eq!(ACTOR_SESSION_SCHEMA, "m5-actor-session-v2");
+    let action = ActorActionDto::new(1, 34, ActorProtocolIntent::Yield);
+    let cases = [
+      (ActorSession::new(13, 1).close(), "client_requested"),
+      (ActorSession::new(14, 1).timeout(), "timed_out"),
+      (ActorSession::new(15, 1).disconnect(), "disconnected"),
+    ];
+    for (session, reason) in cases {
+      assert_eq!(session.schema(), ACTOR_SESSION_SCHEMA);
+      assert_eq!(session.phase(), ActorSessionPhase::Closed);
+      assert_eq!(
+        session.close_reason().map(ActorSessionCloseReason::id),
+        Some(reason)
+      );
+      assert_eq!(
+        session.accept_action(action),
+        Err(ActorSessionError::Closed)
+      );
+    }
+    let timed_out = ActorSession::new(16, 1).timeout();
+    assert_eq!(
+      timed_out.disconnect().close_reason(),
+      Some(ActorSessionCloseReason::TimedOut)
     );
   }
 
