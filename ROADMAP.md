@@ -1428,6 +1428,9 @@ representative replays, and an evidence-limited report.
   verified profile-aware comparison rows with stable row/intent ties; actual
   outlier detection and representative replay selection remain open.
 - [ ] Detect outliers and select representative replays deterministically.
+- [x] Classify caller-declared operational `batch_started` →
+  `chunk_completed` → `batch_finished` label order with optional checkpoint/
+  resume labels; causal-trace completeness and replay identity remain open.
 - [ ] Check causal-trace completeness and replay identity for sampled runs.
 - [x] Define one provisional fixed-fixture regression gate with written
   threshold rationale; broader gates remain open.

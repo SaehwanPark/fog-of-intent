@@ -77,7 +77,7 @@ players?
 | --- | --- |
 | Current roadmap milestone | M2 — One-Lane Vertical Slice (Active) |
 | Repository governance and canonical docs | Complete — M0 |
-| Rust package | `0.1.160`, edition 2024, Rust `1.96`, no dependencies, single package |
+| Rust package | `0.1.161`, edition 2024, Rust `1.96`, no dependencies, single package |
 | Executable behavior | Reports package version with standalone `--version`/`-V`, or runs the documented line-oriented deterministic two-window fixture transcript with explicit versioned `--scenario m3-two-window-fixture-v1` selection and optional `--run-dir` artifact storage |
 | Deterministic kernel | M1 fixture/codec complete; M2 v3 internal lane-window, explicit four-actor roster, retained-resource aggregate, intent, observation, branch, coordination, objective, strategy-fixture, scenario, replay, delayed-origin provenance, debrief, advance-condition, and belief/report contracts implemented |
 | One-lane scenario | Internal diagnostic windows and fixtures cover bounded intents, observations, coordination, resources, replay, and debrief projections — full scenario not complete |
@@ -101,6 +101,11 @@ The M6 comparison slice also exposes a deterministic largest-delta candidate
 from verified profile-aware tally comparisons, preserving signed deltas and
 stable row/intent ties. It is not an outlier detector or representative replay
 selector; those broader definitions remain open.
+
+The bounded operational-log slice also classifies caller-declared
+start/chunk/finish label order, allowing checkpoint/resume labels between the
+chunk and finish. It is not causal-trace completeness or replay-identity
+verification; runtime production and recovery remain open.
 
 The bounded operational-log adapter can save/load caller-declared segments
 `0..=3` and list recognized indices; it does not infer rotation or crash state.

@@ -132,6 +132,14 @@ pub const SCRIPTED_AGENT_OPERATIONAL_EVENT_SCHEMA: &str = "m6-scripted-agent-ope
 /// Versioned identity for the bounded operational-log codec.
 pub const SCRIPTED_AGENT_OPERATIONAL_LOG_SCHEMA: &str = "m6-scripted-agent-operational-log-v1";
 
+/// Versioned identity for bounded operational-log sequence status.
+pub const SCRIPTED_AGENT_OPERATIONAL_LOG_SEQUENCE_SCHEMA: &str =
+  "m6-scripted-agent-operational-log-sequence-v1";
+
+/// Stable identity for the required operational lifecycle sequence.
+pub const SCRIPTED_AGENT_OPERATIONAL_LOG_SEQUENCE_RULE: &str =
+  "m6-operational-start-chunk-finish-v1";
+
 /// Maximum number of operational events retained in one in-memory log.
 pub const MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS: usize = 16;
 
@@ -1249,6 +1257,97 @@ pub enum ScriptedAgentOperationalBatchRunError {
 pub struct ScriptedAgentOperationalLog {
   schema: &'static str,
   entries: Vec<ScriptedAgentOperationalEventRecord>,
+}
+
+/// Closed statuses for the required operational lifecycle sequence.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentOperationalLogSequenceStatus {
+  Complete,
+  MissingStart,
+  MissingChunk,
+  MissingFinish,
+  InvalidOrder,
+}
+
+impl ScriptedAgentOperationalLogSequenceStatus {
+  pub const fn id(self) -> &'static str {
+    match self {
+      Self::Complete => "complete",
+      Self::MissingStart => "missing_start",
+      Self::MissingChunk => "missing_chunk",
+      Self::MissingFinish => "missing_finish",
+      Self::InvalidOrder => "invalid_order",
+    }
+  }
+}
+
+/// Pure sequence status over one caller-declared operational log.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentOperationalLogSequenceReport {
+  schema: &'static str,
+  rule: &'static str,
+  status: ScriptedAgentOperationalLogSequenceStatus,
+}
+
+impl ScriptedAgentOperationalLogSequenceReport {
+  /// Classify the fixed lifecycle without mutating or producing events.
+  pub fn from_log(log: &ScriptedAgentOperationalLog) -> Self {
+    let mut phase = 0_u8;
+    for event in log.entries().iter().map(|entry| entry.event()) {
+      match phase {
+        0 if event == ScriptedAgentOperationalEvent::BatchStarted => phase = 1,
+        0 => {
+          phase = 4;
+          break;
+        }
+        1 if event == ScriptedAgentOperationalEvent::ChunkCompleted => phase = 2,
+        1 => {
+          phase = 4;
+          break;
+        }
+        2 if event == ScriptedAgentOperationalEvent::BatchFinished => phase = 3,
+        2 if matches!(
+          event,
+          ScriptedAgentOperationalEvent::CheckpointSaved
+            | ScriptedAgentOperationalEvent::BatchResumed
+        ) => {}
+        2 => {
+          phase = 4;
+          break;
+        }
+        3 => {
+          phase = 4;
+          break;
+        }
+        _ => unreachable!("sequence phases are closed"),
+      }
+    }
+    let status = match phase {
+      0 => ScriptedAgentOperationalLogSequenceStatus::MissingStart,
+      1 => ScriptedAgentOperationalLogSequenceStatus::MissingChunk,
+      2 => ScriptedAgentOperationalLogSequenceStatus::MissingFinish,
+      3 => ScriptedAgentOperationalLogSequenceStatus::Complete,
+      4 => ScriptedAgentOperationalLogSequenceStatus::InvalidOrder,
+      _ => unreachable!("sequence phases are bounded"),
+    };
+    Self {
+      schema: SCRIPTED_AGENT_OPERATIONAL_LOG_SEQUENCE_SCHEMA,
+      rule: SCRIPTED_AGENT_OPERATIONAL_LOG_SEQUENCE_RULE,
+      status,
+    }
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn rule(self) -> &'static str {
+    self.rule
+  }
+
+  pub const fn status(self) -> ScriptedAgentOperationalLogSequenceStatus {
+    self.status
+  }
 }
 
 impl ScriptedAgentOperationalLog {
@@ -4365,6 +4464,122 @@ mod tests {
     assert_eq!(
       ScriptedAgentOperationalLog::decode(&log.encode()),
       Ok(log.clone())
+    );
+  }
+
+  #[test]
+  fn operational_log_sequence_status_is_closed_ordered_and_read_only() {
+    let build_log = |events: &[ScriptedAgentOperationalEvent]| {
+      let mut log = ScriptedAgentOperationalLog::new();
+      for event in events {
+        log.append(*event).expect("sequence fixture fits");
+      }
+      log
+    };
+    let complete = build_log(&[
+      ScriptedAgentOperationalEvent::BatchStarted,
+      ScriptedAgentOperationalEvent::ChunkCompleted,
+      ScriptedAgentOperationalEvent::BatchFinished,
+    ]);
+    let before = complete.clone();
+    let report = ScriptedAgentOperationalLogSequenceReport::from_log(&complete);
+    assert_eq!(
+      report.schema(),
+      "m6-scripted-agent-operational-log-sequence-v1"
+    );
+    assert_eq!(report.rule(), "m6-operational-start-chunk-finish-v1");
+    assert_eq!(
+      report.status(),
+      ScriptedAgentOperationalLogSequenceStatus::Complete
+    );
+    assert_eq!(report.status().id(), "complete");
+    assert_eq!(
+      ScriptedAgentOperationalLogSequenceReport::from_log(&complete),
+      report,
+      "repeated sequence classification is deterministic"
+    );
+    assert_eq!(
+      complete, before,
+      "status inspection does not mutate the log"
+    );
+
+    let optional = build_log(&[
+      ScriptedAgentOperationalEvent::BatchStarted,
+      ScriptedAgentOperationalEvent::ChunkCompleted,
+      ScriptedAgentOperationalEvent::CheckpointSaved,
+      ScriptedAgentOperationalEvent::BatchResumed,
+      ScriptedAgentOperationalEvent::BatchFinished,
+    ]);
+    assert_eq!(
+      ScriptedAgentOperationalLogSequenceReport::from_log(&optional).status(),
+      ScriptedAgentOperationalLogSequenceStatus::Complete
+    );
+
+    for (events, expected) in [
+      (
+        &[][..],
+        ScriptedAgentOperationalLogSequenceStatus::MissingStart,
+      ),
+      (
+        &[ScriptedAgentOperationalEvent::BatchStarted][..],
+        ScriptedAgentOperationalLogSequenceStatus::MissingChunk,
+      ),
+      (
+        &[
+          ScriptedAgentOperationalEvent::BatchStarted,
+          ScriptedAgentOperationalEvent::ChunkCompleted,
+        ][..],
+        ScriptedAgentOperationalLogSequenceStatus::MissingFinish,
+      ),
+      (
+        &[
+          ScriptedAgentOperationalEvent::ChunkCompleted,
+          ScriptedAgentOperationalEvent::BatchFinished,
+        ][..],
+        ScriptedAgentOperationalLogSequenceStatus::InvalidOrder,
+      ),
+      (
+        &[
+          ScriptedAgentOperationalEvent::BatchStarted,
+          ScriptedAgentOperationalEvent::CheckpointSaved,
+          ScriptedAgentOperationalEvent::ChunkCompleted,
+          ScriptedAgentOperationalEvent::BatchFinished,
+        ][..],
+        ScriptedAgentOperationalLogSequenceStatus::InvalidOrder,
+      ),
+      (
+        &[
+          ScriptedAgentOperationalEvent::BatchStarted,
+          ScriptedAgentOperationalEvent::ChunkCompleted,
+          ScriptedAgentOperationalEvent::BatchFinished,
+          ScriptedAgentOperationalEvent::BatchStarted,
+        ][..],
+        ScriptedAgentOperationalLogSequenceStatus::InvalidOrder,
+      ),
+    ] {
+      assert_eq!(
+        ScriptedAgentOperationalLogSequenceReport::from_log(&build_log(events)).status(),
+        expected
+      );
+    }
+    assert_eq!(
+      [
+        ScriptedAgentOperationalLogSequenceStatus::Complete,
+        ScriptedAgentOperationalLogSequenceStatus::MissingStart,
+        ScriptedAgentOperationalLogSequenceStatus::MissingChunk,
+        ScriptedAgentOperationalLogSequenceStatus::MissingFinish,
+        ScriptedAgentOperationalLogSequenceStatus::InvalidOrder,
+      ]
+      .into_iter()
+      .map(ScriptedAgentOperationalLogSequenceStatus::id)
+      .collect::<Vec<_>>(),
+      vec![
+        "complete",
+        "missing_start",
+        "missing_chunk",
+        "missing_finish",
+        "invalid_order"
+      ]
     );
   }
 
