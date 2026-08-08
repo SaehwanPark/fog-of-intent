@@ -2,18 +2,20 @@
 
 ## Outcome
 
-Implementation and evidence are pending independent three-pass review at the
-implementation/evidence head.
+Implementation and evidence are complete at head `10a227b`; the independent
+three-pass review passed with no actionable findings. The slice adds a
+deterministic fixed-fixture population over the closed scenario catalog,
+without claiming broad or representative sampling.
 
-## Verification target
+## Verification
 
-One focused fixture-selection regression should cover the literal population
-schema, deterministic alternating four-entry output, ordered IDs derived from
-the caller-supplied starting ID, matched-sample composition,
+One focused fixture-selection regression covers the literal population schema,
+deterministic alternating four-entry output, ordered pairs derived from the
+caller-supplied starting ID, complete matched-sample composition,
 empty/over-capacity failures, and inclusive observation-ID bounds. The full
-target is 27 focused agent tests within 240
-Rust unit + 7 binary + 3 RustDoc tests, plus 15 Python tests and formatter,
-Clippy, repository, and diff gates.
+evidence is 27 focused agent tests within 240 Rust unit + 7 binary + 3 RustDoc
+tests, plus 15 Python tests; formatter, Clippy, repository, and diff gates pass
+at `10a227b`.
 
 ## Limits
 

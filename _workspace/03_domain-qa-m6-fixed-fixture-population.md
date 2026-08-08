@@ -2,7 +2,8 @@
 
 ## Disposition
 
-Pending independent three-pass review at the implementation/evidence head.
+PASS: the independent three-pass review found no actionable findings at
+implementation/evidence head `10a227b`.
 
 ## Scope to review
 
@@ -15,15 +16,16 @@ Pending independent three-pass review at the implementation/evidence head.
   keeping policy, transition, history, replay, persistence, provider, outcome,
   and population authority outside this adapter?
 
-## Evidence target
+## Evidence
 
-One focused fixture-selection regression should cover literal schema and
-alternating order, exact observation IDs, deterministic repetition, successful
-matched-sample composition, empty/over-capacity failures, and the inclusive
-maximum observation-ID boundary plus overflow rejection. The full gate target
-is 27 focused agent tests within 240 Rust unit + 7 binary + 3 RustDoc tests,
-15 Python tests, formatter, Clippy with warnings denied, repository checker,
-and diff checks.
+One focused fixture-selection regression covers the literal schema and
+alternating order, exact sequential pairs derived from the starting ID,
+deterministic repetition, complete verified matched-sample composition,
+empty/over-capacity failures, and the inclusive maximum observation-ID
+boundary plus overflow rejection. The full evidence is 27 focused agent tests
+within 240 Rust unit + 7 binary + 3 RustDoc tests, 15 Python tests, formatter,
+Clippy with warnings denied, repository checker, and diff checks, all passing
+at `10a227b`.
 
 ## Limits
 
@@ -33,4 +35,5 @@ behavior, or human realism.
 
 ## Required fixes
 
-To be completed after independent review.
+None. Broader/random population sampling, distributions, outcomes, persistence,
+providers, and human-behavior evidence remain open.
