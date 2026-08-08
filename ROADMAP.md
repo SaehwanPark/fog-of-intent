@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.106`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.107`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1172,6 +1172,9 @@ control over simulation resolution.
 - [x] Project successful host actor submissions through a bounded result DTO
   containing only fixture window and categorical outcome; detailed debrief and
   transport remain open.
+- [x] Define `m5-actor-commit-v1` and `m5-actor-commit-result-v1` for an
+  observation-bound explicit intent commit and bounded acknowledgement; host
+  transition and history remain untouched until a later advance.
 - [x] Add a read-only host adapter that validates an actor action against the
   current receipt and maps mismatch, stale, closed-window, and generic lane
   rejection to actor-safe codes.
@@ -1207,8 +1210,8 @@ closes the fixture window through the existing deterministic transition.
 The `m5-actor-draft-v1` DTO adds bounded message, plan, and contingency
 metadata without communication authority. The host stages those DTOs only
 before commit and never turns them into a transition by itself. Focused
-evidence is 15 protocol tests, 5 session tests, and 20 host tests within the
-196-unit, 7-binary, and 1-Rustdoc suite. The host observation projection is a
+evidence is 16 protocol tests, 5 session tests, and 21 host tests within the
+198-unit, 7-binary, and 1-Rustdoc suite. The host observation projection is a
 pure actor-visible DTO mapping, rejects inactive lifecycle states, and leaves
 the internal receipt private. The history DTO is a bounded status summary,
 while the debrief DTO is a completion-gated committed-facts summary rather
@@ -1219,8 +1222,8 @@ than a detailed replay or causal debrief contract.
 - [x] Define the bounded library session lifecycle and actor binding;
   transport-integrated lifecycle and authority remain open.
 - [ ] Define remaining integration/contracts for messages, plans,
-  contingencies, commit, replay, and detailed outcome/debrief review; bounded
-  observation/action/draft/history/debrief projections are delivered.
+  contingencies, replay, and detailed outcome/debrief review; bounded
+  observation/action/commit/draft/history/debrief projections are delivered.
 - [ ] Keep internal domain types private from public protocol compatibility.
 - [x] Implement private action submission and host-owned window closure for the
   bounded fixture; transport and simultaneous-decision integration remain open.

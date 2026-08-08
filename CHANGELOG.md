@@ -95,6 +95,22 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.107 — 2026-08-08
+
+### Added
+
+- Added `m5-actor-commit-v1` and `m5-actor-commit-result-v1` for an
+  observation-bound explicit intent commit and bounded acknowledgement.
+- Added host coverage proving commit clears uncommitted draft metadata without
+  advancing the window, changing history, or refreshing the observation;
+  staged-plan mismatches and lifecycle boundaries remain actor-safe.
+
+### Known limits
+
+- Commit remains a synchronous host boundary; transport delivery, simultaneous
+  ordering, persistence, reconnect, and richer communication/plan semantics
+  remain open.
+
 ## 0.1.106 — 2026-08-08
 
 ### Added

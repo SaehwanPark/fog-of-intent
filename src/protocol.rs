@@ -27,6 +27,12 @@ pub const ACTOR_ACTION_RESULT_SCHEMA: &str = "m5-actor-action-result-v1";
 /// Versioned actor-visible completed-run debrief summary identity.
 pub const ACTOR_DEBRIEF_SCHEMA: &str = "m5-actor-debrief-v1";
 
+/// Versioned actor commit command identity.
+pub const ACTOR_COMMIT_SCHEMA: &str = "m5-actor-commit-v1";
+
+/// Versioned actor commit acknowledgement identity.
+pub const ACTOR_COMMIT_RESULT_SCHEMA: &str = "m5-actor-commit-result-v1";
+
 /// Versioned actor message/plan/contingency metadata identity.
 pub const ACTOR_DRAFT_SCHEMA: &str = "m5-actor-draft-v1";
 
@@ -358,6 +364,146 @@ impl ActorActionDto {
         .map_err(|_| ActorProtocolCodecError::InvalidValue)?,
       intent: ActorProtocolIntent::parse_id(intent.ok_or(ActorProtocolCodecError::MissingField)?)?,
     })
+  }
+}
+
+/// Observation-bound actor command that commits one explicit intent.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ActorCommitDto {
+  schema: &'static str,
+  observer: u8,
+  observation_id: u64,
+  intent: ActorProtocolIntent,
+}
+
+impl ActorCommitDto {
+  pub const fn new(observer: u8, observation_id: u64, intent: ActorProtocolIntent) -> Self {
+    Self {
+      schema: ACTOR_COMMIT_SCHEMA,
+      observer,
+      observation_id,
+      intent,
+    }
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn observer(self) -> u8 {
+    self.observer
+  }
+
+  pub const fn observation_id(self) -> u64 {
+    self.observation_id
+  }
+
+  pub const fn intent(self) -> ActorProtocolIntent {
+    self.intent
+  }
+
+  pub(crate) fn to_lane_intent(self) -> LaneIntent {
+    self.intent.to_lane_intent()
+  }
+
+  /// Encode the observation-bound commit command as stable line-oriented text.
+  pub fn encode(self) -> String {
+    format!(
+      "schema={}\nobserver={}\nobservation_id={}\nintent={}\n",
+      self.schema,
+      self.observer,
+      self.observation_id,
+      self.intent.id()
+    )
+  }
+
+  /// Decode a bounded commit command without staging or advancing the host.
+  pub fn decode(input: &str) -> Result<Self, ActorProtocolCodecError> {
+    let fields = parse_fields(input, 4)?;
+    let mut schema = None;
+    let mut observer = None;
+    let mut observation_id = None;
+    let mut intent = None;
+    for (key, value) in fields {
+      let slot = match key {
+        "schema" => &mut schema,
+        "observer" => &mut observer,
+        "observation_id" => &mut observation_id,
+        "intent" => &mut intent,
+        _ => return Err(ActorProtocolCodecError::UnknownField),
+      };
+      if slot.is_some() {
+        return Err(ActorProtocolCodecError::DuplicateField);
+      }
+      *slot = Some(value);
+    }
+    if schema != Some(ACTOR_COMMIT_SCHEMA) {
+      return Err(ActorProtocolCodecError::UnsupportedSchema);
+    }
+    Ok(Self::new(
+      observer
+        .ok_or(ActorProtocolCodecError::MissingField)?
+        .parse::<u8>()
+        .map_err(|_| ActorProtocolCodecError::InvalidValue)?,
+      observation_id
+        .ok_or(ActorProtocolCodecError::MissingField)?
+        .parse::<u64>()
+        .map_err(|_| ActorProtocolCodecError::InvalidValue)?,
+      ActorProtocolIntent::parse_id(intent.ok_or(ActorProtocolCodecError::MissingField)?)?,
+    ))
+  }
+}
+
+/// Bounded actor-safe acknowledgement after a host-owned commit.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ActorCommitResultDto {
+  schema: &'static str,
+  intent: ActorProtocolIntent,
+}
+
+impl ActorCommitResultDto {
+  pub const fn new(intent: ActorProtocolIntent) -> Self {
+    Self {
+      schema: ACTOR_COMMIT_RESULT_SCHEMA,
+      intent,
+    }
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn intent(self) -> ActorProtocolIntent {
+    self.intent
+  }
+
+  /// Encode the bounded commit acknowledgement as stable line-oriented text.
+  pub fn encode(self) -> String {
+    format!("schema={}\nintent={}\n", self.schema, self.intent.id())
+  }
+
+  /// Decode a bounded commit acknowledgement without transition authority.
+  pub fn decode(input: &str) -> Result<Self, ActorProtocolCodecError> {
+    let fields = parse_fields(input, 2)?;
+    let mut schema = None;
+    let mut intent = None;
+    for (key, value) in fields {
+      let slot = match key {
+        "schema" => &mut schema,
+        "intent" => &mut intent,
+        _ => return Err(ActorProtocolCodecError::UnknownField),
+      };
+      if slot.is_some() {
+        return Err(ActorProtocolCodecError::DuplicateField);
+      }
+      *slot = Some(value);
+    }
+    if schema != Some(ACTOR_COMMIT_RESULT_SCHEMA) {
+      return Err(ActorProtocolCodecError::UnsupportedSchema);
+    }
+    Ok(Self::new(ActorProtocolIntent::parse_id(
+      intent.ok_or(ActorProtocolCodecError::MissingField)?,
+    )?))
   }
 }
 
@@ -1346,6 +1492,95 @@ mod tests {
     );
     assert_eq!(request.intent(), LaneIntent::Contest);
     validate_lane_request(&state, &receipt, &request).expect("protocol request is host-valid");
+  }
+
+  #[test]
+  fn actor_commit_command_and_result_codecs_are_observation_bound_and_closed() {
+    let commit = ActorCommitDto::new(1, 41, ActorProtocolIntent::Contest);
+    assert_eq!(commit.schema(), "m5-actor-commit-v1");
+    assert_eq!(commit.observer(), 1);
+    assert_eq!(commit.observation_id(), 41);
+    assert_eq!(commit.intent(), ActorProtocolIntent::Contest);
+    assert_eq!(
+      commit.encode(),
+      "schema=m5-actor-commit-v1\nobserver=1\nobservation_id=41\nintent=contest\n"
+    );
+    assert_eq!(ActorCommitDto::decode(&commit.encode()), Ok(commit));
+
+    assert_eq!(
+      ActorCommitDto::decode(
+        "schema=m5-actor-commit-v1\nobserver=1\nobservation_id=41\nunknown=contest\n"
+      ),
+      Err(ActorProtocolCodecError::UnknownField)
+    );
+    assert_eq!(
+      ActorCommitDto::decode("schema=m5-actor-commit-v1\nobserver=1\nobserver=1\nintent=contest\n"),
+      Err(ActorProtocolCodecError::DuplicateField)
+    );
+    assert_eq!(
+      ActorCommitDto::decode("schema=m5-actor-commit-v1\nobserver=1\nobservation_id=41\n"),
+      Err(ActorProtocolCodecError::MissingField)
+    );
+    assert_eq!(
+      ActorCommitDto::decode(
+        "schema=m5-actor-commit-v0\nobserver=1\nobservation_id=41\nintent=contest\n"
+      ),
+      Err(ActorProtocolCodecError::UnsupportedSchema)
+    );
+    assert_eq!(
+      ActorCommitDto::decode(
+        "schema=m5-actor-commit-v1\nobserver=nope\nobservation_id=41\nintent=contest\n"
+      ),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ActorCommitDto::decode(
+        "schema=m5-actor-commit-v1\nobserver=1\nobservation_id=41\nintent=contest\nextra=x\n"
+      ),
+      Err(ActorProtocolCodecError::UnexpectedLineCount {
+        expected: 4,
+        actual: 5,
+      })
+    );
+
+    let result = ActorCommitResultDto::new(ActorProtocolIntent::Contest);
+    assert_eq!(result.schema(), "m5-actor-commit-result-v1");
+    assert_eq!(
+      result.encode(),
+      "schema=m5-actor-commit-result-v1\nintent=contest\n"
+    );
+    assert_eq!(ActorCommitResultDto::decode(&result.encode()), Ok(result));
+    assert_eq!(
+      ActorCommitResultDto::decode("schema=m5-actor-commit-result-v1\nunknown=contest\n"),
+      Err(ActorProtocolCodecError::UnknownField)
+    );
+    assert_eq!(
+      ActorCommitResultDto::decode(
+        "schema=m5-actor-commit-result-v1\nschema=m5-actor-commit-result-v1\n"
+      ),
+      Err(ActorProtocolCodecError::DuplicateField)
+    );
+    assert_eq!(
+      ActorCommitResultDto::decode("schema=m5-actor-commit-result-v1\n"),
+      Err(ActorProtocolCodecError::MissingField)
+    );
+    assert_eq!(
+      ActorCommitResultDto::decode("schema=m5-actor-commit-result-v0\nintent=contest\n"),
+      Err(ActorProtocolCodecError::UnsupportedSchema)
+    );
+    assert_eq!(
+      ActorCommitResultDto::decode("schema=m5-actor-commit-result-v1\nintent=unknown\n"),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ActorCommitResultDto::decode("schema=m5-actor-commit-result-v1\nintent=contest\nextra=x\n"),
+      Err(ActorProtocolCodecError::UnexpectedLineCount {
+        expected: 2,
+        actual: 3,
+      })
+    );
+    assert!(!format!("{commit:?}").contains("StateHash"));
+    assert!(!format!("{result:?}").contains("execution"));
   }
 
   #[test]
