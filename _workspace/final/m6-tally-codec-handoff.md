@@ -2,7 +2,8 @@
 
 ## Outcome
 
-Pending independent domain QA and final handoff review.
+PASS — independent domain QA and final handoff review found no actionable
+findings at implementation/evidence head `af504cb`.
 
 ## Delivered contract
 
@@ -14,12 +15,15 @@ count, and malformed/unknown/duplicate/missing/extra fields, then compares the
 candidate with an already verified report before returning actor-safe evidence.
 It is not durable export or a report pipeline.
 
-## Verification target
+## Verification
 
 The focused matched-scenario sample-set test covers canonical codec text,
-round trip, malformed-input classes, and oversized input, alongside the full
-21-agent-focused / 234-unit, 7-binary, 3-RustDoc suite, formatter, Clippy
-warnings denied, repository checker, 15 Python policy tests, and diff checks.
+round trip, malformed-input classes, oversized input, observer/count provenance
+tampering, and both inclusive pair/row maxima. The full evidence is one
+focused sample-set test within 21 focused agent tests, 234 unit tests, 7 binary
+tests, and 3 RustDoc tests, plus formatter, Clippy warnings denied, repository
+checker, 15 Python policy tests, and diff checks; all pass at reviewed head
+`af504cb`.
 
 ## Open boundaries
 
