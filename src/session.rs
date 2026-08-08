@@ -95,6 +95,11 @@ impl ActorSession {
     if self.phase == ActorSessionPhase::AwaitingAction {
       return Err(ActorSessionError::ObservationAlreadyOpen);
     }
+    if self.phase == ActorSessionPhase::Submitted
+      && self.observation_id == Some(observation.observation_id())
+    {
+      return Err(ActorSessionError::StaleObservation);
+    }
     Ok(Self {
       phase: ActorSessionPhase::AwaitingAction,
       observation_id: Some(observation.observation_id()),
@@ -165,6 +170,10 @@ mod tests {
     assert_eq!(awaiting.phase(), ActorSessionPhase::AwaitingAction);
     let submitted = awaiting.accept_action(action).expect("first action binds");
     assert_eq!(submitted.phase(), ActorSessionPhase::Submitted);
+    assert_eq!(
+      submitted.accept_observation(&first),
+      Err(ActorSessionError::StaleObservation)
+    );
     let next = submitted
       .accept_observation(&second)
       .expect("next window observation binds");

@@ -1156,7 +1156,7 @@ control over simulation resolution.
   identity.
 - [x] Convert the bounded action DTO back to an observer-bound
   `LaneIntentRequest` for existing host validation; transport, session
-  lifecycle, and plan/message metadata remain open.
+  reconnect, and plan/message metadata remain open.
 - [x] Define the immutable `m5-actor-session-v1` lifecycle that binds one
   ordinary actor to one current observation, rejects cross-actor/stale/
   duplicate submissions, and closes fail-closed; host legality and history
@@ -1170,7 +1170,8 @@ transition.
 
 ### Scope
 
-- [ ] Define session lifecycle and actor authority.
+- [x] Define the bounded library session lifecycle and actor binding;
+  transport-integrated lifecycle and authority remain open.
 - [ ] Define versioned DTOs for observations, legal actions, messages, plans,
   contingencies, commit, outcome review, history, replay, and debrief.
 - [ ] Keep internal domain types private from public protocol compatibility.
