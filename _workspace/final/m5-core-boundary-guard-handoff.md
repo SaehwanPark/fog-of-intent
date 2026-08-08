@@ -2,13 +2,15 @@
 
 ## Outcome
 
-Implementation complete; pending the required independent three-pass review.
+Implementation and independent three-pass review are complete at head
+`45cd1a6`; the reviewer found no actionable findings.
 
 ## Intended Contract
 
-The repository checker scans the deterministic core module list and rejects
-async runtime/syntax, wall-clock imports, and network transport types while
-leaving synchronous adapter-edge I/O outside that list.
+The repository checker discovers production core files, verifies the explicit
+module list is complete, and rejects async runtime/syntax, wall-clock imports,
+and network transport types while leaving synchronous adapter-edge I/O outside
+that list.
 
 ## Verification
 
