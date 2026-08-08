@@ -60,6 +60,22 @@ not increment the package version.
 - The labels are a pure adapter contract; terminal rendering, host execution,
   inference, persistence, and human usability evidence remain deferred.
 
+## 0.1.65 — 2026-08-08
+
+### Added
+
+- Added the versioned `m3-cli-precommit-draft-v1` contract with typed local
+  staging for message, plan, and contingency edits.
+- Added clear-all `CliDraft::undo()` and a consuming `CliCommittedDraft`
+  read-only marker; empty payloads and commit/advance staging fail closed.
+- Added focused tests for last-write-wins edits, undo isolation, malformed
+  staging, and committed-choice readback.
+
+### Known limits
+
+- Drafts remain adapter-local borrowed values; host command execution,
+  persistence, transcript acceptance, and authoritative history are deferred.
+
 ## 0.1.63 — 2026-08-08
 
 ### Added

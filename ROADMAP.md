@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs` | Placeholder `Hello, world!` binary |
-| Package | `Cargo.toml` | Version `0.1.64`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.65`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -868,7 +868,8 @@ API access.
 - [x] Add concise, standard, explanatory, and research verbosity policies.
 - [x] Label observed, believed, inferred, reported, and unknown information in
   a typed, payload-safe adapter projection contract.
-- [ ] Support edit/undo before commitment without rewriting committed history.
+- [x] Support edit/undo before commitment without rewriting committed history
+  through a typed local draft boundary.
 - [ ] Add save/load and human-readable run identifiers.
 - [ ] Keep terminal rendering outside the authoritative domain.
 - [ ] Add transcript-based acceptance tests for a complete run and common errors.
@@ -888,6 +889,18 @@ API access.
 This establishes provenance metadata for future CLI projections only. Rendering,
 inference, belief computation, host execution, persistence, and human
 distinction remain open.
+
+### Current bounded pre-commit edit/undo evidence
+
+- [x] Version the internal `m3-cli-precommit-draft-v1` contract.
+- [x] Stage and replace message, plan, and contingency payloads while rejecting
+  empty values and commit/advance boundary requests.
+- [x] Clear only uncommitted draft fields through `CliDraft::undo()`.
+- [x] Consume drafts into a read-only `CliCommittedDraft` marker so the adapter
+  surface cannot edit or undo committed choices.
+
+This establishes local draft semantics only. It does not execute a host command,
+persist a session, or rewrite authoritative lane history.
 
 ### Deliverables
 
