@@ -43,6 +43,9 @@ not increment the package version.
   outcomes, hidden-state/report coverage, and complete-replay inspection;
   vision/belief remains deferred; the bounded automatic-advance condition
   contract is now explicit while host scheduling remains deferred.
+- Reconciled the M3 terminal-rendering boundary with source evidence: the
+  authoritative kernel, lane, and current CLI adapter own no terminal I/O or
+  presentation state; a future renderer remains an outer adapter concern.
 
 ## 0.1.64 — 2026-08-08
 

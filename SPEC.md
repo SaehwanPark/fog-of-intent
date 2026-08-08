@@ -772,6 +772,11 @@ playability, or human-experience evidence.
   advance checks. `commit()` consumes the editable value and returns a
   read-only `CliCommittedDraft`; no host command or committed history is
   created by this adapter marker.
+- The CLI rendering boundary is now explicit: the authoritative kernel and
+  lane modules contain no terminal/I/O ownership, while `src/cli.rs` remains a
+  pure request/projection adapter. Any future renderer must consume
+  actor-valid projections at the edge without authorizing commands or mutating
+  history; no renderer or accessibility evidence exists yet.
 
 ## Future
 

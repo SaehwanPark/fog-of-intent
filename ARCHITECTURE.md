@@ -39,6 +39,12 @@ last-write-wins staging, clear-all undo, and a consuming `CliCommittedDraft`
 marker with read-only getters; it does not edit committed history or authorize
 domain commands.
 
+Terminal rendering is intentionally outside the authoritative boundary. The
+current kernel, lane, and CLI modules own no terminal I/O, formatting loop, or
+presentation state; a future host/renderer may consume actor-valid projections
+at the edge but must not authorize commands, infer hidden state, or mutate
+history.
+
 The target architecture is one authoritative Rust simulation product with thin
 human, agent, and research adapters. The strongest boundary is:
 
@@ -232,6 +238,8 @@ to reduce type count.
 - CLI projections preserve whether a value is observed, believed, inferred,
   reported, or unknown. `unknown` is a payload-free redaction rather than a
   value that happens to carry an unknown label.
+- Terminal presentation remains an outer adapter concern; rendering must not
+  become a second transition authority or a source of hidden-state inference.
 - Research inspection may expose true state only through a separately authorized
   interface and must not contaminate playable policies or metrics.
 - Debriefs evaluate decisions using information available at decision time.
