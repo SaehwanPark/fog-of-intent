@@ -1236,6 +1236,12 @@ transport-integrated sessions and broader protocol compatibility remain open.
   non-authoritative and separate from committed history and evidence reports;
   runtime event producers, tracing/transport, durations, diagnostics,
   persistence, and scheduling remain open.
+- `ScriptedAgentBatchRunner::run_with_operational_log` is a caller-driven
+  producer for one complete deterministic batch. It preflights the existing
+  16-entry log before evaluation, appends only ordered
+  `batch_started`/`chunk_completed`/`batch_finished` labels, and preserves
+  decision parity. Invalid batches and insufficient capacity leave the log
+  unchanged; checkpoint/resume production and runtime diagnostics remain open.
 
 ## Future
 
