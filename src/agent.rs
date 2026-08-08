@@ -495,7 +495,7 @@ mod tests {
       JungleThreatTruth::RiverSide,
     );
     let safe_receipt = observe_player(&initial, ObservationId::new(14));
-    let threat_receipt = observe_player(&threat_state, ObservationId::new(15));
+    let threat_receipt = observe_player(&threat_state, ObservationId::new(14));
 
     let cautious = ScriptedAgent::cautious_v1();
     let risk_taking = ScriptedAgent::risk_taking_v1();
