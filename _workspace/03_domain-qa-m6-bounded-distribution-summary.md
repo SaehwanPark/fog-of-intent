@@ -2,9 +2,10 @@
 
 ## Disposition
 
-Pending independent three-pass review of implementation head.
+PASS — independent three-pass review found no actionable findings at
+implementation/evidence head `40ca12c`.
 
-## Scope to review
+## Scope reviewed
 
 - The existing verified frequency report must retain its schema, fixed row
   order, counts, and codec behavior.
@@ -14,15 +15,15 @@ Pending independent three-pass review of implementation head.
 - Markdown output must remain pure, bounded, actor-safe evidence with no
   sampling, persistence, policy, host, lane, history, or provider authority.
 
-## Evidence target
+## Evidence
 
-One focused frequency regression should cover 1-safe/3-RiverSide, balanced
-2/2, and all-safe 4/0 caller-declared compositions, exact shares, stable row
-order, the 10,000-point sum, and complete exact Markdown for each case.
-Expected full evidence is 31
-focused agent tests within 244 Rust unit tests, 7 binary tests, 3 RustDoc
-tests, 15 Python tests, formatter, Clippy with warnings denied, repository
-checker, and diff checks.
+One focused frequency regression covers 1-safe/3-RiverSide, balanced 2/2, and
+all-safe 4/0 caller-declared compositions, exact shares, stable row order, the
+10,000-point sum, and complete exact Markdown for each case. The full evidence
+is one focused frequency test within 31 focused agent tests and 244 Rust unit
+tests, 7 binary tests, and 3 RustDoc tests, plus 15 Python tests, formatter,
+Clippy with warnings denied, repository checker, and diff checks; all pass at
+reviewed head `40ca12c`.
 
 ## Limits
 
@@ -33,5 +34,5 @@ calibration, and human evidence remain open.
 
 ## Required fixes
 
-To be determined by independent review. The projection must remain pure,
-deterministic, and explicitly non-representative.
+None. The projection remains pure, deterministic, and explicitly
+non-representative.
