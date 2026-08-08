@@ -98,6 +98,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.159 — 2026-08-08
+
+### Added
+
+- Added the closed `m6-scripted-agent-stress-population-v1` caller-declared
+  four-case matrix with categorical boundary results and one degenerate
+  selected-intent count.
+
+### Known limits
+
+- The matrix is deterministic boundary evidence only; actual adversarial or
+  degenerate populations, exploit search, prevalence, outcomes, providers,
+  persistence, and human evidence remain open.
+
 ## 0.1.158 — 2026-08-08
 
 ### Added

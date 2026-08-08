@@ -1227,3 +1227,16 @@ canonical policy instead of duplicating it.
   and give the final Withdraw slot the deterministic integer remainder.
 - Prevention: Treat the projection as fixed-fixture evidence; keep population
   distributions, outcomes, strategic metrics, and calibration separate.
+
+## Keep stress labels separate from stress populations
+
+- Context: M6 needed named illegal-command, exploit-seeking,
+  communication-abuse, and degenerate cases before runtime population
+  generation was authorized.
+- Symptom: A four-row label matrix can be mistaken for an exploit search or
+  prevalence report if its boundary outcomes are presented as population data.
+- Resolution: Keep the matrix caller-declared, categorical, deterministic, and
+  tied to existing validation/codec/policy fixtures; expose only one bounded
+  degenerate count.
+- Prevention: Require separate contracts for population generation, search,
+  prevalence, outcome/causal metrics, persistence, and human evidence.

@@ -1179,6 +1179,13 @@ transport-integrated sessions and broader protocol compatibility remain open.
   rows, and bounded counts for the five closed intents; each row totals at most
   eight observations. This is fixture-sized selected-intent aggregation, not a
   population distribution, outcome metric, persistence, or provider contract.
+- `ScriptedAgentStressPopulationReport` defines
+  `m6-scripted-agent-stress-population-v1` as a four-row caller-declared matrix
+  for illegal-command, exploit-seeking, communication-abuse, and
+  degenerate-policy boundary evidence. Its closed result IDs and one bounded
+  degenerate count are metadata-only; actual adversarial populations, exploit
+  search, prevalence, outcomes, persistence, providers, and human evidence
+  remain open.
 - Each tally row can expose ordered 10,000-point intent shares in
   `[Stabilize, Contest, Yield, Recall, Withdraw]` order. The first four shares
   use floor division and Withdraw receives the remainder, so each row sums to

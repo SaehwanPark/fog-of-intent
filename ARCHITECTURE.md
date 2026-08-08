@@ -190,6 +190,10 @@ population, transition, history, persistence, provider, or outcome authority.
 shares for `[Stabilize, Contest, Yield, Recall, Withdraw]`; this remains a
 selected-intent projection over a verified fixture tally, not a population,
 outcome, or strategic metric.
+`ScriptedAgentStressPopulationReport` is a closed caller-declared four-case
+matrix over existing validation, freshness, message-codec, and deterministic
+policy boundaries. It adds no adversarial search, runtime, transition,
+history, persistence, provider, outcome, or population authority.
 `matched_tally` reuses the existing verified sample/tally path over those
 entries and does not rerun policy evaluation or add population-metric,
 transition, history, persistence, provider, or outcome authority. Multiple

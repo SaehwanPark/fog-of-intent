@@ -1,6 +1,6 @@
 [package]
 name = "fog-of-intent"
-version = "0.1.158"
+version = "0.1.159"
 edition = "2024"
 rust-version = "1.96"
 license = "MIT"
