@@ -81,6 +81,20 @@ not increment the package version.
 - Drafts remain adapter-local borrowed values; host command execution,
   persistence, transcript acceptance, and authoritative history are deferred.
 
+## 0.1.66 — 2026-08-08
+
+### Added
+
+- Added the versioned `m3-cli-run-id-v1` borrowed identifier contract with
+  bounded human-readable syntax and typed malformed-ID errors.
+- Applied validated `CliRunId` values to session save/load, in-session replay,
+  and top-level replay/export adapter requests with focused mapping tests.
+
+### Known limits
+
+- Run IDs remain adapter syntax only; generation, persistence, uniqueness,
+  resume behavior, and human discoverability remain deferred.
+
 ## 0.1.63 — 2026-08-08
 
 ### Added

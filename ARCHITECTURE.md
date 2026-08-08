@@ -39,6 +39,11 @@ last-write-wins staging, clear-all undo, and a consuming `CliCommittedDraft`
 marker with read-only getters; it does not edit committed history or authorize
 domain commands.
 
+Run references use the bounded borrowed `CliRunId<'a>` syntax contract for
+save/load/replay/export adapter requests. Validation occurs at the adapter edge;
+the application host still owns persistence, authorization, run generation,
+collision handling, and history/replay identity.
+
 Terminal rendering is intentionally outside the authoritative boundary. The
 application host solely owns true-state lifecycle, legality, ordering, history
 commit, and adapter coordination; the kernel and lane modules evaluate only

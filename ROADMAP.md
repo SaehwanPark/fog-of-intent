@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs` | Placeholder `Hello, world!` binary |
-| Package | `Cargo.toml` | Version `0.1.65`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.66`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -870,7 +870,8 @@ API access.
   a typed, payload-safe adapter projection contract.
 - [x] Support edit/undo before commitment without rewriting committed history
   through a typed local draft boundary.
-- [ ] Add save/load and human-readable run identifiers.
+- [x] Add validated human-readable run identifiers to save/load/replay/export
+  adapter requests; persistence execution remains open.
 - [x] Keep terminal rendering outside the authoritative domain; current CLI
   code remains a pure adapter contract with no rendering or I/O.
 - [ ] Add transcript-based acceptance tests for a complete run and common errors.
@@ -914,6 +915,18 @@ persist a session, or rewrite authoritative lane history.
 
 This verifies a structural boundary only. A renderer, host flow, and
 keyboard/screen-reader inspection remain open.
+
+### Current bounded run-identifier evidence
+
+- [x] Version the internal `m3-cli-run-id-v1` syntax contract.
+- [x] Accept bounded readable IDs (alphanumerics with `.`, `_`, and `-`) and
+  reject empty, overlong, non-ASCII, and malformed values.
+- [x] Carry validated `CliRunId` values through session save/load, in-session
+  replay, and top-level replay/export requests without touching persistence or
+  authoritative history.
+
+This establishes adapter syntax and typing only. Run generation, collision
+handling, storage, resume behavior, and human discoverability remain open.
 
 ### Deliverables
 

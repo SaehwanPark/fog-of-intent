@@ -212,6 +212,50 @@ impl<'a> CliCommittedDraft<'a> {
   }
 }
 
+/// Versioned syntax contract for human-readable CLI run identifiers.
+pub const CLI_RUN_ID_SCHEMA: &str = "m3-cli-run-id-v1";
+pub const MAX_CLI_RUN_ID_BYTES: usize = 64;
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum CliRunIdError {
+  Empty,
+  TooLong,
+  InvalidFirstCharacter { character: char },
+  InvalidCharacter { character: char },
+}
+
+/// Borrowed, validated identifier for a future persisted or replayable run.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct CliRunId<'a>(&'a str);
+
+impl<'a> CliRunId<'a> {
+  pub fn parse(value: &'a str) -> Result<Self, CliRunIdError> {
+    if value.is_empty() {
+      return Err(CliRunIdError::Empty);
+    }
+    if value.len() > MAX_CLI_RUN_ID_BYTES {
+      return Err(CliRunIdError::TooLong);
+    }
+    let mut characters = value.chars();
+    let Some(first) = characters.next() else {
+      return Err(CliRunIdError::Empty);
+    };
+    if !first.is_ascii_alphanumeric() {
+      return Err(CliRunIdError::InvalidFirstCharacter { character: first });
+    }
+    for character in characters {
+      if !character.is_ascii_alphanumeric() && !matches!(character, '-' | '_' | '.') {
+        return Err(CliRunIdError::InvalidCharacter { character });
+      }
+    }
+    Ok(Self(value))
+  }
+
+  pub const fn as_str(self) -> &'a str {
+    self.0
+  }
+}
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum CliCommand<'a> {
   Help,
@@ -301,19 +345,20 @@ pub enum CliWriteError {
 pub enum CliProcessRequest<'a> {
   Review,
   Debrief,
-  Replay { run_id: Option<&'a str> },
+  Replay { run_id: Option<CliRunId<'a>> },
   Branch { point_id: Option<&'a str> },
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum CliProcessError {
   NotProcessCommand { verb: &'static str },
+  InvalidRunId { error: CliRunIdError },
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum CliSessionRequest<'a> {
-  Save { run_id: &'a str },
-  Load { run_id: &'a str },
+  Save { run_id: CliRunId<'a> },
+  Load { run_id: CliRunId<'a> },
   Undo,
   Quit,
 }
@@ -322,6 +367,7 @@ pub enum CliSessionRequest<'a> {
 pub enum CliSessionError {
   NotSessionCommand { verb: &'static str },
   EmptyPayload { verb: &'static str },
+  InvalidRunId { error: CliRunIdError },
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -637,7 +683,7 @@ pub enum CliTopLevelRequest<'a> {
     seed: Option<u64>,
   },
   Replay {
-    run_id: &'a str,
+    run_id: CliRunId<'a>,
     verbosity: CliVerbosity,
     privileged: bool,
   },
@@ -650,7 +696,7 @@ pub enum CliTopLevelRequest<'a> {
     manifest_path: &'a str,
   },
   Export {
-    run_id: &'a str,
+    run_id: CliRunId<'a>,
     format: &'a str,
     unredacted: bool,
   },
@@ -671,9 +717,19 @@ pub enum CliTopLevelRequest<'a> {
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum CliTopLevelError<'a> {
-  EmptyIdentifier { field: &'static str },
-  PrivilegedContextRequired { feature: &'static str },
-  InvalidFormat { format: &'a str },
+  EmptyIdentifier {
+    field: &'static str,
+  },
+  InvalidRunId {
+    field: &'static str,
+    error: CliRunIdError,
+  },
+  PrivilegedContextRequired {
+    feature: &'static str,
+  },
+  InvalidFormat {
+    format: &'a str,
+  },
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -811,7 +867,13 @@ pub fn process_request(command: CliCommand<'_>) -> Result<CliProcessRequest<'_>,
   match command {
     CliCommand::Review => Ok(CliProcessRequest::Review),
     CliCommand::Debrief => Ok(CliProcessRequest::Debrief),
-    CliCommand::Replay(run_id) => Ok(CliProcessRequest::Replay { run_id }),
+    CliCommand::Replay(run_id) => {
+      let run_id = run_id
+        .map(CliRunId::parse)
+        .transpose()
+        .map_err(|error| CliProcessError::InvalidRunId { error })?;
+      Ok(CliProcessRequest::Replay { run_id })
+    }
     CliCommand::Branch(point_id) => Ok(CliProcessRequest::Branch { point_id }),
     _ => Err(CliProcessError::NotProcessCommand {
       verb: command.canonical_name(),
@@ -821,10 +883,22 @@ pub fn process_request(command: CliCommand<'_>) -> Result<CliProcessRequest<'_>,
 
 pub fn session_request(command: CliCommand<'_>) -> Result<CliSessionRequest<'_>, CliSessionError> {
   match command {
-    CliCommand::Save(run_id) if !run_id.trim().is_empty() => Ok(CliSessionRequest::Save { run_id }),
-    CliCommand::Load(run_id) if !run_id.trim().is_empty() => Ok(CliSessionRequest::Load { run_id }),
-    CliCommand::Save(_) => Err(CliSessionError::EmptyPayload { verb: "save" }),
-    CliCommand::Load(_) => Err(CliSessionError::EmptyPayload { verb: "load" }),
+    CliCommand::Save(run_id) => {
+      if run_id.trim().is_empty() {
+        return Err(CliSessionError::EmptyPayload { verb: "save" });
+      }
+      let run_id =
+        CliRunId::parse(run_id).map_err(|error| CliSessionError::InvalidRunId { error })?;
+      Ok(CliSessionRequest::Save { run_id })
+    }
+    CliCommand::Load(run_id) => {
+      if run_id.trim().is_empty() {
+        return Err(CliSessionError::EmptyPayload { verb: "load" });
+      }
+      let run_id =
+        CliRunId::parse(run_id).map_err(|error| CliSessionError::InvalidRunId { error })?;
+      Ok(CliSessionRequest::Load { run_id })
+    }
     CliCommand::Undo => Ok(CliSessionRequest::Undo),
     CliCommand::Quit => Ok(CliSessionRequest::Quit),
     _ => Err(CliSessionError::NotSessionCommand {
@@ -869,6 +943,10 @@ pub fn top_level_request<'a>(
       if run_id.trim().is_empty() {
         return Err(CliTopLevelError::EmptyIdentifier { field: "run_id" });
       }
+      let run_id = CliRunId::parse(run_id).map_err(|error| CliTopLevelError::InvalidRunId {
+        field: "run_id",
+        error,
+      })?;
       if privileged && !privilege.is_privileged() {
         return Err(CliTopLevelError::PrivilegedContextRequired {
           feature: "privileged-replay",
@@ -915,6 +993,10 @@ pub fn top_level_request<'a>(
       if run_id.trim().is_empty() {
         return Err(CliTopLevelError::EmptyIdentifier { field: "run_id" });
       }
+      let run_id = CliRunId::parse(run_id).map_err(|error| CliTopLevelError::InvalidRunId {
+        field: "run_id",
+        error,
+      })?;
       if format.trim().is_empty() {
         return Err(CliTopLevelError::EmptyIdentifier { field: "format" });
       }
@@ -1466,6 +1548,38 @@ where
 mod tests {
   use super::*;
 
+  fn run_id(value: &str) -> CliRunId<'_> {
+    CliRunId::parse(value).unwrap()
+  }
+
+  #[test]
+  fn run_ids_accept_readable_forms_and_reject_malformed_values() {
+    assert_eq!(CLI_RUN_ID_SCHEMA, "m3-cli-run-id-v1");
+    assert_eq!(CliRunId::parse("a").unwrap().as_str(), "a");
+    assert_eq!(run_id("run-1_v2.final").as_str(), "run-1_v2.final");
+    let max_length = "a".repeat(MAX_CLI_RUN_ID_BYTES);
+    assert_eq!(CliRunId::parse(&max_length).unwrap().as_str(), max_length);
+    assert_eq!(CliRunId::parse(""), Err(CliRunIdError::Empty));
+    assert_eq!(
+      CliRunId::parse("-run"),
+      Err(CliRunIdError::InvalidFirstCharacter { character: '-' })
+    );
+    assert_eq!(
+      CliRunId::parse("run id"),
+      Err(CliRunIdError::InvalidCharacter { character: ' ' })
+    );
+    assert_eq!(
+      CliRunId::parse("run/id"),
+      Err(CliRunIdError::InvalidCharacter { character: '/' })
+    );
+    assert_eq!(
+      CliRunId::parse("run-ü"),
+      Err(CliRunIdError::InvalidCharacter { character: 'ü' })
+    );
+    let too_long = "a".repeat(MAX_CLI_RUN_ID_BYTES + 1);
+    assert_eq!(CliRunId::parse(&too_long), Err(CliRunIdError::TooLong));
+  }
+
   #[test]
   fn draft_edits_replace_fields_and_undo_clears_uncommitted_choices() {
     assert_eq!(CLI_DRAFT_SCHEMA, "m3-cli-precommit-draft-v1");
@@ -1780,7 +1894,7 @@ mod tests {
     assert_eq!(
       process_request(CliCommand::Replay(Some("run-123"))),
       Ok(CliProcessRequest::Replay {
-        run_id: Some("run-123")
+        run_id: Some(run_id("run-123"))
       })
     );
     assert_eq!(
@@ -1797,17 +1911,27 @@ mod tests {
       process_request(CliCommand::Observe),
       Err(CliProcessError::NotProcessCommand { verb: "observe" })
     );
+    assert_eq!(
+      process_request(CliCommand::Replay(Some("run id"))),
+      Err(CliProcessError::InvalidRunId {
+        error: CliRunIdError::InvalidCharacter { character: ' ' }
+      })
+    );
   }
 
   #[test]
   fn session_commands_map_save_load_undo_and_quit_requests() {
     assert_eq!(
       session_request(CliCommand::Save("run-1")),
-      Ok(CliSessionRequest::Save { run_id: "run-1" })
+      Ok(CliSessionRequest::Save {
+        run_id: run_id("run-1")
+      })
     );
     assert_eq!(
       session_request(CliCommand::Load("run-1")),
-      Ok(CliSessionRequest::Load { run_id: "run-1" })
+      Ok(CliSessionRequest::Load {
+        run_id: run_id("run-1")
+      })
     );
     assert_eq!(
       session_request(CliCommand::Undo),
@@ -1832,6 +1956,18 @@ mod tests {
     assert_eq!(
       session_request(CliCommand::Load("")),
       Err(CliSessionError::EmptyPayload { verb: "load" })
+    );
+    assert_eq!(
+      session_request(CliCommand::Save("run/id")),
+      Err(CliSessionError::InvalidRunId {
+        error: CliRunIdError::InvalidCharacter { character: '/' }
+      })
+    );
+    assert_eq!(
+      session_request(CliCommand::Load("run/id")),
+      Err(CliSessionError::InvalidRunId {
+        error: CliRunIdError::InvalidCharacter { character: '/' }
+      })
     );
   }
 
@@ -2044,7 +2180,7 @@ mod tests {
     assert_eq!(
       top_level_request(replay_priv, CliPrivilegeLevel::Privileged),
       Ok(CliTopLevelRequest::Replay {
-        run_id: "run-1",
+        run_id: run_id("run-1"),
         verbosity: CliVerbosity::Standard,
         privileged: true,
       })
@@ -2064,7 +2200,7 @@ mod tests {
     assert_eq!(
       top_level_request(export_unredacted, CliPrivilegeLevel::Privileged),
       Ok(CliTopLevelRequest::Export {
-        run_id: "run-1",
+        run_id: run_id("run-1"),
         format: "json",
         unredacted: true,
       })
@@ -2088,6 +2224,32 @@ mod tests {
     assert_eq!(
       top_level_request(invalid_fmt, CliPrivilegeLevel::Unprivileged),
       Err(CliTopLevelError::InvalidFormat { format: "yaml" })
+    );
+
+    let invalid_run = CliTopLevelCommand::Replay {
+      run_id: "run/id",
+      verbosity: CliVerbosity::Standard,
+      privileged: false,
+    };
+    assert_eq!(
+      top_level_request(invalid_run, CliPrivilegeLevel::Unprivileged),
+      Err(CliTopLevelError::InvalidRunId {
+        field: "run_id",
+        error: CliRunIdError::InvalidCharacter { character: '/' }
+      })
+    );
+
+    let invalid_export = CliTopLevelCommand::Export {
+      run_id: "run/id",
+      format: "json",
+      unredacted: false,
+    };
+    assert_eq!(
+      top_level_request(invalid_export, CliPrivilegeLevel::Unprivileged),
+      Err(CliTopLevelError::InvalidRunId {
+        field: "run_id",
+        error: CliRunIdError::InvalidCharacter { character: '/' }
+      })
     );
   }
 

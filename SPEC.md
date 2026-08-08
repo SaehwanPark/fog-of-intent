@@ -780,6 +780,10 @@ playability, or human-experience evidence.
   state. Any future renderer must consume host-projected actor-valid values at
   the edge without authorizing commands or mutating history; no renderer or
   accessibility evidence exists yet.
+- `CliRunId<'a>` is the versioned `m3-cli-run-id-v1` borrowed identifier for
+  save/load/replay/export requests. It accepts bounded human-readable ASCII
+  forms and rejects malformed values before host execution; it does not create
+  persistence, guarantee uniqueness, or alter replay identity.
 
 ## Future
 
