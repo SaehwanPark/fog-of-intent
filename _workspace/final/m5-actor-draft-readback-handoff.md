@@ -10,8 +10,8 @@ legacy CLI draft text remains on its existing path.
 
 ## Verification
 
-The implementation provides one focused host readback test. The expected full
-evidence is 226 Rust unit tests, 7 binary tests, and 3 RustDoc tests, with 25
+The implementation provides one focused host readback test. The full evidence
+is 226 Rust unit tests, 7 binary tests, and 3 RustDoc tests, with 25
 protocol, 12 session, and 33 host focused tests; formatter, Clippy with
 warnings denied, repository checker, 15 Python policy tests, and diff checks
 pass at the reviewed head.

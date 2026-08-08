@@ -7,14 +7,14 @@ three-pass review with no actionable findings.
 
 ## Evidence
 
-One focused host test must cover empty and populated actor-protocol readback,
+One focused host test covers empty and populated actor-protocol readback,
 exact binding and stable field order, unchanged observation/history/commit state,
 committed/complete/closed lifecycle rejection, mixed CLI/protocol presence and
 clear parity, and CLI-only malformed/oversized draft text remaining outside the
-projection. The expected full suite is
-25 protocol, 12 session, and 33 host focused tests within 226 Rust unit tests,
-7 binary tests, and 3 RustDoc tests; 15 Python policy tests, formatter, Clippy
-with warnings denied, repository checker, and diff checks must pass.
+projection. The full evidence is 25 protocol, 12 session, and 33 host focused
+tests within 226 Rust unit tests, 7 binary tests, and 3 RustDoc tests; 15 Python
+policy tests, formatter, Clippy with warnings denied, repository checker, and
+diff checks pass at the reviewed head.
 
 ## Boundary questions
 
