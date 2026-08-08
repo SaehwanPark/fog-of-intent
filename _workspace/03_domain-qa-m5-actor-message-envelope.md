@@ -2,15 +2,16 @@
 
 ## Disposition
 
-Pending independent three-pass review of the implementation and evidence.
+PASS at implementation head `ec5d11d`; no actionable findings remain after
+three independent code/API, domain-authority, and docs/evidence passes.
 
-## Evidence target
+## Evidence
 
-One focused protocol test must cover the exact bounded envelope codec and all
-constructor/decoder rejection classes. The expected full suite is 26 protocol,
-12 session, and 34 host focused tests within 228 Rust unit tests, 7 binary
-tests, and 3 RustDoc tests; 15 Python policy tests, formatter, Clippy with
-warnings denied, repository checker, and diff checks must pass.
+One focused protocol test covers the exact bounded envelope codec and all
+constructor/decoder rejection classes. The full evidence is 26 protocol, 12
+session, and 34 host focused tests within 228 Rust unit tests, 7 binary tests,
+and 3 RustDoc tests; 15 Python policy tests, formatter, Clippy with warnings
+denied, repository checker, and diff checks pass at the reviewed head.
 
 ## Boundary questions
 
@@ -22,4 +23,5 @@ warnings denied, repository checker, and diff checks must pass.
 
 ## Required Fixes
 
-To be determined by independent review.
+None. The envelope remains protocol metadata only; delivery and communication
+integration are explicitly deferred.
