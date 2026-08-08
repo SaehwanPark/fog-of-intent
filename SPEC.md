@@ -733,9 +733,10 @@ playability, or human-experience evidence.
 
 ### M3 — CLI grammar foundation — 2026-08-06
 
-**Status:** Bounded grammar, replay-validated host artifacts, pure terminal
-text, and a thin fixture command loop delivered; durable file storage, scenario
-selection, and complete accessibility evidence remain open.
+**Status:** Bounded grammar, replay-validated host artifacts, injected file
+storage, pure terminal text, and a thin fixture command loop delivered; binary
+store wiring, scenario selection, and complete accessibility evidence remain
+open.
 
 - `src/cli.rs` defines stable lowercase command identities and borrowed
   payloads for the planned in-session verbs.
@@ -788,7 +789,7 @@ selection, and complete accessibility evidence remain open.
   adapter. It reads newline-delimited input, continues after bounded errors,
   renders each result through the pure text projection, and stops on `quit` or
   end-of-input. It does not select scenarios, perform file I/O, or add
-  prompts/styling; the host owns in-process artifact save/load.
+  prompts/styling; the host owns configured artifact save/load.
 - `CliRunId<'a>` is the versioned `m3-cli-run-id-v1` borrowed identifier for
   save/load/replay/export requests. It accepts bounded human-readable ASCII
   forms and rejects malformed values before host execution; it does not create
@@ -797,22 +798,24 @@ selection, and complete accessibility evidence remain open.
 - CLI tests now exercise a representative grammar transcript and common errors
   across read/write/process/session mappings. This remains parser/request
   evidence only; host-backed scenario, terminal-text, and fixture-loop evidence
-  are described below, while durable storage and full client behavior remain
-  open.
+  are described below, while binary store wiring and full client behavior
+  remain open.
 - `src/host.rs` now provides the versioned `m3-cli-host-v1` synchronous host
   fixture. It accepts explicit resolved inputs, maps the grammar to a bounded
   two-window scenario, and returns actor-valid observation/history, outcome,
   replay, and debrief projections while keeping true-state snapshots and hashes
   private. `src/host_artifact.rs` gives save/load a versioned, replay-validated
-  in-process text artifact; durable file storage is not implemented.
+  text artifact and `src/run_store.rs` provides injected file storage; the
+  binary does not yet select a run directory.
 - Host tests cover staged message/plan/contingency text, pre-commit undo,
   commit/advance, artifact save/load and divergent-input rejection, replay
   verification, debrief, quit, malformed plans, unsupported branches, and
   deterministic repeated runs. A pure text renderer now covers every host
   output/error variant, control character sanitization, and bounded labels. The
   fixture command loop covers stdin/stdout recovery and quit/end-of-input
-  behavior. Durable backend, scenario selection, branch execution, and human
-  keyboard/screen-reader evidence remain unimplemented.
+  behavior. Scenario selection, branch execution, and human keyboard/screen-reader
+  evidence remain unimplemented. Store locking, fsync/crash recovery, and binary
+  store wiring remain open.
 
 ## Future
 

@@ -18,11 +18,12 @@ Fog of Intent is currently a single Rust 2024 package with no dependencies. The
 binary runs the bounded line-oriented fixture loop; internal `kernel` and
 `lane` modules provide bounded deterministic transitions, in-memory history, replay,
 branching, coordination, objective, and debrief fixtures. No playable scenario,
-persistent file store, MCP, research, or GUI component exists yet; the binary
-only wraps the bounded fixture loop. M1 is complete as an internal fixture; M2
+MCP, research, or GUI component exists yet; an injected
+persistent file store now exists as a library boundary, while the binary only
+wraps the bounded fixture loop. M1 is complete as an internal fixture; M2
 remains a bounded lane contract, and M3 now adds a library-only two-window host
-fixture, replay-validated in-process artifacts, pure terminal text, and a thin
-fixture command loop rather than a complete reference client.
+fixture, replay-validated artifacts, injected file storage, pure terminal text,
+and a thin fixture command loop rather than a complete reference client.
 
 The M3 CLI grammar is now a pure adapter module: it parses stable verbs and
 borrows payload text, maps observe/inspect/help to typed read requests, maps
@@ -46,8 +47,9 @@ save/load/replay/export adapter requests. Validation occurs at the adapter edge;
 the application host still owns persistence backends, authorization, run
 generation, collision handling, and history/replay identity. The bounded
 `CliScenarioHost` fixture accepts explicit resolved inputs and stores a
-replay-validated `m3-cli-host-artifact-v1` snapshot in process; durable file
-storage remains an outer-edge concern.
+replay-validated `m3-cli-host-artifact-v1` snapshot either in process or through
+an injected `CliRunStore`; binary directory selection remains an outer-edge
+concern.
 
 Terminal rendering is intentionally outside the authoritative boundary. The
 application host solely owns true-state lifecycle, legality, ordering, history
@@ -85,6 +87,7 @@ src/lib.rs
 src/cli.rs
 src/host.rs
 src/host_artifact.rs
+src/run_store.rs
 src/terminal.rs
 src/command_loop.rs
 src/kernel.rs
@@ -101,7 +104,7 @@ docs/
 _workspace/
 ```
 
-`src/lib.rs`, `src/cli.rs`, `src/host.rs`, `src/host_artifact.rs`, `src/terminal.rs`, `src/kernel.rs`,
+`src/lib.rs`, `src/cli.rs`, `src/host.rs`, `src/host_artifact.rs`, `src/run_store.rs`, `src/terminal.rs`, `src/kernel.rs`,
 `src/lane/`, and `src/serialization.rs` are the current internal
 kernel/adapter/fixture surface;
 `src/main.rs` runs the bounded fixture loop. The lane surface is split into private responsibility-oriented
@@ -351,10 +354,10 @@ and an architecture update or ADR when it changes a consequential boundary.
   intent, and
   observation contracts are implemented internally, but they are not a
   playable scenario, external API, migration framework, or persistence service.
-- M3 has typed command contracts, a bounded host fixture, a replay-validated
-  in-process host artifact, a pure terminal-text projection, and a thin
-  line-oriented fixture loop; durable file storage, scenario selection, branch
-  execution, and complete accessibility evidence remain open.
+- M3 has typed command contracts, a bounded host fixture, replay-validated
+  artifacts, an injected file store, a pure terminal-text projection, and a
+  thin line-oriented fixture loop; binary store wiring, scenario selection,
+  branch execution, and complete accessibility evidence remain open.
 - M2 still lacks a communication system, full vision geometry, memory decay,
   automatic threat damage, no-choice host scheduling, adaptive pacing, a complete item/resource economy,
   external scenario serialization, a branch tree, and a broader debrief

@@ -32,12 +32,12 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Line-oriented bounded fixture loop; no scenario selection or durable file persistence/storage |
-| Package | `Cargo.toml` | Version `0.1.71`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.72`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
 | Internal kernel/replay fixture | `src/kernel.rs`, `src/serialization.rs` | M1 complete; not playable |
-| Scenario, CLI, MCP, research, GUI | Grammar, bounded host, pure text, fixture loop, and in-process artifacts; no scenario selection or durable file persistence/storage | Not implemented as complete user-facing flows |
+| Scenario, CLI, MCP, research, GUI | Grammar, bounded host, pure text, fixture loop, and injected file artifacts; no binary store wiring or scenario selection | Not implemented as complete user-facing flows |
 
 ## Milestone Map
 
@@ -864,8 +864,8 @@ API access.
   `branch`; branch execution remains open while replay/debrief are covered by
   the bounded host fixture.
 - [x] Define typed adapter requests for `save`, `load`, `undo`, and `quit`; the
-  host fixture provides versioned, replay-validated in-process artifacts while
-  durable file storage remains open.
+  host fixture provides versioned, replay-validated artifacts and an injected
+  file store while binary store wiring remains open.
 - [x] Add guided mode with numbered choices and explanations.
 - [x] Add expert mode with concise, scriptable commands.
 - [x] Add research inspection only behind an explicit privileged context.
@@ -921,10 +921,10 @@ persist a session, or rewrite authoritative lane history.
 - [x] Assign any future rendering to an outer adapter that consumes
   actor-valid projections and cannot authorize commands or mutate history.
 
-This verifies a structural boundary, bounded library-only host flow, pure text
-projection, and the thin line-oriented fixture I/O loop. Complete reference-
-client behavior, durable file backend, scenario selection, branch execution,
-and keyboard/screen-reader inspection remain open.
+This verifies a structural boundary, bounded host flow, injected file storage,
+pure text projection, and the thin line-oriented fixture I/O loop. Complete
+reference-client behavior, binary store wiring, scenario selection, branch
+execution, and keyboard/screen-reader inspection remain open.
 
 ### Current bounded run-identifier evidence
 
@@ -935,8 +935,8 @@ and keyboard/screen-reader inspection remain open.
   replay, and top-level replay/export requests with versioned host-artifact
   validation while keeping authoritative history private.
 
-This establishes bounded adapter syntax plus in-process artifact validation.
-Run generation, collision handling, durable storage, cross-process resume, and
+This establishes bounded adapter syntax plus injected artifact storage. Run
+generation, collision handling, binary store wiring, cross-process resume, and
 human discoverability remain open.
 
 ### Current bounded grammar-transcript evidence
@@ -960,12 +960,12 @@ exit evidence.
   message/plan/contingency text, commit, advance, versioned artifact save/load, replay,
   debrief, and quit.
 - [x] Add line-oriented terminal I/O/command-loop integration around the host
-  contract; durable file storage remains open.
+  contract; binary store wiring remains open.
 - [ ] Check keyboard-only flow and screen-reader-oriented text structure.
 
-This is host-backed scenario and text-projection evidence plus a fixture
-command loop, but not the complete M3 reference client or accessibility
-evidence.
+This is host-backed scenario, injected file-store, and text-projection evidence
+plus a fixture command loop, but not the complete M3 reference client or
+accessibility evidence.
 
 ### Current bounded terminal-text evidence
 
