@@ -98,6 +98,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.137 — 2026-08-08
+
+### Added
+
+- Added a 4096-byte closed line codec for the verified
+  `m6-scripted-agent-fixture-frequency-v1` report; decoding is accepted only
+  when it matches an already verified report and does not create a durable
+  export pipeline.
+
+### Known limits
+
+- Durable codec export, arbitrary report construction, population generation,
+  random/distributional sampling, outcomes, strategic metrics, persistence,
+  providers, calibration, and human evidence remain open.
+
 ## 0.1.136 — 2026-08-08
 
 ### Added
@@ -106,9 +121,6 @@ not increment the package version.
   over explicit safe/threat fixture selections. It counts repeated choices from
   validated input without rerunning policies or claiming a generated
   population, general distribution, outcomes, persistence, or providers.
-- Added a 4096-byte closed line codec for that report; decoding is accepted only
-  when it matches an already verified report and does not create a durable
-  export pipeline.
 
 ### Known limits
 
