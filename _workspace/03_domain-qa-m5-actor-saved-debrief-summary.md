@@ -2,17 +2,18 @@
 
 ## Disposition
 
-Pending independent three-pass review of the implementation and evidence.
+PASS at implementation head `de27e42`; no actionable findings remain after
+three independent code/API, domain-authority, and docs/evidence passes.
 
 ## Evidence target
 
-One focused host persistence/debrief test must cover fresh-host retrieval from
-a validated complete artifact, incomplete-run gating, exact summary fields,
+One focused host persistence/debrief test covers fresh-host retrieval from a
+validated complete artifact, incomplete-run gating, exact summary fields,
 unchanged current observation and history, tampered-artifact rejection, and
-closed-session redaction. The expected full suite is 25 protocol, 12 session,
-and 34 host focused tests within 227 Rust unit tests, 7 binary tests, and 3
-RustDoc tests; 15 Python policy tests, formatter, Clippy with warnings denied,
-repository checker, and diff checks must pass.
+closed-session redaction. The full evidence is 25 protocol, 12 session, and 34
+host focused tests within 227 Rust unit tests, 7 binary tests, and 3 RustDoc
+tests; 15 Python policy tests, formatter, Clippy with warnings denied,
+repository checker, and diff checks pass at the reviewed head.
 
 ## Boundary questions
 
@@ -26,4 +27,6 @@ repository checker, and diff checks must pass.
 
 ## Required Fixes
 
-To be determined by independent review.
+None. Missing/storage and structurally valid replay/hash/run-ID tampering remain
+covered by the existing lower-layer store, artifact, and restore regressions
+rather than duplicated through this thin adapter.

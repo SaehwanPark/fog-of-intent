@@ -2,7 +2,8 @@
 
 ## Outcome
 
-Implementation is complete; independent three-pass review is pending.
+Implementation is complete; the independent three-pass review passed at
+implementation head `de27e42` with no actionable findings.
 The new adapter retrieves the existing categorical actor debrief summary from
 one validated complete injected-store artifact without mutating the receiving
 host.
@@ -10,10 +11,10 @@ host.
 ## Verification target
 
 The implementation provides one focused host persistence/debrief test. The
-expected full evidence is 227 Rust unit tests, 7 binary tests, and 3 RustDoc
-tests, with 25 protocol, 12 session, and 34 host focused tests; formatter,
-Clippy with warnings denied, repository checker, 15 Python policy tests, and
-diff checks must pass at the reviewed head.
+full evidence is 227 Rust unit tests, 7 binary tests, and 3 RustDoc tests, with
+25 protocol, 12 session, and 34 host focused tests; formatter, Clippy with
+warnings denied, repository checker, 15 Python policy tests, and diff checks
+pass at the reviewed head.
 
 ## Limits
 
