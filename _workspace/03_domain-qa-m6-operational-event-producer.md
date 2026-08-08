@@ -2,9 +2,10 @@
 
 ## Disposition
 
-Pending independent three-pass review at the implementation/evidence head.
+PASS — no actionable findings remain after the independent three-pass review at
+implementation/evidence head `659e4d3`.
 
-## Scope to review
+## Scope reviewed
 
 The slice adds a caller-driven producer around one complete deterministic
 in-process batch. It validates inputs and preflights capacity before policy
@@ -15,14 +16,14 @@ unchanged. It must not produce checkpoint/resume events, inspect time/process
 state, detect failures, persist data, or add policy, transition, history,
 replay, provider, population, or scheduling authority.
 
-## Evidence target
+## Evidence
 
-One focused agent test must prove decision parity and exact lifecycle order,
-invalid-batch nonmutation, and capacity-preflight nonmutation with the literal
-16-entry bound. The expected full evidence is 27 focused agent tests within
-240 Rust unit tests, 7 binary tests, and 3 RustDoc tests, plus formatter,
-Clippy warnings denied, repository checker, 15 Python policy tests, and diff
-checks.
+One focused agent test proves decision parity and exact lifecycle order,
+invalid-batch nonmutation, capacity-preflight nonmutation, and exact-fit
+13+3=16 acceptance with the literal 16-entry bound. The full evidence is 27
+focused agent tests within 240 Rust unit tests, 7 binary tests, and 3 RustDoc
+tests, plus formatter, Clippy warnings denied, repository checker, 15 Python
+policy tests, and diff checks; all pass at reviewed head `659e4d3`.
 
 ## Review limits
 
