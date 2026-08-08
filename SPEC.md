@@ -862,6 +862,11 @@ external adapters remain open.
   validating freshness and legality before any transition. The policy does not
   read true state, resolve execution inputs, mutate history, communicate, or
   own a transition.
+- `ScriptedAgentComparisonReport` provides the versioned
+  `m4-scripted-agent-metrics-v1` actor-safe report for the three catalog
+  profiles. Each row contains only profile/rule identity, selected intent and
+  score, and a bounded candidate count tied to the same observer and
+  observation ID; it does not expose state, hashes, or execution inputs.
 - A matched initial observation selects `Stabilize`, `Contest`, and `Yield`
   for the cautious, risk-taking, and yielding profiles respectively, while all
   requests pass the existing lane validator. This demonstrates a reproducible
@@ -874,8 +879,8 @@ external adapters remain open.
 - Focused tests cover the initial candidate set, visible-threat prioritization,
   host validation, repeated identical-observation reproducibility, and the
   matched profile difference plus unavailable-intent rejection. This evidence
-  is a bounded library comparison, not a claim of strategic quality or human
-  behavioral realism.
+  plus the reproducible comparison report is a bounded library metric slice,
+  not a claim of strategic quality or human behavioral realism.
 
 ## Future
 

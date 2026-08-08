@@ -96,6 +96,8 @@ hidden state to explain.
   all requests pass the same host validator.
 - A visible RiverSide threat changes only the cautious profile selection in the
   bounded sensitivity regression; all profile requests remain host-valid.
+- The `m4-scripted-agent-metrics-v1` report records only bounded profile/rule
+  IDs, selected intent/score, candidate count, and observation identity.
 - No policy method accepts true state or resolved execution inputs.
 
 ## Open Questions

@@ -19,6 +19,9 @@ pub const RISK_TAKING_SCRIPTED_AGENT_PROFILE_ID: &str = "risk-taking-laner-v1";
 /// Stable profile identity for the yielding deterministic comparison.
 pub const YIELDING_SCRIPTED_AGENT_PROFILE_ID: &str = "yielding-laner-v1";
 
+/// Versioned actor-safe profile-comparison metric schema.
+pub const SCRIPTED_AGENT_METRICS_SCHEMA: &str = "m4-scripted-agent-metrics-v1";
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum ScriptedAgentEvaluationRule {
   Threat,
@@ -160,6 +163,100 @@ impl ScriptedAgentDecision {
 
   pub const fn request(&self) -> LaneIntentRequest {
     self.request
+  }
+}
+
+/// One actor-safe row in a scripted-agent comparison report.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentComparisonEntry {
+  profile_id: &'static str,
+  evaluation_rule: &'static str,
+  selected_intent: LaneIntent,
+  selected_score: i16,
+  candidate_count: u8,
+}
+
+impl ScriptedAgentComparisonEntry {
+  pub const fn profile_id(self) -> &'static str {
+    self.profile_id
+  }
+
+  pub const fn evaluation_rule(self) -> &'static str {
+    self.evaluation_rule
+  }
+
+  pub const fn selected_intent(self) -> LaneIntent {
+    self.selected_intent
+  }
+
+  pub const fn selected_score(self) -> i16 {
+    self.selected_score
+  }
+
+  pub const fn candidate_count(self) -> u8 {
+    self.candidate_count
+  }
+}
+
+/// Bounded actor-safe comparison report for the three catalog profiles.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentComparisonReport {
+  schema: &'static str,
+  observer: crate::kernel::ActorId,
+  observation_id: crate::lane::ObservationId,
+  entries: [ScriptedAgentComparisonEntry; 3],
+}
+
+impl ScriptedAgentComparisonReport {
+  /// Build a report from one actor-visible observation.
+  pub fn from_observation(observation: LanerObservation) -> Self {
+    let decisions = [
+      ScriptedAgent::cautious_v1().choose(observation),
+      ScriptedAgent::risk_taking_v1().choose(observation),
+      ScriptedAgent::yielding_v1().choose(observation),
+    ];
+    Self {
+      schema: SCRIPTED_AGENT_METRICS_SCHEMA,
+      observer: observation.observer(),
+      observation_id: observation.observation_id(),
+      entries: [
+        Self::entry(&decisions[0]),
+        Self::entry(&decisions[1]),
+        Self::entry(&decisions[2]),
+      ],
+    }
+  }
+
+  pub const fn schema(&self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn observer(&self) -> crate::kernel::ActorId {
+    self.observer
+  }
+
+  pub const fn observation_id(&self) -> crate::lane::ObservationId {
+    self.observation_id
+  }
+
+  pub const fn entries(&self) -> &[ScriptedAgentComparisonEntry; 3] {
+    &self.entries
+  }
+
+  fn entry(decision: &ScriptedAgentDecision) -> ScriptedAgentComparisonEntry {
+    let selected = decision
+      .candidates()
+      .iter()
+      .find(|candidate| candidate.intent() == decision.selected_intent())
+      .expect("selected intent must be in the candidate report");
+    ScriptedAgentComparisonEntry {
+      profile_id: decision.profile().profile_id(),
+      evaluation_rule: decision.profile().evaluation_rule(),
+      selected_intent: decision.selected_intent(),
+      selected_score: selected.score(),
+      candidate_count: u8::try_from(decision.candidates().len())
+        .expect("bounded candidate count fits in u8"),
+    }
   }
 }
 
@@ -480,6 +577,76 @@ mod tests {
     validate_lane_request(&state, &receipt, &cautious.request()).expect("cautious is legal");
     validate_lane_request(&state, &receipt, &risk_taking.request()).expect("risk-taking is legal");
     validate_lane_request(&state, &receipt, &yielding.request()).expect("yielding is legal");
+  }
+
+  #[test]
+  fn comparison_report_is_versioned_bounded_and_reproducible() {
+    let state = LaneSnapshot::initial();
+    let observation = observe_player(&state, ObservationId::new(16)).observation();
+    let report = ScriptedAgentComparisonReport::from_observation(observation);
+
+    assert_eq!(
+      SCRIPTED_AGENT_METRICS_SCHEMA,
+      "m4-scripted-agent-metrics-v1"
+    );
+    assert_eq!(report.schema(), SCRIPTED_AGENT_METRICS_SCHEMA);
+    assert_eq!(report.observer(), observation.observer());
+    assert_eq!(report.observation_id(), observation.observation_id());
+    assert_eq!(report.entries().len(), 3);
+    assert_eq!(
+      report
+        .entries()
+        .iter()
+        .map(|entry| entry.profile_id())
+        .collect::<Vec<_>>(),
+      vec![
+        SCRIPTED_AGENT_PROFILE_ID,
+        RISK_TAKING_SCRIPTED_AGENT_PROFILE_ID,
+        YIELDING_SCRIPTED_AGENT_PROFILE_ID
+      ]
+    );
+    assert_eq!(
+      report
+        .entries()
+        .iter()
+        .map(|entry| entry.evaluation_rule())
+        .collect::<Vec<_>>(),
+      vec![
+        "threat-first-fixed-score-v1",
+        "contest-first-fixed-score-v1",
+        "yield-first-fixed-score-v1"
+      ]
+    );
+    assert_eq!(
+      report
+        .entries()
+        .iter()
+        .map(|entry| entry.selected_intent())
+        .collect::<Vec<_>>(),
+      vec![
+        LaneIntent::Stabilize,
+        LaneIntent::Contest,
+        LaneIntent::Yield
+      ]
+    );
+    assert_eq!(
+      report
+        .entries()
+        .iter()
+        .map(|entry| entry.selected_score())
+        .collect::<Vec<_>>(),
+      vec![80, 100, 100]
+    );
+    assert!(
+      report
+        .entries()
+        .iter()
+        .all(|entry| entry.candidate_count() == 4)
+    );
+    assert_eq!(
+      report,
+      ScriptedAgentComparisonReport::from_observation(observation)
+    );
   }
 
   #[test]

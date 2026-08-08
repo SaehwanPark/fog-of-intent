@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.83`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.84`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1070,8 +1070,11 @@ strategy while remaining bound to actor-visible information.
 - [x] Check profile sensitivity when a visible RiverSide threat is advertised:
   cautious changes to `Withdraw`, while risk-taking and yielding retain their
   fixed intents and all requests remain host-valid.
+- [x] Emit the versioned `m4-scripted-agent-metrics-v1` comparison report with
+  profile/rule IDs, selected intent/score, and bounded candidate counts.
 
-This is a three-profile library-only comparison. It does not establish a
+This is a three-profile library-only comparison and bounded metric report. It
+does not establish a
 population, role heuristics, memory, communication, randomness, matched-
 scenario metrics, strategic quality, human realism, or an executable agent
 adapter.
