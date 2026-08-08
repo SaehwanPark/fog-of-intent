@@ -98,6 +98,19 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.111 — 2026-08-08
+
+### Added
+
+- Kept authoritative lane observation/request conversion behind crate-private
+  protocol adapters, with a compile-fail RustDoc boundary proving public DTO
+  consumers cannot call those domain conversions directly.
+
+### Known limits
+
+- The boundary is library/API visibility only; transport authentication,
+  provider compatibility, persistence, and broader MCP integration remain open.
+
 ## 0.1.110 — 2026-08-08
 
 ### Added

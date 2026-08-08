@@ -675,3 +675,15 @@ canonical policy instead of duplicating it.
   actor scope and reserves, but does not advertise, the privileged label.
 - Prevention: Add privileged tools only through a separate capability,
   authorization, and evidence contract.
+
+## Keep domain conversions behind the protocol edge
+
+- Context: Public DTOs need authoritative lane data internally without making
+  domain types part of a provider-facing compatibility contract.
+- Symptom: A public projection/request helper accepting or returning lane types
+  silently couples protocol consumers to internal domain representation.
+- Resolution: Keep those adapters crate-private and add a compile-fail RustDoc
+  boundary test alongside the DTO codec evidence.
+- Prevention: Treat public protocol constructors, accessors, and codecs as the
+  compatibility surface; expose domain conversions only through host-owned
+  implementation paths.

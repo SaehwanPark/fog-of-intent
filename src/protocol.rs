@@ -4,6 +4,19 @@
 //! lifecycle, result, and committed-facts review data. They do not validate
 //! legality, resolve execution, mutate history, or depend on a transport,
 //! async runtime, or provider SDK.
+//!
+//! Public consumers cannot call the authoritative lane projection/request
+//! adapters directly; those conversions remain crate-private:
+//!
+//! ```compile_fail
+//! use fog_of_intent::lane::LanerObservation;
+//! use fog_of_intent::protocol::{ActorActionDto, ActorObservationDto, ActorProtocolIntent};
+//!
+//! let observation: LanerObservation = todo!();
+//! let _ = ActorObservationDto::from_observation(observation);
+//! let action = ActorActionDto::new(1, 1, ActorProtocolIntent::Contest);
+//! let _ = action.to_lane_request();
+//! ```
 
 use crate::kernel::ActorId;
 use crate::lane::{
@@ -115,7 +128,7 @@ pub struct ActorObservationDto {
 
 impl ActorObservationDto {
   /// Project an actor-visible lane observation without exposing domain state.
-  pub fn from_observation(observation: LanerObservation) -> Self {
+  pub(crate) fn from_observation(observation: LanerObservation) -> Self {
     let visible_threat_response = observation
       .available_threat_response()
       .map(ActorProtocolIntent::from_lane_intent);
@@ -316,7 +329,7 @@ impl ActorActionDto {
   }
 
   /// Convert to the host-bound request; legality remains a host concern.
-  pub fn to_lane_request(self) -> LaneIntentRequest {
+  pub(crate) fn to_lane_request(self) -> LaneIntentRequest {
     LaneIntentRequest::new(
       ActorId::new(self.observer),
       ObservationId::new(self.observation_id),

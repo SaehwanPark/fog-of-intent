@@ -153,7 +153,9 @@ transport logging, prompt/model details, and durable retention remain outer
 adapter concerns.
 `ActorToolCapability` is pure ordinary-versus-privileged labeling metadata;
 the current catalog contains only ordinary actor tools and grants no runtime
-authority.
+authority. Public protocol compatibility is DTO-only: authoritative lane
+observation projection and action-request conversion stay behind crate-private
+adapters, keeping domain types out of the provider-facing contract.
 
 `src/session.rs` owns immutable ordinary-actor session freshness and lifecycle
 metadata only. It cannot validate an intent, submit a transition, or mutate
