@@ -1215,3 +1215,15 @@ canonical policy instead of duplicating it.
 - Prevention: Keep random/representative sampling, population inference,
   outcomes, strategic metrics, persistence, providers, and calibration behind
   separate contracts.
+
+## Keep profile intent shares tied to tally denominators
+
+- Context: M6 needed comparable profile rows without rerunning policy or
+  turning selected-intent counts into strategic-quality claims.
+- Symptom: A share array without a closed intent order or explicit row
+  denominator can be read as a different metric or profile ranking.
+- Resolution: Publish shares only from the verified row's bounded observation
+  count, keep the exact `[Stabilize, Contest, Yield, Recall, Withdraw]` order,
+  and give the final Withdraw slot the deterministic integer remainder.
+- Prevention: Treat the projection as fixed-fixture evidence; keep population
+  distributions, outcomes, strategic metrics, and calibration separate.

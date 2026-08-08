@@ -1781,6 +1781,34 @@ impl ScriptedAgentMatchedScenarioTally {
   pub const fn withdraw_count(self) -> u8 {
     self.withdraw_count
   }
+
+  /// Return `[Stabilize, Contest, Yield, Recall, Withdraw]` shares at the
+  /// shared 10,000-point scale.
+  ///
+  /// The first four intents use floor division and Withdraw receives the
+  /// integer remainder, so the five shares always sum to exactly 10,000.
+  pub fn intent_distribution_basis_points(self) -> [u16; 5] {
+    let counts = [
+      self.stabilize_count,
+      self.contest_count,
+      self.yield_count,
+      self.recall_count,
+      self.withdraw_count,
+    ];
+    let denominator = u16::from(self.observation_count);
+    let mut shares = [0_u16; 5];
+    let mut assigned = 0_u16;
+    for (index, count) in counts.iter().take(4).enumerate() {
+      shares[index] = u16::try_from(
+        u32::from(*count) * u32::from(SCRIPTED_AGENT_SCENARIO_DISTRIBUTION_SCALE)
+          / u32::from(denominator),
+      )
+      .expect("basis-point share fits");
+      assigned += shares[index];
+    }
+    shares[4] = SCRIPTED_AGENT_SCENARIO_DISTRIBUTION_SCALE - assigned;
+    shares
+  }
 }
 
 /// Bounded failures from a profile-aware tally comparison.
@@ -2245,6 +2273,30 @@ impl ScriptedAgentMatchedScenarioTallyReport {
 
   pub fn entries(&self) -> &[ScriptedAgentMatchedScenarioTally] {
     &self.entries
+  }
+
+  /// Render ordered profile/rule rows and intent shares without performing I/O.
+  pub fn to_intent_distribution_markdown(&self) -> String {
+    let mut rendered = format!(
+      "# Profile Intent Distribution\n\n- schema: {}\n- observer: {}\n\n| profile_id | evaluation_rule | observation_count | stabilize_bp | contest_bp | yield_bp | recall_bp | withdraw_bp |\n| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |\n",
+      self.schema,
+      self.observer.value(),
+    );
+    for entry in &self.entries {
+      let shares = (*entry).intent_distribution_basis_points();
+      rendered.push_str(&format!(
+        "| {} | {} | {} | {} | {} | {} | {} | {} |\n",
+        entry.profile_id,
+        entry.evaluation_rule,
+        entry.observation_count,
+        shares[0],
+        shares[1],
+        shares[2],
+        shares[3],
+        shares[4],
+      ));
+    }
+    rendered
   }
 
   /// Encode the verified selected-intent tally as bounded line-oriented text.
@@ -5272,6 +5324,58 @@ mod tests {
     assert_eq!(tally.entries()[0].withdraw_count(), 1);
     assert_eq!(tally.entries()[1].contest_count(), 8);
     assert_eq!(tally.entries()[2].yield_count(), 8);
+    assert_eq!(
+      tally.entries()[0].intent_distribution_basis_points(),
+      [8_750, 0, 0, 0, 1_250]
+    );
+    assert_eq!(
+      tally.entries()[1].intent_distribution_basis_points(),
+      [0, 10_000, 0, 0, 0]
+    );
+    assert_eq!(
+      tally.entries()[2].intent_distribution_basis_points(),
+      [0, 0, 10_000, 0, 0]
+    );
+    assert_eq!(
+      tally
+        .entries()
+        .iter()
+        .map(|entry| entry.intent_distribution_basis_points().iter().sum::<u16>())
+        .collect::<Vec<_>>(),
+      vec![10_000, 10_000, 10_000]
+    );
+    assert_eq!(
+      tally.to_intent_distribution_markdown(),
+      "# Profile Intent Distribution\n\n- schema: m6-scripted-agent-matched-scenario-tally-v1\n- observer: 1\n\n| profile_id | evaluation_rule | observation_count | stabilize_bp | contest_bp | yield_bp | recall_bp | withdraw_bp |\n| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |\n| cautious-laner-v1 | threat-first-pressure-aware-fixed-score-v1 | 8 | 8750 | 0 | 0 | 0 | 1250 |\n| risk-taking-laner-v1 | contest-first-fixed-score-v1 | 8 | 0 | 10000 | 0 | 0 | 0 |\n| yielding-laner-v1 | yield-first-fixed-score-v1 | 8 | 0 | 0 | 10000 | 0 | 0 |\n"
+    );
+    let remainder_population = ScriptedAgentFixtureScenarioPopulation::generate_from_scenario_ids(
+      &[
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+      ],
+      238,
+    )
+    .expect("remainder population builds");
+    let remainder_manifest = [ScriptedAgentExperimentManifest::new(
+      ScriptedAgentProfile::cautious_v1(),
+      ScriptedAgentSeedBundle::new(60, StreamId::new(61), DrawId::new(62)),
+    )];
+    let remainder_tally = remainder_population
+      .matched_tally(&remainder_manifest)
+      .expect("remainder tally builds");
+    assert_eq!(remainder_tally.observation_count(), 6);
+    assert_eq!(
+      remainder_tally.entries()[0].intent_distribution_basis_points(),
+      [8_333, 0, 0, 0, 1_667]
+    );
+    assert_eq!(
+      remainder_tally.entries()[0]
+        .intent_distribution_basis_points()
+        .iter()
+        .sum::<u16>(),
+      SCRIPTED_AGENT_SCENARIO_DISTRIBUTION_SCALE
+    );
     assert_eq!(
       tally
         .entries()

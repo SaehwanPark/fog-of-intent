@@ -186,6 +186,10 @@ evidence remain outside the core.
 caller-declared distribution projection over its two ordered rows. Integer
 remainder handling is deterministic and the projection owns no sampling,
 population, transition, history, persistence, provider, or outcome authority.
+`ScriptedAgentMatchedScenarioTally` similarly exposes pure ordered intent
+shares for `[Stabilize, Contest, Yield, Recall, Withdraw]`; this remains a
+selected-intent projection over a verified fixture tally, not a population,
+outcome, or strategic metric.
 `matched_tally` reuses the existing verified sample/tally path over those
 entries and does not rerun policy evaluation or add population-metric,
 transition, history, persistence, provider, or outcome authority. Multiple

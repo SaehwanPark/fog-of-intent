@@ -1179,6 +1179,11 @@ transport-integrated sessions and broader protocol compatibility remain open.
   rows, and bounded counts for the five closed intents; each row totals at most
   eight observations. This is fixture-sized selected-intent aggregation, not a
   population distribution, outcome metric, persistence, or provider contract.
+- Each tally row can expose ordered 10,000-point intent shares in
+  `[Stabilize, Contest, Yield, Recall, Withdraw]` order. The first four shares
+  use floor division and Withdraw receives the remainder, so each row sums to
+  10,000. Its pure Markdown projection is fixed-fixture evidence, not a
+  broader population distribution, outcome, or strategic metric.
 - The tally report's line-oriented codec uses the same
   `m6-scripted-agent-matched-scenario-tally-v1` identity, a 4096-byte bound,
   fixed top-level fields, and ordered pipe-delimited rows. It rejects unknown,
