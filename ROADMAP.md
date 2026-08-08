@@ -1424,6 +1424,9 @@ representative replays, and an evidence-limited report.
   actual adversarial/degenerate populations and exploit search remain open.
 - [ ] Add illegal-command, exploit-seeking, communication-abuse, and degenerate
   policy populations.
+- [x] Rank a caller-declared largest absolute intent-count candidate from
+  verified profile-aware comparison rows with stable row/intent ties; actual
+  outlier detection and representative replay selection remain open.
 - [ ] Detect outliers and select representative replays deterministically.
 - [ ] Check causal-trace completeness and replay identity for sampled runs.
 - [x] Define one provisional fixed-fixture regression gate with written

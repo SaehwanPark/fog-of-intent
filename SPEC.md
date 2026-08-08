@@ -1216,6 +1216,14 @@ transport-integrated sessions and broader protocol compatibility remain open.
   counts and every ordered row's five intent counts match. It is a fixed
   regression signal, not a balance threshold, build comparison, causal metric,
   outcome measure, or strategic-quality claim.
+- `ScriptedAgentMatchedScenarioTallyComparisonReport::largest_delta_candidate`
+  exposes `m6-scripted-agent-tally-outlier-candidate-v1` under
+  `m6-largest-absolute-intent-delta-v1`. It selects the first largest absolute
+  signed candidate-minus-baseline intent delta in stable profile-row and
+  `[Stabilize, Contest, Yield, Recall, Withdraw]` order, or no candidate when
+  every delta is zero. This is metric-side fixed-fixture evidence, not outlier
+  detection, threshold calibration, representative replay selection, causal
+  attribution, population inference, or outcome/strategic evidence.
 - `ScriptedAgentFixtureScenarioSelection` defines
   `m6-scripted-agent-fixture-scenarios-v1` over the closed
   `safe-fixture-v1` and `river-side-threat-v1` IDs. It binds one or more

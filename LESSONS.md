@@ -1240,3 +1240,14 @@ canonical policy instead of duplicating it.
   degenerate count.
 - Prevention: Require separate contracts for population generation, search,
   prevalence, outcome/causal metrics, persistence, and human evidence.
+
+## Keep metric candidates separate from outlier judgments
+
+- Context: M6 needed a deterministic largest-delta candidate before broader
+  outlier detection and representative replay selection were authorized.
+- Symptom: Naming a largest count delta an outlier can imply a threshold,
+  causal explanation, or representative behavior claim.
+- Resolution: Expose only the first largest absolute signed delta from a
+  verified comparison, with literal rule/schema IDs and stable row/intent ties.
+- Prevention: Keep outlier definitions, calibration, replay selection,
+  population inference, causality, persistence, and human evidence separate.
