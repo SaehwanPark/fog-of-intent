@@ -18,6 +18,9 @@ use crate::lane::{
   ObservationId, PLAYER_LANER, ScenarioDebriefReport, ScenarioWindow, branch_from_window,
   build_scenario_debrief, observe_player,
 };
+use crate::protocol::{
+  ActorActionDto, ActorProtocolError, ActorProtocolErrorCode, ActorProtocolRepairHint,
+};
 use crate::run_store::{CliRunStore, CliRunStoreError};
 
 /// Versioned contract for the bounded synchronous host fixture.
@@ -182,6 +185,41 @@ impl CliScenarioHost {
   /// Return the current actor-visible observation.
   pub fn observation(&self) -> crate::lane::LanerObservation {
     observe_player(&self.history.current_state(), self.next_observation_id()).observation()
+  }
+
+  /// Validate one actor action without mutating host state or history.
+  pub fn validate_actor_action(&self, action: ActorActionDto) -> Result<(), ActorProtocolError> {
+    let receipt = observe_player(&self.history.current_state(), self.next_observation_id());
+    if action.observer() != receipt.observation().observer().value() {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ActorMismatch,
+        ActorProtocolRepairHint::UseBoundActor,
+      ));
+    }
+    if self.is_complete() {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::WindowClosed,
+        ActorProtocolRepairHint::StartNewSession,
+      ));
+    }
+    if action.observation_id() != receipt.observation().observation_id().value() {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::StaleObservation,
+        ActorProtocolRepairHint::RequestFreshObservation,
+      ));
+    }
+    crate::lane::validate_lane_request(
+      &self.history.current_state(),
+      &receipt,
+      &action.to_lane_request(),
+    )
+    .map(|_| ())
+    .map_err(|_| {
+      ActorProtocolError::new(
+        ActorProtocolErrorCode::HostValidationRejected,
+        ActorProtocolRepairHint::ResendAdvertisedAction,
+      )
+    })
   }
 
   /// Return the number of committed scenario windows.
@@ -674,6 +712,76 @@ mod tests {
       matches!(output, CliHostOutput::Debrief(report) if report.windows().len() == 2)
     }));
     assert!(matches!(outputs.last(), Some(CliHostOutput::Quit)));
+  }
+
+  #[test]
+  fn actor_action_validation_is_read_only_and_actor_safe() {
+    let mut host = CliScenarioHost::fixture();
+    let observation = host.observation();
+    let valid = ActorActionDto::new(
+      observation.observer().value(),
+      observation.observation_id().value(),
+      crate::protocol::ActorProtocolIntent::Contest,
+    );
+
+    assert_eq!(host.validate_actor_action(valid), Ok(()));
+    assert_eq!(host.record_count(), 0);
+    assert_eq!(host.observation(), observation);
+
+    let cases = [
+      (
+        ActorActionDto::new(2, observation.observation_id().value(), valid.intent()),
+        "actor_mismatch",
+        "use_bound_actor",
+      ),
+      (
+        ActorActionDto::new(1, observation.observation_id().value() + 1, valid.intent()),
+        "stale_observation",
+        "request_fresh_observation",
+      ),
+      (
+        ActorActionDto::new(
+          observation.observer().value(),
+          observation.observation_id().value(),
+          crate::protocol::ActorProtocolIntent::Withdraw,
+        ),
+        "host_validation_rejected",
+        "resend_advertised_action",
+      ),
+    ];
+    for (action, code, repair) in cases {
+      let error = host
+        .validate_actor_action(action)
+        .expect_err("invalid actor action is rejected");
+      assert_eq!(error.schema(), "m5-actor-error-v1");
+      assert_eq!(error.code().id(), code);
+      assert_eq!(error.repair().id(), repair);
+      assert!(!format!("{error:?}").contains("hash"));
+      assert_eq!(host.record_count(), 0);
+      assert_eq!(host.observation(), observation);
+    }
+
+    for line in [
+      "plan contest",
+      "commit",
+      "advance",
+      "plan stabilize",
+      "commit",
+      "advance",
+    ] {
+      host.apply_line(line).expect("fixture action advances");
+    }
+    let closed_observation = host.observation();
+    let error = host
+      .validate_actor_action(ActorActionDto::new(
+        closed_observation.observer().value(),
+        closed_observation.observation_id().value(),
+        valid.intent(),
+      ))
+      .expect_err("complete host rejects actor action");
+    assert_eq!(error.code().id(), "window_closed");
+    assert_eq!(error.repair().id(), "start_new_session");
+    assert_eq!(host.record_count(), 2);
   }
 
   #[test]
