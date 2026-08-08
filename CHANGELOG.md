@@ -95,6 +95,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.69 — 2026-08-08
+
+### Added
+
+- Added the versioned `m3-cli-terminal-text-v1` pure projection for every
+  actor-valid host output and bounded host error. It emits stable labeled
+  plain text, sanitizes echoed control characters, and performs no terminal
+  I/O or hidden-state lookup.
+
+### Known limits
+
+- The projection is library-only; a command loop, terminal integration,
+  persistent backend, keyboard/focus inspection, and screen-reader evidence
+  remain open.
+
 ## 0.1.68 — 2026-08-08
 
 ### Added

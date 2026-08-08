@@ -733,15 +733,17 @@ playability, or human-experience evidence.
 
 ### M3 — CLI grammar foundation — 2026-08-06
 
-**Status:** Bounded grammar and in-memory host evidence delivered; terminal and
-persistent flows remain open.
+**Status:** Bounded grammar, in-memory host, and pure terminal-text evidence
+delivered; terminal I/O and persistent flows remain open.
 
 - `src/cli.rs` defines stable lowercase command identities and borrowed
   payloads for the planned in-session verbs.
 - Parsing returns typed errors for empty input, unknown verbs, missing payloads,
   and unexpected arguments without reading simulation state.
 - The parser is an adapter contract only; it does not authorize domain actions,
-  render output, persist artifacts, or change the lane transition boundary.
+  persist artifacts, or change the lane transition boundary. `src/terminal.rs`
+  renders already-authorized host projections as plain text but performs no
+  terminal I/O.
 - `observe`, bounded `inspect`, and contextual `help` map to typed read-only
   requests with actor-visible target restrictions and static command metadata.
 - `message`, `plan`, `contingency`, `commit`, and `advance` map to distinct
@@ -766,8 +768,8 @@ persistent flows remain open.
 - `CliInformation<T>` preserves the selected label through borrowed
   projections; its explicit `into_option()` extraction intentionally drops
   provenance while returning the payload, and `Unknown` remains payload-free.
-  This is adapter metadata only; no renderer, inference engine, host flow, or
-  external compatibility guarantee exists.
+  This is adapter metadata only; no inference engine, host flow, or external
+  compatibility guarantee exists.
 - `CliDraft` stages borrowed message, plan, and contingency payloads with
   last-write-wins edits, clear-all `undo()`, and fail-closed empty/commit/
   advance checks. `commit()` consumes the editable value and returns a
@@ -778,17 +780,17 @@ persistent flows remain open.
   coordination; the pure kernel and lane modules evaluate validated inputs,
   while `src/cli.rs` remains a request/projection adapter. Current core and CLI
   code has no terminal I/O, rendering loop, or mutable runtime presentation
-  state. Any future renderer must consume host-projected actor-valid values at
-  the edge without authorizing commands or mutating history; no renderer or
-  accessibility evidence exists yet.
+  state. The versioned `m3-cli-terminal-text-v1` projection consumes
+  host-projected actor-valid values at the edge without authorizing commands or
+  mutating history; terminal-loop and accessibility evidence remain open.
 - `CliRunId<'a>` is the versioned `m3-cli-run-id-v1` borrowed identifier for
   save/load/replay/export requests. It accepts bounded human-readable ASCII
   forms and rejects malformed values before host execution; it does not create
   persistence, guarantee uniqueness, or alter replay identity.
 - CLI tests now exercise a representative grammar transcript and common errors
   across read/write/process/session mappings. This remains parser/request
-  evidence only; host-backed scenario evidence is described below and terminal
-  output remains unimplemented.
+  evidence only; host-backed scenario and terminal-text evidence are described
+  below, while terminal I/O remains unimplemented.
 - `src/host.rs` now provides the versioned `m3-cli-host-v1` synchronous host
   fixture. It accepts explicit resolved inputs, maps the grammar to a bounded
   two-window scenario, and returns actor-valid observation/history, outcome,
@@ -797,8 +799,10 @@ persistent flows remain open.
 - Host tests cover staged message/plan/contingency text, pre-commit undo,
   commit/advance, in-memory save/load, replay verification, debrief, quit,
   malformed plans, unsupported branches, and deterministic repeated runs. A
-  terminal renderer, persistent backend, branch execution, and human
-  keyboard/screen-reader evidence remain unimplemented.
+  pure text renderer now covers every host output/error variant, control
+  character sanitization, and bounded labels. Persistent backend, branch
+  execution, terminal I/O, and human keyboard/screen-reader evidence remain
+  unimplemented.
 
 ## Future
 

@@ -18,10 +18,10 @@ Fog of Intent is currently a single Rust 2024 package with no dependencies. The
 binary still prints `Hello, world!`; internal `kernel` and `lane` modules
 provide bounded deterministic transitions, in-memory history, replay,
 branching, coordination, objective, and debrief fixtures. No playable
-scenario, terminal renderer, persistence, MCP, research, or GUI component exists
+scenario, terminal I/O loop, persistence, MCP, research, or GUI component exists
 yet. M1 is complete as an internal fixture; M2 remains a bounded lane contract,
-and M3 now adds only a library-only two-window host fixture rather than a
-user-facing command loop.
+and M3 now adds a library-only two-window host fixture plus pure terminal text,
+rather than a user-facing command loop.
 
 The M3 CLI grammar is now a pure adapter module: it parses stable verbs and
 borrows payload text, maps observe/inspect/help to typed read requests, maps
@@ -50,12 +50,12 @@ resolved inputs.
 Terminal rendering is intentionally outside the authoritative boundary. The
 application host solely owns true-state lifecycle, legality, ordering, history
 commit, and adapter coordination; the kernel and lane modules evaluate only
-validated inputs within that host-owned boundary. A future renderer consumes
-host-projected actor-valid values at the edge and must not authorize commands,
-infer hidden state, or mutate history. The current kernel, lane, and CLI modules
-own no terminal I/O, rendering loop, or mutable runtime presentation state;
-the CLI's static modes, verbosity policies, and help metadata remain adapter
-contracts rather than a renderer.
+validated inputs within that host-owned boundary. The versioned terminal-text
+projection consumes host-projected actor-valid values at the edge and must not
+authorize commands, infer hidden state, or mutate history. The current kernel,
+lane, CLI, and terminal modules own no terminal I/O or rendering loop; the
+CLI's static modes, verbosity policies, and help metadata remain adapter
+contracts.
 
 The target architecture is one authoritative Rust simulation product with thin
 human, agent, and research adapters. The strongest boundary is:
@@ -82,6 +82,7 @@ src/main.rs
 src/lib.rs
 src/cli.rs
 src/host.rs
+src/terminal.rs
 src/kernel.rs
 src/lane/
 src/serialization.rs
@@ -96,8 +97,9 @@ docs/
 _workspace/
 ```
 
-`src/lib.rs`, `src/cli.rs`, `src/host.rs`, `src/kernel.rs`, `src/lane/`, and
-`src/serialization.rs` are the current internal kernel/adapter/fixture surface;
+`src/lib.rs`, `src/cli.rs`, `src/host.rs`, `src/terminal.rs`, `src/kernel.rs`,
+`src/lane/`, and `src/serialization.rs` are the current internal
+kernel/adapter/fixture surface;
 `src/main.rs` remains a placeholder executable. The lane surface is split into private responsibility-oriented
 modules behind the existing `crate::lane::*` facade: `evaluation.rs` owns
 authoritative state evaluation, `projection.rs` owns ordered event/effect
@@ -345,9 +347,9 @@ and an architecture update or ADR when it changes a consequential boundary.
   intent, and
   observation contracts are implemented internally, but they are not a
   playable scenario, external API, migration framework, or persistence service.
-- M3 has typed command contracts plus a bounded library-only host fixture;
-  terminal I/O, persistent storage, branch execution, and the user-facing
-  command loop remain open.
+- M3 has typed command contracts, a bounded library-only host fixture, and a
+  pure terminal-text projection; terminal I/O, persistent storage, branch
+  execution, and the user-facing command loop remain open.
 - M2 still lacks a communication system, full vision geometry, memory decay,
   automatic threat damage, no-choice host scheduling, adaptive pacing, a complete item/resource economy,
   external scenario serialization, a branch tree, and a broader debrief
