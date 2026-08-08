@@ -1216,7 +1216,7 @@ before commit and never turns them into a transition by itself. The
 `m5-actor-draft-receipt-v1` DTO acknowledges accepted staging with only the
 bound actor, observation, and closed field identity; it does not echo draft
 values or deliver them to another actor. Focused evidence is 17 protocol tests,
-5 session tests, and 22 host tests within the 200-unit, 7-binary, and
+5 session tests, and 23 host tests within the 201-unit, 7-binary, and
 1-Rustdoc suite. The host observation projection is a
 pure actor-visible DTO mapping, rejects inactive lifecycle states, and leaves
 the internal receipt private. The history DTO is a bounded status summary,
@@ -1239,7 +1239,9 @@ than a detailed replay or causal debrief contract.
   broad host-legality error projection remains open.
 - [ ] Separate ordinary actor tools from privileged experiment-controller tools.
 - [ ] Capture provider-neutral transcripts and tool-schema versions.
-- [ ] Add authorization and hidden-state leakage tests.
+- [x] Add bounded authorization and hidden-state leakage tests over the
+  ordinary actor adapter surface; network authentication and simultaneous
+  privacy remain open.
 - [ ] Add CLI/MCP action and projection parity tests.
 - [ ] Add timeout, malformed-response, duplicate-submit, stale-window, and
   disconnect behavior.

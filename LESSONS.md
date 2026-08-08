@@ -641,3 +641,15 @@ canonical policy instead of duplicating it.
 - Prevention: Keep receipt construction after successful staging, assert no
   history/observation mutation, and defer transport, delivery, and richer plan
   semantics to separate contracts.
+
+## Test authorization and redaction together
+
+- Context: Adding actor DTOs incrementally can leave each operation locally
+  tested while the cross-surface authorization and secrecy contract drifts.
+- Symptom: A new actor-bound request may reject correctly but expose a raw
+  state/provenance marker in its error or result representation.
+- Resolution: Keep one table-driven host matrix that exercises wrong-actor
+  action, draft, commit, and receipt requests alongside a bounded DTO/result
+  marker scan, asserting unchanged observation and history.
+- Prevention: Treat this as library evidence only; keep network authentication,
+  simultaneous privacy, and privileged tools in separate contracts.
