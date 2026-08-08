@@ -107,9 +107,9 @@ not increment the package version.
 
 ### Known limits
 
-- The binary does not yet select a run directory; locking, fsync/crash
-  recovery, scenario selection, branch execution, and accessibility evidence
-  remain open.
+- The binary does not yet select a run directory; race-hard symlink protection,
+  locking, fsync/crash recovery, scenario selection, branch execution, and
+  accessibility evidence remain open.
 
 ## 0.1.71 — 2026-08-08
 

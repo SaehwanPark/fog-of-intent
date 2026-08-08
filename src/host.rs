@@ -755,12 +755,17 @@ mod tests {
     std::fs::write(root.join("run.foi-artifact"), "malformed").expect("tampered artifact");
 
     let mut fresh = CliScenarioHost::fixture_with_store(store);
-    assert_eq!(fresh.record_count(), 0);
+    fresh.apply_line("plan contest").expect("local plan");
+    fresh.apply_line("commit").expect("local commit");
+    fresh.apply_line("advance").expect("local advance");
+    let before = fresh.observation();
+    assert_eq!(fresh.record_count(), 1);
     assert_eq!(
       fresh.apply_line("load run"),
       Err(CliHostError::ReplayRejected)
     );
-    assert_eq!(fresh.record_count(), 0);
+    assert_eq!(fresh.record_count(), 1);
+    assert_eq!(fresh.observation(), before);
     let _ = std::fs::remove_dir_all(root);
   }
 

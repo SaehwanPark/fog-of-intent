@@ -61,11 +61,16 @@ impl CliRunStore {
       .create_new(true)
       .open(&temporary)
       .map_err(|error| CliRunStoreError::WriteTemporary { kind: error.kind() })?;
-    temporary_file
-      .write_all(artifact.as_bytes())
-      .map_err(|error| CliRunStoreError::WriteTemporary { kind: error.kind() })?;
-    fs::rename(&temporary, &final_path)
-      .map_err(|error| CliRunStoreError::Replace { kind: error.kind() })?;
+    if let Err(error) = temporary_file.write_all(artifact.as_bytes()) {
+      drop(temporary_file);
+      let _ = fs::remove_file(&temporary);
+      return Err(CliRunStoreError::WriteTemporary { kind: error.kind() });
+    }
+    drop(temporary_file);
+    if let Err(error) = fs::rename(&temporary, &final_path) {
+      let _ = fs::remove_file(&temporary);
+      return Err(CliRunStoreError::Replace { kind: error.kind() });
+    }
     Ok(())
   }
 
@@ -73,6 +78,13 @@ impl CliRunStore {
   pub fn load(&self, run_id: &str) -> Result<String, CliRunStoreError> {
     self.validate_run_id(run_id)?;
     let final_path = self.path(run_id, CLI_RUN_ARTIFACT_SUFFIX);
+    let metadata = fs::symlink_metadata(&final_path)
+      .map_err(|error| CliRunStoreError::Read { kind: error.kind() })?;
+    if !metadata.file_type().is_file() {
+      return Err(CliRunStoreError::Read {
+        kind: io::ErrorKind::InvalidData,
+      });
+    }
     let mut file =
       File::open(final_path).map_err(|error| CliRunStoreError::Read { kind: error.kind() })?;
     let mut artifact = String::new();
@@ -184,6 +196,25 @@ mod tests {
   }
 
   #[test]
+  fn store_cleans_temporary_file_after_replace_failure() {
+    let root = temporary_root();
+    let store = CliRunStore::new(&root);
+    fs::create_dir_all(&root).expect("root directory");
+    fs::create_dir(root.join("run.foi-artifact")).expect("final path directory");
+
+    assert!(matches!(
+      store.save("run", artifact()),
+      Err(CliRunStoreError::Replace { .. })
+    ));
+    assert_eq!(
+      fs::read_dir(&root).expect("store directory").count(),
+      1,
+      "failed replacement must clean its temporary sibling"
+    );
+    cleanup(&root);
+  }
+
+  #[test]
   fn store_rejects_oversized_files_before_returning_contents() {
     let root = temporary_root();
     fs::create_dir_all(&root).expect("root directory");
@@ -195,5 +226,28 @@ mod tests {
     let store = CliRunStore::new(&root);
     assert_eq!(store.load("run"), Err(CliRunStoreError::ArtifactTooLarge));
     cleanup(&root);
+  }
+
+  #[cfg(unix)]
+  #[test]
+  fn store_rejects_final_symlinks_before_opening_them() {
+    use std::os::unix::fs::symlink;
+
+    let root = temporary_root();
+    let outside = temporary_root();
+    fs::create_dir_all(&root).expect("root directory");
+    fs::create_dir_all(&outside).expect("outside directory");
+    let outside_file = outside.join("outside.txt");
+    fs::write(&outside_file, artifact()).expect("outside artifact");
+    symlink(&outside_file, root.join("run.foi-artifact")).expect("symlink fixture");
+
+    assert_eq!(
+      CliRunStore::new(&root).load("run"),
+      Err(CliRunStoreError::Read {
+        kind: io::ErrorKind::InvalidData
+      })
+    );
+    cleanup(&root);
+    cleanup(&outside);
   }
 }
