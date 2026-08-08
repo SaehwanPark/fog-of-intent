@@ -2,23 +2,23 @@
 
 ## Disposition
 
-Pending independent three-pass review at the implementation/evidence head.
+PASS: the independent three-pass review found no actionable findings at
+implementation/evidence head `0d2a323`.
 
-## Scope to review
+## Scope reviewed
 
-- Does the focused integration bind canonical schema and all three row IDs/counts?
-- Does verified round-trip succeed and tampered-row decode fail as
-  `InputMismatch`?
-- Does the codec remain bounded evidence transport with no persistence or
-  policy/host/lane/history/replay/provider authority?
+- The focused integration binds canonical schema and all three row IDs/counts.
+- Verified round-trip succeeds and tampered-row decode fails as `InputMismatch`.
+- The codec remains bounded evidence transport with no persistence or
+  policy/host/lane/history/replay/provider authority.
 
-## Evidence target
+## Evidence
 
-One focused profile-aware tally codec regression should cover canonical rows,
-verified round-trip, and tampered-row rejection. The full gate target is 30
-focused agent tests within 243 Rust unit + 7 binary + 3 RustDoc, 15 Python
-tests, formatter, Clippy with warnings denied, repository checker, and diff
-checks.
+One focused profile-aware tally codec regression covers canonical rows, verified
+round-trip, and tampered-row rejection. The full evidence is 30 focused agent
+tests within 243 Rust unit + 7 binary + 3 RustDoc, 15 Python tests, formatter,
+Clippy with warnings denied, repository checker, and diff checks, all passing
+at `0d2a323`.
 
 ## Limits
 
@@ -28,4 +28,5 @@ human evidence remain open.
 
 ## Required fixes
 
-To be completed after independent review.
+None. Durable export, broader metrics/distributions, outcomes, calibration,
+persistence, providers, and human evidence remain open.
