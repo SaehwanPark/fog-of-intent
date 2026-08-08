@@ -2,7 +2,8 @@
 
 ## Outcome
 
-Pending independent domain QA and final handoff review.
+PASS — independent domain QA and final handoff review found no actionable
+findings at implementation/evidence head `cef07a0`.
 
 ## Delivered contract
 
@@ -11,13 +12,14 @@ caller-declared numeric label. Labeled comparisons retain distinct baseline
 and candidate IDs alongside the existing ordered verified-report deltas;
 unlabeled comparisons and the fixed no-change gate remain unchanged.
 
-## Verification target
+## Verification
 
 One focused comparison test covers the label schema/value, distinct-ID
-construction, stable row order and deltas, repeated construction, and matching-
-ID rejection. The expected full evidence is 25 focused agent tests within 238
-unit tests, 7 binary tests, and 3 RustDoc tests, plus formatter, Clippy warnings
-denied, repository checker, 15 Python policy tests, and diff checks.
+construction, stable row order and deltas, repeated construction, matching-ID
+rejection, and labeled changed/unchanged no-change-gate parity. The full
+evidence is 25 focused agent tests within 238 unit tests, 7 binary tests, and 3
+RustDoc tests, plus formatter, Clippy warnings denied, repository checker, 15
+Python policy tests, and diff checks; all pass at reviewed head `cef07a0`.
 
 ## Open boundaries
 
