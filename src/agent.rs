@@ -64,7 +64,7 @@ impl ScriptedAgentProfile {
     Self {
       profile_id: SCRIPTED_AGENT_PROFILE_ID,
       candidate_rule: "actor-visible-intents-v1",
-      evaluation_rule: "threat-first-fixed-score-v1",
+      evaluation_rule: "threat-first-pressure-aware-fixed-score-v1",
       selection_rule: "max-score-stable-order-v1",
       evaluation: ScriptedAgentEvaluationRule::Threat,
       role: ScriptedAgentRole::Anchor,
@@ -382,7 +382,13 @@ impl ScriptedAgent {
       (ScriptedAgentEvaluationRule::Threat, ScriptedAgentReason::ThreatResponse) => 100,
       (ScriptedAgentEvaluationRule::Contest, ScriptedAgentReason::ThreatResponse) => 90,
       (ScriptedAgentEvaluationRule::Yield, ScriptedAgentReason::ThreatResponse) => 90,
-      (_, ScriptedAgentReason::StableDefault) => 80,
+      (_, ScriptedAgentReason::StableDefault) => {
+        80 + if self.profile.evaluation == ScriptedAgentEvaluationRule::Threat {
+          i16::from(observation.wave_pressure().value())
+        } else {
+          0
+        }
+      }
       (_, ScriptedAgentReason::AvailableAlternative) => match intent {
         LaneIntent::Contest => 60,
         LaneIntent::Yield => 40,
@@ -436,8 +442,8 @@ impl ScriptedAgent {
 mod tests {
   use super::*;
   use crate::lane::{
-    JungleThreatTruth, LaneIntent, LaneSnapshot, LaneStatus, ObservationId, observe_player,
-    validate_lane_request,
+    JungleThreatTruth, LaneIntent, LaneSnapshot, LaneStatus, ObservationId, WavePressure,
+    WaveState, observe_player, validate_lane_request,
   };
 
   #[test]
@@ -528,6 +534,62 @@ mod tests {
   }
 
   #[test]
+  fn cautious_agent_stabilize_score_rises_with_observed_wave_pressure() {
+    let initial = LaneSnapshot::initial();
+    let low_pressure = LaneSnapshot::new(
+      initial.ruleset(),
+      initial.turn(),
+      LaneStatus::Open,
+      initial.player(),
+      initial.opponent(),
+      WaveState::new(WavePressure::new(0).expect("bounded pressure")),
+      initial.jungle_threat(),
+    );
+    let high_pressure = LaneSnapshot::new(
+      initial.ruleset(),
+      initial.turn(),
+      LaneStatus::Open,
+      initial.player(),
+      initial.opponent(),
+      WaveState::new(WavePressure::new(3).expect("bounded pressure")),
+      initial.jungle_threat(),
+    );
+    let low_receipt = observe_player(&low_pressure, ObservationId::new(17));
+    let high_receipt = observe_player(&high_pressure, ObservationId::new(17));
+    let agent = ScriptedAgent::cautious_v1();
+    let low = agent
+      .evaluate_candidate(low_receipt.observation(), LaneIntent::Stabilize)
+      .expect("stabilize is advertised at low pressure");
+    let high = agent
+      .evaluate_candidate(high_receipt.observation(), LaneIntent::Stabilize)
+      .expect("stabilize is advertised at high pressure");
+
+    assert_eq!(low.score(), 80);
+    assert_eq!(high.score(), 83);
+    assert!(high.score() > low.score());
+    assert_eq!(
+      agent.choose(low_receipt.observation()).selected_intent(),
+      LaneIntent::Stabilize
+    );
+    assert_eq!(
+      agent.choose(high_receipt.observation()).selected_intent(),
+      LaneIntent::Stabilize
+    );
+    validate_lane_request(
+      &low_pressure,
+      &low_receipt,
+      &agent.choose(low_receipt.observation()).request(),
+    )
+    .expect("low-pressure request is legal");
+    validate_lane_request(
+      &high_pressure,
+      &high_receipt,
+      &agent.choose(high_receipt.observation()).request(),
+    )
+    .expect("high-pressure request is legal");
+  }
+
+  #[test]
   fn matched_observation_distinguishes_three_profiles() {
     let state = LaneSnapshot::initial();
     let receipt = observe_player(&state, ObservationId::new(12));
@@ -546,7 +608,7 @@ mod tests {
     assert_eq!(yielding.profile().role().id(), "pacer-v1");
     assert_eq!(
       cautious.profile().evaluation_rule(),
-      "threat-first-fixed-score-v1"
+      "threat-first-pressure-aware-fixed-score-v1"
     );
     assert_eq!(
       risk_taking.profile().profile_id(),
@@ -644,7 +706,7 @@ mod tests {
         .map(|entry| entry.evaluation_rule())
         .collect::<Vec<_>>(),
       vec![
-        "threat-first-fixed-score-v1",
+        "threat-first-pressure-aware-fixed-score-v1",
         "contest-first-fixed-score-v1",
         "yield-first-fixed-score-v1"
       ]
@@ -667,7 +729,7 @@ mod tests {
         .iter()
         .map(|entry| entry.selected_score())
         .collect::<Vec<_>>(),
-      vec![80, 100, 100]
+      vec![81, 100, 100]
     );
     assert!(
       report
