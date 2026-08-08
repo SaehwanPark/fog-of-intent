@@ -15,8 +15,9 @@ provider, population, outcome, or strategic authority.
 ## Evidence
 
 One focused comparison test binds the literal rule ID, proves changed 1/1 to
-2/2 input fails the gate, and proves an unchanged comparison passes. The full
-evidence is one focused comparison test within 24 focused agent tests, 237
+2/2 input fails the gate, proves a same-total 1/1-to-2/0 redistribution also
+fails, and proves an unchanged comparison passes. The full evidence is one
+focused comparison test within 24 focused agent tests, 237
 Rust unit tests, 7 binary tests, and 3 RustDoc tests, plus formatter, Clippy
 warnings denied, repository checker, 15 Python policy tests, and diff checks;
 all pass at reviewed head `2704a55`.
