@@ -993,7 +993,7 @@ transport-integrated sessions and broader protocol compatibility remain open.
   snapshot fields, session lifecycle/error cases, codec round-trips and
   malformed-input rejection, and exhaustive codec/session error projections.
   The focused evidence is 26 protocol tests and 12 session tests within the
-  228-unit, 7-binary, and 3-Rustdoc suite; host evidence includes the
+  229-unit, 7-binary, and 3-Rustdoc suite; host evidence includes the
   authorization/redaction matrix and CLI/protocol parity regressions.
 - `CliScenarioHost::validate_actor_action` checks one DTO against the current
   actor-visible receipt and existing lane validator without mutating history,
@@ -1131,6 +1131,17 @@ transport-integrated sessions and broader protocol compatibility remain open.
   claim; detailed causal debrief, communication delivery, transport,
   host-integrated simultaneous resolution/coordination, and broader host-error
   projection remain open.
+
+### M6 — Experiment manifest boundary — 2026-08-08
+
+- `ScriptedAgentExperimentManifest` defines `m6-experiment-manifest-v1` for
+  the bounded two-window fixture. It records the constructor-owned scripted
+  profile, exact evaluation rule, seeded tie-selection rule, and explicit
+  policy seed bundle in an eight-line codec; it does not run agents, sample
+  populations, or produce metrics. Unknown profiles/rules, malformed IDs, and
+  malformed codec fields fail closed.
+- Batch execution, resumable storage, population sampling, aggregate metrics,
+  provider/model/prompt versions, and calibration evidence remain open.
 
 ## Future
 

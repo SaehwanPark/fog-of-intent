@@ -18,6 +18,19 @@ canonical policy instead of duplicating it.
   quality as separate contracts with separate evidence before adding queues or
   session integration.
 
+## Keep experiment manifests declarative
+
+- Context: M6 needed reproducible run identity before a batch runner or
+  population sampler was authorized.
+- Symptom: Letting a manifest construct agents or execute runs would turn
+  metadata into a second policy/transition engine.
+- Resolution: `ScriptedAgentExperimentManifest` records only the fixture,
+  constructor-owned profile/rule IDs, and caller-owned policy seed bundle in a
+  bounded codec.
+- Prevention: Add sampling, metrics, provider versions, and run artifacts as
+  separate contracts with their own evidence rather than expanding metadata
+  into execution authority.
+
 ## Formatter defaults do not establish project policy
 
 - Context: The repository had a passing `cargo fmt --check` but no formatter or

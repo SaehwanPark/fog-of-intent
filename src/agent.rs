@@ -37,6 +37,15 @@ pub const SCRIPTED_AGENT_SEEDED_SELECTION_RULE: &str = "max-score-seeded-tie-v1"
 /// Versioned identity for actor-visible scripted-decision replay records.
 pub const SCRIPTED_AGENT_REPLAY_SCHEMA: &str = "m4-scripted-agent-replay-v1";
 
+/// Versioned experiment-manifest identity for the bounded scripted fixture.
+pub const SCRIPTED_AGENT_EXPERIMENT_MANIFEST_SCHEMA: &str = "m6-experiment-manifest-v1";
+
+/// The only scenario currently admitted by the bounded manifest.
+pub const SCRIPTED_AGENT_EXPERIMENT_SCENARIO_ID: &str = "m3-two-window-fixture-v1";
+
+/// Maximum encoded experiment-manifest size.
+pub const MAX_SCRIPTED_AGENT_MANIFEST_BYTES: usize = 4096;
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum ScriptedAgentEvaluationRule {
   Threat,
@@ -139,6 +148,15 @@ impl ScriptedAgentProfile {
       ScriptedAgentEvaluationRule::Yield => LaneIntent::Yield,
     }
   }
+
+  fn parse_id(value: &str) -> Result<Self, ScriptedAgentManifestError> {
+    match value {
+      SCRIPTED_AGENT_PROFILE_ID => Ok(Self::cautious_v1()),
+      RISK_TAKING_SCRIPTED_AGENT_PROFILE_ID => Ok(Self::risk_taking_v1()),
+      YIELDING_SCRIPTED_AGENT_PROFILE_ID => Ok(Self::yielding_v1()),
+      _ => Err(ScriptedAgentManifestError::InvalidValue),
+    }
+  }
 }
 
 /// Explicit policy-only seed and stream/draw identity.
@@ -183,6 +201,153 @@ impl ScriptedAgentSeedBundle {
     value ^= value >> 31;
     let bound = u64::try_from(upper_bound).expect("candidate count fits in u64");
     usize::try_from(value % bound).expect("tie index fits in usize")
+  }
+}
+
+/// Bounded failures for the versioned experiment-manifest codec.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentManifestError {
+  Oversized,
+  UnexpectedLineCount { expected: usize, actual: usize },
+  UnknownField,
+  DuplicateField,
+  MissingField,
+  UnsupportedSchema,
+  InvalidValue,
+}
+
+/// Reproducibility metadata for one bounded scripted-agent fixture run.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentExperimentManifest {
+  schema: &'static str,
+  scenario_id: &'static str,
+  profile: ScriptedAgentProfile,
+  seed_bundle: ScriptedAgentSeedBundle,
+}
+
+impl ScriptedAgentExperimentManifest {
+  /// Construct a manifest for the current versioned two-window fixture.
+  pub const fn new(profile: ScriptedAgentProfile, seed_bundle: ScriptedAgentSeedBundle) -> Self {
+    Self {
+      schema: SCRIPTED_AGENT_EXPERIMENT_MANIFEST_SCHEMA,
+      scenario_id: SCRIPTED_AGENT_EXPERIMENT_SCENARIO_ID,
+      profile,
+      seed_bundle,
+    }
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn scenario_id(self) -> &'static str {
+    self.scenario_id
+  }
+
+  pub const fn profile(self) -> ScriptedAgentProfile {
+    self.profile
+  }
+
+  pub const fn seed_bundle(self) -> ScriptedAgentSeedBundle {
+    self.seed_bundle
+  }
+
+  pub const fn selection_rule(self) -> &'static str {
+    SCRIPTED_AGENT_SEEDED_SELECTION_RULE
+  }
+
+  /// Encode reproducibility metadata without observations or experiment output.
+  pub fn encode(self) -> String {
+    let trace = self.seed_bundle.policy_trace();
+    format!(
+      "schema={}\nscenario={}\nprofile={}\nevaluation_rule={}\nselection_rule={}\nseed={}\npolicy_stream={}\npolicy_draw={}\n",
+      self.schema,
+      self.scenario_id,
+      self.profile.profile_id(),
+      self.profile.evaluation_rule(),
+      self.selection_rule(),
+      self.seed_bundle.seed(),
+      trace.stream().value(),
+      trace.draw().value(),
+    )
+  }
+
+  /// Decode a manifest without constructing an agent or running an experiment.
+  pub fn decode(input: &str) -> Result<Self, ScriptedAgentManifestError> {
+    if input.len() > MAX_SCRIPTED_AGENT_MANIFEST_BYTES {
+      return Err(ScriptedAgentManifestError::Oversized);
+    }
+    let lines = input.lines().collect::<Vec<_>>();
+    if lines.len() > 8 {
+      return Err(ScriptedAgentManifestError::UnexpectedLineCount {
+        expected: 8,
+        actual: lines.len(),
+      });
+    }
+    let mut fields = Vec::with_capacity(8);
+    for line in lines {
+      let (key, value) = line
+        .split_once('=')
+        .ok_or(ScriptedAgentManifestError::InvalidValue)?;
+      if key.is_empty() || value.is_empty() {
+        return Err(ScriptedAgentManifestError::InvalidValue);
+      }
+      fields.push((key, value));
+    }
+    let mut schema = None;
+    let mut scenario = None;
+    let mut profile = None;
+    let mut evaluation_rule = None;
+    let mut selection_rule = None;
+    let mut seed = None;
+    let mut policy_stream = None;
+    let mut policy_draw = None;
+    for (key, value) in fields {
+      let slot = match key {
+        "schema" => &mut schema,
+        "scenario" => &mut scenario,
+        "profile" => &mut profile,
+        "evaluation_rule" => &mut evaluation_rule,
+        "selection_rule" => &mut selection_rule,
+        "seed" => &mut seed,
+        "policy_stream" => &mut policy_stream,
+        "policy_draw" => &mut policy_draw,
+        _ => return Err(ScriptedAgentManifestError::UnknownField),
+      };
+      if slot.is_some() {
+        return Err(ScriptedAgentManifestError::DuplicateField);
+      }
+      *slot = Some(value);
+    }
+    if schema != Some(SCRIPTED_AGENT_EXPERIMENT_MANIFEST_SCHEMA) {
+      return Err(ScriptedAgentManifestError::UnsupportedSchema);
+    }
+    if scenario != Some(SCRIPTED_AGENT_EXPERIMENT_SCENARIO_ID) {
+      return Err(ScriptedAgentManifestError::InvalidValue);
+    }
+    let profile =
+      ScriptedAgentProfile::parse_id(profile.ok_or(ScriptedAgentManifestError::MissingField)?)?;
+    if evaluation_rule != Some(profile.evaluation_rule())
+      || selection_rule != Some(SCRIPTED_AGENT_SEEDED_SELECTION_RULE)
+    {
+      return Err(ScriptedAgentManifestError::InvalidValue);
+    }
+    let seed = seed
+      .ok_or(ScriptedAgentManifestError::MissingField)?
+      .parse::<u64>()
+      .map_err(|_| ScriptedAgentManifestError::InvalidValue)?;
+    let policy_stream = policy_stream
+      .ok_or(ScriptedAgentManifestError::MissingField)?
+      .parse::<u8>()
+      .map_err(|_| ScriptedAgentManifestError::InvalidValue)?;
+    let policy_draw = policy_draw
+      .ok_or(ScriptedAgentManifestError::MissingField)?
+      .parse::<u16>()
+      .map_err(|_| ScriptedAgentManifestError::InvalidValue)?;
+    Ok(Self::new(
+      profile,
+      ScriptedAgentSeedBundle::new(seed, StreamId::new(policy_stream), DrawId::new(policy_draw)),
+    ))
   }
 }
 
@@ -868,6 +1033,112 @@ mod tests {
       }
     );
     validate_lane_request(&state, &receipt, &decision.request()).expect("policy request is legal");
+  }
+
+  #[test]
+  fn experiment_manifest_codec_binds_profiles_rules_and_seed() {
+    let seed = ScriptedAgentSeedBundle::new(42, StreamId::new(7), DrawId::new(9));
+    let profiles = [
+      ScriptedAgentProfile::cautious_v1(),
+      ScriptedAgentProfile::risk_taking_v1(),
+      ScriptedAgentProfile::yielding_v1(),
+    ];
+    for profile in profiles {
+      let manifest = ScriptedAgentExperimentManifest::new(profile, seed);
+      assert_eq!(manifest.schema(), "m6-experiment-manifest-v1");
+      assert_eq!(manifest.scenario_id(), "m3-two-window-fixture-v1");
+      assert_eq!(manifest.profile().profile_id(), profile.profile_id());
+      assert_eq!(
+        manifest.profile().evaluation_rule(),
+        profile.evaluation_rule()
+      );
+      assert_eq!(manifest.selection_rule(), "max-score-seeded-tie-v1");
+      assert_eq!(manifest.seed_bundle(), seed);
+      assert_eq!(
+        ScriptedAgentExperimentManifest::decode(&manifest.encode()),
+        Ok(manifest)
+      );
+    }
+    assert_eq!(
+      ScriptedAgentExperimentManifest::new(profiles[0], seed).encode(),
+      "schema=m6-experiment-manifest-v1\nscenario=m3-two-window-fixture-v1\nprofile=cautious-laner-v1\nevaluation_rule=threat-first-pressure-aware-fixed-score-v1\nselection_rule=max-score-seeded-tie-v1\nseed=42\npolicy_stream=7\npolicy_draw=9\n"
+    );
+
+    let valid = ScriptedAgentExperimentManifest::new(profiles[0], seed).encode();
+    for malformed in [
+      (
+        valid.replacen("schema=m6-experiment-manifest-v1", "schema=other", 1),
+        ScriptedAgentManifestError::UnsupportedSchema,
+      ),
+      (
+        valid.replacen("profile=cautious-laner-v1", "profile=unknown", 1),
+        ScriptedAgentManifestError::InvalidValue,
+      ),
+      (
+        valid.replacen(
+          "evaluation_rule=threat-first-pressure-aware-fixed-score-v1",
+          "evaluation_rule=wrong",
+          1,
+        ),
+        ScriptedAgentManifestError::InvalidValue,
+      ),
+      (
+        valid.replacen(
+          "selection_rule=max-score-seeded-tie-v1",
+          "selection_rule=wrong",
+          1,
+        ),
+        ScriptedAgentManifestError::InvalidValue,
+      ),
+      (
+        valid.replacen("policy_stream=7", "policy_stream=nope", 1),
+        ScriptedAgentManifestError::InvalidValue,
+      ),
+      (
+        valid.replacen("policy_draw=9", "policy_draw=nope", 1),
+        ScriptedAgentManifestError::InvalidValue,
+      ),
+      (
+        valid.replacen("seed=42", "seed=nope", 1),
+        ScriptedAgentManifestError::InvalidValue,
+      ),
+      (
+        valid.replacen("scenario=m3-two-window-fixture-v1", "scenario=other", 1),
+        ScriptedAgentManifestError::InvalidValue,
+      ),
+      (
+        valid.replacen("profile=cautious-laner-v1", "unknown=profile", 1),
+        ScriptedAgentManifestError::UnknownField,
+      ),
+      (
+        valid.replacen("profile=cautious-laner-v1\n", "", 1),
+        ScriptedAgentManifestError::MissingField,
+      ),
+      (
+        valid.replacen(
+          "profile=cautious-laner-v1",
+          "schema=m6-experiment-manifest-v1",
+          1,
+        ),
+        ScriptedAgentManifestError::DuplicateField,
+      ),
+      (
+        format!("{valid}extra=value\n"),
+        ScriptedAgentManifestError::UnexpectedLineCount {
+          expected: 8,
+          actual: 9,
+        },
+      ),
+    ] {
+      assert_eq!(
+        ScriptedAgentExperimentManifest::decode(&malformed.0),
+        Err(malformed.1)
+      );
+    }
+    assert_eq!(
+      ScriptedAgentExperimentManifest::decode(&"x".repeat(MAX_SCRIPTED_AGENT_MANIFEST_BYTES + 1)),
+      Err(ScriptedAgentManifestError::Oversized)
+    );
   }
 
   #[test]

@@ -98,6 +98,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.127 — 2026-08-08
+
+### Added
+
+- Added `m6-experiment-manifest-v1`, a bounded eight-line reproducibility
+  manifest for the versioned two-window fixture, all three scripted profiles,
+  exact policy rules, and explicit seed/stream/draw identity.
+- Added focused manifest round-trip and malformed-input coverage.
+
+### Known limits
+
+- The manifest is declarative library metadata; batch execution, resumable
+  storage, population sampling, metrics, providers, and calibration remain open.
+
 ## 0.1.126 — 2026-08-08
 
 ### Added

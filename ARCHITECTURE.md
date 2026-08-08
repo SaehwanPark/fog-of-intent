@@ -129,6 +129,9 @@ do not inspect true state, resolve execution, communicate, or mutate
 authoritative history. An opt-in seeded tie path accepts only an explicit
 policy seed bundle, and the library-only decision replay record remains
 outside transition, host history, and durable persistence authority.
+`ScriptedAgentExperimentManifest` records the bounded fixture, profile/rule
+identities, and explicit policy seed for M6 reproducibility; it does not run
+agents, sample populations, or own experiment execution.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO
