@@ -863,6 +863,10 @@ open.
   distinct visible threat response when present; it is not random sampling or
   strategic diversity evidence. The safe fixture exposes four candidates and
   the RiverSide fixture exposes five.
+- Selection uses the versioned `max-score-stable-order-v1` rule: a strictly
+  higher score replaces the current best, while an equal score preserves the
+  first advertised candidate. This is deterministic top-1 selection, not
+  top-k/nucleus sampling.
 - Public `evaluate_candidate` rejects an intent that is not in the advertised
   candidate set with `ScriptedAgentEvaluationError::UnavailableIntent`; this
   is a policy-boundary error and does not duplicate host legality.

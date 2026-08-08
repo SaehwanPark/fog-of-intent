@@ -524,15 +524,10 @@ impl ScriptedAgent {
     }
   }
 
-  /// Generate, evaluate, and select one deterministic actor-visible request.
-  pub fn choose(self, observation: LanerObservation) -> ScriptedAgentDecision {
-    let candidates = self
-      .generate_candidates(observation)
-      .into_iter()
-      .map(|intent| self.score_candidate(observation, intent))
-      .collect::<Vec<_>>();
-    let selected = candidates
+  fn select_candidate(candidates: &[ScriptedAgentCandidate]) -> ScriptedAgentCandidate {
+    candidates
       .iter()
+      .copied()
       .reduce(|best, candidate| {
         if candidate.score > best.score {
           candidate
@@ -541,7 +536,16 @@ impl ScriptedAgent {
         }
       })
       .expect("actor observation must advertise an intent")
-      .intent;
+  }
+
+  /// Generate, evaluate, and select one deterministic actor-visible request.
+  pub fn choose(self, observation: LanerObservation) -> ScriptedAgentDecision {
+    let candidates = self
+      .generate_candidates(observation)
+      .into_iter()
+      .map(|intent| self.score_candidate(observation, intent))
+      .collect::<Vec<_>>();
+    let selected = Self::select_candidate(&candidates).intent;
     let request = LaneIntentRequest::new(
       observation.observer(),
       observation.observation_id(),
@@ -754,6 +758,32 @@ mod tests {
   }
 
   #[test]
+  fn stable_selection_keeps_the_first_advertised_maximum() {
+    let candidates = [
+      ScriptedAgentCandidate {
+        intent: LaneIntent::Contest,
+        score: 70,
+        reason: ScriptedAgentReason::AvailableAlternative,
+      },
+      ScriptedAgentCandidate {
+        intent: LaneIntent::Stabilize,
+        score: 70,
+        reason: ScriptedAgentReason::StableDefault,
+      },
+      ScriptedAgentCandidate {
+        intent: LaneIntent::Yield,
+        score: 60,
+        reason: ScriptedAgentReason::AvailableAlternative,
+      },
+    ];
+
+    assert_eq!(
+      ScriptedAgent::select_candidate(&candidates).intent(),
+      LaneIntent::Contest
+    );
+  }
+
+  #[test]
   fn matched_observation_distinguishes_three_profiles() {
     let state = LaneSnapshot::initial();
     let receipt = observe_player(&state, ObservationId::new(12));
@@ -770,6 +800,18 @@ mod tests {
     assert_eq!(cautious.profile().role().id(), "anchor-v1");
     assert_eq!(risk_taking.profile().role().id(), "duelist-v1");
     assert_eq!(yielding.profile().role().id(), "pacer-v1");
+    assert_eq!(
+      cautious.profile().selection_rule(),
+      "max-score-stable-order-v1"
+    );
+    assert_eq!(
+      risk_taking.profile().selection_rule(),
+      "max-score-stable-order-v1"
+    );
+    assert_eq!(
+      yielding.profile().selection_rule(),
+      "max-score-stable-order-v1"
+    );
     assert_eq!(
       cautious.profile().evaluation_rule(),
       "threat-first-pressure-aware-fixed-score-v1"

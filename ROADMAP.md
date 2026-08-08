@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.88`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.89`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1072,6 +1072,9 @@ strategy while remaining bound to actor-visible information.
 - [x] Evaluate candidates with the profile-specific fixed, inspectable
   `threat-first-pressure-aware-fixed-score-v1`, `contest-first-fixed-score-v1`, or
   `yield-first-fixed-score-v1` rule and select by stable maximum score.
+- [x] Bind `max-score-stable-order-v1` to every profile and prove equal-score
+  ties retain the first advertised candidate; top-k/nucleus selection remains
+  open.
 - [x] Return an actor-bound `LaneIntentRequest` for host-side legality
   validation, with reproducibility tests for identical observations.
 - [x] Compare three fixed profiles on one identical initial observation and

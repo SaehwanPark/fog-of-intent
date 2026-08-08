@@ -377,3 +377,15 @@ canonical policy instead of duplicating it.
   actor-visible intent or threat-response fields.
 - Prevention: Call this candidate-generation evidence only; defer transformed
   candidates, random sampling, population distributions, and outcome claims.
+
+## Make deterministic tie-breaking an explicit policy contract
+
+- Context: M4 selected the highest scored candidate but needed evidence for
+  what happens when two actor-visible candidates share a score.
+- Symptom: An implicit reduction rule can silently change advertised-order
+  behavior while profile-level outputs still look plausible.
+- Resolution: Version `max-score-stable-order-v1`, keep replacement strict on
+  greater scores only, and regress an equal-score pair selecting the first
+  advertised candidate.
+- Prevention: Treat top-1 tie behavior as a policy contract before adding
+  top-k/nucleus sampling or random streams.

@@ -42,8 +42,9 @@ strategic diversity. Evaluation applies either the cautious
 `threat-first-pressure-aware-fixed-score-v1`, risk-taking `contest-first-fixed-score-v1`, or
 yielding `yield-first-fixed-score-v1` table and labels each candidate as a
 threat response, risk preference, yield preference, stable default, or
-available alternative. Selection chooses the highest score with stable
-advertised-order tie-breaking. The policy returns a request; it does not
+available alternative. Selection uses `max-score-stable-order-v1`: a strictly
+higher score replaces the current best, while an equal score keeps the first
+advertised candidate. The policy returns a request; it does not
 validate, execute, or commit that request.
 
 ## Communication, Trust, and Team Coordination
