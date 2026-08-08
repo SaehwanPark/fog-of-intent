@@ -7,7 +7,8 @@ Implementation is complete; pending the required independent three-pass review.
 ## Scope and Authority
 
 This slice narrows two protocol conversion helpers to crate-private visibility
-and adds one compile-fail RustDoc boundary. It does not change DTO codecs,
+and adds two independent compile-fail RustDoc boundaries. It does not change
+DTO codecs,
 host/lane authority, lifecycle, transition, history, replay, transport, or
 authentication behavior.
 
