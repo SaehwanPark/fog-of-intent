@@ -787,6 +787,10 @@ remain open.
   state. The versioned `m3-cli-terminal-text-v1` projection consumes
   host-projected actor-valid values at the edge without authorizing commands or
   mutating history; complete client and accessibility evidence remain open.
+- The pure text projection has machine-checked representative output and
+  command-loop error lines for stable lowercase labels, newline structure, and
+  control-character/ANSI absence. This is text-shape evidence only and does
+  not establish human keyboard or screen-reader accessibility.
 - `src/command_loop.rs` provides the versioned `m3-cli-command-loop-v1` edge
   adapter. It reads newline-delimited input, continues after bounded errors,
   renders each result through the pure text projection, and stops on `quit` or
@@ -819,7 +823,8 @@ remain open.
   verification, debrief, quit, malformed plans, matched-parent branch review,
   unsupported branch requests, and
   deterministic repeated runs. A pure text renderer now covers every host
-  output/error variant, control character sanitization, and bounded labels. The
+  output/error variant, control character sanitization, bounded labels, and
+  machine-checked representative line structure. The
   fixture command loop covers stdin/stdout recovery and quit/end-of-input
   behavior. A two-process integration smoke test covers the explicit run
   directory handoff. Broader scenario catalogs, regenerated/graph branching,
