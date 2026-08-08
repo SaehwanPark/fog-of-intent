@@ -2,7 +2,8 @@
 
 ## Outcome
 
-Pending independent domain QA and final handoff review.
+PASS — no actionable findings remain after the independent domain QA and final
+handoff review at implementation/evidence head `62d1d53`.
 
 ## Delivered contract
 
@@ -11,14 +12,14 @@ Pending independent domain QA and final handoff review.
 in-memory container. Its records are ordered, payload-free, and explicitly
 non-authoritative; committed history and evidence reports remain separate.
 
-## Verification target
+## Verification
 
 One focused agent test covers all five literal event IDs, empty/new state,
-stable append order, the inclusive cap, overflow rejection, and unchanged
-entries after a failed append. The expected full evidence is 26 focused agent
+stable append order, the inclusive cap, overflow rejection, and full-log
+non-mutation after a failed append. The full evidence is 26 focused agent
 tests within 239 unit tests, 7 binary tests, and 3 RustDoc tests, plus
 formatter, Clippy warnings denied, repository checker, 15 Python policy tests,
-and diff checks.
+and diff checks; all pass at reviewed head `62d1d53`.
 
 ## Open boundaries
 
