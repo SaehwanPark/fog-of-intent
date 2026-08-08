@@ -98,6 +98,24 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.123 — 2026-08-08
+
+### Added
+
+- Added `CliScenarioHost::actor_replay_debrief_records_from_run`, which loads
+  a validated complete injected-store artifact, verifies its replay, and
+  returns the existing categorical debrief records without mutating the
+  receiving host.
+- Added focused fresh-host evidence for complete-run debrief retrieval,
+  incomplete-run gating, tampered-artifact rejection, and closed-session
+  redaction.
+
+### Known limits
+
+- This remains injected in-process file-store evidence; locking, portability,
+  crash recovery, scenario-wide durable replay, and detailed causal review
+  remain open.
+
 ## 0.1.122 — 2026-08-08
 
 ### Added

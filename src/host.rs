@@ -321,46 +321,61 @@ impl CliScenarioHost {
         ActorProtocolRepairHint::AwaitCompletion,
       ));
     }
-    let report = build_scenario_debrief(&self.history)
-      .map_err(|_| {
-        ActorProtocolError::new(
-          ActorProtocolErrorCode::HostTransitionRejected,
-          ActorProtocolRepairHint::StartNewSession,
-        )
-      })?
-      .report();
-    Ok(
-      report
-        .windows()
-        .into_iter()
-        .map(|window| {
-          let window_id = match window.window() {
-            ScenarioWindow::First => ActorActionResultWindow::First,
-            ScenarioWindow::Second => ActorActionResultWindow::Second,
-          };
-          let intent = match window.intent() {
-            LaneIntent::Stabilize => crate::protocol::ActorProtocolIntent::Stabilize,
-            LaneIntent::Contest => crate::protocol::ActorProtocolIntent::Contest,
-            LaneIntent::Yield => crate::protocol::ActorProtocolIntent::Yield,
-            LaneIntent::Recall => crate::protocol::ActorProtocolIntent::Recall,
-            LaneIntent::Withdraw => crate::protocol::ActorProtocolIntent::Withdraw,
-          };
-          let outcome = match window.outcome() {
-            LaneOutcome::HeldSpace => ActorActionResultOutcome::HeldSpace,
-            LaneOutcome::YieldedSpace => ActorActionResultOutcome::YieldedSpace,
-            LaneOutcome::ForcedOut => ActorActionResultOutcome::ForcedOut,
-          };
-          let objective = match window.objective() {
-            crate::lane::ObjectiveDisposition::GoalAchieved => ActorDebriefObjective::GoalAchieved,
-            crate::lane::ObjectiveDisposition::GoalPartiallyAchieved => {
-              ActorDebriefObjective::GoalPartiallyAchieved
-            }
-            crate::lane::ObjectiveDisposition::GoalMissed => ActorDebriefObjective::GoalMissed,
-          };
-          ActorReplayDebriefRecordDto::new(window_id, intent, outcome, objective)
-        })
-        .collect(),
-    )
+    actor_replay_debrief_record_dtos(&self.history).map_err(|_| {
+      ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      )
+    })
+  }
+
+  /// Load a validated complete run before projecting categorical debrief records.
+  pub fn actor_replay_debrief_records_from_run(
+    &self,
+    run_id: CliRunId<'_>,
+  ) -> Result<Vec<ActorReplayDebriefRecordDto>, ActorProtocolError> {
+    if self.closed {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ));
+    }
+    let artifact = CliHostArtifact::decode(&self.load_artifact(run_id.as_str()).map_err(|_| {
+      ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      )
+    })?)
+    .map_err(|_| {
+      ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      )
+    })?;
+    if artifact.run_id() != run_id.as_str() {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      ));
+    }
+    let history = self.restore_artifact(&artifact).map_err(|_| {
+      ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      )
+    })?;
+    if history.records().len() != 2 {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::DebriefUnavailable,
+        ActorProtocolRepairHint::AwaitCompletion,
+      ));
+    }
+    actor_replay_debrief_record_dtos(&history).map_err(|_| {
+      ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      )
+    })
   }
 
   /// Validate one actor action without mutating host state or history.
@@ -1128,6 +1143,44 @@ fn actor_replay_record_dtos(history: &LaneScenarioHistory) -> Vec<ActorReplayRec
       ActorReplayRecordDto::new(window, intent, outcome)
     })
     .collect()
+}
+
+fn actor_replay_debrief_record_dtos(
+  history: &LaneScenarioHistory,
+) -> Result<Vec<ActorReplayDebriefRecordDto>, ()> {
+  let report = build_scenario_debrief(history).map_err(|_| ())?.report();
+  Ok(
+    report
+      .windows()
+      .into_iter()
+      .map(|window| {
+        let window_id = match window.window() {
+          ScenarioWindow::First => ActorActionResultWindow::First,
+          ScenarioWindow::Second => ActorActionResultWindow::Second,
+        };
+        let intent = match window.intent() {
+          LaneIntent::Stabilize => crate::protocol::ActorProtocolIntent::Stabilize,
+          LaneIntent::Contest => crate::protocol::ActorProtocolIntent::Contest,
+          LaneIntent::Yield => crate::protocol::ActorProtocolIntent::Yield,
+          LaneIntent::Recall => crate::protocol::ActorProtocolIntent::Recall,
+          LaneIntent::Withdraw => crate::protocol::ActorProtocolIntent::Withdraw,
+        };
+        let outcome = match window.outcome() {
+          LaneOutcome::HeldSpace => ActorActionResultOutcome::HeldSpace,
+          LaneOutcome::YieldedSpace => ActorActionResultOutcome::YieldedSpace,
+          LaneOutcome::ForcedOut => ActorActionResultOutcome::ForcedOut,
+        };
+        let objective = match window.objective() {
+          crate::lane::ObjectiveDisposition::GoalAchieved => ActorDebriefObjective::GoalAchieved,
+          crate::lane::ObjectiveDisposition::GoalPartiallyAchieved => {
+            ActorDebriefObjective::GoalPartiallyAchieved
+          }
+          crate::lane::ObjectiveDisposition::GoalMissed => ActorDebriefObjective::GoalMissed,
+        };
+        ActorReplayDebriefRecordDto::new(window_id, intent, outcome, objective)
+      })
+      .collect(),
+  )
 }
 
 fn fixture_inputs(
@@ -2762,6 +2815,84 @@ mod tests {
     fresh.apply_line("quit").expect("fresh host closes");
     assert_eq!(
       fresh.actor_replay_records_from_run(run_id),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
+    );
+    let _ = std::fs::remove_dir_all(root);
+  }
+
+  #[test]
+  fn actor_replay_debrief_records_load_from_store_without_mutating_current_host() {
+    let root = temporary_store_root();
+    let store = CliRunStore::new(&root);
+    let mut source = CliScenarioHost::fixture_with_store(store.clone());
+    for command in ["plan contest", "commit", "advance", "save first-window"] {
+      source
+        .apply_line(command)
+        .expect("source first-window command");
+    }
+    for command in ["plan stabilize", "commit", "advance", "save complete-run"] {
+      source
+        .apply_line(command)
+        .expect("source complete-run command");
+    }
+
+    let mut fresh = CliScenarioHost::fixture_with_store(store);
+    let before = fresh.observation();
+    let first_window = CliRunId::parse("first-window").expect("run ID is valid");
+    assert_eq!(
+      fresh.actor_replay_debrief_records_from_run(first_window),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::DebriefUnavailable,
+        ActorProtocolRepairHint::AwaitCompletion,
+      ))
+    );
+    assert_eq!(fresh.record_count(), 0);
+    assert_eq!(fresh.observation(), before);
+
+    let complete_run = CliRunId::parse("complete-run").expect("run ID is valid");
+    let first = ActorReplayDebriefRecordDto::new(
+      ActorActionResultWindow::First,
+      crate::protocol::ActorProtocolIntent::Contest,
+      ActorActionResultOutcome::HeldSpace,
+      ActorDebriefObjective::GoalAchieved,
+    );
+    let second = ActorReplayDebriefRecordDto::new(
+      ActorActionResultWindow::Second,
+      crate::protocol::ActorProtocolIntent::Stabilize,
+      ActorActionResultOutcome::YieldedSpace,
+      ActorDebriefObjective::GoalMissed,
+    );
+    assert_eq!(
+      fresh.actor_replay_debrief_records_from_run(complete_run),
+      Ok(vec![first, second])
+    );
+    assert_eq!(fresh.record_count(), 0);
+    assert_eq!(fresh.observation(), before);
+    assert_eq!(
+      first.attribution(),
+      crate::protocol::ActorDebriefAttributionLimit::CommittedFactsOnly
+    );
+    assert_eq!(first.verification(), ActorReplayVerification::Verified);
+    assert!(!format!("{first:?}").contains("StateHash"));
+    assert!(!format!("{first:?}").contains("trace"));
+
+    std::fs::write(root.join("complete-run.foi-artifact"), "malformed")
+      .expect("tamper complete artifact");
+    assert_eq!(
+      fresh.actor_replay_debrief_records_from_run(complete_run),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
+    );
+    assert_eq!(fresh.record_count(), 0);
+    assert_eq!(fresh.observation(), before);
+    fresh.apply_line("quit").expect("fresh host closes");
+    assert_eq!(
+      fresh.actor_replay_debrief_records_from_run(complete_run),
       Err(ActorProtocolError::new(
         ActorProtocolErrorCode::ClosedSession,
         ActorProtocolRepairHint::StartNewSession,

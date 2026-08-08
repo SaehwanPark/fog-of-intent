@@ -189,7 +189,10 @@ verification and never carries record identity, provenance, or causal detail.
 `CliScenarioHost::actor_replay_records_from_run` performs the same verification
 after loading an ID-derived artifact through the injected store and leaves the
 current host untouched; filesystem hardening and scenario-wide durable replay
-remain outer concerns.
+remain outer concerns. `CliScenarioHost::actor_replay_debrief_records_from_run`
+uses the same local restore boundary, requires a complete two-record history,
+and projects only the existing categorical debrief records without replacing
+the receiving host.
 `ActorReplayDebriefRecordDto` adds only a categorical objective and committed-
 facts attribution for each complete verified window; it remains read-only and
 omits causal, hash, input, and trace detail.

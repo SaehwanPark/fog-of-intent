@@ -993,7 +993,7 @@ transport-integrated sessions and broader protocol compatibility remain open.
   snapshot fields, session lifecycle/error cases, codec round-trips and
   malformed-input rejection, and exhaustive codec/session error projections.
   The focused evidence is 25 protocol tests and 12 session tests within the
-  224-unit, 7-binary, and 3-Rustdoc suite; host evidence includes the
+  225-unit, 7-binary, and 3-Rustdoc suite; host evidence includes the
   authorization/redaction matrix and CLI/protocol parity regressions.
 - `CliScenarioHost::validate_actor_action` checks one DTO against the current
   actor-visible receipt and existing lane validator without mutating history,
@@ -1050,6 +1050,11 @@ transport-integrated sessions and broader protocol compatibility remain open.
   `ActorReplayDebriefRecordDto` values with only categorical objective labels
   and committed-facts attribution; incomplete/closed/tampered hosts retain
   bounded error behavior.
+- `CliScenarioHost::actor_replay_debrief_records_from_run` accepts a validated
+  `CliRunId`, loads and restores the injected saved artifact into local history,
+  requires a complete two-record run, and returns the same categorical debrief
+  records without replacing or mutating the current host. Missing, malformed,
+  tampered, incomplete, and storage-failure cases remain actor-safe errors.
 - The host authorization/redaction matrix proves wrong-actor action, draft,
   commit, and draft-receipt requests fail as `actor_mismatch` without changing
   the observation or record count, and checks actor-visible DTOs/results for

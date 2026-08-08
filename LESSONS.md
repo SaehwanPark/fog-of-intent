@@ -822,3 +822,16 @@ canonical policy instead of duplicating it.
   existing actor-safe errors.
 - Prevention: Treat this as status evidence, not replay transport, persistence,
   causal debrief, or a second transition authority.
+
+## Gate saved debrief projections on complete verified history
+
+- Context: A saved artifact can represent an earlier, incomplete window while
+  the same host API is also used for complete-run debrief review.
+- Symptom: Projecting debrief labels from a partially restored run would make
+  an incomplete snapshot look like a finished scenario and weaken the causal
+  boundary of the debrief contract.
+- Resolution: Restore and verify saved history locally, reject anything other
+  than the bounded two-record completion before calling the existing debrief
+  builder, and return only its categorical actor-safe records.
+- Prevention: Keep completion gating after replay verification and before
+  projection; leave durable/scenario-wide causal replay as a separate slice.

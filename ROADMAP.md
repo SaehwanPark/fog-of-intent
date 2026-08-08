@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.122`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.123`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1220,6 +1220,9 @@ control over simulation resolution.
 - [x] Expose categorical `m5-actor-replay-record-v1` records from a validated
   injected saved run through a fresh-host adapter; durable file portability,
   locking, and scenario-wide replay remain open.
+- [x] Expose completion-gated categorical `m5-actor-replay-debrief-record-v1`
+  records from a validated injected saved run without mutating the receiving
+  host; durable/scenario replay-linked causal review remains open.
 - [x] Define the bounded `m5-actor-replay-debrief-record-v1` DTO and host
   projection for two complete replay-verified windows with categorical
   objective labels and committed-facts attribution; detailed causal review
@@ -1246,7 +1249,7 @@ echoes values or claims communication delivery. The provider-neutral
 `m5-actor-transcript-v1` record captures only closed tool/schema IDs and an
 accepted/rejected result for an actor receipt; it is not a runtime log or
 replay record. Focused evidence is 25 protocol tests,
-12 session tests, and 31 host tests within the 224-unit, 7-binary, and
+12 session tests, and 32 host tests within the 225-unit, 7-binary, and
 3-Rustdoc suite. The host observation projection is a
 pure actor-visible DTO mapping, rejects inactive lifecycle states, and leaves
 the internal receipt private. The history DTO is a bounded status summary,
@@ -1264,7 +1267,10 @@ the same categorical records without mutating the current host. The
 `m5-actor-replay-debrief-record-v1` projection adds only categorical objective
 labels and the committed-facts attribution limit after complete-history
 verification; hashes, resolved inputs, execution traces, and causal detail
-remain private. The `m5-actor-draft-status-v1` projection reports only the
+remain private. The `CliScenarioHost::actor_replay_debrief_records_from_run`
+adapter validates an injected saved run, restores and verifies it locally,
+requires two records, and returns the same categorical debrief records without
+mutating the receiving host. The `m5-actor-draft-status-v1` projection reports only the
 active observation binding and aggregate `present`/`absent` bits for message,
 plan, and contingency; it never echoes draft values or claims delivery.
 The `m5-actor-draft-clear-v1` command carries only the active observer and
@@ -1279,7 +1285,7 @@ transition authority.
 - [ ] Define remaining integration/contracts for messages, plans,
   contingencies, durable/scenario replay-linked records, and detailed
   outcome/debrief review;
-  bounded observation/action/commit/draft/draft-status/draft-clear/history/replay/replay-record/saved-replay-record/replay-debrief-record/debrief projections
+  bounded observation/action/commit/draft/draft-status/draft-clear/history/replay/replay-record/saved-replay-record/replay-debrief-record/saved-replay-debrief-record/debrief projections
   are delivered.
 - [x] Keep authoritative lane observation/request conversion behind crate-private
   protocol adapters; public protocol compatibility exposes DTOs only.
