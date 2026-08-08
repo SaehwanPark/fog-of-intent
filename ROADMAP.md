@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.80`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.81`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1056,6 +1056,8 @@ strategy while remaining bound to actor-visible information.
   `cautious-laner-v1` and `risk-taking-laner-v1` profile identities.
 - [x] Generate candidates only from the actor-visible `LanerObservation`
   legal-intent set plus its visible threat-response option.
+- [x] Reject public evaluation requests for intents outside that advertised
+  candidate set with a bounded policy error.
 - [x] Evaluate candidates with the profile-specific fixed, inspectable
   `threat-first-fixed-score-v1` or `contest-first-fixed-score-v1` rule and
   select by stable maximum score.

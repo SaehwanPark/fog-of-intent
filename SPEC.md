@@ -853,6 +853,9 @@ external adapters remain open.
   evaluates candidates with the profile-specific fixed
   `threat-first-fixed-score-v1` or `contest-first-fixed-score-v1` table.
   Selection is the stable maximum-score candidate in advertised order.
+- Public `evaluate_candidate` rejects an intent that is not in the advertised
+  candidate set with `ScriptedAgentEvaluationError::UnavailableIntent`; this
+  is a policy-boundary error and does not duplicate host legality.
 - `ScriptedAgentDecision` returns the selected intent together with the
   observer-bound `LaneIntentRequest`; the host remains responsible for
   validating freshness and legality before any transition. The policy does not
@@ -864,8 +867,9 @@ external adapters remain open.
   only; it is not a strategic-quality or human-realism result.
 - Focused tests cover the initial candidate set, visible-threat prioritization,
   host validation, repeated identical-observation reproducibility, and the
-  matched profile difference. This evidence is a bounded library comparison,
-  not a claim of strategic quality or human behavioral realism.
+  matched profile difference plus unavailable-intent rejection. This evidence
+  is a bounded library comparison, not a claim of strategic quality or human
+  behavioral realism.
 
 ## Future
 
