@@ -7,7 +7,7 @@ that can be derived from already verified fixed-fixture frequency reports.
 
 ## Comparison contract
 
-`ScriptedAgentFixtureFrequencyComparisonReport` uses
+`ScriptedAgentFixtureScenarioFrequencyComparisonReport` uses
 `m6-scripted-agent-fixture-frequency-compare-v1`. It stores baseline and
 candidate selection totals and two ordered rows containing each count and a
 signed candidate-minus-baseline delta. The counts remain bounded by the
