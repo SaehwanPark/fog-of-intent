@@ -2,7 +2,8 @@
 
 ## Outcome
 
-Pending independent domain QA and final handoff review.
+PASS — independent domain QA and final handoff review found no actionable
+findings at implementation/evidence head `5c808db`.
 
 ## Delivered contract
 
@@ -12,13 +13,14 @@ caller-declared IDs `completed`, `crashed`, `timed_out`, `missing_branch`, and
 `inconclusive`. The record is payload-free and does not inspect processes,
 diagnostics, decisions, results, true state, or execution.
 
-## Verification target
+## Verification
 
 One focused agent test covers all five IDs, canonical round-trips, exact wire
 text, malformed-field/status/schema/line cases, and the 4096-byte bound. The
-expected full evidence is 25 focused agent tests within 238 unit tests, 7
-binary tests, and 3 RustDoc tests, plus formatter, Clippy warnings denied,
-repository checker, 15 Python policy tests, and diff checks.
+full evidence is 25 focused agent tests within 238 unit tests, 7 binary tests,
+and 3 RustDoc tests, plus formatter, Clippy warnings denied, repository
+checker, 15 Python policy tests, and diff checks; all pass at reviewed head
+`5c808db`.
 
 ## Open boundaries
 
