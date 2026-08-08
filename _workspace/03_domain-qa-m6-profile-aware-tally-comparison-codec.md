@@ -2,9 +2,10 @@
 
 ## Disposition
 
-Pending independent three-pass review of implementation head.
+PASS — independent three-pass review found no actionable findings at
+implementation/evidence head `d9576c1`.
 
-## Scope to review
+## Scope reviewed
 
 - The comparison codec must retain the exact versioned schema, seven metadata
   lines, ordered profile/rule rows, and bounded baseline/candidate counts.
@@ -13,13 +14,16 @@ Pending independent three-pass review of implementation head.
 - Malformed, oversized, reordered, and sum-preserving tampered text must fail
   without policy, host, lane, persistence, or provider authority.
 
-## Evidence target
+## Evidence
 
-The existing focused profile-aware comparison regression is expected to cover
-canonical encoding, verified round-trip, malformed/oversized branches, and
-InputMismatch tampering within 31 focused agent tests and 244 Rust unit tests,
-7 binary tests, 3 RustDoc tests, 15 Python tests, formatter, Clippy with
-warnings denied, repository checker, and diff checks.
+The focused profile-aware comparison regression covers canonical encoding,
+verified round-trip, strict positional/closed parsing, swapped metadata and
+row rejection, unknown profile/rule rejection, nonnumeric and out-of-range
+metadata rejection, malformed/oversized branches, and sum-preserving
+`InputMismatch` tampering. The full evidence is one focused comparison test
+within 31 focused agent tests and 244 Rust unit tests, 7 binary tests, and 3
+RustDoc tests, plus 15 Python tests, formatter, Clippy with warnings denied,
+repository checker, and diff checks; all pass at reviewed head `d9576c1`.
 
 ## Limits
 
@@ -30,5 +34,5 @@ open.
 
 ## Required fixes
 
-To be determined by independent review. The codec must remain bounded,
-positional, closed, and bound to a verified comparison.
+None. The codec remains bounded, positional, closed, and bound to a verified
+comparison.
