@@ -1067,3 +1067,15 @@ canonical policy instead of duplicating it.
   equality gate unchanged.
 - Prevention: Call these build labels, not build provenance; require separate
   source/package verification and causal evidence before interpreting a delta.
+
+## Keep operational events outside committed history
+
+- Context: M6 needs a place for batch lifecycle markers without making runtime
+  diagnostics part of replayable simulation history.
+- Symptom: Reusing committed records for start, checkpoint, resume, or finish
+  events can make operational timing and failures appear authoritative.
+- Resolution: Keep a bounded in-memory event vocabulary/container with payload-
+  free ordered labels and no state, hash, decision, result, or trace fields.
+- Prevention: Add runtime producers, tracing, persistence, and diagnostics only
+  at an explicit edge; never reconstruct committed history from operational
+  events.

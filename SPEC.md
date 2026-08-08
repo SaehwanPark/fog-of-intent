@@ -1229,6 +1229,13 @@ transport-integrated sessions and broader protocol compatibility remain open.
   lines, and oversized input. It preserves categorical status metadata only;
   automatic runtime failure detection, diagnostics, result attachment, and
   durable experiment records remain open.
+- `ScriptedAgentOperationalLog` defines
+  `m6-scripted-agent-operational-event-v1` as a bounded in-memory container for
+  ordered, payload-free `batch_started`, `chunk_completed`, `checkpoint_saved`,
+  `batch_resumed`, and `batch_finished` events. It is explicitly
+  non-authoritative and separate from committed history and evidence reports;
+  runtime event producers, tracing/transport, durations, diagnostics,
+  persistence, and scheduling remain open.
 
 ## Future
 
