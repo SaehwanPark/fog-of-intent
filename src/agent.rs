@@ -3305,6 +3305,28 @@ mod tests {
       report,
       ScriptedAgentFixtureScenarioFrequencyReport::from_selection(&selection)
     );
+
+    let singleton = ScriptedAgentFixtureScenarioSelection::from_ids(
+      &[SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID],
+      &[[ObservationId::new(140), ObservationId::new(141)]],
+    )
+    .expect("singleton selection builds");
+    let singleton_report = ScriptedAgentFixtureScenarioFrequencyReport::from_selection(&singleton);
+    assert_eq!(singleton_report.selection_count(), 1);
+    assert_eq!(
+      singleton_report.entries()[0].scenario_id(),
+      "safe-fixture-v1"
+    );
+    assert_eq!(singleton_report.entries()[0].count(), 1);
+    assert_eq!(
+      singleton_report.entries()[1].scenario_id(),
+      "river-side-threat-v1"
+    );
+    assert_eq!(singleton_report.entries()[1].count(), 0);
+    assert_eq!(
+      singleton_report.entries()[0].count() + singleton_report.entries()[1].count(),
+      singleton_report.selection_count()
+    );
   }
 
   #[test]
