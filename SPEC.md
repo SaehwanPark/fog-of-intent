@@ -1206,7 +1206,8 @@ transport-integrated sessions and broader protocol compatibility remain open.
   transition, history, persistence, provider, or human-behavior authority.
   Its `matched_tally` adapter composes the verified sample through the existing
   selected-intent tally report without rerunning policy evaluation; the result
-  remains fixture-sized actor-visible evidence rather than a broader metric.
+  preserves the caller's ordered manifest/profile rows and remains fixture-sized
+  actor-visible evidence rather than a broader metric.
 - `ScriptedAgentFixtureScenarioFrequencyReport` defines
   `m6-scripted-agent-fixture-frequency-v1` with the two catalog rows in stable
   order and bounded counts over a validated selection. It counts explicit

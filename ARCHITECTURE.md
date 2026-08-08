@@ -173,7 +173,9 @@ population sampling, distributional metrics, outcomes, and human-behavior
 evidence remain outside the core.
 `matched_tally` reuses the existing verified sample/tally path over those
 entries and does not rerun policy evaluation or add population-metric,
-transition, history, persistence, provider, or outcome authority.
+transition, history, persistence, provider, or outcome authority. Multiple
+caller manifests retain their stable cautious, risk-taking, and yielding row
+order; this is not profile-population or outcome evidence.
 `ScriptedAgentFixtureScenarioFrequencyReport` counts those explicit selection
 labels in stable catalog order; it is bounded metadata over validated input,
 not population, outcome, strategic, persistence, or provider evidence. Its

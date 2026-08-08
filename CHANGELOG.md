@@ -98,6 +98,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.152 — 2026-08-08
+
+### Added
+
+- Added focused profile-aware population tally evidence over the ordered
+  cautious, risk-taking, and yielding manifests, binding eight observations to
+  stable rows and exact fixed-fixture counts without rerunning policy logic.
+
+### Known limits
+
+- The profile rows remain fixture-sized selected-intent evidence; broader
+  profile-population metrics, distributions, outcomes, persistence, providers,
+  calibration, and human evidence remain open.
+
 ## 0.1.151 — 2026-08-08
 
 ### Added

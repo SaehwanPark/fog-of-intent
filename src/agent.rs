@@ -4807,6 +4807,69 @@ mod tests {
   }
 
   #[test]
+  fn profile_aware_population_tally_preserves_rows_and_counts() {
+    let population = ScriptedAgentFixtureScenarioPopulation::generate_from_scenario_ids(
+      &[
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+      ],
+      230,
+    )
+    .expect("profile-aware population builds");
+    let manifests = [
+      ScriptedAgentExperimentManifest::new(
+        ScriptedAgentProfile::cautious_v1(),
+        ScriptedAgentSeedBundle::new(51, StreamId::new(52), DrawId::new(53)),
+      ),
+      ScriptedAgentExperimentManifest::new(
+        ScriptedAgentProfile::risk_taking_v1(),
+        ScriptedAgentSeedBundle::new(54, StreamId::new(55), DrawId::new(56)),
+      ),
+      ScriptedAgentExperimentManifest::new(
+        ScriptedAgentProfile::yielding_v1(),
+        ScriptedAgentSeedBundle::new(57, StreamId::new(58), DrawId::new(59)),
+      ),
+    ];
+    let tally = population
+      .matched_tally(&manifests)
+      .expect("profile-aware population tallies");
+    assert_eq!(tally.pair_count(), 4);
+    assert_eq!(tally.observation_count(), 8);
+    assert_eq!(
+      tally
+        .entries()
+        .iter()
+        .map(|entry| entry.profile_id())
+        .collect::<Vec<_>>(),
+      vec![
+        SCRIPTED_AGENT_PROFILE_ID,
+        RISK_TAKING_SCRIPTED_AGENT_PROFILE_ID,
+        YIELDING_SCRIPTED_AGENT_PROFILE_ID,
+      ]
+    );
+    assert_eq!(tally.entries()[0].stabilize_count(), 7);
+    assert_eq!(tally.entries()[0].withdraw_count(), 1);
+    assert_eq!(tally.entries()[1].contest_count(), 8);
+    assert_eq!(tally.entries()[2].yield_count(), 8);
+    assert_eq!(
+      tally
+        .entries()
+        .iter()
+        .map(|entry| {
+          u16::from(entry.stabilize_count())
+            + u16::from(entry.contest_count())
+            + u16::from(entry.yield_count())
+            + u16::from(entry.recall_count())
+            + u16::from(entry.withdraw_count())
+        })
+        .collect::<Vec<_>>(),
+      vec![8, 8, 8]
+    );
+  }
+
+  #[test]
   fn fixture_scenario_frequency_report_counts_ordered_selection() {
     let selection = ScriptedAgentFixtureScenarioSelection::from_ids(
       &[
