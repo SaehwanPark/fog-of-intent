@@ -1149,6 +1149,15 @@ transport-integrated sessions and broader protocol compatibility remain open.
   actor-visible inputs, and `run_next` resumes deterministic chunks without
   storing decisions. These adapters own no population, transition, history, or
   provider authority; decision/result persistence remains open.
+- `ScriptedAgentMatchedSample` defines
+  `m6-scripted-agent-matched-sample-v1` for exactly two same-actor,
+  distinct-ID caller-supplied observations and an ordered manifest list. It
+  reuses the batch runner and returns a bounded report with top-level observer
+  and observation IDs plus ordered rows containing profile/evaluation labels,
+  explicit seeds, and selected intents. The sample is in-process actor-visible
+  sensitivity evidence only;
+  population generation/distribution sampling, outcomes, metrics, persistence,
+  and provider/calibration behavior remain open.
 
 ## Future
 

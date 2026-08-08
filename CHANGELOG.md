@@ -98,6 +98,22 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.130 — 2026-08-08
+
+### Added
+
+- Added `m6-scripted-agent-matched-sample-v1`, a bounded in-process sample over
+  exactly two same-actor, distinct-observation-ID receipts and an ordered list
+  of explicit seeded manifests. Rows retain only profile/rule/seed labels and
+  the selected intents for each observation.
+- Added focused sensitivity, repeatability, ordering, and input-bound tests for
+  matched observations while reusing the existing deterministic batch runner.
+
+### Known limits
+
+- Population generation and distribution sampling, outcome/metric reports,
+  persistence, providers, and calibration remain open.
+
 ## 0.1.129 — 2026-08-08
 
 ### Added

@@ -61,6 +61,9 @@ pub const SCRIPTED_AGENT_BATCH_RUN_SCHEMA: &str = "m6-scripted-agent-batch-run-v
 /// Maximum encoded checkpoint size before parsing or allocation.
 pub const MAX_SCRIPTED_AGENT_BATCH_RUN_BYTES: usize = 4096;
 
+/// Versioned identity for the bounded matched-observation sample report.
+pub const SCRIPTED_AGENT_MATCHED_SAMPLE_SCHEMA: &str = "m6-scripted-agent-matched-sample-v1";
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum ScriptedAgentEvaluationRule {
   Threat,
@@ -391,6 +394,107 @@ pub enum ScriptedAgentBatchRunError {
   Batch(ScriptedAgentBatchError),
   InputMismatch,
   ChunkSizeZero,
+}
+
+/// Bounded failures from matched-observation sampling.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentMatchedSampleError {
+  MismatchedObserver,
+  DuplicateObservationId,
+  Batch(ScriptedAgentBatchError),
+}
+
+/// One actor-safe profile row across two matched observations.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentMatchedSampleEntry {
+  profile_id: &'static str,
+  evaluation_rule: &'static str,
+  seed_bundle: ScriptedAgentSeedBundle,
+  selected_intents: [LaneIntent; 2],
+}
+
+impl ScriptedAgentMatchedSampleEntry {
+  pub const fn profile_id(self) -> &'static str {
+    self.profile_id
+  }
+
+  pub const fn evaluation_rule(self) -> &'static str {
+    self.evaluation_rule
+  }
+
+  pub const fn seed_bundle(self) -> ScriptedAgentSeedBundle {
+    self.seed_bundle
+  }
+
+  pub const fn selected_intents(self) -> [LaneIntent; 2] {
+    self.selected_intents
+  }
+}
+
+/// Bounded actor-safe selected-intent rows over one matched observation pair.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentMatchedSample {
+  schema: &'static str,
+  observer: ActorId,
+  observation_ids: [ObservationId; 2],
+  entries: Vec<ScriptedAgentMatchedSampleEntry>,
+}
+
+impl ScriptedAgentMatchedSample {
+  /// Build a stable sample from two same-actor observations and ordered manifests.
+  pub fn from_observations(
+    observations: [LanerObservation; 2],
+    manifests: &[ScriptedAgentExperimentManifest],
+  ) -> Result<Self, ScriptedAgentMatchedSampleError> {
+    if observations[0].observer() != observations[1].observer() {
+      return Err(ScriptedAgentMatchedSampleError::MismatchedObserver);
+    }
+    if observations[0].observation_id() == observations[1].observation_id() {
+      return Err(ScriptedAgentMatchedSampleError::DuplicateObservationId);
+    }
+    let first = ScriptedAgentBatchRunner::run(observations[0], manifests)
+      .map_err(ScriptedAgentMatchedSampleError::Batch)?;
+    let second = ScriptedAgentBatchRunner::run(observations[1], manifests)
+      .map_err(ScriptedAgentMatchedSampleError::Batch)?;
+    let entries = manifests
+      .iter()
+      .zip(first.iter())
+      .zip(second.iter())
+      .map(
+        |((manifest, first), second)| ScriptedAgentMatchedSampleEntry {
+          profile_id: manifest.profile().profile_id(),
+          evaluation_rule: manifest.profile().evaluation_rule(),
+          seed_bundle: manifest.seed_bundle(),
+          selected_intents: [first.selected_intent(), second.selected_intent()],
+        },
+      )
+      .collect();
+    Ok(Self {
+      schema: SCRIPTED_AGENT_MATCHED_SAMPLE_SCHEMA,
+      observer: observations[0].observer(),
+      observation_ids: [
+        observations[0].observation_id(),
+        observations[1].observation_id(),
+      ],
+      entries,
+    })
+  }
+
+  pub const fn schema(&self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn observer(&self) -> ActorId {
+    self.observer
+  }
+
+  pub const fn observation_ids(&self) -> &[ObservationId; 2] {
+    &self.observation_ids
+  }
+
+  pub fn entries(&self) -> &[ScriptedAgentMatchedSampleEntry] {
+    &self.entries
+  }
 }
 
 /// A versioned cursor for resuming one bounded manifest batch.
@@ -1844,6 +1948,113 @@ mod tests {
       Err(ScriptedAgentBatchRunError::InputMismatch)
     );
     let _ = std::fs::remove_dir_all(root);
+  }
+
+  #[test]
+  fn matched_observation_sample_is_stable_and_bounded() {
+    let initial = LaneSnapshot::initial();
+    let threat = LaneSnapshot::new(
+      initial.ruleset(),
+      initial.turn(),
+      LaneStatus::Open,
+      initial.player(),
+      initial.opponent(),
+      initial.wave(),
+      JungleThreatTruth::RiverSide,
+    );
+    let observations = [
+      observe_player(&initial, ObservationId::new(60)).observation(),
+      observe_player(&threat, ObservationId::new(61)).observation(),
+    ];
+    let manifests = [
+      ScriptedAgentExperimentManifest::new(
+        ScriptedAgentProfile::cautious_v1(),
+        ScriptedAgentSeedBundle::new(13, StreamId::new(14), DrawId::new(15)),
+      ),
+      ScriptedAgentExperimentManifest::new(
+        ScriptedAgentProfile::yielding_v1(),
+        ScriptedAgentSeedBundle::new(16, StreamId::new(17), DrawId::new(18)),
+      ),
+    ];
+    let sample = ScriptedAgentMatchedSample::from_observations(observations, &manifests)
+      .expect("matched sample builds");
+    assert_eq!(
+      SCRIPTED_AGENT_MATCHED_SAMPLE_SCHEMA,
+      "m6-scripted-agent-matched-sample-v1"
+    );
+    assert_eq!(sample.schema(), SCRIPTED_AGENT_MATCHED_SAMPLE_SCHEMA);
+    assert_eq!(sample.observer(), observations[0].observer());
+    assert_eq!(
+      sample.observation_ids(),
+      &[ObservationId::new(60), ObservationId::new(61)]
+    );
+    assert_eq!(sample.entries().len(), 2);
+    assert_eq!(sample.entries()[0].profile_id(), SCRIPTED_AGENT_PROFILE_ID);
+    assert_eq!(
+      sample.entries()[0].evaluation_rule(),
+      "threat-first-pressure-aware-fixed-score-v1"
+    );
+    assert_eq!(
+      sample.entries()[0].seed_bundle(),
+      manifests[0].seed_bundle()
+    );
+    assert_eq!(
+      sample.entries()[0].selected_intents(),
+      [LaneIntent::Stabilize, LaneIntent::Withdraw]
+    );
+    assert_eq!(
+      sample.entries()[1].profile_id(),
+      YIELDING_SCRIPTED_AGENT_PROFILE_ID
+    );
+    assert_eq!(
+      sample.entries()[1].evaluation_rule(),
+      "yield-first-fixed-score-v1"
+    );
+    assert_eq!(
+      sample.entries()[1].seed_bundle(),
+      manifests[1].seed_bundle()
+    );
+    assert_eq!(
+      sample.entries()[1].selected_intents(),
+      [LaneIntent::Yield, LaneIntent::Yield]
+    );
+    assert_eq!(
+      sample,
+      ScriptedAgentMatchedSample::from_observations(observations, &manifests)
+        .expect("matched sample repeats")
+    );
+
+    let mut mixed_observation = observations[1];
+    mixed_observation.observer = ALLIED_AUTONOMOUS_ACTOR;
+    let mixed_actor = [observations[0], mixed_observation];
+    assert_eq!(
+      ScriptedAgentMatchedSample::from_observations(mixed_actor, &manifests),
+      Err(ScriptedAgentMatchedSampleError::MismatchedObserver)
+    );
+    let duplicate_id = [
+      observations[0],
+      observe_player(&threat, ObservationId::new(60)).observation(),
+    ];
+    assert_eq!(
+      ScriptedAgentMatchedSample::from_observations(duplicate_id, &manifests),
+      Err(ScriptedAgentMatchedSampleError::DuplicateObservationId)
+    );
+    assert_eq!(
+      ScriptedAgentMatchedSample::from_observations(observations, &[]),
+      Err(ScriptedAgentMatchedSampleError::Batch(
+        ScriptedAgentBatchError::EmptyBatch
+      ))
+    );
+    let too_many = [manifests[0]; MAX_SCRIPTED_AGENT_BATCH_MANIFESTS + 1];
+    assert_eq!(
+      ScriptedAgentMatchedSample::from_observations(observations, &too_many),
+      Err(ScriptedAgentMatchedSampleError::Batch(
+        ScriptedAgentBatchError::BatchTooLarge {
+          max: MAX_SCRIPTED_AGENT_BATCH_MANIFESTS,
+          actual: MAX_SCRIPTED_AGENT_BATCH_MANIFESTS + 1,
+        }
+      ))
+    );
   }
 
   #[test]
