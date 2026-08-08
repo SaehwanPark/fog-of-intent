@@ -11,8 +11,8 @@ use crate::cli::{
 };
 use crate::host::{CliHostError, CliHostOutput};
 use crate::lane::{
-  LaneIntent, LaneOutcome, LanePosition, LaneWaveResult, ObjectiveDisposition, ScenarioWindow,
-  ThreatReport,
+  JungleThreatRegion, LaneIntent, LaneOutcome, LanePosition, LaneWaveResult, ObjectiveDisposition,
+  ScenarioWindow, ThreatReport,
 };
 
 /// Versioned contract for deterministic, dependency-free terminal text.
@@ -78,8 +78,8 @@ pub fn render_output(output: &CliHostOutput) -> String {
         } => line(
           &mut text,
           format_args!(
-            "jungle_threat: label=reported region={:?} last_seen_turn={}",
-            region,
+            "jungle_threat: label=reported region={} last_seen_turn={}",
+            threat_region_name(region),
             last_seen_turn.value()
           ),
         ),
@@ -354,6 +354,12 @@ fn objective_name(objective: ObjectiveDisposition) -> &'static str {
     ObjectiveDisposition::GoalAchieved => "goal_achieved",
     ObjectiveDisposition::GoalPartiallyAchieved => "goal_partially_achieved",
     ObjectiveDisposition::GoalMissed => "goal_missed",
+  }
+}
+
+fn threat_region_name(region: JungleThreatRegion) -> &'static str {
+  match region {
+    JungleThreatRegion::RiverSide => "river_side",
   }
 }
 
