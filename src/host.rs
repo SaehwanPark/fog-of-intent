@@ -10,6 +10,7 @@ use crate::cli::{
   CliSessionError, CliSessionRequest, CliWriteError, CliWriteRequest, parse_command,
   process_request, read_request, session_request, write_request,
 };
+use crate::host_artifact::CliHostArtifact;
 use crate::kernel::{DrawId, InputTrace, StreamId};
 use crate::lane::{
   LaneDamage, LaneIntent, LaneIntentRequest, LaneOutcome, LaneResolvedInputs, LaneScenarioHistory,
@@ -36,7 +37,7 @@ impl HostDraft {
 #[derive(Clone)]
 struct SavedRun {
   run_id: String,
-  history: LaneScenarioHistory,
+  artifact: String,
 }
 
 /// Actor-valid results returned by [`CliScenarioHost::apply_line`].
@@ -282,11 +283,13 @@ impl CliScenarioHost {
             .ok_or_else(|| CliHostError::RunNotFound {
               run_id: requested.to_owned(),
             })?;
-          saved
-            .history
-            .verify_replay()
-            .map_err(|_| CliHostError::ReplayRejected)?;
-          (Some(requested.to_owned()), saved.history.records().len())
+          let artifact =
+            CliHostArtifact::decode(&saved.artifact).map_err(|_| CliHostError::ReplayRejected)?;
+          if artifact.run_id() != requested {
+            return Err(CliHostError::ReplayRejected);
+          }
+          let history = self.restore_artifact(&artifact)?;
+          (Some(requested.to_owned()), history.records().len())
         } else {
           self
             .history
@@ -310,9 +313,11 @@ impl CliScenarioHost {
     match request {
       CliSessionRequest::Save { run_id } => {
         let run_id = run_id.as_str().to_owned();
+        let artifact = CliHostArtifact::encode(&run_id, &self.history)
+          .map_err(|_| CliHostError::ReplayRejected)?;
         self.saved = Some(SavedRun {
           run_id: run_id.clone(),
-          history: self.history.clone(),
+          artifact,
         });
         Ok(CliHostOutput::Saved {
           run_id,
@@ -328,7 +333,12 @@ impl CliScenarioHost {
           .ok_or_else(|| CliHostError::RunNotFound {
             run_id: requested.to_owned(),
           })?;
-        self.history = saved.history.clone();
+        let artifact =
+          CliHostArtifact::decode(&saved.artifact).map_err(|_| CliHostError::ReplayRejected)?;
+        if artifact.run_id() != requested {
+          return Err(CliHostError::ReplayRejected);
+        }
+        self.history = self.restore_artifact(&artifact)?;
         self.draft = HostDraft {
           message: None,
           plan: None,
@@ -359,6 +369,51 @@ impl CliScenarioHost {
         Ok(CliHostOutput::Quit)
       }
     }
+  }
+
+  fn restore_artifact(
+    &self,
+    artifact: &CliHostArtifact,
+  ) -> Result<LaneScenarioHistory, CliHostError<'static>> {
+    if artifact.replay_id() != crate::lane::M2_TWO_WINDOW_REPLAY_ID {
+      return Err(CliHostError::ReplayRejected);
+    }
+    let mut history = LaneScenarioHistory::new(crate::lane::LaneSnapshot::initial())
+      .map_err(|_| CliHostError::ReplayRejected)?;
+    for record in artifact.records() {
+      let index = record.index();
+      let inputs = self
+        .execution_inputs
+        .get(index)
+        .copied()
+        .ok_or(CliHostError::ReplayRejected)?;
+      let state = history.current_state();
+      if state.hash() != record.prior_hash() {
+        return Err(CliHostError::ReplayRejected);
+      }
+      let receipt = observe_player(&state, self.next_observation_id_for(&history));
+      let request = LaneIntentRequest::new(
+        PLAYER_LANER,
+        receipt.observation().observation_id(),
+        record.intent(),
+      );
+      let result = history
+        .append(&receipt, &request, inputs)
+        .map_err(|_| CliHostError::ReplayRejected)?;
+      let restored_record = history
+        .records()
+        .last()
+        .ok_or(CliHostError::ReplayRejected)?;
+      if result.state_hash() != record.state_hash()
+        || crate::lane::lane_record_identity(restored_record.transition()) != record.identity_hash()
+      {
+        return Err(CliHostError::ReplayRejected);
+      }
+    }
+    history
+      .verify_replay()
+      .map_err(|_| CliHostError::ReplayRejected)?;
+    Ok(history)
   }
 
   fn advance(&mut self) -> Result<CliHostOutput, CliHostError<'static>> {
@@ -397,10 +452,18 @@ impl CliScenarioHost {
   }
 
   fn next_observation_id(&self) -> ObservationId {
+    self.next_observation_id_for(&self.history)
+  }
+
+  fn next_observation_id_for(&self, history: &LaneScenarioHistory) -> ObservationId {
     ObservationId::new(
-      u64::try_from(self.history.records().len() + 1)
-        .expect("two-window observation count fits in u64"),
+      u64::try_from(history.records().len() + 1).expect("two-window observation count fits in u64"),
     )
+  }
+
+  #[cfg(test)]
+  pub(crate) fn history_for_artifact_test(&self) -> &LaneScenarioHistory {
+    &self.history
   }
 }
 
@@ -509,6 +572,91 @@ mod tests {
   }
 
   #[test]
+  fn artifact_restore_rejects_divergent_resolved_inputs() {
+    let mut source = CliScenarioHost::fixture();
+    for command in ["plan contest", "commit", "advance"] {
+      source.apply_line(command).expect("source fixture command");
+    }
+    let artifact = CliHostArtifact::encode("first-window", source.history_for_artifact_test())
+      .expect("artifact encodes");
+
+    let mut divergent = CliScenarioHost::new([
+      fixture_inputs(2, LaneWaveResult::Advanced, 1),
+      fixture_inputs(0, LaneWaveResult::Held, 2),
+    ]);
+    divergent.saved = Some(SavedRun {
+      run_id: "first-window".to_owned(),
+      artifact,
+    });
+
+    assert_eq!(
+      divergent.apply_line("load first-window"),
+      Err(CliHostError::ReplayRejected)
+    );
+  }
+
+  #[test]
+  fn artifact_restore_rejects_run_id_mismatch() {
+    let mut host = CliScenarioHost::fixture();
+    host
+      .apply_line("save first-window")
+      .expect("empty fixture saves");
+    let saved = host.saved.as_mut().expect("saved artifact");
+    saved.artifact = saved
+      .artifact
+      .replace("run_id=first-window", "run_id=other");
+
+    assert_eq!(
+      host.apply_line("load first-window"),
+      Err(CliHostError::ReplayRejected)
+    );
+  }
+
+  #[test]
+  fn artifact_restore_rejects_valid_intent_tampering() {
+    let mut source = CliScenarioHost::fixture();
+    for command in ["plan stabilize", "commit", "advance"] {
+      source.apply_line(command).expect("source fixture command");
+    }
+    let artifact = CliHostArtifact::encode("first-window", source.history_for_artifact_test())
+      .expect("artifact encodes")
+      .replace("intent=stabilize", "intent=yield");
+    let mut tampered = CliScenarioHost::fixture();
+    tampered.saved = Some(SavedRun {
+      run_id: "first-window".to_owned(),
+      artifact,
+    });
+
+    assert_eq!(
+      tampered.apply_line("load first-window"),
+      Err(CliHostError::ReplayRejected)
+    );
+  }
+
+  #[test]
+  fn artifact_restore_rejects_hash_tampering() {
+    let mut source = CliScenarioHost::fixture();
+    for command in ["plan contest", "commit", "advance"] {
+      source.apply_line(command).expect("source fixture command");
+    }
+    let artifact = CliHostArtifact::encode("first-window", source.history_for_artifact_test())
+      .expect("artifact encodes");
+
+    for field in ["prior_hash", "state_hash", "identity_hash"] {
+      let mut tampered = CliScenarioHost::fixture();
+      tampered.saved = Some(SavedRun {
+        run_id: "first-window".to_owned(),
+        artifact: replace_artifact_field(&artifact, field, "0"),
+      });
+      assert_eq!(
+        tampered.apply_line("load first-window"),
+        Err(CliHostError::ReplayRejected),
+        "tampered {field} must fail closed"
+      );
+    }
+  }
+
+  #[test]
   fn host_rejects_invalid_plan_and_pre_host_errors() {
     let mut host = CliScenarioHost::fixture();
     assert_eq!(
@@ -555,6 +703,26 @@ mod tests {
       host.apply_line("branch point-0"),
       Err(CliHostError::UnsupportedCommand { verb: "branch" })
     );
+  }
+
+  fn replace_artifact_field(artifact: &str, field: &str, value: &str) -> String {
+    artifact
+      .lines()
+      .map(|line| {
+        line
+          .split_whitespace()
+          .map(|word| {
+            if word.starts_with(&format!("{field}=")) {
+              format!("{field}={value}")
+            } else {
+              word.to_owned()
+            }
+          })
+          .collect::<Vec<_>>()
+          .join(" ")
+      })
+      .collect::<Vec<_>>()
+      .join("\n")
   }
 
   #[test]

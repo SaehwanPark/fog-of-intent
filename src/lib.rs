@@ -3,6 +3,7 @@
 pub mod cli;
 pub mod command_loop;
 pub mod host;
+pub mod host_artifact;
 pub mod kernel;
 pub mod lane;
 pub mod serialization;
