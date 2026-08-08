@@ -95,6 +95,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.105 — 2026-08-08
+
+### Added
+
+- Added bounded `m5-actor-action-result-v1` output for successful host actor
+  submissions, exposing only fixture window and categorical outcome.
+- Added exact result codec and first/second-window host projection coverage;
+  errors and transition authority remain on the existing host boundary.
+
+### Known limits
+
+- Results remain synchronous fixture projections; detailed debrief, transport,
+  persistence, simultaneous actors, and broader MCP compatibility remain open.
+
 ## 0.1.104 — 2026-08-08
 
 ### Added
