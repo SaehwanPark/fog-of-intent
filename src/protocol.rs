@@ -2114,13 +2114,21 @@ mod tests {
   #[test]
   fn actor_transcript_codec_binds_closed_tools_and_results() {
     let tools = [
-      ActorTranscriptTool::Observation,
-      ActorTranscriptTool::Draft,
-      ActorTranscriptTool::DraftReceipt,
-      ActorTranscriptTool::Commit,
-      ActorTranscriptTool::Action,
+      (
+        ActorTranscriptTool::Observation,
+        "observation",
+        "m5-actor-observation-v1",
+      ),
+      (ActorTranscriptTool::Draft, "draft", "m5-actor-draft-v1"),
+      (
+        ActorTranscriptTool::DraftReceipt,
+        "draft_receipt",
+        "m5-actor-draft-receipt-v1",
+      ),
+      (ActorTranscriptTool::Commit, "commit", "m5-actor-commit-v1"),
+      (ActorTranscriptTool::Action, "action", "m5-actor-action-v1"),
     ];
-    for tool in tools {
+    for (tool, expected_tool_id, expected_schema) in tools {
       for result in [
         ActorTranscriptResult::Accepted,
         ActorTranscriptResult::Rejected,
@@ -2128,14 +2136,17 @@ mod tests {
         let transcript = ActorTranscriptDto::new(1, 42, tool, result);
         assert_eq!(transcript.schema(), "m5-actor-transcript-v1");
         assert_eq!(transcript.tool(), tool);
-        assert_eq!(transcript.tool_schema(), tool.schema_id());
+        assert_eq!(tool.id(), expected_tool_id);
+        assert_eq!(tool.schema_id(), expected_schema);
+        assert_eq!(transcript.tool_schema(), expected_schema);
         assert_eq!(transcript.result(), result);
-        if tool == ActorTranscriptTool::Observation && result == ActorTranscriptResult::Accepted {
-          assert_eq!(
-            transcript.encode(),
-            "schema=m5-actor-transcript-v1\nobserver=1\nobservation_id=42\ntool=observation\ntool_schema=m5-actor-observation-v1\nresult=accepted\n"
-          );
-        }
+        assert_eq!(
+          transcript.encode(),
+          format!(
+            "schema=m5-actor-transcript-v1\nobserver=1\nobservation_id=42\ntool={expected_tool_id}\ntool_schema={expected_schema}\nresult={}\n",
+            result.id()
+          )
+        );
         assert_eq!(
           ActorTranscriptDto::decode(&transcript.encode()),
           Ok(transcript)
@@ -2183,6 +2194,12 @@ mod tests {
         "schema=m5-actor-transcript-v1\nobserver=1\nobservation_id=42\ntool=observation\ntool_schema=m5-actor-observation-v1\nunknown=accepted\n"
       ),
       Err(ActorProtocolCodecError::UnknownField)
+    );
+    assert_eq!(
+      ActorTranscriptDto::decode(
+        "schema=m5-actor-transcript-v1\nobserver=1\nobservation_id=42\ntool=observation\ntool_schema=m5-actor-observation-v1\ntool=observation\n"
+      ),
+      Err(ActorProtocolCodecError::DuplicateField)
     );
     assert_eq!(
       ActorTranscriptDto::decode(
