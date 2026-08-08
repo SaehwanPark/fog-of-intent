@@ -2,9 +2,11 @@
 
 ## Disposition
 
-Pending independent three-pass review at implementation head `HEAD`.
+PASS: the independent three-pass review found no actionable findings. The
+implementation provenance is head `3989e34`; the final evidence/documents are
+recorded at head `3c1feb9`.
 
-## Scope to review
+## Scope reviewed
 
 - Are only segment indices `0..=3` accepted, with invalid values rejected
   before filesystem effects?
@@ -14,13 +16,14 @@ Pending independent three-pass review at implementation head `HEAD`.
   rotation, crash recovery, diagnostics, policy, transition, history, replay,
   provider, or transport authority?
 
-## Evidence target
+## Evidence
 
-One focused batch/store regression should cover segment 0/1 round trips,
-literal suffixes, the inclusive/exclusive segment bounds, same-root/run-ID
-coexistence, and invalid-index non-I/O behavior. The current suite is expected
-to remain 27 focused agent tests within 240 unit + 7 binary + 3 RustDoc tests,
-plus 15 Python tests and all formatter, Clippy, repository, and diff gates.
+One focused batch/store regression covers segment 0/1/3 round trips, literal
+suffixes, the inclusive/exclusive segment bounds, same-root/run-ID coexistence,
+base-log reload, and invalid-index non-I/O behavior. The full evidence is 27
+focused agent tests within 240 unit + 7 binary + 3 RustDoc tests, plus 15
+Python tests; formatter, Clippy with warnings denied, repository checker, and
+diff gates pass at final evidence head `3c1feb9`.
 
 ## Limits
 
@@ -31,4 +34,6 @@ and human operational evidence remain open.
 
 ## Required fixes
 
-To be determined by the independent review.
+None. The caller still owns ordering; automatic rotation, crash recovery,
+locking/fsync, retention, export, runtime diagnostics, transport, providers,
+and durable scenario-wide replay remain open.

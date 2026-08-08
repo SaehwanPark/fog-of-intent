@@ -2,18 +2,20 @@
 
 ## Outcome
 
-Implementation is pending independent review. The slice adds a bounded
-caller-declared segment namespace for the existing payload-free operational-log
-codec; automatic rotation and crash recovery remain outside the contract.
+Implementation is complete at provenance head `3989e34`; final evidence is
+recorded at head `3c1feb9`. The independent three-pass review passed with no
+actionable findings. The slice adds a bounded caller-declared segment
+namespace for the existing payload-free operational-log codec; automatic
+rotation and crash recovery remain outside the contract.
 
-## Verification target
+## Verification
 
-One focused batch/store regression should prove segment 0/1 round trips,
-literal suffixes, the inclusive/exclusive segment bounds, same-root/run-ID
-coexistence, and invalid-index non-I/O behavior. The expected full evidence is
-27 focused agent tests within 240 Rust unit tests, 7 binary tests, and 3
-RustDoc tests, plus 15 Python tests and the formatter, Clippy, repository, and
-diff gates.
+One focused batch/store regression covers segment 0/1/3 round trips, literal
+suffixes, the inclusive/exclusive segment bounds, same-root/run-ID coexistence,
+base-log reload, and invalid-index non-I/O behavior. The full evidence is 27
+focused agent tests within 240 Rust unit tests, 7 binary tests, and 3 RustDoc
+tests, plus 15 Python tests; formatter, Clippy, repository, and diff gates pass
+at final evidence head `3c1feb9`.
 
 ## Limits
 
