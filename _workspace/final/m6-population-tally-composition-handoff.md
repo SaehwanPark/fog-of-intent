@@ -2,16 +2,19 @@
 
 ## Outcome
 
-Implementation and evidence are pending independent three-pass review at the
-implementation/evidence head.
+Implementation and evidence are complete at head `d4b535b`; the independent
+three-pass review passed with no actionable findings. The slice composes
+verified fixed-fixture samples into selected-intent tallies without widening
+the metric boundary.
 
-## Verification target
+## Verification
 
-The focused composition regression should cover direct tally output, pair and
+The focused composition regression covers direct tally output, pair and
 observation bounds, exact 7 Stabilize/1 Withdraw counts, complete sample
 equality, ordered 3/1 composition, and constructor error precedence. The full
-target is 28 focused agent tests within 241 Rust unit + 7 binary + 3 RustDoc
-tests, plus 15 Python tests and formatter, Clippy, repository, and diff gates.
+evidence is 28 focused agent tests within 241 Rust unit + 7 binary + 3 RustDoc
+tests, plus 15 Python tests; formatter, Clippy, repository, and diff gates pass
+at `d4b535b`.
 
 ## Limits
 
