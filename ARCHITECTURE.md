@@ -241,8 +241,10 @@ observational directory scan rather than a persistence or scheduling authority.
 `ScriptedAgentOperationalLogSequenceReport` is a pure categorical check of the
 caller-declared `batch_started` → `chunk_completed` → `batch_finished` label
 order under `m6-operational-start-chunk-finish-v1`, with optional checkpoint/
-resume labels between chunk and finish. It adds no causal-trace, replay,
-runtime, persistence, recovery, provider, or history authority.
+resume labels between chunk and finish. `ScriptedAgentReplaySequenceEvidenceReport`
+adds only the deterministic replay identity status of one existing decision
+record beside that sequence status. These reports add no causal-trace, runtime,
+scenario-wide replay, persistence, recovery, provider, or history authority.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

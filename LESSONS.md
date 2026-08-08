@@ -1262,3 +1262,14 @@ canonical policy instead of duplicating it.
   checkpoint/resume labels, with no event production or replay inspection.
 - Prevention: Keep causal links, record identity, runtime diagnostics,
   persistence, recovery, and human operational evidence in separate contracts.
+
+## Keep decision replay identity separate from operational sequence labels
+
+- Symptom: a complete-looking operational event sequence can be mistaken for
+  proof that a recorded decision still replays exactly.
+- Cause: lifecycle labels and decision replay consume different bounded inputs;
+  neither one subsumes the other.
+- Resolution: expose a small pure report with independent `verified` /
+  `decision_mismatch` replay identity and the existing sequence status.
+- Prevention: keep causal-trace completeness, runtime production, and
+  scenario-wide replay explicitly outside this composition.

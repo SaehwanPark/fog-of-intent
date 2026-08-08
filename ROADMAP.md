@@ -1430,8 +1430,13 @@ representative replays, and an evidence-limited report.
 - [ ] Detect outliers and select representative replays deterministically.
 - [x] Classify caller-declared operational `batch_started` →
   `chunk_completed` → `batch_finished` label order with optional checkpoint/
-  resume labels; causal-trace completeness and replay identity remain open.
-- [ ] Check causal-trace completeness and replay identity for sampled runs.
+  resume labels; causal-trace completeness and scenario-wide replay identity
+  remain open.
+- [x] Bind one deterministic decision replay identity to the bounded
+  operational sequence status; causal-trace completeness, runtime production,
+  and scenario-wide replay remain open.
+- [ ] Check causal-trace completeness and scenario-wide replay identity for
+  sampled runs.
 - [x] Define one provisional fixed-fixture regression gate with written
   threshold rationale; broader gates remain open.
 - [x] Define a bounded non-authoritative operational event log container
