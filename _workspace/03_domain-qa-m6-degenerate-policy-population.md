@@ -2,9 +2,10 @@
 
 ## Disposition
 
-Pending independent three-pass review.
+PASS — no actionable findings after independent three-pass review at
+implementation/evidence head `0e8804e`.
 
-## Scope to review
+## Scope reviewed
 
 - The report binds the exact schema, cautious profile/rule, observer, count,
   and repeated `Stabilize` intent.
@@ -12,11 +13,13 @@ Pending independent three-pass review.
   rejection are directly exercised.
 - The report is actor-visible, deterministic, and non-authoritative.
 
-## Evidence target
+## Evidence
 
 One focused agent regression, 38 focused agent tests within 251 Rust unit
 tests, 7 binary tests, and 3 RustDoc tests, 15 Python tests, formatter, Clippy
-with warnings denied, repository checker, and diff checks must pass.
+with warnings denied, repository checker, and diff checks all pass at
+`0e8804e`. The regression proves one- and four-member acceptance, empty and
+five-member bounds, duplicate-ID rejection, and RiverSide `UnexpectedIntent`.
 
 ## Limits
 
@@ -26,4 +29,4 @@ outcomes, persistence, providers, and human evidence remain open.
 
 ## Required fixes
 
-To be determined by independent review.
+None. The report remains bounded, reproducible, and non-authoritative.

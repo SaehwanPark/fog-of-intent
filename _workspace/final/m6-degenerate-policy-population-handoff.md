@@ -2,16 +2,18 @@
 
 ## Outcome
 
-Pending independent review.
+PASS — no actionable findings remain after independent three-pass review at
+implementation/evidence head `0e8804e`.
 
-## Verification target
+## Verification
 
-The focused agent regression should bind exact schema/profile/rule/intent
-metadata, prove the inclusive four-member repeated-`Stabilize` population and
-repeatability, and reject empty and five-member inputs without mutation. The
-expected full evidence is 38 focused agent tests within 251 Rust unit tests, 7
-binary tests, and 3 RustDoc tests, 15 Python tests, formatter, Clippy,
-repository, and diff gates.
+The focused agent regression binds exact schema/profile/rule/intent metadata,
+proves one- and four-member repeated-`Stabilize` populations and repeatability,
+rejects empty and five-member inputs, and catches duplicate IDs and visible
+RiverSide `UnexpectedIntent` without mutation. The full evidence is 38
+focused agent tests within 251 Rust unit tests, 7 binary tests, and 3 RustDoc
+tests, 15 Python tests, formatter, Clippy, repository, and diff gates; all pass
+at `0e8804e`.
 
 ## Limits
 
