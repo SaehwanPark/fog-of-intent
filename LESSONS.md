@@ -531,3 +531,18 @@ canonical policy instead of duplicating it.
   DTO pure and observation-bound.
 - Prevention: Add host staging, communication semantics, and provider prompt
   metadata only through separate authority and compatibility contracts.
+
+## Keep actor draft staging before the host commit boundary
+
+- Context: M5 needed to connect the bounded actor-draft DTO to the existing host
+  draft without turning metadata delivery into a transition request.
+- Symptom: Applying a DTO after commit, against a stale observation, or after
+  session closure could silently alter the next window or make an actor believe
+  a draft was still editable.
+- Resolution: Bind staging to the current actor receipt, reject complete,
+  committed, stale, and closed boundaries with actor-safe errors, and replace
+  only the selected internal field. Leave commit, advance, legality, and
+  history on their existing host-owned paths.
+- Prevention: Test replacement plus every boundary while asserting unchanged
+  observation and record count; keep communication, transport, and
+  simultaneous-draft semantics in separate slices.

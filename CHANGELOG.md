@@ -95,6 +95,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.101 — 2026-08-08
+
+### Added
+
+- Added observation-bound host staging for bounded actor message, plan, and
+  contingency metadata, preserving existing replacement and committed-boundary
+  semantics without appending history.
+- Added stale, wrong-actor, complete, closed, and committed-draft rejection
+  coverage through actor-safe protocol errors.
+
+### Known limits
+
+- Metadata delivery/communication, simultaneous drafts, transport, persistence,
+  and free-form plan semantics remain open.
+
 ## 0.1.100 — 2026-08-08
 
 ### Added

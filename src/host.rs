@@ -19,7 +19,8 @@ use crate::lane::{
   build_scenario_debrief, observe_player,
 };
 use crate::protocol::{
-  ActorActionDto, ActorProtocolError, ActorProtocolErrorCode, ActorProtocolRepairHint,
+  ActorActionDto, ActorDraftDto, ActorDraftField, ActorProtocolError, ActorProtocolErrorCode,
+  ActorProtocolRepairHint,
 };
 use crate::run_store::{CliRunStore, CliRunStoreError};
 
@@ -225,6 +226,52 @@ impl CliScenarioHost {
         ActorProtocolErrorCode::HostValidationRejected,
         ActorProtocolRepairHint::ResendAdvertisedAction,
       )
+    })
+  }
+
+  /// Stage one bounded actor draft field without committing or advancing.
+  pub fn stage_actor_draft(
+    &mut self,
+    draft: ActorDraftDto,
+  ) -> Result<CliHostOutput, ActorProtocolError> {
+    if self.closed {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ));
+    }
+    let receipt = observe_player(&self.history.current_state(), self.next_observation_id());
+    if draft.observer() != receipt.observation().observer().value() {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ActorMismatch,
+        ActorProtocolRepairHint::UseBoundActor,
+      ));
+    }
+    if self.is_complete() {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::WindowClosed,
+        ActorProtocolRepairHint::StartNewSession,
+      ));
+    }
+    if self.committed_intent.is_some() {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::DraftBoundary,
+        ActorProtocolRepairHint::RequestFreshObservation,
+      ));
+    }
+    if draft.observation_id() != receipt.observation().observation_id().value() {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::StaleObservation,
+        ActorProtocolRepairHint::RequestFreshObservation,
+      ));
+    }
+    match draft.field() {
+      ActorDraftField::Message => self.draft.message = Some(draft.value().to_owned()),
+      ActorDraftField::Plan => self.draft.plan = Some(draft.value().to_owned()),
+      ActorDraftField::Contingency => self.draft.contingency = Some(draft.value().to_owned()),
+    }
+    Ok(CliHostOutput::DraftStaged {
+      field: draft.field().id(),
     })
   }
 
@@ -893,6 +940,137 @@ mod tests {
       Ok(CliHostOutput::DraftStaged { field: "plan" })
     );
     assert!(!format!("{transition_error:?}").contains("health"));
+  }
+
+  #[test]
+  fn actor_draft_staging_is_observation_bound_and_replaces_fields() {
+    let mut host = CliScenarioHost::fixture();
+    let observation = host.observation();
+    let make_draft = |field, value| {
+      ActorDraftDto::new(
+        observation.observer().value(),
+        observation.observation_id().value(),
+        field,
+        value,
+      )
+      .expect("draft value is bounded")
+    };
+
+    for (field, value) in [
+      (ActorDraftField::Message, "ping ally"),
+      (ActorDraftField::Plan, "contest"),
+      (ActorDraftField::Contingency, "retreat if threat"),
+    ] {
+      assert_eq!(
+        host.stage_actor_draft(make_draft(field, value)),
+        Ok(CliHostOutput::DraftStaged { field: field.id() })
+      );
+    }
+    assert_eq!(
+      host.stage_actor_draft(make_draft(ActorDraftField::Plan, "stabilize")),
+      Ok(CliHostOutput::DraftStaged { field: "plan" })
+    );
+    let stale_before_commit = ActorDraftDto::new(
+      observation.observer().value(),
+      observation.observation_id().value() + 1,
+      ActorDraftField::Message,
+      "stale",
+    )
+    .expect("draft value is bounded");
+    assert_eq!(
+      host.stage_actor_draft(stale_before_commit),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::StaleObservation,
+        ActorProtocolRepairHint::RequestFreshObservation,
+      ))
+    );
+    assert_eq!(host.record_count(), 0);
+    assert_eq!(host.observation(), observation);
+    assert_eq!(
+      host.apply_line("commit"),
+      Ok(CliHostOutput::Committed {
+        intent: LaneIntent::Stabilize,
+      })
+    );
+    assert_eq!(
+      host.stage_actor_draft(make_draft(ActorDraftField::Message, "too late")),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::DraftBoundary,
+        ActorProtocolRepairHint::RequestFreshObservation,
+      ))
+    );
+
+    let wrong_actor = ActorDraftDto::new(
+      2,
+      observation.observation_id().value(),
+      ActorDraftField::Message,
+      "ping",
+    )
+    .expect("draft value is bounded");
+    assert_eq!(
+      host.stage_actor_draft(wrong_actor),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ActorMismatch,
+        ActorProtocolRepairHint::UseBoundActor,
+      ))
+    );
+    let stale = ActorDraftDto::new(
+      observation.observer().value(),
+      observation.observation_id().value() + 1,
+      ActorDraftField::Message,
+      "stale",
+    )
+    .expect("draft value is bounded");
+    assert_eq!(
+      host.stage_actor_draft(stale),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::DraftBoundary,
+        ActorProtocolRepairHint::RequestFreshObservation,
+      ))
+    );
+
+    host.apply_line("advance").expect("first window advances");
+    let second = host.observation();
+    host
+      .submit_actor_action(ActorActionDto::new(
+        second.observer().value(),
+        second.observation_id().value(),
+        crate::protocol::ActorProtocolIntent::Stabilize,
+      ))
+      .expect("second window closes");
+    let complete = host.observation();
+    let complete_draft = ActorDraftDto::new(
+      complete.observer().value(),
+      complete.observation_id().value(),
+      ActorDraftField::Message,
+      "complete",
+    )
+    .expect("draft value is bounded");
+    assert_eq!(
+      host.stage_actor_draft(complete_draft),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::WindowClosed,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
+    );
+
+    let mut closed = CliScenarioHost::fixture();
+    let closed_observation = closed.observation();
+    closed.apply_line("quit").expect("host closes");
+    let closed_draft = ActorDraftDto::new(
+      closed_observation.observer().value(),
+      closed_observation.observation_id().value(),
+      ActorDraftField::Message,
+      "closed",
+    )
+    .expect("draft value is bounded");
+    assert_eq!(
+      closed.stage_actor_draft(closed_draft),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
+    );
   }
 
   #[test]
