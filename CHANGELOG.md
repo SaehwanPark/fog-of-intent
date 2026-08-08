@@ -98,6 +98,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.149 — 2026-08-08
+
+### Added
+
+- Added `m6-scripted-agent-fixture-population-v1`, a deterministic fixed-fixture
+  population generator capped at four alternating safe and RiverSide-threat
+  entries derived from a caller-supplied starting observation ID. It composes
+  the existing actor-visible matched-sample validation path.
+
+### Known limits
+
+- Broader/random population generation, distributional sampling, outcome and
+  strategic metrics, persistence, providers, and human-behavior evidence remain
+  open.
+
 ## 0.1.148 — 2026-08-08
 
 ### Added

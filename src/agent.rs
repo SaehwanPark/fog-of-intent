@@ -138,6 +138,10 @@ pub const MAX_SCRIPTED_AGENT_MATCHED_SCENARIO_SAMPLES: usize = 4;
 /// Maximum number of selected fixed-fixture scenarios in one request.
 pub const MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS: usize = 4;
 
+/// Versioned identity for a deterministic fixed-fixture population.
+pub const SCRIPTED_AGENT_FIXTURE_POPULATION_SCHEMA: &str =
+  "m6-scripted-agent-fixture-population-v1";
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum ScriptedAgentEvaluationRule {
   Threat,
@@ -684,6 +688,14 @@ pub enum ScriptedAgentFixtureScenarioSelectionError {
   DuplicateObservationId,
 }
 
+/// Bounded failures from deterministic fixed-fixture population generation.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentFixturePopulationError {
+  EmptyPopulation,
+  PopulationTooLarge { max: usize, actual: usize },
+  ObservationIdOverflow,
+}
+
 /// Closed fixture variants available to the bounded M6 scenario selector.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ScriptedAgentFixtureScenario {
@@ -812,6 +824,86 @@ impl ScriptedAgentFixtureScenarioSelection {
   ) -> Result<ScriptedAgentMatchedScenarioSample, ScriptedAgentMatchedScenarioSampleError> {
     let observations = self.observations();
     ScriptedAgentMatchedScenarioSample::from_observations(&observations, manifests)
+  }
+}
+
+/// A deterministic population over the closed fixture catalog, bound to a
+/// caller-supplied starting observation ID.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentFixtureScenarioPopulation {
+  schema: &'static str,
+  selection: ScriptedAgentFixtureScenarioSelection,
+}
+
+impl ScriptedAgentFixtureScenarioPopulation {
+  /// Generate an alternating safe/threat population from a starting ID.
+  pub fn generate(
+    count: usize,
+    first_observation_id: u64,
+  ) -> Result<Self, ScriptedAgentFixturePopulationError> {
+    if count == 0 {
+      return Err(ScriptedAgentFixturePopulationError::EmptyPopulation);
+    }
+    if count > MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS {
+      return Err(ScriptedAgentFixturePopulationError::PopulationTooLarge {
+        max: MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS,
+        actual: count,
+      });
+    }
+    let mut scenario_ids = Vec::with_capacity(count);
+    let mut observation_ids = Vec::with_capacity(count);
+    for index in 0..count {
+      scenario_ids.push(if index % 2 == 0 {
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID
+      } else {
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID
+      });
+      let offset = index
+        .checked_mul(2)
+        .and_then(|value| u64::try_from(value).ok())
+        .ok_or(ScriptedAgentFixturePopulationError::ObservationIdOverflow)?;
+      let first = first_observation_id
+        .checked_add(offset)
+        .ok_or(ScriptedAgentFixturePopulationError::ObservationIdOverflow)?;
+      let second = first
+        .checked_add(1)
+        .ok_or(ScriptedAgentFixturePopulationError::ObservationIdOverflow)?;
+      observation_ids.push([ObservationId::new(first), ObservationId::new(second)]);
+    }
+    let selection =
+      ScriptedAgentFixtureScenarioSelection::from_ids(&scenario_ids, &observation_ids)
+        .map_err(|_| ScriptedAgentFixturePopulationError::ObservationIdOverflow)?;
+    Ok(Self {
+      schema: SCRIPTED_AGENT_FIXTURE_POPULATION_SCHEMA,
+      selection,
+    })
+  }
+
+  pub const fn schema(&self) -> &'static str {
+    self.schema
+  }
+
+  pub fn selection(&self) -> &ScriptedAgentFixtureScenarioSelection {
+    &self.selection
+  }
+
+  pub fn scenarios(&self) -> &[ScriptedAgentFixtureScenario] {
+    self.selection.scenarios()
+  }
+
+  pub fn observation_ids(&self) -> &[[ObservationId; 2]] {
+    self.selection.observation_ids()
+  }
+
+  pub fn observations(&self) -> Vec<[LanerObservation; 2]> {
+    self.selection.observations()
+  }
+
+  pub fn matched_sample(
+    &self,
+    manifests: &[ScriptedAgentExperimentManifest],
+  ) -> Result<ScriptedAgentMatchedScenarioSample, ScriptedAgentMatchedScenarioSampleError> {
+    self.selection.matched_sample(manifests)
   }
 }
 
@@ -4474,6 +4566,63 @@ mod tests {
         .expect("selection repeats")
         .matched_sample(&manifests)
         .expect("repeated samples compose")
+    );
+
+    assert_eq!(MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS, 4);
+    let population = ScriptedAgentFixtureScenarioPopulation::generate(4, 200)
+      .expect("maximum fixed-fixture population builds");
+    assert_eq!(
+      SCRIPTED_AGENT_FIXTURE_POPULATION_SCHEMA,
+      "m6-scripted-agent-fixture-population-v1"
+    );
+    assert_eq!(
+      population.schema(),
+      SCRIPTED_AGENT_FIXTURE_POPULATION_SCHEMA
+    );
+    assert_eq!(population.scenarios(), selection.scenarios());
+    assert_eq!(
+      population.observation_ids(),
+      &[
+        [ObservationId::new(200), ObservationId::new(201)],
+        [ObservationId::new(202), ObservationId::new(203)],
+        [ObservationId::new(204), ObservationId::new(205)],
+        [ObservationId::new(206), ObservationId::new(207)],
+      ]
+    );
+    assert_eq!(
+      population,
+      ScriptedAgentFixtureScenarioPopulation::generate(4, 200).expect("repeated population builds")
+    );
+    assert_eq!(
+      population.matched_sample(&manifests),
+      population.selection().matched_sample(&manifests)
+    );
+    let boundary_population = ScriptedAgentFixtureScenarioPopulation::generate(4, u64::MAX - 7)
+      .expect("maximum observation IDs fit the population");
+    assert_eq!(
+      boundary_population.observation_ids().last(),
+      Some(&[
+        ObservationId::new(u64::MAX - 1),
+        ObservationId::new(u64::MAX),
+      ])
+    );
+    assert_eq!(
+      ScriptedAgentFixtureScenarioPopulation::generate(0, 200),
+      Err(ScriptedAgentFixturePopulationError::EmptyPopulation)
+    );
+    assert_eq!(
+      ScriptedAgentFixtureScenarioPopulation::generate(
+        MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS + 1,
+        200,
+      ),
+      Err(ScriptedAgentFixturePopulationError::PopulationTooLarge {
+        max: MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS,
+        actual: MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS + 1,
+      })
+    );
+    assert_eq!(
+      ScriptedAgentFixtureScenarioPopulation::generate(1, u64::MAX),
+      Err(ScriptedAgentFixturePopulationError::ObservationIdOverflow)
     );
 
     assert_eq!(
