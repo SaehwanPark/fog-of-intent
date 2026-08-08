@@ -16,15 +16,30 @@ use crate::terminal::{render_error, render_output};
 /// Versioned contract for the line-oriented reference loop.
 pub const CLI_COMMAND_LOOP_SCHEMA: &str = "m3-cli-command-loop-v1";
 
+/// The only executable scenario identifier currently supported by the fixture.
+pub const CLI_FIXTURE_SCENARIO_ID: &str = "m3-two-window-fixture-v1";
+
 /// Bounded process-level usage for the executable wrapper.
-pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--run-dir <path>]\n\noptions:\n  --run-dir <path>  store bounded run artifacts in this directory\n  --help            show this help\n";
+pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--run-dir <path>]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1\n  --run-dir <path>  store bounded run artifacts in this directory\n  --help            show this help\n";
+
+/// Closed set of executable fixture constructors.
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+pub enum CliApplicationScenario {
+  /// The deterministic two-window M3 reference fixture.
+  #[default]
+  M3TwoWindowFixture,
+}
 
 /// Errors raised while parsing executable arguments before the command loop.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum CliApplicationArgsError {
+  MissingScenario,
+  EmptyScenario,
+  DuplicateScenario,
   MissingRunDirectory,
   EmptyRunDirectory,
   DuplicateRunDirectory,
+  UnsupportedScenario,
   UnexpectedArgument,
 }
 
@@ -32,9 +47,13 @@ impl CliApplicationArgsError {
   /// Return a stable, path-free message suitable for stderr.
   pub const fn message(self) -> &'static str {
     match self {
+      Self::MissingScenario => "--scenario needs an ID",
+      Self::EmptyScenario => "--scenario ID must not be empty",
+      Self::DuplicateScenario => "--scenario may be provided only once",
       Self::MissingRunDirectory => "--run-dir needs a path",
       Self::EmptyRunDirectory => "--run-dir path must not be empty",
       Self::DuplicateRunDirectory => "--run-dir may be provided only once",
+      Self::UnsupportedScenario => "unsupported --scenario ID; use --help",
       Self::UnexpectedArgument => "unexpected executable argument; use --help",
     }
   }
@@ -50,10 +69,16 @@ pub enum CliApplicationCommand {
 /// Explicit executable configuration for the bounded fixture loop.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CliApplicationOptions {
+  scenario: CliApplicationScenario,
   run_dir: Option<PathBuf>,
 }
 
 impl CliApplicationOptions {
+  /// Return the closed scenario constructor selected at the process edge.
+  pub const fn scenario(&self) -> CliApplicationScenario {
+    self.scenario
+  }
+
   /// Return the configured run directory, if binary persistence is enabled.
   pub fn run_dir(&self) -> Option<&Path> {
     self.run_dir.as_deref()
@@ -64,6 +89,7 @@ impl CliApplicationOptions {
 pub fn parse_application_args(
   args: &[OsString],
 ) -> Result<CliApplicationCommand, CliApplicationArgsError> {
+  let mut scenario = None;
   let mut run_dir = None;
   let mut index = 0;
   while index < args.len() {
@@ -73,6 +99,25 @@ pub fn parse_application_args(
           return Ok(CliApplicationCommand::Help);
         }
         return Err(CliApplicationArgsError::UnexpectedArgument);
+      }
+      value if value == "--scenario" => {
+        if scenario.is_some() {
+          return Err(CliApplicationArgsError::DuplicateScenario);
+        }
+        index += 1;
+        if index == args.len() {
+          return Err(CliApplicationArgsError::MissingScenario);
+        }
+        if args[index].is_empty() {
+          return Err(CliApplicationArgsError::EmptyScenario);
+        }
+        if args[index].to_string_lossy().starts_with('-') {
+          return Err(CliApplicationArgsError::UnexpectedArgument);
+        }
+        if args[index] != CLI_FIXTURE_SCENARIO_ID {
+          return Err(CliApplicationArgsError::UnsupportedScenario);
+        }
+        scenario = Some(CliApplicationScenario::M3TwoWindowFixture);
       }
       value if value == "--run-dir" => {
         if run_dir.is_some() {
@@ -95,6 +140,7 @@ pub fn parse_application_args(
     index += 1;
   }
   Ok(CliApplicationCommand::Run(CliApplicationOptions {
+    scenario: scenario.unwrap_or_default(),
     run_dir,
   }))
 }
@@ -162,6 +208,7 @@ mod tests {
     assert_eq!(
       parse_application_args(&[]),
       Ok(CliApplicationCommand::Run(CliApplicationOptions {
+        scenario: CliApplicationScenario::M3TwoWindowFixture,
         run_dir: None
       }))
     );
@@ -170,6 +217,10 @@ mod tests {
     let command = parse_application_args(&args).expect("run directory option");
     match command {
       CliApplicationCommand::Run(options) => {
+        assert_eq!(
+          options.scenario(),
+          CliApplicationScenario::M3TwoWindowFixture
+        );
         assert_eq!(options.run_dir(), Some(Path::new("fixture-runs")));
       }
       CliApplicationCommand::Help => panic!("run arguments must not select help"),
@@ -184,7 +235,28 @@ mod tests {
     );
     assert_eq!(
       CLI_APPLICATION_HELP,
-      "usage: fog-of-intent [--run-dir <path>]\n\noptions:\n  --run-dir <path>  store bounded run artifacts in this directory\n  --help            show this help\n"
+      "usage: fog-of-intent [--scenario <id>] [--run-dir <path>]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1\n  --run-dir <path>  store bounded run artifacts in this directory\n  --help            show this help\n"
+    );
+    assert_eq!(
+      parse_application_args(&[OsString::from("--scenario")]),
+      Err(CliApplicationArgsError::MissingScenario)
+    );
+    assert_eq!(
+      parse_application_args(&[OsString::from("--scenario"), OsString::new()]),
+      Err(CliApplicationArgsError::EmptyScenario)
+    );
+    assert_eq!(
+      parse_application_args(&[
+        OsString::from("--scenario"),
+        OsString::from(CLI_FIXTURE_SCENARIO_ID),
+        OsString::from("--scenario"),
+        OsString::from(CLI_FIXTURE_SCENARIO_ID),
+      ]),
+      Err(CliApplicationArgsError::DuplicateScenario)
+    );
+    assert_eq!(
+      parse_application_args(&[OsString::from("--scenario"), OsString::from("unknown")]),
+      Err(CliApplicationArgsError::UnsupportedScenario)
     );
     assert_eq!(
       parse_application_args(&[OsString::from("--run-dir")]),
@@ -213,6 +285,41 @@ mod tests {
         parse_application_args(&args),
         Err(CliApplicationArgsError::UnexpectedArgument)
       );
+    }
+    for token in ["--help", "--run-dir", "--scenario", "--unknown"] {
+      let args = [OsString::from("--scenario"), OsString::from(token)];
+      assert_eq!(
+        parse_application_args(&args),
+        Err(CliApplicationArgsError::UnexpectedArgument)
+      );
+    }
+  }
+
+  #[test]
+  fn application_args_compose_scenario_and_run_directory_in_either_order() {
+    let expected = CliApplicationScenario::M3TwoWindowFixture;
+    let first = parse_application_args(&[
+      OsString::from("--scenario"),
+      OsString::from(CLI_FIXTURE_SCENARIO_ID),
+      OsString::from("--run-dir"),
+      OsString::from("fixture-runs"),
+    ])
+    .expect("scenario before run directory");
+    let second = parse_application_args(&[
+      OsString::from("--run-dir"),
+      OsString::from("fixture-runs"),
+      OsString::from("--scenario"),
+      OsString::from(CLI_FIXTURE_SCENARIO_ID),
+    ])
+    .expect("run directory before scenario");
+    for command in [first, second] {
+      match command {
+        CliApplicationCommand::Run(options) => {
+          assert_eq!(options.scenario(), expected);
+          assert_eq!(options.run_dir(), Some(Path::new("fixture-runs")));
+        }
+        CliApplicationCommand::Help => panic!("options must select a run"),
+      }
     }
   }
 

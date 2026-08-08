@@ -196,3 +196,19 @@ canonical policy instead of duplicating it.
   host draft, history, replay, and saved artifact.
 - Prevention: Treat branch review as a read-only projection until a versioned
   branch artifact and explicit persistence contract are designed.
+
+## Fail closed on executable scenario identifiers
+
+- Context: The fixture binary needed an explicit scenario name without turning
+  its single supported fixture into an implicit, silently changing default.
+- Symptom: Accepting any string and falling back to the existing fixture would
+  make a typo appear successful and would hide compatibility boundaries from
+  scripts and future scenario additions.
+- Cause: Process-edge configuration was being treated as an open string rather
+  than a closed construction contract.
+- Resolution: Parse one versioned ID into a closed scenario enum, keep omission
+  as an explicit default, and reject missing, empty, option-shaped, duplicate,
+  and unsupported values before stdin reaches the session grammar.
+- Prevention: Keep scenario construction at the application edge, keep errors
+  path-free and stable, and require a focused process-status regression before
+  adding another selectable fixture.

@@ -15,8 +15,9 @@ surface.
 ## Overview
 
 Fog of Intent is currently a single Rust 2024 package with no dependencies. The
-binary runs the bounded line-oriented fixture loop and accepts one explicit
-`--run-dir` storage option; internal `kernel` and
+binary runs the bounded line-oriented fixture loop and accepts one
+versioned `--scenario m3-two-window-fixture-v1` ID plus an explicit `--run-dir`
+storage option; internal `kernel` and
 `lane` modules provide bounded deterministic transitions, in-memory history, replay,
 branching, coordination, objective, and debrief fixtures. No playable scenario,
 MCP, research, or GUI component exists yet; an injected
@@ -358,9 +359,10 @@ and an architecture update or ADR when it changes a consequential boundary.
   playable scenario, external API, migration framework, or persistence service.
 - M3 has typed command contracts, a bounded host fixture, replay-validated
   artifacts, an injected file store, a pure terminal-text projection, and a
-  thin line-oriented fixture loop with explicit `--run-dir` wiring and a
-  matched-parent host branch projection; scenario selection,
-  regenerated/graph branching, and complete accessibility evidence remain open.
+  thin line-oriented fixture loop with explicit versioned fixture selection,
+  `--run-dir` wiring, and a matched-parent host branch projection; broader
+  scenario selection, regenerated/graph branching, and complete accessibility
+  evidence remain open.
 - M2 still lacks a communication system, full vision geometry, memory decay,
   automatic threat damage, no-choice host scheduling, adaptive pacing, a complete item/resource economy,
   external scenario serialization, a branch tree, and a broader debrief
