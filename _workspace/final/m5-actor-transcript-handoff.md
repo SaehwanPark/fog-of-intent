@@ -2,7 +2,8 @@
 
 ## Outcome
 
-Implementation is complete; pending the required independent three-pass review.
+Implementation is complete at PR #116 head `9deb2c4`; the required independent
+three-pass review found no actionable issues.
 
 ## Intended Contract
 
@@ -17,6 +18,11 @@ contains 18 protocol, 5 session, and 23 host tests within 202 Rust unit tests,
 7 binary integration tests, and 1 RustDoc compile-fail test. Formatter, Clippy
 with warnings denied, repository checker, 14 Python checks, and
 `git diff --check` all pass.
+
+## Domain QA Disposition
+
+PASS. The transcript remains pure compatibility metadata; runtime transport,
+provider/model data, persistence, and replay authority remain deferred.
 
 ## Limits
 
