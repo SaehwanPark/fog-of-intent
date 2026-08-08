@@ -762,10 +762,11 @@ playability, or human-experience evidence.
 - The versioned `m3-cli-information-labels-v1` vocabulary distinguishes
   `observed`, `believed`, `inferred`, `reported`, and `unknown` values for future
   actor-visible CLI projections.
-- `CliInformation<T>` preserves the selected label through borrowed/value
-  extraction and makes `Unknown` payload-free, preventing a redaction label
-  from carrying hidden state. This is adapter metadata only; no renderer,
-  inference engine, host flow, or external compatibility guarantee exists.
+- `CliInformation<T>` preserves the selected label through borrowed
+  projections; its explicit `into_option()` extraction intentionally drops
+  provenance while returning the payload, and `Unknown` remains payload-free.
+  This is adapter metadata only; no renderer, inference engine, host flow, or
+  external compatibility guarantee exists.
 
 ## Future
 

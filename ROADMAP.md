@@ -881,8 +881,9 @@ API access.
   `unknown` labels with canonical names.
 - [x] Represent labeled values with `CliInformation<T>`; the `Unknown` form is
   payload-free and cannot carry hidden state through the adapter.
-- [x] Verify label preservation through borrowed projections and explicit value
-  extraction without changing M2 state, hashes, replay, or transition behavior.
+- [x] Verify borrowed projections preserve labels and explicit value extraction
+  returns payloads without changing M2 state, hashes, replay, or transition
+  behavior.
 
 This establishes provenance metadata for future CLI projections only. Rendering,
 inference, belief computation, host execution, persistence, and human

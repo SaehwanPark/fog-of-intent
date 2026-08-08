@@ -1361,7 +1361,7 @@ mod tests {
   }
 
   #[test]
-  fn information_values_preserve_labels_across_borrow_and_extraction() {
+  fn information_values_preserve_labels_when_borrowed_and_extract_payloads() {
     let values = [
       CliInformation::Observed("direct"),
       CliInformation::Believed("stale"),
@@ -1375,10 +1375,15 @@ mod tests {
       CliInformationLabel::Reported,
     ];
 
-    for (value, expected_label) in values.into_iter().zip(labels) {
+    for ((value, expected_label), expected_payload) in
+      values
+        .into_iter()
+        .zip(labels)
+        .zip(["direct", "stale", "derived", "ally-said"])
+    {
       assert_eq!(value.label(), expected_label);
       assert_eq!(value.as_ref().label(), expected_label);
-      assert!(value.into_option().is_some());
+      assert_eq!(value.into_option(), Some(expected_payload));
     }
 
     let unknown = CliInformation::<&str>::Unknown;
