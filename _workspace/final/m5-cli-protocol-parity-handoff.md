@@ -2,7 +2,8 @@
 
 ## Outcome
 
-Implementation is complete; pending the required independent three-pass review.
+Implementation and independent three-pass review are complete at `e635a2a`;
+the reviewer disposition is PASS with no actionable findings.
 
 ## Intended Contract
 
@@ -15,7 +16,9 @@ hidden lane values or moving host authority.
 One focused host parity test complements 19 protocol, 9 session, and 24 host
 tests within 208 Rust unit tests, 7 binary integration tests, and 3 RustDoc
 compile-fail tests. Formatter, Clippy with warnings denied, repository checker,
-14 Python checks, and `git diff --check` pass.
+14 Python checks, and `git diff --check` pass. The independent reviewer
+reproduced the parity and full-suite evidence without finding a contract or
+claim issue.
 
 ## Limits
 
