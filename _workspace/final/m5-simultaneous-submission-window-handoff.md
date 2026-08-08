@@ -2,7 +2,8 @@
 
 ## Outcome
 
-Implementation is complete; pending the required independent three-pass review.
+Implementation and independent three-pass review are complete at `3110e7d`;
+the reviewer disposition is PASS with no actionable findings.
 
 ## Intended Contract
 
@@ -17,7 +18,8 @@ Four focused session tests cover the collector and bounded repairs. The suite
 contains 19 protocol, 9 session, and 23 host tests within 207 Rust unit tests,
 7 binary integration tests, and 3 RustDoc compile-fail tests. Formatter,
 Clippy with warnings denied, repository checker, 14 Python checks, and
-`git diff --check` pass.
+`git diff --check` pass. The independent reviewer reproduced the full suite
+and confirmed the privacy, actor-binding, and authority-boundary evidence.
 
 ## Limits
 
