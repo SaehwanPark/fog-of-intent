@@ -334,11 +334,31 @@ mod tests {
       risk_taking.profile().profile_id(),
       RISK_TAKING_SCRIPTED_AGENT_PROFILE_ID
     );
+    assert_eq!(
+      risk_taking.profile().evaluation_rule(),
+      "contest-first-fixed-score-v1"
+    );
+    assert_eq!(
+      cautious
+        .candidates()
+        .iter()
+        .map(|candidate| candidate.intent())
+        .collect::<Vec<_>>(),
+      risk_taking
+        .candidates()
+        .iter()
+        .map(|candidate| candidate.intent())
+        .collect::<Vec<_>>()
+    );
     assert!(risk_taking.candidates().iter().any(|candidate| {
       candidate.intent() == LaneIntent::Contest
         && candidate.reason() == ScriptedAgentReason::RiskPreference
         && candidate.score() == 100
     }));
+    assert_eq!(
+      risk_taking,
+      ScriptedAgent::risk_taking_v1().choose(receipt.observation())
+    );
     validate_lane_request(&state, &receipt, &cautious.request()).expect("cautious is legal");
     validate_lane_request(&state, &receipt, &risk_taking.request()).expect("risk-taking is legal");
   }
