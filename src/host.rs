@@ -234,17 +234,24 @@ impl CliScenarioHost {
     action: ActorActionDto,
   ) -> Result<CliHostOutput, ActorProtocolError> {
     self.validate_actor_action(action)?;
+    let previous_committed_intent = self.committed_intent;
     self.committed_intent = Some(action.to_lane_request().intent());
-    self.advance().map_err(|error| match error {
-      CliHostError::ScenarioComplete => ActorProtocolError::new(
-        ActorProtocolErrorCode::WindowClosed,
-        ActorProtocolRepairHint::StartNewSession,
-      ),
-      _ => ActorProtocolError::new(
-        ActorProtocolErrorCode::HostTransitionRejected,
-        ActorProtocolRepairHint::StartNewSession,
-      ),
-    })
+    match self.advance() {
+      Ok(output) => Ok(output),
+      Err(error) => {
+        self.committed_intent = previous_committed_intent;
+        Err(match error {
+          CliHostError::ScenarioComplete => ActorProtocolError::new(
+            ActorProtocolErrorCode::WindowClosed,
+            ActorProtocolRepairHint::StartNewSession,
+          ),
+          _ => ActorProtocolError::new(
+            ActorProtocolErrorCode::HostTransitionRejected,
+            ActorProtocolRepairHint::StartNewSession,
+          ),
+        })
+      }
+    }
   }
 
   /// Return the number of committed scenario windows.
@@ -880,6 +887,11 @@ mod tests {
     assert_eq!(transition_error.code().id(), "host_transition_rejected");
     assert_eq!(transition_error.repair().id(), "start_new_session");
     assert_eq!(malformed.record_count(), 0);
+    assert_eq!(malformed.observation(), malformed_observation);
+    assert_eq!(
+      malformed.apply_line("plan stabilize"),
+      Ok(CliHostOutput::DraftStaged { field: "plan" })
+    );
     assert!(!format!("{transition_error:?}").contains("health"));
   }
 
