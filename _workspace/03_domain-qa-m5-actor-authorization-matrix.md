@@ -2,7 +2,9 @@
 
 ## Status
 
-Implementation is complete; pending the required independent three-pass review.
+PASS after the required independent three-pass review at PR #115 head
+`4658ec9`; local focused production evidence and all repository gates are
+green for the bounded slice.
 
 ## Scope and Authority
 
@@ -26,7 +28,9 @@ MCP behavior.
 
 ## Required Fixes
 
-Pending implementation and review.
+None. The review confirmed generic case-insensitive marker coverage for both
+wrong-actor errors and actor-visible DTO/result values, with unchanged
+observation/history state.
 
 ## Verification Evidence
 
