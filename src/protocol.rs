@@ -970,6 +970,12 @@ mod tests {
       assert_eq!(dto.schema(), "m5-actor-history-v1");
       assert_eq!(dto.records(), records);
       assert_eq!(dto.status(), status);
+      if status == ActorHistoryStatus::Open {
+        assert_eq!(
+          dto.encode(),
+          "schema=m5-actor-history-v1\nrecords=0\nstatus=open\n"
+        );
+      }
       assert_eq!(ActorHistoryDto::decode(&dto.encode()), Ok(dto));
     }
     assert_eq!(
