@@ -2,10 +2,12 @@
 
 ## Disposition
 
-Pending independent three-pass code/API, agent-ecology/domain, and
-docs/evidence review at implementation head `ac32163`.
+PASS: the independent three-pass code/API, agent-ecology/domain, and
+docs/evidence review found no actionable findings. The implementation
+provenance is head `ac32163`; the final evidence/documents are recorded at
+head `01d7606`.
 
-## Scope to review
+## Scope reviewed
 
 - Does the codec bind the exact `m6-scripted-agent-operational-log-v1`
   schema, closed five-ID vocabulary, ordered records, 4096-byte bound, and
@@ -18,14 +20,14 @@ docs/evidence review at implementation head `ac32163`.
 - Does the implementation remain separate from policy, host/lane legality,
   transition, history, replay, diagnostics, transport, and provider authority?
 
-## Evidence target
+## Evidence
 
-The focused agent evidence is one codec/store regression covering canonical
-text, malformed fields and lines, size and entry bounds, coexistence, and
-failure nonmutation. The expected full suite is 27 focused agent tests within
-240 Rust unit tests, 7 binary tests, and 3 RustDoc tests, plus 15 Python policy
-tests, formatter, Clippy with warnings denied, repository checker, and diff
-checks at the reviewed head.
+One focused agent codec/store regression covers canonical text, malformed
+fields and lines, size and entry bounds, coexistence, and failure nonmutation.
+The full evidence is 27 focused agent tests within 240 Rust unit tests, 7
+binary tests, and 3 RustDoc tests, plus 15 Python policy tests. Formatter,
+Clippy with warnings denied, repository checker, and diff checks pass at the
+final evidence head `01d7606`.
 
 ## Limits
 
@@ -37,4 +39,6 @@ labels only.
 
 ## Required fixes
 
-To be determined by the independent review.
+None. The bounded codec/store remains separate from runtime diagnostics,
+crash recovery, rotation, tracing, export, scheduling, providers, and
+durable scenario-wide replay.
