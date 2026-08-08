@@ -1192,8 +1192,8 @@ transport-integrated sessions and broader protocol compatibility remain open.
   caller-supplied observation-ID pairs, preserves ordered repeated selections,
   and projects only actor-visible observations into the existing matched-sample
   contract. It is a deterministic fixed-fixture selector, not population
-  generation, random sampling, distributional evidence, or transition/history
-  authority.
+  generation; broader/random scenario generation, distributional evidence, and
+  transition/history authority remain outside this contract.
 
 ## Future
 

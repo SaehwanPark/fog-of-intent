@@ -3162,6 +3162,19 @@ mod tests {
       ),
       Err(ScriptedAgentFixtureScenarioSelectionError::DuplicateObservationId)
     );
+    assert_eq!(
+      ScriptedAgentFixtureScenarioSelection::from_ids(
+        &[
+          SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+          SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        ],
+        &[
+          [ObservationId::new(112), ObservationId::new(113)],
+          [ObservationId::new(114), ObservationId::new(112)],
+        ],
+      ),
+      Err(ScriptedAgentFixtureScenarioSelectionError::DuplicateObservationId)
+    );
     let too_many_scenarios =
       [SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID; MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS + 1];
     let too_many_ids = (0..=MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS)
