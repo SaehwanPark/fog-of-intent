@@ -28,7 +28,7 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 
 - A Rust 2024 binary package named `fog-of-intent` was initialized at version
   `0.1.0`.
-- The executable is a placeholder that prints `Hello, world!`.
+- The executable was initialized as a placeholder that printed `Hello, world!`.
 - A comprehensive proposal established the turn-based, AI-native team-strategy
   thesis, initial one-lane slice, bounded-rationality direction, deterministic
   authority boundary, replay/debrief goals, and evidence limits.
