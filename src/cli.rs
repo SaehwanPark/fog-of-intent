@@ -1581,6 +1581,104 @@ mod tests {
   }
 
   #[test]
+  fn grammar_transcript_maps_documented_commands_in_order() {
+    let transcript = [
+      "help",
+      "observe",
+      "inspect history",
+      "message ping ally",
+      "plan stabilize",
+      "contingency retreat if threat",
+      "commit",
+      "advance",
+      "review",
+      "debrief",
+      "replay run-1",
+      "branch rec-0",
+      "save run-1",
+      "load run-1",
+      "undo",
+      "quit",
+    ];
+
+    for (line, expected_name) in transcript.iter().zip([
+      "help",
+      "observe",
+      "inspect",
+      "message",
+      "plan",
+      "contingency",
+      "commit",
+      "advance",
+      "review",
+      "debrief",
+      "replay",
+      "branch",
+      "save",
+      "load",
+      "undo",
+      "quit",
+    ]) {
+      let command = parse_command(line).unwrap();
+      assert_eq!(command.canonical_name(), expected_name);
+      match command {
+        CliCommand::Help | CliCommand::Observe | CliCommand::Inspect(_) => {
+          read_request(command).unwrap();
+        }
+        CliCommand::Message(_)
+        | CliCommand::Plan(_)
+        | CliCommand::Contingency(_)
+        | CliCommand::Commit
+        | CliCommand::Advance => {
+          write_request(command).unwrap();
+        }
+        CliCommand::Review
+        | CliCommand::Debrief
+        | CliCommand::Replay(_)
+        | CliCommand::Branch(_) => {
+          process_request(command).unwrap();
+        }
+        CliCommand::Save(_) | CliCommand::Load(_) | CliCommand::Undo | CliCommand::Quit => {
+          session_request(command).unwrap();
+        }
+      }
+    }
+  }
+
+  #[test]
+  fn grammar_transcript_common_errors_fail_before_host_boundaries() {
+    assert_eq!(parse_command(""), Err(CliParseError::EmptyInput));
+    assert_eq!(
+      parse_command("wat"),
+      Err(CliParseError::UnknownVerb { verb: "wat" })
+    );
+    assert_eq!(
+      write_request(CliCommand::Message(" ")),
+      Err(CliWriteError::EmptyPayload { verb: "message" })
+    );
+    assert_eq!(
+      process_request(CliCommand::Replay(Some("run/id"))),
+      Err(CliProcessError::InvalidRunId {
+        error: CliRunIdError::InvalidCharacter { character: '/' }
+      })
+    );
+    assert_eq!(
+      top_level_request(
+        CliTopLevelCommand::Play {
+          scenario: None,
+          mode: CliInteractionMode::Guided,
+          verbosity: CliVerbosity::Research,
+          seed: None,
+        },
+        CliPrivilegeLevel::Unprivileged,
+      ),
+      Err(CliTopLevelError::PrivilegedContextRequired {
+        feature: "research-verbosity"
+      })
+    );
+  }
+
+  #[test]
   fn draft_edits_replace_fields_and_undo_clears_uncommitted_choices() {
     assert_eq!(CLI_DRAFT_SCHEMA, "m3-cli-precommit-draft-v1");
     let mut draft = CliDraft::new();

@@ -77,7 +77,7 @@ players?
 | --- | --- |
 | Current roadmap milestone | M2 — One-Lane Vertical Slice (Active) |
 | Repository governance and canonical docs | Complete — M0 |
-| Rust package | `0.1.66`, edition 2024, Rust `1.96`, no dependencies, single package |
+| Rust package | `0.1.67`, edition 2024, Rust `1.96`, no dependencies, single package |
 | Executable behavior | Prints `Hello, world!` |
 | Deterministic kernel | M1 fixture/codec complete; M2 v3 internal lane-window, explicit four-actor roster, retained-resource aggregate, intent, observation, branch, coordination, objective, strategy-fixture, scenario, replay, delayed-origin provenance, debrief, advance-condition, and belief/report contracts implemented |
 | One-lane scenario | Internal diagnostic windows and fixtures cover bounded intents, observations, coordination, resources, replay, and debrief projections — full scenario not complete |
