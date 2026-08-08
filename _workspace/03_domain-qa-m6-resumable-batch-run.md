@@ -2,16 +2,19 @@
 
 ## Disposition
 
-Pending independent three-pass review of the implementation and evidence.
+PASS at implementation/evidence head `a0b0744`; no actionable findings remain
+after three independent code/API, agent-ecology/domain, and docs/evidence
+passes.
 
-## Evidence target
+## Evidence
 
-One focused agent test must cover the six-line checkpoint codec, malformed
-fields, observation/manifest mismatch rejection, one-chunk save/load resume,
-completion, and the bounded cursor. The expected full suite is 18 focused
-agent tests within 231 Rust unit tests, 7 binary tests, and 3 RustDoc tests; 15
-Python policy tests, formatter, Clippy with warnings denied, repository checker,
-and diff checks must pass.
+One focused agent test covers the six-line checkpoint codec, malformed fields,
+literal fingerprint binding, observation/manifest mismatch rejection,
+one-chunk save/load resume, same-root artifact coexistence, completion, and the
+bounded cursor. The full evidence is 18 focused agent tests within 231 Rust
+unit tests, 7 binary tests, and 3 RustDoc tests; 15 Python policy tests,
+formatter, Clippy with warnings denied, repository checker, and diff checks pass
+at the reviewed head.
 
 ## Boundary questions
 
@@ -24,4 +27,6 @@ and diff checks must pass.
 
 ## Required Fixes
 
-To be determined by independent review.
+None. Decision/result persistence, crash diagnostics, population sampling,
+metrics, report export, providers/models, scenario-wide replay, and calibration
+remain explicitly deferred.
