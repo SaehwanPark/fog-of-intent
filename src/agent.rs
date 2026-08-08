@@ -3228,12 +3228,14 @@ mod tests {
       log.entries()[4].event(),
       ScriptedAgentOperationalEvent::BatchFinished
     );
+    assert_eq!(MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS, 16);
     for _ in events.len()..MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS {
       log
         .append(ScriptedAgentOperationalEvent::BatchStarted)
         .expect("event fits at inclusive cap");
     }
     assert_eq!(log.len(), MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS);
+    let entries_before_overflow = log.entries().to_vec();
     assert_eq!(
       log.append(ScriptedAgentOperationalEvent::BatchFinished),
       Err(ScriptedAgentOperationalLogError::CapacityExceeded {
@@ -3241,10 +3243,7 @@ mod tests {
       })
     );
     assert_eq!(log.len(), MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS);
-    assert_eq!(
-      log.entries()[4].event(),
-      ScriptedAgentOperationalEvent::BatchFinished
-    );
+    assert_eq!(log.entries(), entries_before_overflow.as_slice());
   }
 
   #[test]
