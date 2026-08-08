@@ -338,3 +338,16 @@ canonical policy instead of duplicating it.
   assert their profile bindings while leaving `LaneActorRole` untouched.
 - Prevention: Treat policy roles as inspectable labels only until role behavior,
   populations, and outcomes have separate evidence.
+
+## Bind monotonic policy effects to actor-visible features
+
+- Context: M4 needed its first utility-feature regression without introducing
+  memory, randomness, or a second simulation authority.
+- Symptom: A fixed score table can demonstrate plumbing but cannot show that a
+  policy responds directionally to a declared actor-visible condition.
+- Resolution: Use the bounded `LanerObservation::wave_pressure()` value only in
+  the Anchor `Stabilize` score, version the pressure-aware rule, and compare
+  pressure 0 with pressure 3 while validating both requests through the host.
+- Prevention: Keep monotonic checks tied to matched observations and state
+  whether the result is a score relation rather than an outcome, balance, or
+  strategic-quality claim.

@@ -11,13 +11,14 @@ legality, execution, transition, replay, or history.
 
 | Profile | Evaluation rule | Initial selected intent |
 | --- | --- | --- |
-| `cautious-laner-v1` | `threat-first-fixed-score-v1` | `Stabilize` |
+| `cautious-laner-v1` | `threat-first-pressure-aware-fixed-score-v1` | `Stabilize` |
 | `risk-taking-laner-v1` | `contest-first-fixed-score-v1` | `Contest` |
 | `yielding-laner-v1` | `yield-first-fixed-score-v1` | `Yield` |
 
 Each profile scores its named posture at 100. Cautious threat response remains
-100; the risk-taking and yielding profiles score a visible threat response at
-90 so the matched initial observation exposes their distinct fixed preference.
+100, and its `Stabilize` score is 80 plus the observed wave-pressure value. The
+risk-taking and yielding profiles score a visible threat response at 90 so the
+matched initial observation exposes their distinct fixed preference.
 
 ## Evidence and limits
 

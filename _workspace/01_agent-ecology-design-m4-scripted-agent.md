@@ -27,16 +27,17 @@ introduced, so no population-level comparison is claimed.
 ## Observation, Memory, and Policy Inputs
 
 The policy input is a copied `LanerObservation`, including observer identity,
-observation ID, advertised legal intents, and an optional visible threat
-response. The profile has no memory store, private state, wall-clock input,
-provider input, or hidden-state access. Observation freshness and source
-binding remain host-owned.
+observation ID, bounded wave pressure, advertised legal intents, and an
+optional visible threat response. The Anchor profile uses only that observed
+pressure as a bounded utility feature; the profile has no memory store, private
+state, wall-clock input, provider input, or hidden-state access. Observation
+freshness and source binding remain host-owned.
 
 ## Candidate Generation, Evaluation, and Selection
 
 Candidate generation copies the observation's advertised intents and adds a
 distinct visible threat response. Evaluation applies either the cautious
-`threat-first-fixed-score-v1`, risk-taking `contest-first-fixed-score-v1`, or
+`threat-first-pressure-aware-fixed-score-v1`, risk-taking `contest-first-fixed-score-v1`, or
 yielding `yield-first-fixed-score-v1` table and labels each candidate as a
 threat response, risk preference, yield preference, stable default, or
 available alternative. Selection chooses the highest score with stable
@@ -75,8 +76,10 @@ profile-specific regression rather than changing this profile's meaning.
 
 The expected effect is stable selection of `Stabilize`, `Contest`, and `Yield`
 for the cautious, risk-taking, and yielding profiles in the initial
-observation; cautious selection of `Withdraw` remains expected when that
-response is visibly advertised for a RiverSide threat. Failure signals include
+observation; Anchor's `Stabilize` score rises monotonically with observed wave
+pressure while remaining selected; cautious selection of `Withdraw` remains
+expected when that response is visibly advertised for a RiverSide threat.
+Failure signals include
 a candidate absent from the observation, a request that fails host validation, a
 decision that changes for identical observations, or output that requires
 hidden state to explain.

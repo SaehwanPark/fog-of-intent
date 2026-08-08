@@ -839,9 +839,10 @@ remain open.
 
 ### M4 — First scripted-agent policy boundary — 2026-08-08
 
-**Status:** Three actor-visible deterministic policy profiles and one matched
-input comparison delivered; broader agent ecology, population comparisons, and
-external adapters remain open.
+**Status:** Three actor-visible deterministic policy profiles, one matched
+input comparison, and one bounded pressure-sensitivity check delivered;
+broader agent ecology, population comparisons, and external adapters remain
+open.
 
 - `src/agent.rs` defines the versioned `m4-scripted-agent-v1` policy boundary
   and the `cautious-laner-v1`, `risk-taking-laner-v1`, and
@@ -855,7 +856,7 @@ external adapters remain open.
 - `ScriptedAgent` consumes only a `LanerObservation`, copies its advertised
   legal intents, adds the observation's optional visible threat response, and
   evaluates candidates with the profile-specific fixed
-  `threat-first-fixed-score-v1`, `contest-first-fixed-score-v1`, or
+  `threat-first-pressure-aware-fixed-score-v1`, `contest-first-fixed-score-v1`, or
   `yield-first-fixed-score-v1` table. Selection is the stable maximum-score
   candidate in advertised order.
 - Public `evaluate_candidate` rejects an intent that is not in the advertised
@@ -880,11 +881,16 @@ external adapters remain open.
   `Withdraw`; the risk-taking and yielding profiles retain their fixed intents
   while all requests remain valid. This is profile-sensitivity evidence over
   two fixture observations, not an outcome or balance claim.
+- The Anchor profile's `Stabilize` score uses only the actor-visible wave
+  pressure as a bounded utility feature: it increases from 80 at pressure 0 to
+  83 at pressure 3, while the selected intent and host-validation boundary are
+  unchanged. This is one monotonic score check, not an outcome or balance claim.
 - Focused tests cover the initial candidate set, visible-threat prioritization,
-  host validation, repeated identical-observation reproducibility, and the
-  matched profile difference plus unavailable-intent rejection. This evidence
-  plus the reproducible comparison report is a bounded library metric slice,
-  not a claim of strategic quality or human behavioral realism.
+  host validation, repeated identical-observation reproducibility, the
+  matched profile difference plus unavailable-intent rejection, and the
+  low/high-pressure Anchor score relation. This evidence plus the reproducible
+  comparison report is a bounded library metric slice, not a claim of
+  strategic quality or human behavioral realism.
 
 ## Future
 

@@ -95,6 +95,22 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.86 — 2026-08-08
+
+### Added
+
+- Added the versioned `threat-first-pressure-aware-fixed-score-v1` Anchor
+  evaluation rule, using only bounded actor-visible wave pressure to adjust
+  the `Stabilize` score.
+- Added low/high-pressure monotonic score and host-validation evidence while
+  preserving candidate generation, stable selection, and the other profiles.
+
+### Known limits
+
+- Pressure sensitivity covers two library fixture observations; memory,
+  communication, randomness, populations, outcomes, strategic quality, and
+  human realism remain deferred.
+
 ## 0.1.85 — 2026-08-08
 
 ### Added

@@ -10,13 +10,14 @@ freshness, legality, transition, execution, history, and replay.
 
 | Profile | Evaluation rule | Initial selected intent |
 | --- | --- | --- |
-| `cautious-laner-v1` | `threat-first-fixed-score-v1` | `Stabilize` |
+| `cautious-laner-v1` | `threat-first-pressure-aware-fixed-score-v1` | `Stabilize` |
 | `risk-taking-laner-v1` | `contest-first-fixed-score-v1` | `Contest` |
 
 Candidate generation and stable first-maximum selection are shared. The
 risk-taking rule scores `Contest` at 100 and a visible threat response at 90;
-the cautious rule scores a visible threat response at 100 and `Contest` at 60.
-Both retain the same stable default and alternative scores.
+the cautious rule scores a visible threat response at 100 and `Contest` at 60,
+while its `Stabilize` score is 80 plus observed wave pressure. Both retain the
+same stable candidate order and alternative scores.
 
 ## Evidence and limits
 
