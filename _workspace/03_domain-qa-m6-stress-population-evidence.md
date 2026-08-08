@@ -2,27 +2,30 @@
 
 ## Disposition
 
-Pending independent three-pass review of implementation head.
+PASS — no actionable findings after independent three-pass review at
+implementation/evidence head `a5ff9d0`.
 
-## Scope to review
+## Scope reviewed
 
-- The closed stress matrix must retain four literal case IDs in stable order:
-  illegal-command, exploit-seeking, communication-abuse, and
-  degenerate-policy.
+- The closed stress matrix retains four literal case IDs in stable order:
+  illegal-command, exploit-seeking, communication-abuse, and degenerate-policy.
 - Existing host validation/freshness, message-codec, and deterministic-policy
-  boundaries must produce the documented categorical result IDs.
-- The report must remain caller-declared metadata with one bounded degenerate
-  count and no new runtime, transition, history, persistence, provider, or
-  outcome authority.
+  boundaries produce the documented categorical result IDs, including exact
+  host validation and codec errors.
+- The report remains caller-declared metadata with one bounded degenerate count
+  and no new runtime, transition, history, persistence, provider, or outcome
+  authority.
 
-## Evidence target
+## Evidence
 
-One focused agent regression should bind the literal schema/case/result IDs,
-exercise each existing boundary, prove the degenerate count and exact Markdown,
-test stable order/reproducibility, and reject unexpected results or invalid
-counts. Expected full evidence is 32 focused agent tests within 245 Rust unit
-tests, 7 binary tests, 3 RustDoc tests, 15 Python tests, formatter, Clippy
-with warnings denied, repository checker, and diff checks.
+One focused agent regression binds the literal schema/case/result IDs, drives
+the illegal and stale cases through `CliScenarioHost::validate_actor_action`,
+asserts exact `ActorProtocolCodecError::InvalidValue` for communication abuse,
+proves repeated-Stabilize selection, accepts degenerate counts 1 through 4,
+rejects 0 and 5, and checks stable order, reproducibility, and exact Markdown.
+The full evidence is 32 focused agent tests within 245 Rust unit tests, 7
+binary tests, 3 RustDoc tests, 15 Python tests, formatter, Clippy with warnings
+denied, repository checker, and diff checks; all pass at `a5ff9d0`.
 
 ## Limits
 
@@ -33,5 +36,5 @@ human evidence remain open.
 
 ## Required fixes
 
-To be determined by independent review. The matrix must remain closed,
-caller-declared, reproducible, and non-authoritative.
+None. The matrix remains closed, caller-declared, reproducible, and
+non-authoritative.
