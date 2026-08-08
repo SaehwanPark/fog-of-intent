@@ -44,6 +44,7 @@ impl LaneScenarioRecord {
   }
 }
 
+#[derive(Clone)]
 pub struct LaneScenarioHistory {
   pub(crate) replay_id: &'static str,
   pub(crate) initial_state: LaneSnapshot,

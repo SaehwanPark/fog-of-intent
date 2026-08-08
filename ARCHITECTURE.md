@@ -18,9 +18,10 @@ Fog of Intent is currently a single Rust 2024 package with no dependencies. The
 binary still prints `Hello, world!`; internal `kernel` and `lane` modules
 provide bounded deterministic transitions, in-memory history, replay,
 branching, coordination, objective, and debrief fixtures. No playable
-scenario, CLI command host, persistence, MCP, research, or GUI component exists
-yet. M1 is complete as an internal, non-playable fixture; M2 remains a bounded
-lane contract rather than a user-facing host.
+scenario, terminal renderer, persistence, MCP, research, or GUI component exists
+yet. M1 is complete as an internal fixture; M2 remains a bounded lane contract,
+and M3 now adds only a library-only two-window host fixture rather than a
+user-facing command loop.
 
 The M3 CLI grammar is now a pure adapter module: it parses stable verbs and
 borrows payload text, maps observe/inspect/help to typed read requests, maps
@@ -41,8 +42,10 @@ domain commands.
 
 Run references use the bounded borrowed `CliRunId<'a>` syntax contract for
 save/load/replay/export adapter requests. Validation occurs at the adapter edge;
-the application host still owns persistence, authorization, run generation,
-collision handling, and history/replay identity.
+the application host still owns persistence backends, authorization, run
+generation, collision handling, and history/replay identity. The bounded
+`CliScenarioHost` fixture owns an in-memory snapshot only and accepts explicit
+resolved inputs.
 
 Terminal rendering is intentionally outside the authoritative boundary. The
 application host solely owns true-state lifecycle, legality, ordering, history
@@ -340,8 +343,9 @@ and an architecture update or ADR when it changes a consequential boundary.
   intent, and
   observation contracts are implemented internally, but they are not a
   playable scenario, external API, migration framework, or persistence service.
-- M3 has typed command, read-request, and write-request contracts only; terminal
-  I/O, host lifecycle, domain mapping, and transcript execution remain open.
+- M3 has typed command contracts plus a bounded library-only host fixture;
+  terminal I/O, persistent storage, branch execution, and the user-facing
+  command loop remain open.
 - M2 still lacks a communication system, full vision geometry, memory decay,
   automatic threat damage, no-choice host scheduling, adaptive pacing, a complete item/resource economy,
   external scenario serialization, a branch tree, and a broader debrief

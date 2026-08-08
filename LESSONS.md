@@ -95,3 +95,18 @@ canonical policy instead of duplicating it.
   leaving storage and authority to the host.
 - Prevention: Validate adapter identifiers before host execution and keep ID
   syntax separate from persistence, branch points, and replay identity.
+
+## Keep host fixtures explicit about resolved inputs
+
+- Context: The first CLI host needed a deterministic two-window transcript
+  before a random resolver or persistence service existed.
+- Symptom: Letting the host manufacture execution inputs would blur the
+  authority boundary and make replay evidence depend on hidden fixture state.
+- Cause: A convenient host constructor can silently become a second simulation
+  engine when it chooses randomness or true-state values internally.
+- Resolution: Require already-resolved `LaneResolvedInputs` at host
+  construction and keep the fixture helper deterministic, while returning only
+  actor-valid projections.
+- Prevention: Resolve randomness at the edge, pass inputs into the pure
+  transition contract, and label in-memory host behavior as fixture evidence
+  rather than persistence or terminal UX evidence.

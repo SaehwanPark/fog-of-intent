@@ -32,12 +32,12 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs` | Placeholder `Hello, world!` binary |
-| Package | `Cargo.toml` | Version `0.1.67`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.68`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
 | Internal kernel/replay fixture | `src/kernel.rs`, `src/serialization.rs` | M1 complete; not playable |
-| Scenario, CLI, MCP, research, GUI | `src/cli.rs` in-session grammar, typed requests, and information-label vocabulary; no host | Not implemented as user-facing flows |
+| Scenario, CLI, MCP, research, GUI | `src/cli.rs` grammar plus `src/host.rs` bounded in-memory host fixture; no terminal loop or persistence | Not implemented as user-facing flows |
 
 ## Milestone Map
 
@@ -857,11 +857,14 @@ API access.
 - [x] Implement `observe`, bounded actor-visible `inspect`, and contextual help
   as typed adapter read requests; terminal rendering remains open.
 - [x] Define typed adapter requests for `message`, `plan`, contingency,
-  `commit`, and `advance`; host flow execution remains open.
+  `commit`, and `advance`; the bounded host fixture executes only the existing
+  two-window scenario.
 - [x] Define typed adapter requests for `review`, `debrief`, `replay`, and
-  `branch`; host flow execution remains open.
-- [x] Define typed adapter requests for `save`, `load`, `undo`, and `quit`; host
-  session management and persistence remain open.
+  `branch`; branch execution remains open while replay/debrief are covered by
+  the bounded host fixture.
+- [x] Define typed adapter requests for `save`, `load`, `undo`, and `quit`; the
+  host fixture provides in-memory snapshots while persistent storage remains
+  open.
 - [x] Add guided mode with numbered choices and explanations.
 - [x] Add expert mode with concise, scriptable commands.
 - [x] Add research inspection only behind an explicit privileged context.
@@ -909,12 +912,14 @@ persist a session, or rewrite authoritative lane history.
 - [x] Keep `src/kernel.rs` and `src/lane/` free of terminal I/O, rendering
   loops, and mutable runtime presentation state.
 - [x] Keep `src/cli.rs` limited to borrowed grammar, typed requests, labels, and
-  local drafts; it performs no terminal I/O, transition, or persistence work.
+  local drafts; `src/host.rs` owns the bounded transition and in-memory session
+  orchestration without terminal I/O.
 - [x] Assign any future rendering to an outer adapter that consumes
   actor-valid projections and cannot authorize commands or mutate history.
 
-This verifies a structural boundary only. A renderer, host flow, and
-keyboard/screen-reader inspection remain open.
+This verifies a structural boundary plus a bounded library-only host flow. A
+terminal renderer, persistent backend, and keyboard/screen-reader inspection
+remain open.
 
 ### Current bounded run-identifier evidence
 
@@ -939,6 +944,19 @@ handling, storage, resume behavior, and human discoverability remain open.
 
 The checked items are grammar-level acceptance only and do not satisfy the M3
 complete-run exit evidence.
+
+### Current bounded host-transcript evidence
+
+- [x] Map the existing CLI grammar to an explicit-input, synchronous
+  two-window host fixture without exposing true-state snapshots or hashes.
+- [x] Complete a library-only transcript with observe, staged
+  message/plan/contingency text, commit, advance, in-memory save/load, replay,
+  debrief, and quit.
+- [ ] Add terminal rendering and persistent storage around the host contract;
+  keyboard-only and screen-reader inspection remain open.
+
+This is host-backed scenario evidence, but not a user-facing command loop or
+the complete M3 terminal/accessibility evidence.
 
 ### Deliverables
 
