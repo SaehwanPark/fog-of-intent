@@ -2,8 +2,8 @@ use std::io;
 use std::process::ExitCode;
 
 use fog_of_intent::command_loop::{
-  CLI_APPLICATION_HELP, CliApplicationCommand, CliApplicationScenario, CliCommandLoop,
-  parse_application_args,
+  CLI_APPLICATION_HELP, CLI_APPLICATION_VERSION, CliApplicationCommand, CliApplicationScenario,
+  CliCommandLoop, parse_application_args,
 };
 use fog_of_intent::run_store::CliRunStore;
 
@@ -19,10 +19,19 @@ fn main() -> ExitCode {
   };
 
   if matches!(&application_command, CliApplicationCommand::Help) {
-    return match write_help() {
+    return match write_metadata(CLI_APPLICATION_HELP) {
       Ok(()) => ExitCode::SUCCESS,
       Err(error) => {
         eprintln!("help output failed: {error}");
+        ExitCode::FAILURE
+      }
+    };
+  }
+  if matches!(&application_command, CliApplicationCommand::Version) {
+    return match write_metadata(CLI_APPLICATION_VERSION) {
+      Ok(()) => ExitCode::SUCCESS,
+      Err(error) => {
+        eprintln!("version output failed: {error}");
         ExitCode::FAILURE
       }
     };
@@ -36,6 +45,7 @@ fn main() -> ExitCode {
       (CliApplicationScenario::M3TwoWindowFixture, None) => CliCommandLoop::fixture(),
     },
     CliApplicationCommand::Help => unreachable!("help handled above"),
+    CliApplicationCommand::Version => unreachable!("version handled above"),
   };
   let stdin = io::stdin();
   let mut stdout = io::stdout().lock();
@@ -48,11 +58,11 @@ fn main() -> ExitCode {
   }
 }
 
-fn write_help() -> io::Result<()> {
+fn write_metadata(metadata: &str) -> io::Result<()> {
   use std::io::Write;
 
   let stdout = io::stdout();
   let mut stdout = stdout.lock();
-  stdout.write_all(CLI_APPLICATION_HELP.as_bytes())?;
+  stdout.write_all(metadata.as_bytes())?;
   stdout.flush()
 }

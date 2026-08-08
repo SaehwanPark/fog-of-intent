@@ -95,6 +95,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.77 — 2026-08-08
+
+### Added
+
+- Added standalone `--version` and `-V` process aliases that report the
+  package-derived `fog-of-intent <version>` line before host construction.
+- Added bounded parser/help and binary regressions for identical aliases,
+  exact output, success status, and combined-argument failure.
+
+### Known limits
+
+- Version reporting is process metadata only; schema negotiation, migrations,
+  update checks, and version-dependent simulation behavior remain deferred.
+
 ## 0.1.76 — 2026-08-08
 
 ### Added
