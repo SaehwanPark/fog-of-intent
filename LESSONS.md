@@ -1032,3 +1032,14 @@ canonical policy instead of duplicating it.
   and expose signed candidate-minus-baseline deltas under a distinct schema.
 - Prevention: Label this as declared-baseline evidence and keep build identity,
   causal analysis, outcomes, and strategic metrics behind separate contracts.
+
+## Keep provisional regression gates explicit and narrow
+
+- Context: M6 needed one useful regression signal before broad threshold or
+  build-comparison infrastructure was authorized.
+- Symptom: A generic pass/fail threshold can be mistaken for balance evidence or
+  for proof that a particular build caused a change.
+- Resolution: Give the fixed equality rule a versioned ID and written rationale,
+  and evaluate only bounded verified-report fields.
+- Prevention: Keep broader thresholds, build identity, causality, outcomes, and
+  strategic interpretation behind separate evidence contracts.

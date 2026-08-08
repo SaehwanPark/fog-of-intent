@@ -1,0 +1,31 @@
+# Domain QA — M6 Fixed-Fixture Frequency Regression Gate
+
+## Disposition
+
+PASS — independent three-pass review found no actionable findings at
+implementation/evidence head `2704a55`.
+
+## Scope reviewed
+
+The slice adds one fixed no-change rule over the declared verified frequency
+comparison. It checks only equal bounded totals and ordered rows, adding no
+build, causal, policy, scenario, transition, history, replay, persistence,
+provider, population, outcome, or strategic authority.
+
+## Evidence
+
+One focused comparison test binds the literal rule ID, proves changed 1/1 to
+2/2 input fails the gate, proves a same-total 1/1-to-2/0 redistribution also
+fails, and proves an unchanged comparison passes. The full evidence is one
+focused comparison test within 24 focused agent tests, 237
+Rust unit tests, 7 binary tests, and 3 RustDoc tests, plus formatter, Clippy
+warnings denied, repository checker, 15 Python policy tests, and diff checks;
+all pass at reviewed head `2704a55`.
+
+## Review limits
+
+This is one provisional deterministic fixture gate only. It does not claim
+independent build provenance, causality, broader threshold rationale,
+population generation, random/distributional sampling, outcomes, strategic
+metrics, durable export, persistence, providers, calibration, or human
+evidence.
