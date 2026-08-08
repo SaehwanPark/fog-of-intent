@@ -77,8 +77,8 @@ players?
 | --- | --- |
 | Current roadmap milestone | M2 — One-Lane Vertical Slice (Active) |
 | Repository governance and canonical docs | Complete — M0 |
-| Rust package | `0.1.77`, edition 2024, Rust `1.96`, no dependencies, single package |
-| Executable behavior | Reports package version with standalone `--version`/`-V`, or runs the line-oriented deterministic two-window fixture loop with explicit versioned `--scenario m3-two-window-fixture-v1` selection and optional `--run-dir` artifact storage |
+| Rust package | `0.1.78`, edition 2024, Rust `1.96`, no dependencies, single package |
+| Executable behavior | Reports package version with standalone `--version`/`-V`, or runs the documented line-oriented deterministic two-window fixture transcript with explicit versioned `--scenario m3-two-window-fixture-v1` selection and optional `--run-dir` artifact storage |
 | Deterministic kernel | M1 fixture/codec complete; M2 v3 internal lane-window, explicit four-actor roster, retained-resource aggregate, intent, observation, branch, coordination, objective, strategy-fixture, scenario, replay, delayed-origin provenance, debrief, advance-condition, and belief/report contracts implemented |
 | One-lane scenario | Internal diagnostic windows and fixtures cover bounded intents, observations, coordination, resources, replay, and debrief projections — full scenario not complete |
 | CLI reference experience | Stable grammar plus typed requests, labels, draft/undo, run IDs, versioned host artifacts, injected file storage, pure text projection with machine-checked labeled lines, explicit one-fixture scenario selection, package version reporting, and an optionally persistent fixture command loop; broader scenario selection and human accessibility evidence remain open |
@@ -116,6 +116,13 @@ To inspect the package version without starting a session, run:
 
 ```sh
 cargo run -- --version
+```
+
+To complete the bounded two-window transcript through the executable:
+
+```sh
+printf 'observe\nmessage ping ally\ncontingency retreat if threat\nplan contest\ncommit\nadvance\nplan stabilize\ncommit\nadvance\nreplay\ndebrief\nquit\n' \\
+  | cargo run -- --scenario m3-two-window-fixture-v1
 ```
 
 To persist bounded artifacts between processes, provide an explicit directory:

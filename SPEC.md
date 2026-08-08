@@ -810,8 +810,9 @@ remain open.
 - CLI tests now exercise a representative grammar transcript and common errors
   across read/write/process/session mappings. Application-edge tests cover the
   bounded process option contract; host-backed scenario, terminal-text,
-  fixture-loop, matched-parent branch, and two-process store evidence are
-  described below, while full client behavior remains open.
+  fixture-loop, clean-checkout executable transcript, matched-parent branch,
+  and two-process store evidence are described below, while full client
+  behavior remains open.
 - `src/host.rs` now provides the versioned `m3-cli-host-v1` synchronous host
   fixture. It accepts explicit resolved inputs, maps the grammar to a bounded
   two-window scenario, and returns actor-valid observation/history, outcome,
@@ -829,8 +830,9 @@ remain open.
   output/error variant, control character sanitization, bounded labels, and
   machine-checked representative line structure. The
   fixture command loop covers stdin/stdout recovery and quit/end-of-input
-  behavior, and standalone package-version reporting covers process metadata.
-  A two-process integration smoke test covers the explicit run directory
+  behavior, standalone package-version reporting, and the documented complete
+  two-window executable transcript cover the bounded process flow. A
+  two-process integration smoke test covers the explicit run directory
   handoff. Broader scenario catalogs, regenerated/graph branching,
   and human keyboard/screen-reader evidence remain unimplemented. Store locking
   and fsync/crash recovery remain open.

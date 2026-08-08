@@ -241,3 +241,17 @@ canonical policy instead of duplicating it.
   derive the output from Cargo package metadata before constructing a host.
 - Prevention: Keep metadata responses bounded and side-effect free, and treat
   schema negotiation or migrations as separate evidence-gated work.
+
+## Keep executable evidence distinct from library evidence
+
+- Context: The host already had a complete library transcript, but the roadmap
+  also requires proof that a clean checkout can use the real executable.
+- Symptom: A direct host test can pass while process argument construction,
+  stdin/stdout wiring, exit status, or rendered output integration is broken.
+- Cause: Library authority tests and application-edge integration tests observe
+  different boundaries.
+- Resolution: Add a bounded binary transcript using only documented commands,
+  assert process status/stderr and actor-safe markers, and retain the library
+  transcript as complementary evidence.
+- Prevention: Do not promote library-only evidence to executable or complete
+  reference-client claims without a real process regression.
