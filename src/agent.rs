@@ -16,10 +16,14 @@ pub const SCRIPTED_AGENT_PROFILE_ID: &str = "cautious-laner-v1";
 /// Stable profile identity for the risk-taking deterministic comparison.
 pub const RISK_TAKING_SCRIPTED_AGENT_PROFILE_ID: &str = "risk-taking-laner-v1";
 
+/// Stable profile identity for the yielding deterministic comparison.
+pub const YIELDING_SCRIPTED_AGENT_PROFILE_ID: &str = "yielding-laner-v1";
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum ScriptedAgentEvaluationRule {
-  ThreatFirst,
-  ContestFirst,
+  Threat,
+  Contest,
+  Yield,
 }
 
 /// Versioned profile and policy-rule metadata.
@@ -40,7 +44,7 @@ impl ScriptedAgentProfile {
       candidate_rule: "actor-visible-intents-v1",
       evaluation_rule: "threat-first-fixed-score-v1",
       selection_rule: "max-score-stable-order-v1",
-      evaluation: ScriptedAgentEvaluationRule::ThreatFirst,
+      evaluation: ScriptedAgentEvaluationRule::Threat,
     }
   }
 
@@ -51,7 +55,18 @@ impl ScriptedAgentProfile {
       candidate_rule: "actor-visible-intents-v1",
       evaluation_rule: "contest-first-fixed-score-v1",
       selection_rule: "max-score-stable-order-v1",
-      evaluation: ScriptedAgentEvaluationRule::ContestFirst,
+      evaluation: ScriptedAgentEvaluationRule::Contest,
+    }
+  }
+
+  /// Return the yielding matched-input comparison profile.
+  pub const fn yielding_v1() -> Self {
+    Self {
+      profile_id: YIELDING_SCRIPTED_AGENT_PROFILE_ID,
+      candidate_rule: "actor-visible-intents-v1",
+      evaluation_rule: "yield-first-fixed-score-v1",
+      selection_rule: "max-score-stable-order-v1",
+      evaluation: ScriptedAgentEvaluationRule::Yield,
     }
   }
 
@@ -77,6 +92,7 @@ impl ScriptedAgentProfile {
 pub enum ScriptedAgentReason {
   ThreatResponse,
   RiskPreference,
+  YieldPreference,
   StableDefault,
   AvailableAlternative,
 }
@@ -174,6 +190,13 @@ impl ScriptedAgent {
     }
   }
 
+  /// Construct the yielding matched-input comparison profile.
+  pub const fn yielding_v1() -> Self {
+    Self {
+      profile: ScriptedAgentProfile::yielding_v1(),
+    }
+  }
+
   pub const fn profile(self) -> ScriptedAgentProfile {
     self.profile
   }
@@ -215,10 +238,14 @@ impl ScriptedAgent {
     intent: LaneIntent,
   ) -> ScriptedAgentCandidate {
     let threat_response = observation.available_threat_response() == Some(intent);
-    let reason = if self.profile.evaluation == ScriptedAgentEvaluationRule::ContestFirst
+    let reason = if self.profile.evaluation == ScriptedAgentEvaluationRule::Contest
       && intent == LaneIntent::Contest
     {
       ScriptedAgentReason::RiskPreference
+    } else if self.profile.evaluation == ScriptedAgentEvaluationRule::Yield
+      && intent == LaneIntent::Yield
+    {
+      ScriptedAgentReason::YieldPreference
     } else if threat_response {
       ScriptedAgentReason::ThreatResponse
     } else if intent == LaneIntent::Stabilize {
@@ -228,8 +255,10 @@ impl ScriptedAgent {
     };
     let score = match (self.profile.evaluation, reason) {
       (_, ScriptedAgentReason::RiskPreference) => 100,
-      (ScriptedAgentEvaluationRule::ThreatFirst, ScriptedAgentReason::ThreatResponse) => 100,
-      (ScriptedAgentEvaluationRule::ContestFirst, ScriptedAgentReason::ThreatResponse) => 90,
+      (_, ScriptedAgentReason::YieldPreference) => 100,
+      (ScriptedAgentEvaluationRule::Threat, ScriptedAgentReason::ThreatResponse) => 100,
+      (ScriptedAgentEvaluationRule::Contest, ScriptedAgentReason::ThreatResponse) => 90,
+      (ScriptedAgentEvaluationRule::Yield, ScriptedAgentReason::ThreatResponse) => 90,
       (_, ScriptedAgentReason::StableDefault) => 80,
       (_, ScriptedAgentReason::AvailableAlternative) => match intent {
         LaneIntent::Contest => 60,
@@ -376,14 +405,16 @@ mod tests {
   }
 
   #[test]
-  fn matched_observation_distinguishes_cautious_and_risk_taking_profiles() {
+  fn matched_observation_distinguishes_three_profiles() {
     let state = LaneSnapshot::initial();
     let receipt = observe_player(&state, ObservationId::new(12));
     let cautious = ScriptedAgent::cautious_v1().choose(receipt.observation());
     let risk_taking = ScriptedAgent::risk_taking_v1().choose(receipt.observation());
+    let yielding = ScriptedAgent::yielding_v1().choose(receipt.observation());
 
     assert_eq!(cautious.selected_intent(), LaneIntent::Stabilize);
     assert_eq!(risk_taking.selected_intent(), LaneIntent::Contest);
+    assert_eq!(yielding.selected_intent(), LaneIntent::Yield);
     assert_eq!(
       risk_taking.profile().profile_id(),
       RISK_TAKING_SCRIPTED_AGENT_PROFILE_ID
@@ -391,6 +422,14 @@ mod tests {
     assert_eq!(
       risk_taking.profile().evaluation_rule(),
       "contest-first-fixed-score-v1"
+    );
+    assert_eq!(
+      yielding.profile().profile_id(),
+      YIELDING_SCRIPTED_AGENT_PROFILE_ID
+    );
+    assert_eq!(
+      yielding.profile().evaluation_rule(),
+      "yield-first-fixed-score-v1"
     );
     assert_eq!(
       cautious
@@ -404,16 +443,38 @@ mod tests {
         .map(|candidate| candidate.intent())
         .collect::<Vec<_>>()
     );
+    assert_eq!(
+      cautious
+        .candidates()
+        .iter()
+        .map(|candidate| candidate.intent())
+        .collect::<Vec<_>>(),
+      yielding
+        .candidates()
+        .iter()
+        .map(|candidate| candidate.intent())
+        .collect::<Vec<_>>()
+    );
     assert!(risk_taking.candidates().iter().any(|candidate| {
       candidate.intent() == LaneIntent::Contest
         && candidate.reason() == ScriptedAgentReason::RiskPreference
+        && candidate.score() == 100
+    }));
+    assert!(yielding.candidates().iter().any(|candidate| {
+      candidate.intent() == LaneIntent::Yield
+        && candidate.reason() == ScriptedAgentReason::YieldPreference
         && candidate.score() == 100
     }));
     assert_eq!(
       risk_taking,
       ScriptedAgent::risk_taking_v1().choose(receipt.observation())
     );
+    assert_eq!(
+      yielding,
+      ScriptedAgent::yielding_v1().choose(receipt.observation())
+    );
     validate_lane_request(&state, &receipt, &cautious.request()).expect("cautious is legal");
     validate_lane_request(&state, &receipt, &risk_taking.request()).expect("risk-taking is legal");
+    validate_lane_request(&state, &receipt, &yielding.request()).expect("yielding is legal");
   }
 }

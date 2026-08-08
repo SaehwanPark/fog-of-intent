@@ -19,10 +19,10 @@ or representative of human behavior.
 ## Agent Families and Baselines
 
 The only family in this slice is the scripted family with
-`cautious-laner-v1` and `risk-taking-laner-v1` profiles. Their versioned rule
-identities are recorded in `ScriptedAgentProfile`. No heuristic, parametric,
-adversarial, LLM-backed, or multi-agent family is introduced, so no
-population-level comparison is claimed.
+`cautious-laner-v1`, `risk-taking-laner-v1`, and `yielding-laner-v1` profiles.
+Their versioned rule identities are recorded in `ScriptedAgentProfile`. No
+heuristic, parametric, adversarial, LLM-backed, or multi-agent family is
+introduced, so no population-level comparison is claimed.
 
 ## Observation, Memory, and Policy Inputs
 
@@ -36,12 +36,12 @@ binding remain host-owned.
 
 Candidate generation copies the observation's advertised intents and adds a
 distinct visible threat response. Evaluation applies either the cautious
-`threat-first-fixed-score-v1` or risk-taking
-`contest-first-fixed-score-v1` table and labels each candidate as a threat
-response, risk preference, stable default, or available alternative. Selection
-chooses the highest score with stable advertised-order tie-breaking. The
-policy returns a request; it does not validate, execute, or commit that
-request.
+`threat-first-fixed-score-v1`, risk-taking `contest-first-fixed-score-v1`, or
+yielding `yield-first-fixed-score-v1` table and labels each candidate as a
+threat response, risk preference, yield preference, stable default, or
+available alternative. Selection chooses the highest score with stable
+advertised-order tie-breaking. The policy returns a request; it does not
+validate, execute, or commit that request.
 
 ## Communication, Trust, and Team Coordination
 
@@ -73,13 +73,13 @@ profile-specific regression rather than changing this profile's meaning.
 
 ## Expected Effects and Failure Signals
 
-The expected effect is stable selection of `Stabilize` for the cautious profile
-and `Contest` for the risk-taking profile in the initial observation; cautious
-selection of `Withdraw` remains expected when that response is visibly
-advertised for a RiverSide threat. Failure signals include a candidate absent
-from the observation, a request that fails host validation, a decision that
-changes for identical observations, or output that requires hidden state to
-explain.
+The expected effect is stable selection of `Stabilize`, `Contest`, and `Yield`
+for the cautious, risk-taking, and yielding profiles in the initial
+observation; cautious selection of `Withdraw` remains expected when that
+response is visibly advertised for a RiverSide threat. Failure signals include
+a candidate absent from the observation, a request that fails host validation, a
+decision that changes for identical observations, or output that requires
+hidden state to explain.
 
 ## Verification Contract
 
@@ -92,8 +92,8 @@ explain.
 - The existing `validate_lane_request` accepts the initial decision.
 - Threat response priority and repeated-observation equality are covered by
   focused tests.
-- The matched initial observation yields distinct profile intents and both
-  requests pass the same host validator.
+- The matched initial observation yields three distinct profile intents and
+  all requests pass the same host validator.
 - No policy method accepts true state or resolved execution inputs.
 
 ## Open Questions

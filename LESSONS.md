@@ -293,3 +293,14 @@ canonical policy instead of duplicating it.
   generated candidates.
 - Prevention: Keep policy errors distinct from host legality errors and fail
   closed before any request reaches transition or history authority.
+
+## Keep a baseline profile catalog small and versioned
+
+- Context: M4 needed interpretable differences without introducing a policy
+  framework or a large uncalibrated population.
+- Symptom: Unbounded profile growth makes matched-input evidence hard to read
+  and encourages unsupported claims about strategy or roles.
+- Resolution: Add three named profiles with explicit evaluation-rule IDs and a
+  single matched-observation regression before expanding the catalog.
+- Prevention: Require each new profile to share the actor-visible candidate and
+  host-validation boundary, and report fixture-sized comparisons honestly.

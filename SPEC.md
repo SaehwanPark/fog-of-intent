@@ -839,15 +839,15 @@ remain open.
 
 ### M4 — First scripted-agent policy boundary — 2026-08-08
 
-**Status:** Two actor-visible deterministic policy profiles and one matched
+**Status:** Three actor-visible deterministic policy profiles and one matched
 input comparison delivered; broader agent ecology, population comparisons, and
 external adapters remain open.
 
 - `src/agent.rs` defines the versioned `m4-scripted-agent-v1` policy boundary
-  and the `cautious-laner-v1` and `risk-taking-laner-v1` profiles. Each profile
-  records candidate, evaluation, and selection rule identities so a decision
-  can be inspected without treating policy behavior as hidden simulation
-  state.
+  and the `cautious-laner-v1`, `risk-taking-laner-v1`, and
+  `yielding-laner-v1` profiles. Each profile records candidate, evaluation, and
+  selection rule identities so a decision can be inspected without treating
+  policy behavior as hidden simulation state.
 - `ScriptedAgent` consumes only a `LanerObservation`, copies its advertised
   legal intents, adds the observation's optional visible threat response, and
   evaluates candidates with the profile-specific fixed
@@ -861,10 +861,11 @@ external adapters remain open.
   validating freshness and legality before any transition. The policy does not
   read true state, resolve execution inputs, mutate history, communicate, or
   own a transition.
-- A matched initial observation selects `Stabilize` for the cautious profile
-  and `Contest` for the risk-taking profile, while both requests pass the
-  existing lane validator. This demonstrates a reproducible profile difference
-  only; it is not a strategic-quality or human-realism result.
+- A matched initial observation selects `Stabilize`, `Contest`, and `Yield`
+  for the cautious, risk-taking, and yielding profiles respectively, while all
+  requests pass the existing lane validator. This demonstrates a reproducible
+  profile difference only; it is not a strategic-quality or human-realism
+  result.
 - Focused tests cover the initial candidate set, visible-threat prioritization,
   host validation, repeated identical-observation reproducibility, and the
   matched profile difference plus unavailable-intent rejection. This evidence

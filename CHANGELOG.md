@@ -95,6 +95,22 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.82 — 2026-08-08
+
+### Added
+
+- Added the versioned `yielding-laner-v1` profile with a transparent
+  `yield-first-fixed-score-v1` evaluation rule.
+- Extended the matched-input catalog regression to three profiles with stable
+  candidate sequences, distinct legal intents, profile rule IDs, and repeated
+  decisions.
+
+### Known limits
+
+- The catalog remains library-only and fixture-sized; role populations, memory,
+  communication, randomness, scenario metrics, strategic quality, and external
+  agent adapters remain deferred.
+
 ## 0.1.81 — 2026-08-08
 
 ### Added
