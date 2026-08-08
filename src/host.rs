@@ -1713,71 +1713,99 @@ mod tests {
     ] {
       assert_eq!(error.code(), ActorProtocolErrorCode::ActorMismatch);
       assert_eq!(error.repair(), ActorProtocolRepairHint::UseBoundActor);
-      assert!(!format!("{error:?}").contains("StateHash"));
-      assert!(!error.encode().contains("health"));
-      assert_eq!(host.record_count(), 0);
-      assert_eq!(host.observation(), observation);
-    }
-
-    let values = [
-      format!(
-        "{:?} {}",
-        ActorObservationDto::from_observation(
-          observe_player(
-            &crate::lane::LaneSnapshot::initial(),
-            ObservationId::new(observation_id),
-          )
-          .observation()
-        ),
-        ActorObservationDto::from_observation(
-          observe_player(
-            &crate::lane::LaneSnapshot::initial(),
-            ObservationId::new(observation_id),
-          )
-          .observation()
-        )
-        .encode()
-      ),
-      format!(
-        "{:?} {}",
-        ActorHistoryDto::new(0, ActorHistoryStatus::Open).expect("open history is bounded"),
-        ActorHistoryDto::new(0, ActorHistoryStatus::Open)
-          .expect("open history is bounded")
-          .encode()
-      ),
-      format!(
-        "{:?} {}",
-        ActorActionResultDto::new(
-          ActorActionResultWindow::First,
-          ActorActionResultOutcome::HeldSpace,
-        ),
-        ActorActionResultDto::new(
-          ActorActionResultWindow::First,
-          ActorActionResultOutcome::HeldSpace,
-        )
-        .encode()
-      ),
-      format!(
-        "{:?} {}",
-        ActorCommitResultDto::new(crate::protocol::ActorProtocolIntent::Contest),
-        ActorCommitResultDto::new(crate::protocol::ActorProtocolIntent::Contest).encode()
-      ),
-      format!(
-        "{:?} {}",
-        ActorDraftReceiptDto::new(1, observation_id, ActorDraftField::Message),
-        ActorDraftReceiptDto::new(1, observation_id, ActorDraftField::Message).encode()
-      ),
-    ];
-    for value in values {
+      let error_text = format!("{error:?}\n{}", error.encode()).to_ascii_lowercase();
       for marker in [
-        "StateHash",
-        "state_hash",
+        "state",
+        "hash",
         "health",
         "position",
         "wave",
         "execution",
         "trace",
-        "source_",
+        "source",
+        "provenance",
+        "resolved",
+      ] {
+        assert!(
+          !error_text.contains(marker),
+          "actor error leaked marker {marker}: {error_text}"
+        );
+      }
+      assert_eq!(host.record_count(), 0);
+      assert_eq!(host.observation(), observation);
+    }
+
+    let values = [
+      (
+        format!(
+          "{:?}",
+          ActorObservationDto::from_observation(
+            observe_player(
+              &crate::lane::LaneSnapshot::initial(),
+              ObservationId::new(observation_id),
+            )
+            .observation()
+          ),
+        ),
+        ActorObservationDto::from_observation(
+          observe_player(
+            &crate::lane::LaneSnapshot::initial(),
+            ObservationId::new(observation_id),
+          )
+          .observation(),
+        )
+        .encode(),
+      ),
+      (
+        format!(
+          "{:?}",
+          ActorHistoryDto::new(0, ActorHistoryStatus::Open).expect("open history is bounded")
+        ),
+        ActorHistoryDto::new(0, ActorHistoryStatus::Open)
+          .expect("open history is bounded")
+          .encode(),
+      ),
+      (
+        format!(
+          "{:?}",
+          ActorActionResultDto::new(
+            ActorActionResultWindow::First,
+            ActorActionResultOutcome::HeldSpace,
+          )
+        ),
+        ActorActionResultDto::new(
+          ActorActionResultWindow::First,
+          ActorActionResultOutcome::HeldSpace,
+        )
+        .encode(),
+      ),
+      (
+        format!(
+          "{:?}",
+          ActorCommitResultDto::new(crate::protocol::ActorProtocolIntent::Contest)
+        ),
+        ActorCommitResultDto::new(crate::protocol::ActorProtocolIntent::Contest).encode(),
+      ),
+      (
+        format!(
+          "{:?}",
+          ActorDraftReceiptDto::new(1, observation_id, ActorDraftField::Message)
+        ),
+        ActorDraftReceiptDto::new(1, observation_id, ActorDraftField::Message).encode(),
+      ),
+    ];
+    for (debug, encoded) in values {
+      let value = format!("{debug}\n{encoded}").to_ascii_lowercase();
+      for marker in [
+        "state",
+        "hash",
+        "health",
+        "position",
+        "wave",
+        "execution",
+        "trace",
+        "source",
+        "provenance",
         "resolved",
       ] {
         assert!(
