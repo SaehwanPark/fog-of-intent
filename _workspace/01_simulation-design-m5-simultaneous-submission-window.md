@@ -10,9 +10,9 @@ collects at most one `ActorActionDto` per actor. Its immutable transitions are:
 - `closed` after explicit close, with later submissions rejected.
 
 Stale observation IDs, unknown actors, and duplicate actor submissions fail
-without changing the prior window. The public surface exposes lifecycle and
-readiness only; collected intents remain private and custom debug output omits
-them.
+without changing the prior window. The public surface exposes bounded binding
+metadata, lifecycle, and readiness; collected intents remain private and custom
+debug output omits them.
 
 ## Authority and Limits
 

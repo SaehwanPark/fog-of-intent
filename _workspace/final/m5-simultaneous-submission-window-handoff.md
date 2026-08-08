@@ -7,8 +7,9 @@ Implementation is complete; pending the required independent three-pass review.
 ## Intended Contract
 
 `ActorSimultaneousWindow` privately collects one observer-bound action from each
-of two distinct actors for one shared observation ID. It exposes only bounded
-phase/readiness and becomes ready only after both actions arrive.
+of two distinct actors for one shared observation ID. It exposes bounded
+binding metadata plus phase/readiness and becomes ready only after both actions
+arrive.
 
 ## Verification
 

@@ -252,8 +252,9 @@ impl ActorSimultaneousError {
 
 /// Immutable two-actor window that keeps submitted intents private.
 ///
-/// The public surface exposes lifecycle and readiness only. The collected
-/// intents remain internal until a later host-owned resolution contract.
+/// The public surface exposes bounded binding metadata, lifecycle, and
+/// readiness only. The collected intents remain internal until a later
+/// host-owned resolution contract.
 #[derive(Clone, Copy)]
 pub struct ActorSimultaneousWindow {
   schema: &'static str,
@@ -326,6 +327,9 @@ impl ActorSimultaneousWindow {
   pub fn submit(self, action: ActorActionDto) -> Result<Self, ActorSimultaneousError> {
     if self.phase == ActorSimultaneousPhase::Closed {
       return Err(ActorSimultaneousError::Closed);
+    }
+    if action.observer() != self.first_actor && action.observer() != self.second_actor {
+      return Err(ActorSimultaneousError::ActorMismatch);
     }
     if action.observation_id() != self.observation_id {
       return Err(ActorSimultaneousError::StaleObservation);
@@ -402,7 +406,7 @@ mod tests {
       Err(ActorSimultaneousError::StaleObservation)
     ));
     assert!(matches!(
-      window.submit(ActorActionDto::new(3, 41, ActorProtocolIntent::Contest)),
+      window.submit(ActorActionDto::new(3, 40, ActorProtocolIntent::Contest)),
       Err(ActorSimultaneousError::ActorMismatch)
     ));
     let first = window
@@ -436,6 +440,11 @@ mod tests {
     let cases = [
       (
         ActorSimultaneousConstructionError::SameActor.to_actor_error(),
+        "actor_mismatch",
+        "use_bound_actor",
+      ),
+      (
+        ActorSimultaneousError::ActorMismatch.to_actor_error(),
         "actor_mismatch",
         "use_bound_actor",
       ),

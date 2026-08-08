@@ -695,6 +695,7 @@ canonical policy instead of duplicating it.
 - Symptom: Returning or debugging the partial collector can reveal one actor's
   intent before the simultaneous decision is complete.
 - Resolution: Store both intents in an immutable collection boundary, expose
-  only lifecycle/readiness, and make debug output omit collected values.
+  bounded binding metadata plus lifecycle/readiness, and make debug output omit
+  collected values.
 - Prevention: Add host-owned ordering and transition resolution as a separate
   contract; do not smuggle it into the protocol collector.
