@@ -16,7 +16,7 @@ actor/freshness/duplicate checks.
 Three focused session tests complement 19 protocol, 12 session, and 24 host
 tests within 211 Rust unit tests, 7 binary integration tests, and 3 RustDoc
 compile-fail tests. Formatter, Clippy with warnings denied, repository checker,
-14 Python checks, and `git diff --check` pass.
+15 Python checks, and `git diff --check` pass.
 
 ## Limits
 

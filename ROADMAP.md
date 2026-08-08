@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.114`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.115`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1226,6 +1226,9 @@ pure actor-visible DTO mapping, rejects inactive lifecycle states, and leaves
 the internal receipt private. The history DTO is a bounded status summary,
 while the debrief DTO is a completion-gated committed-facts summary rather
 than a detailed replay or causal debrief contract.
+The repository checker adds one focused boundary test and scans the
+deterministic core module list for async, wall-clock, and network transport
+primitives; this is source-ownership evidence rather than transport behavior.
 
 ### Scope
 
@@ -1255,7 +1258,9 @@ than a detailed replay or causal debrief contract.
 - [x] Add deterministic session timeout/disconnect closure and malformed,
   duplicate, and stale action behavior; wall-clock transport timing,
   reconnect, and framing remain open.
-- [ ] Verify that transport and async orchestration stay outside the core.
+- [x] Verify that transport and async orchestration stay outside the core with
+  a repository checker that scans every deterministic core module for async,
+  wall-clock, and network transport primitives; adapter-edge I/O remains open.
 
 ### Deliverables
 

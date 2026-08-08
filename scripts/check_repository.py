@@ -37,6 +37,70 @@ CANONICAL_MARKDOWN = (
   "ARCHITECTURE.md",
   "CHANGELOG.md",
 )
+CORE_RUST_FILES = (
+  "src/lib.rs",
+  "src/agent.rs",
+  "src/kernel.rs",
+  "src/protocol.rs",
+  "src/serialization.rs",
+  "src/session.rs",
+  "src/lane/branch.rs",
+  "src/lane/coordination.rs",
+  "src/lane/encoding.rs",
+  "src/lane/evaluation.rs",
+  "src/lane/history.rs",
+  "src/lane/intent.rs",
+  "src/lane/mod.rs",
+  "src/lane/objective.rs",
+  "src/lane/observation.rs",
+  "src/lane/projection.rs",
+  "src/lane/result.rs",
+  "src/lane/scenario.rs",
+  "src/lane/state.rs",
+  "src/lane/transition.rs",
+  "src/lane/validation.rs",
+  "src/lane/values.rs",
+)
+CORE_EDGE_RUST_FILES = frozenset(
+  {
+    "src/cli.rs",
+    "src/command_loop.rs",
+    "src/host.rs",
+    "src/host_artifact.rs",
+    "src/main.rs",
+    "src/run_store.rs",
+    "src/terminal.rs",
+  }
+)
+CORE_BOUNDARY_PATTERNS = (
+  (
+    "async-runtime reference",
+    re.compile(
+      r"\b(?:tokio|async_std|smol|futures|async_trait|pollster)\b"
+      r"|\bstd::(?:future|task)\b"
+    ),
+  ),
+  (
+    "async syntax",
+    re.compile(r"\basync(?:\s+move)?\s+(?:fn\b|\{|\|)"),
+  ),
+  ("await expression", re.compile(r"\.\s*await\b")),
+  (
+    "transport import",
+    re.compile(
+      r"\b(?:std::net|std::os::unix::net|std::os::windows::net)"
+      r"|\b(?:reqwest|hyper|axum|warp|tide|rmcp)\b"
+    ),
+  ),
+  (
+    "wall-clock import",
+    re.compile(r"\bstd::time\b"),
+  ),
+  (
+    "transport type",
+    re.compile(r"\b(?:TcpListener|TcpStream|UdpSocket|UnixStream)\b"),
+  ),
+)
 INLINE_LINK_PATTERN = re.compile(r"!?\[[^\]]*\]\(([^)\s]+)(?:\s+[^)]*)?\)")
 REFERENCE_DEFINITION_PATTERN = re.compile(
   r"^\s{0,3}\[([^\]]+)\]:\s*(\S+)", re.MULTILINE
@@ -262,6 +326,40 @@ def check_documented_package_version(
     )
 
 
+def check_core_boundary(root: Path = ROOT, errors: list[str] | None = None) -> None:
+  """Keep async, wall-clock, and transport primitives at repository edges."""
+  root = root.resolve()
+  if errors is None:
+    errors = []
+  declared = set(CORE_RUST_FILES)
+  discovered: set[str] = set()
+  src = root / "src"
+  if src.exists():
+    for path in src.glob("*.rs"):
+      relative = path.relative_to(root).as_posix()
+      if relative not in CORE_EDGE_RUST_FILES:
+        discovered.add(relative)
+    lane = src / "lane"
+    if lane.exists():
+      for path in lane.rglob("*.rs"):
+        relative_path = path.relative_to(root)
+        if "tests" in relative_path.parts or path.name == "test_support.rs":
+          continue
+        discovered.add(relative_path.as_posix())
+  for relative in sorted(declared - discovered):
+    errors.append(f"core boundary file is missing: {relative}")
+  for relative in sorted(discovered - declared):
+    errors.append(f"unclassified core boundary file: {relative}")
+  for relative in sorted(discovered):
+    path = root / relative
+    for line_number, line in enumerate(path.read_text().splitlines(), 1):
+      if line.lstrip().startswith("//"):
+        continue
+      for label, pattern in CORE_BOUNDARY_PATTERNS:
+        if pattern.search(line):
+          errors.append(f"{relative}:{line_number} uses forbidden core {label}")
+
+
 def validate_dependency_exceptions(
   dependencies: list[dict[str, str]],
   exceptions: dict[str, dict[str, str]],
@@ -398,6 +496,7 @@ def main() -> int:
   check_local_links(errors=errors)
   check_currentness(errors=errors)
   check_format_policy(errors=errors)
+  check_core_boundary(errors=errors)
   check_package(errors)
   if errors:
     print("Repository checks failed:")

@@ -98,6 +98,19 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.115 — 2026-08-08
+
+### Added
+
+- Added a repository core-boundary guard that rejects async runtime/syntax,
+  wall-clock, and network transport primitives from deterministic core modules.
+- Added focused checker coverage for both rejection and clean-core paths.
+
+### Known limits
+
+- The guard verifies source ownership boundaries only; transport framing,
+  async orchestration, reconnect, and a complete MCP adapter remain open.
+
 ## 0.1.114 — 2026-08-08
 
 ### Added
