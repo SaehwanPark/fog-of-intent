@@ -699,3 +699,15 @@ canonical policy instead of duplicating it.
   collected values.
 - Prevention: Add host-owned ordering and transition resolution as a separate
   contract; do not smuggle it into the protocol collector.
+
+## Prove parity at the adapter boundary
+
+- Context: The CLI and actor DTO paths may share a host while exposing
+  different representations of the same observation and action.
+- Symptom: Separate tests can pass while one adapter drops an advertised action
+  or maps a committed outcome differently.
+- Resolution: Drive both paths against the same deterministic fixture and
+  compare actor-visible observation fields, committed window, and categorical
+  outcome.
+- Prevention: Keep parity evidence at the library boundary and leave transport
+  or provider-specific parity to its own contract.

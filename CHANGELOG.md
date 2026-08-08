@@ -98,6 +98,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.113 — 2026-08-08
+
+### Added
+
+- Added a host parity regression comparing CLI observation and
+  plan/commit/advance behavior with actor-protocol DTO projection and action
+  submission on the same deterministic fixture.
+
+### Known limits
+
+- Parity evidence is bounded to the in-process CLI/protocol library paths;
+  MCP transport parity, authentication, persistence, and provider integration
+  remain open.
+
 ## 0.1.112 — 2026-08-08
 
 ### Added
