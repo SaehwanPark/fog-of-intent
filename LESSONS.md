@@ -518,3 +518,16 @@ canonical policy instead of duplicating it.
 - Prevention: Keep transport retry, simultaneous submissions, and reconnect
   outside the synchronous host method until their ordering and authority are
   separately specified.
+
+## Bound actor draft metadata before host staging
+
+- Context: M5 needed protocol shapes for message, plan, and contingency values
+  before adding transport or host draft integration.
+- Symptom: Treating free-form metadata as an executable plan or unbounded
+  payload would create compatibility, prompt-injection, and allocation risks at
+  the protocol edge.
+- Resolution: Use `m5-actor-draft-v1` with closed field IDs, a 256-byte value
+  cap, control-character/empty rejection, and closed plan intent IDs; keep the
+  DTO pure and observation-bound.
+- Prevention: Add host staging, communication semantics, and provider prompt
+  metadata only through separate authority and compatibility contracts.

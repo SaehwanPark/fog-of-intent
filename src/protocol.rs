@@ -17,6 +17,9 @@ pub const ACTOR_OBSERVATION_SCHEMA: &str = "m5-actor-observation-v1";
 /// Versioned intent-action DTO identity.
 pub const ACTOR_ACTION_SCHEMA: &str = "m5-actor-action-v1";
 
+/// Versioned actor message/plan/contingency metadata identity.
+pub const ACTOR_DRAFT_SCHEMA: &str = "m5-actor-draft-v1";
+
 /// Versioned line-oriented codec identity for the bounded DTOs.
 pub const ACTOR_PROTOCOL_CODEC_SCHEMA: &str = "m5-actor-codec-v1";
 
@@ -25,6 +28,9 @@ pub const ACTOR_PROTOCOL_ERROR_SCHEMA: &str = "m5-actor-error-v1";
 
 /// Maximum encoded DTO size accepted by the bounded parser.
 pub const MAX_ACTOR_PROTOCOL_BYTES: usize = 4096;
+
+/// Maximum UTF-8 payload size for one actor draft metadata value.
+pub const MAX_ACTOR_DRAFT_VALUE_BYTES: usize = 256;
 
 /// Closed intent vocabulary exposed by the actor protocol.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -339,6 +345,142 @@ impl ActorActionDto {
   }
 }
 
+/// Closed actor-draft metadata fields.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ActorDraftField {
+  Message,
+  Plan,
+  Contingency,
+}
+
+impl ActorDraftField {
+  pub const fn id(self) -> &'static str {
+    match self {
+      Self::Message => "message",
+      Self::Plan => "plan",
+      Self::Contingency => "contingency",
+    }
+  }
+
+  fn parse_id(value: &str) -> Result<Self, ActorProtocolCodecError> {
+    match value {
+      "message" => Ok(Self::Message),
+      "plan" => Ok(Self::Plan),
+      "contingency" => Ok(Self::Contingency),
+      _ => Err(ActorProtocolCodecError::InvalidValue),
+    }
+  }
+}
+
+/// Versioned bounded actor message/plan/contingency metadata.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct ActorDraftDto {
+  schema: &'static str,
+  observer: u8,
+  observation_id: u64,
+  field: ActorDraftField,
+  value: String,
+}
+
+impl ActorDraftDto {
+  pub const fn schema(&self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn observer(&self) -> u8 {
+    self.observer
+  }
+
+  pub const fn observation_id(&self) -> u64 {
+    self.observation_id
+  }
+
+  pub const fn field(&self) -> ActorDraftField {
+    self.field
+  }
+
+  pub fn value(&self) -> &str {
+    &self.value
+  }
+
+  /// Build bounded metadata without staging or submitting it to the host.
+  pub fn new(
+    observer: u8,
+    observation_id: u64,
+    field: ActorDraftField,
+    value: &str,
+  ) -> Result<Self, ActorProtocolCodecError> {
+    if value.is_empty()
+      || value.len() > MAX_ACTOR_DRAFT_VALUE_BYTES
+      || value.chars().any(char::is_control)
+      || (field == ActorDraftField::Plan && ActorProtocolIntent::parse_id(value).is_err())
+    {
+      return Err(ActorProtocolCodecError::InvalidValue);
+    }
+    Ok(Self {
+      schema: ACTOR_DRAFT_SCHEMA,
+      observer,
+      observation_id,
+      field,
+      value: value.to_owned(),
+    })
+  }
+
+  /// Encode bounded metadata as stable line-oriented text.
+  pub fn encode(&self) -> String {
+    format!(
+      "schema={}\nobserver={}\nobservation_id={}\nfield={}\nvalue={}\n",
+      self.schema,
+      self.observer,
+      self.observation_id,
+      self.field.id(),
+      self.value,
+    )
+  }
+
+  /// Decode bounded metadata without assigning host or transition authority.
+  pub fn decode(input: &str) -> Result<Self, ActorProtocolCodecError> {
+    let fields = parse_fields(input, 5)?;
+    let mut schema = None;
+    let mut observer = None;
+    let mut observation_id = None;
+    let mut field = None;
+    let mut value = None;
+    for (key, field_value) in fields {
+      let slot = match key {
+        "schema" => &mut schema,
+        "observer" => &mut observer,
+        "observation_id" => &mut observation_id,
+        "field" => &mut field,
+        "value" => &mut value,
+        _ => return Err(ActorProtocolCodecError::UnknownField),
+      };
+      if slot.is_some() {
+        return Err(ActorProtocolCodecError::DuplicateField);
+      }
+      *slot = Some(field_value);
+    }
+    if schema != Some(ACTOR_DRAFT_SCHEMA) {
+      return Err(ActorProtocolCodecError::UnsupportedSchema);
+    }
+    let observer = observer
+      .ok_or(ActorProtocolCodecError::MissingField)?
+      .parse::<u8>()
+      .map_err(|_| ActorProtocolCodecError::InvalidValue)?;
+    let observation_id = observation_id
+      .ok_or(ActorProtocolCodecError::MissingField)?
+      .parse::<u64>()
+      .map_err(|_| ActorProtocolCodecError::InvalidValue)?;
+    let field = ActorDraftField::parse_id(field.ok_or(ActorProtocolCodecError::MissingField)?)?;
+    Self::new(
+      observer,
+      observation_id,
+      field,
+      value.ok_or(ActorProtocolCodecError::MissingField)?,
+    )
+  }
+}
+
 /// Bounded protocol codec failures.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ActorProtocolCodecError {
@@ -650,6 +792,54 @@ mod tests {
       action
     );
     assert_eq!(ACTOR_PROTOCOL_CODEC_SCHEMA, "m5-actor-codec-v1");
+  }
+
+  #[test]
+  fn actor_draft_dtos_round_trip_all_bounded_fields() {
+    let cases = [
+      (ActorDraftField::Message, "ping ally"),
+      (ActorDraftField::Plan, "contest"),
+      (ActorDraftField::Contingency, "retreat if threat"),
+    ];
+    for (field, value) in cases {
+      let dto = ActorDraftDto::new(1, 36, field, value).expect("draft metadata is bounded");
+      assert_eq!(dto.schema(), "m5-actor-draft-v1");
+      assert_eq!(dto.field().id(), field.id());
+      assert_eq!(dto.value(), value);
+      assert_eq!(ActorDraftDto::decode(&dto.encode()), Ok(dto.clone()));
+      assert!(!format!("{dto:?}").contains("hash"));
+    }
+  }
+
+  #[test]
+  fn actor_draft_codec_rejects_unbounded_or_noncanonical_values() {
+    assert_eq!(
+      ActorDraftDto::new(1, 36, ActorDraftField::Message, ""),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ActorDraftDto::new(1, 36, ActorDraftField::Message, "line\nfeed"),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ActorDraftDto::new(
+        1,
+        36,
+        ActorDraftField::Contingency,
+        &"x".repeat(MAX_ACTOR_DRAFT_VALUE_BYTES + 1),
+      ),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ActorDraftDto::new(1, 36, ActorDraftField::Plan, "unknown"),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ActorDraftDto::decode(
+        "schema=m5-actor-draft-v1\nobserver=1\nobservation_id=36\nfield=plan\nvalue=unknown\n"
+      ),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
   }
 
   #[test]
