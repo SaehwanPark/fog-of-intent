@@ -3535,7 +3535,11 @@ mod tests {
     }
     let save_capacity_before = save_capacity_log.entries().to_vec();
     assert_eq!(
-      store.save_with_operational_log("resume", checkpoint, &mut save_capacity_log),
+      store.save_with_operational_log(
+        "resume",
+        checkpoint.with_completed_count(1),
+        &mut save_capacity_log,
+      ),
       Err(
         crate::agent_batch_store::ScriptedAgentBatchStoreOperationalError::LogCapacityExceeded {
           max: MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS,
