@@ -40,7 +40,8 @@ must return equal decisions.
 ## Scenarios, Populations, and Metrics
 
 This is one observation and a bounded manifest list, not population sampling or
-an aggregate metric report. Resumable run directories remain open.
+an aggregate metric report. The follow-up cursor store is bounded checkpoint
+evidence; decision/result persistence remains open.
 
 ## Calibration or Regression Protocol
 
@@ -59,5 +60,6 @@ decision retention, empty rejection, and 17-manifest cap rejection.
 
 ## Open Questions
 
-Resumable storage, crash recovery, larger populations, sampling, metrics,
-report formats, model/provider execution, and batch scheduling remain open.
+Decision/result persistence, crash recovery, larger populations, sampling,
+metrics, report formats, model/provider execution, and batch scheduling remain
+open.

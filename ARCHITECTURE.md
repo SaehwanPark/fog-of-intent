@@ -91,6 +91,7 @@ src/main.rs
 src/lib.rs
 src/agent.rs
 src/cli.rs
+src/agent_batch_store.rs
 src/host.rs
 src/host_artifact.rs
 src/run_store.rs
@@ -112,7 +113,7 @@ docs/
 _workspace/
 ```
 
-`src/lib.rs`, `src/cli.rs`, `src/host.rs`, `src/host_artifact.rs`, `src/run_store.rs`, `src/terminal.rs`, `src/protocol.rs`, `src/session.rs`, `src/kernel.rs`,
+`src/lib.rs`, `src/cli.rs`, `src/agent_batch_store.rs`, `src/host.rs`, `src/host_artifact.rs`, `src/run_store.rs`, `src/terminal.rs`, `src/protocol.rs`, `src/session.rs`, `src/kernel.rs`,
 `src/lane/`, and `src/serialization.rs` are the current internal
 kernel/adapter/fixture surface;
 `src/main.rs` parses bounded process options and runs the fixture loop. The lane surface is split into private responsibility-oriented
@@ -133,8 +134,11 @@ outside transition, host history, and durable persistence authority.
 identities, and explicit policy seed for M6 reproducibility; it does not run
 agents, sample populations, or own experiment execution.
 `ScriptedAgentBatchRunner` sequences at most 16 such seeded decisions over one
-actor-visible observation in process; it does not persist runs or own
-transition/history authority.
+actor-visible observation in process. `ScriptedAgentBatchCheckpoint` binds a
+bounded cursor to the ordered actor-visible inputs, and
+`ScriptedAgentBatchRunStore` reuses the injected run-store filesystem boundary
+for cursor persistence; neither stores decisions nor owns transition/history
+authority.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

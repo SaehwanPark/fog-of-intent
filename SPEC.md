@@ -993,7 +993,7 @@ transport-integrated sessions and broader protocol compatibility remain open.
   snapshot fields, session lifecycle/error cases, codec round-trips and
   malformed-input rejection, and exhaustive codec/session error projections.
   The focused evidence is 26 protocol tests and 12 session tests within the
-  230-unit, 7-binary, and 3-Rustdoc suite; host evidence includes the
+  231-unit, 7-binary, and 3-Rustdoc suite; host evidence includes the
   authorization/redaction matrix and CLI/protocol parity regressions.
 - `CliScenarioHost::validate_actor_action` checks one DTO against the current
   actor-visible receipt and existing lane validator without mutating history,
@@ -1140,13 +1140,15 @@ transport-integrated sessions and broader protocol compatibility remain open.
   policy seed bundle in an eight-line codec; it does not run agents, sample
   populations, or produce metrics. Unknown profiles/rules, malformed IDs, and
   malformed codec fields fail closed.
-- Batch execution, resumable storage, population sampling, aggregate metrics,
-  provider/model/prompt versions, and calibration evidence remain open.
+- Population sampling, aggregate metrics, provider/model/prompt versions,
+  decision/result persistence, and calibration evidence remain open.
 - `ScriptedAgentBatchRunner` evaluates a non-empty ordered list of at most 16
   manifests against one actor-visible observation using each manifest's
-  explicit seeded tie rule. It returns reproducible decisions and owns no
-  persistence, population, transition, history, or provider authority; a
-  resumable run directory remains open.
+  explicit seeded tie rule. `ScriptedAgentBatchCheckpoint` and the injected
+  `ScriptedAgentBatchRunStore` persist a bounded cursor bound to the ordered
+  actor-visible inputs, and `run_next` resumes deterministic chunks without
+  storing decisions. These adapters own no population, transition, history, or
+  provider authority; decision/result persistence remains open.
 
 ## Future
 

@@ -7,8 +7,10 @@
 //! ties from an explicit policy bundle. It never reads true state, resolves
 //! execution inputs, or owns a transition.
 
-use crate::kernel::{DrawId, InputTrace, StreamId};
-use crate::lane::{LaneIntent, LaneIntentRequest, LanerObservation};
+use std::hash::{Hash, Hasher};
+
+use crate::kernel::{ActorId, DrawId, InputTrace, StreamId};
+use crate::lane::{LaneIntent, LaneIntentRequest, LanerObservation, ObservationId};
 
 /// Versioned identity for the first scripted-agent policy boundary.
 pub const SCRIPTED_AGENT_SCHEMA: &str = "m4-scripted-agent-v1";
@@ -48,6 +50,12 @@ pub const MAX_SCRIPTED_AGENT_MANIFEST_BYTES: usize = 4096;
 
 /// Maximum number of manifests evaluated by one in-process batch.
 pub const MAX_SCRIPTED_AGENT_BATCH_MANIFESTS: usize = 16;
+
+/// Versioned identity for a bounded resumable batch cursor.
+pub const SCRIPTED_AGENT_BATCH_RUN_SCHEMA: &str = "m6-scripted-agent-batch-run-v1";
+
+/// Maximum encoded checkpoint size before parsing or allocation.
+pub const MAX_SCRIPTED_AGENT_BATCH_RUN_BYTES: usize = 4096;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum ScriptedAgentEvaluationRule {
@@ -361,6 +369,196 @@ pub enum ScriptedAgentBatchError {
   BatchTooLarge { max: usize, actual: usize },
 }
 
+/// Bounded failures from checkpoint encoding and decoding.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentBatchCheckpointError {
+  Oversized,
+  UnexpectedLineCount { expected: usize, actual: usize },
+  UnknownField,
+  DuplicateField,
+  MissingField,
+  UnsupportedSchema,
+  InvalidValue,
+}
+
+/// Bounded failures from chunked batch execution and checkpoint matching.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentBatchRunError {
+  Batch(ScriptedAgentBatchError),
+  InputMismatch,
+  ChunkSizeZero,
+}
+
+/// A versioned cursor for resuming one bounded manifest batch.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentBatchCheckpoint {
+  schema: &'static str,
+  observer: ActorId,
+  observation_id: ObservationId,
+  manifest_count: u8,
+  completed_count: u8,
+  input_fingerprint: u64,
+}
+
+impl ScriptedAgentBatchCheckpoint {
+  /// Start a cursor for one actor-visible observation and ordered manifest list.
+  pub fn new(
+    observation: LanerObservation,
+    manifests: &[ScriptedAgentExperimentManifest],
+  ) -> Result<Self, ScriptedAgentBatchError> {
+    validate_batch(manifests)?;
+    Ok(Self {
+      schema: SCRIPTED_AGENT_BATCH_RUN_SCHEMA,
+      observer: observation.observer(),
+      observation_id: observation.observation_id(),
+      manifest_count: u8::try_from(manifests.len()).expect("batch cap fits in u8"),
+      completed_count: 0,
+      input_fingerprint: batch_input_fingerprint(observation, manifests),
+    })
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn observer(self) -> ActorId {
+    self.observer
+  }
+
+  pub const fn observation_id(self) -> ObservationId {
+    self.observation_id
+  }
+
+  pub const fn manifest_count(self) -> u8 {
+    self.manifest_count
+  }
+
+  pub const fn completed_count(self) -> u8 {
+    self.completed_count
+  }
+
+  pub const fn input_fingerprint(self) -> u64 {
+    self.input_fingerprint
+  }
+
+  pub const fn is_complete(self) -> bool {
+    self.completed_count == self.manifest_count
+  }
+
+  /// Encode only bounded cursor and input-binding metadata.
+  pub fn encode(self) -> String {
+    format!(
+      "schema={}\nobserver={}\nobservation_id={}\nmanifest_count={}\ncompleted_count={}\ninput_fingerprint={}\n",
+      self.schema,
+      self.observer.value(),
+      self.observation_id.value(),
+      self.manifest_count,
+      self.completed_count,
+      self.input_fingerprint,
+    )
+  }
+
+  /// Decode a cursor without executing policy or touching the filesystem.
+  pub fn decode(input: &str) -> Result<Self, ScriptedAgentBatchCheckpointError> {
+    if input.len() > MAX_SCRIPTED_AGENT_BATCH_RUN_BYTES {
+      return Err(ScriptedAgentBatchCheckpointError::Oversized);
+    }
+    let lines = input.lines().collect::<Vec<_>>();
+    if lines.len() > 6 {
+      return Err(ScriptedAgentBatchCheckpointError::UnexpectedLineCount {
+        expected: 6,
+        actual: lines.len(),
+      });
+    }
+    let mut fields = Vec::with_capacity(6);
+    for line in lines {
+      let (key, value) = line
+        .split_once('=')
+        .ok_or(ScriptedAgentBatchCheckpointError::InvalidValue)?;
+      if key.is_empty() || value.is_empty() {
+        return Err(ScriptedAgentBatchCheckpointError::InvalidValue);
+      }
+      fields.push((key, value));
+    }
+    let mut schema = None;
+    let mut observer = None;
+    let mut observation_id = None;
+    let mut manifest_count = None;
+    let mut completed_count = None;
+    let mut input_fingerprint = None;
+    for (key, value) in fields {
+      let slot = match key {
+        "schema" => &mut schema,
+        "observer" => &mut observer,
+        "observation_id" => &mut observation_id,
+        "manifest_count" => &mut manifest_count,
+        "completed_count" => &mut completed_count,
+        "input_fingerprint" => &mut input_fingerprint,
+        _ => return Err(ScriptedAgentBatchCheckpointError::UnknownField),
+      };
+      if slot.is_some() {
+        return Err(ScriptedAgentBatchCheckpointError::DuplicateField);
+      }
+      *slot = Some(value);
+    }
+    if schema != Some(SCRIPTED_AGENT_BATCH_RUN_SCHEMA) {
+      return Err(ScriptedAgentBatchCheckpointError::UnsupportedSchema);
+    }
+    let observer = observer
+      .ok_or(ScriptedAgentBatchCheckpointError::MissingField)?
+      .parse::<u8>()
+      .map_err(|_| ScriptedAgentBatchCheckpointError::InvalidValue)?;
+    let observation_id = observation_id
+      .ok_or(ScriptedAgentBatchCheckpointError::MissingField)?
+      .parse::<u64>()
+      .map_err(|_| ScriptedAgentBatchCheckpointError::InvalidValue)?;
+    let manifest_count = manifest_count
+      .ok_or(ScriptedAgentBatchCheckpointError::MissingField)?
+      .parse::<u8>()
+      .map_err(|_| ScriptedAgentBatchCheckpointError::InvalidValue)?;
+    let completed_count = completed_count
+      .ok_or(ScriptedAgentBatchCheckpointError::MissingField)?
+      .parse::<u8>()
+      .map_err(|_| ScriptedAgentBatchCheckpointError::InvalidValue)?;
+    let input_fingerprint = input_fingerprint
+      .ok_or(ScriptedAgentBatchCheckpointError::MissingField)?
+      .parse::<u64>()
+      .map_err(|_| ScriptedAgentBatchCheckpointError::InvalidValue)?;
+    if !(1..=MAX_SCRIPTED_AGENT_BATCH_MANIFESTS).contains(&usize::from(manifest_count))
+      || completed_count > manifest_count
+    {
+      return Err(ScriptedAgentBatchCheckpointError::InvalidValue);
+    }
+    Ok(Self {
+      schema: SCRIPTED_AGENT_BATCH_RUN_SCHEMA,
+      observer: ActorId::new(observer),
+      observation_id: ObservationId::new(observation_id),
+      manifest_count,
+      completed_count,
+      input_fingerprint,
+    })
+  }
+
+  fn matches(
+    self,
+    observation: LanerObservation,
+    manifests: &[ScriptedAgentExperimentManifest],
+  ) -> bool {
+    self.schema == SCRIPTED_AGENT_BATCH_RUN_SCHEMA
+      && self.observer == observation.observer()
+      && self.observation_id == observation.observation_id()
+      && usize::from(self.manifest_count) == manifests.len()
+      && self.input_fingerprint == batch_input_fingerprint(observation, manifests)
+  }
+
+  fn with_completed_count(self, completed_count: usize) -> Self {
+    Self {
+      completed_count: u8::try_from(completed_count).expect("batch cap fits in u8"),
+      ..self
+    }
+  }
+}
+
 /// Deterministic in-process evaluation of declared scripted-agent manifests.
 pub struct ScriptedAgentBatchRunner;
 
@@ -370,15 +568,35 @@ impl ScriptedAgentBatchRunner {
     observation: LanerObservation,
     manifests: &[ScriptedAgentExperimentManifest],
   ) -> Result<Vec<ScriptedAgentDecision>, ScriptedAgentBatchError> {
-    if manifests.is_empty() {
-      return Err(ScriptedAgentBatchError::EmptyBatch);
+    validate_batch(manifests)?;
+    Ok(Self::evaluate_range(observation, manifests))
+  }
+
+  /// Evaluate one bounded remaining chunk and return its advanced cursor.
+  pub fn run_next(
+    observation: LanerObservation,
+    manifests: &[ScriptedAgentExperimentManifest],
+    checkpoint: ScriptedAgentBatchCheckpoint,
+    chunk_size: usize,
+  ) -> Result<(Vec<ScriptedAgentDecision>, ScriptedAgentBatchCheckpoint), ScriptedAgentBatchRunError>
+  {
+    if chunk_size == 0 {
+      return Err(ScriptedAgentBatchRunError::ChunkSizeZero);
     }
-    if manifests.len() > MAX_SCRIPTED_AGENT_BATCH_MANIFESTS {
-      return Err(ScriptedAgentBatchError::BatchTooLarge {
-        max: MAX_SCRIPTED_AGENT_BATCH_MANIFESTS,
-        actual: manifests.len(),
-      });
+    validate_batch(manifests).map_err(ScriptedAgentBatchRunError::Batch)?;
+    if !checkpoint.matches(observation, manifests) {
+      return Err(ScriptedAgentBatchRunError::InputMismatch);
     }
+    let start = usize::from(checkpoint.completed_count);
+    let end = start.saturating_add(chunk_size).min(manifests.len());
+    let decisions = Self::evaluate_range(observation, &manifests[start..end]);
+    Ok((decisions, checkpoint.with_completed_count(end)))
+  }
+
+  fn evaluate_range(
+    observation: LanerObservation,
+    manifests: &[ScriptedAgentExperimentManifest],
+  ) -> Vec<ScriptedAgentDecision> {
     let mut decisions = Vec::with_capacity(manifests.len());
     for manifest in manifests {
       let agent = ScriptedAgent {
@@ -386,7 +604,56 @@ impl ScriptedAgentBatchRunner {
       };
       decisions.push(agent.choose_with_seed(observation, manifest.seed_bundle()));
     }
-    Ok(decisions)
+    decisions
+  }
+}
+
+fn validate_batch(
+  manifests: &[ScriptedAgentExperimentManifest],
+) -> Result<(), ScriptedAgentBatchError> {
+  if manifests.is_empty() {
+    return Err(ScriptedAgentBatchError::EmptyBatch);
+  }
+  if manifests.len() > MAX_SCRIPTED_AGENT_BATCH_MANIFESTS {
+    return Err(ScriptedAgentBatchError::BatchTooLarge {
+      max: MAX_SCRIPTED_AGENT_BATCH_MANIFESTS,
+      actual: manifests.len(),
+    });
+  }
+  Ok(())
+}
+
+fn batch_input_fingerprint(
+  observation: LanerObservation,
+  manifests: &[ScriptedAgentExperimentManifest],
+) -> u64 {
+  let mut hasher = FnvHasher::default();
+  SCRIPTED_AGENT_BATCH_RUN_SCHEMA.hash(&mut hasher);
+  observation.hash(&mut hasher);
+  manifests.hash(&mut hasher);
+  hasher.finish()
+}
+
+#[derive(Default)]
+struct FnvHasher(u64);
+
+impl Hasher for FnvHasher {
+  fn finish(&self) -> u64 {
+    if self.0 == 0 {
+      0xcbf29ce484222325
+    } else {
+      self.0
+    }
+  }
+
+  fn write(&mut self, bytes: &[u8]) {
+    if self.0 == 0 {
+      self.0 = 0xcbf29ce484222325;
+    }
+    for byte in bytes {
+      self.0 ^= u64::from(*byte);
+      self.0 = self.0.wrapping_mul(0x100000001b3);
+    }
   }
 }
 
@@ -1223,6 +1490,117 @@ mod tests {
         actual: MAX_SCRIPTED_AGENT_BATCH_MANIFESTS + 1,
       })
     );
+  }
+
+  #[test]
+  fn batch_checkpoint_codec_and_store_resume_one_chunk() {
+    let state = LaneSnapshot::initial();
+    let observation = observe_player(&state, ObservationId::new(45)).observation();
+    let manifests = [
+      ScriptedAgentExperimentManifest::new(
+        ScriptedAgentProfile::cautious_v1(),
+        ScriptedAgentSeedBundle::new(7, StreamId::new(8), DrawId::new(9)),
+      ),
+      ScriptedAgentExperimentManifest::new(
+        ScriptedAgentProfile::yielding_v1(),
+        ScriptedAgentSeedBundle::new(10, StreamId::new(11), DrawId::new(12)),
+      ),
+    ];
+    let checkpoint =
+      ScriptedAgentBatchCheckpoint::new(observation, &manifests).expect("checkpoint starts");
+    assert_eq!(checkpoint.schema(), SCRIPTED_AGENT_BATCH_RUN_SCHEMA);
+    assert_eq!(
+      SCRIPTED_AGENT_BATCH_RUN_SCHEMA,
+      "m6-scripted-agent-batch-run-v1"
+    );
+    let encoded = checkpoint.encode();
+    assert_eq!(
+      encoded,
+      format!(
+        "schema=m6-scripted-agent-batch-run-v1\nobserver={}\nobservation_id=45\nmanifest_count=2\ncompleted_count=0\ninput_fingerprint={}\n",
+        observation.observer().value(),
+        checkpoint.input_fingerprint(),
+      )
+    );
+    assert_eq!(
+      ScriptedAgentBatchCheckpoint::decode(&encoded),
+      Ok(checkpoint)
+    );
+    let valid = encoded;
+    for (malformed, expected) in [
+      (
+        valid.replacen("schema=m6-scripted-agent-batch-run-v1", "schema=other", 1),
+        ScriptedAgentBatchCheckpointError::UnsupportedSchema,
+      ),
+      (
+        valid.replacen("observer=", "unknown=", 1),
+        ScriptedAgentBatchCheckpointError::UnknownField,
+      ),
+      (
+        valid.replacen("observer=", "schema=", 1),
+        ScriptedAgentBatchCheckpointError::DuplicateField,
+      ),
+      (
+        valid.replacen("completed_count=0\n", "", 1),
+        ScriptedAgentBatchCheckpointError::MissingField,
+      ),
+      (
+        format!("{valid}extra=value\n"),
+        ScriptedAgentBatchCheckpointError::UnexpectedLineCount {
+          expected: 6,
+          actual: 7,
+        },
+      ),
+      (
+        valid.replacen("completed_count=0", "completed_count=3", 1),
+        ScriptedAgentBatchCheckpointError::InvalidValue,
+      ),
+    ] {
+      assert_eq!(
+        ScriptedAgentBatchCheckpoint::decode(&malformed),
+        Err(expected)
+      );
+    }
+    assert_eq!(
+      ScriptedAgentBatchCheckpoint::decode(&"x".repeat(MAX_SCRIPTED_AGENT_BATCH_RUN_BYTES + 1)),
+      Err(ScriptedAgentBatchCheckpointError::Oversized)
+    );
+
+    let root =
+      std::env::temp_dir().join(format!("fog-of-intent-agent-batch-{}", std::process::id()));
+    let store = crate::agent_batch_store::ScriptedAgentBatchRunStore::new(&root);
+    store.save("resume", checkpoint).expect("checkpoint saves");
+    let loaded = store.load("resume").expect("checkpoint loads");
+    let (first, advanced) = ScriptedAgentBatchRunner::run_next(observation, &manifests, loaded, 1)
+      .expect("first chunk runs");
+    assert_eq!(first.len(), 1);
+    assert_eq!(advanced.completed_count(), 1);
+    store
+      .save("resume", advanced)
+      .expect("advanced checkpoint saves");
+    let (remaining, complete) = ScriptedAgentBatchRunner::run_next(
+      observation,
+      &manifests,
+      store.load("resume").expect("advanced checkpoint loads"),
+      16,
+    )
+    .expect("remaining chunk runs");
+    let full = ScriptedAgentBatchRunner::run(observation, &manifests).expect("full batch runs");
+    assert_eq!(remaining, full[1..]);
+    assert!(complete.is_complete());
+    assert_eq!(complete.completed_count(), 2);
+    assert_eq!(
+      ScriptedAgentBatchRunner::run_next(observation, &manifests, complete, 1,)
+        .expect("completed run is idempotent")
+        .0,
+      Vec::<ScriptedAgentDecision>::new()
+    );
+    let mismatched_observation = observe_player(&state, ObservationId::new(46)).observation();
+    assert_eq!(
+      ScriptedAgentBatchRunner::run_next(mismatched_observation, &manifests, complete, 1),
+      Err(ScriptedAgentBatchRunError::InputMismatch)
+    );
+    let _ = std::fs::remove_dir_all(root);
   }
 
   #[test]
