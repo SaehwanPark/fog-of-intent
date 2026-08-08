@@ -95,6 +95,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.68 — 2026-08-08
+
+### Added
+
+- Added the dependency-free `m3-cli-host-v1` synchronous host fixture. It
+  maps CLI grammar commands to an explicit-input two-window scenario and
+  verifies actor-visible observe/history, pre-commit staging and undo,
+  in-memory save/load, replay, and debrief projections.
+
+### Known limits
+
+- The host is library-only and deterministic in memory; it does not provide a
+  terminal renderer, persistent backend, branch execution, keyboard-only flow,
+  or screen-reader evidence.
+
 ## 0.1.67 — 2026-08-08
 
 ### Added

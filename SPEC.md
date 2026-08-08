@@ -733,7 +733,8 @@ playability, or human-experience evidence.
 
 ### M3 — CLI grammar foundation — 2026-08-06
 
-**Status:** Bounded foundation delivered; host and terminal flows remain open.
+**Status:** Bounded grammar and in-memory host evidence delivered; terminal and
+persistent flows remain open.
 
 - `src/cli.rs` defines stable lowercase command identities and borrowed
   payloads for the planned in-session verbs.
@@ -785,9 +786,19 @@ playability, or human-experience evidence.
   forms and rejects malformed values before host execution; it does not create
   persistence, guarantee uniqueness, or alter replay identity.
 - CLI tests now exercise a representative grammar transcript and common errors
-  across read/write/process/session mappings. This is parser/request evidence
-  only; a host-backed complete run, save/resume, replay/debrief transcript, and
-  terminal output remain unimplemented.
+  across read/write/process/session mappings. This remains parser/request
+  evidence only; host-backed scenario evidence is described below and terminal
+  output remains unimplemented.
+- `src/host.rs` now provides the versioned `m3-cli-host-v1` synchronous host
+  fixture. It accepts explicit resolved inputs, maps the grammar to a bounded
+  two-window scenario, and returns actor-valid observation/history, outcome,
+  replay, and debrief projections while keeping true-state snapshots and hashes
+  private. Save/load is an in-memory snapshot only.
+- Host tests cover staged message/plan/contingency text, pre-commit undo,
+  commit/advance, in-memory save/load, replay verification, debrief, quit,
+  malformed plans, unsupported branches, and deterministic repeated runs. A
+  terminal renderer, persistent backend, branch execution, and human
+  keyboard/screen-reader evidence remain unimplemented.
 
 ## Future
 
