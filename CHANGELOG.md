@@ -98,6 +98,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.151 — 2026-08-08
+
+### Added
+
+- Added direct population-to-tally composition for the bounded
+  `m6-scripted-agent-fixture-population-v1` contract. It reuses verified
+  actor-visible selected-intent evidence without rerunning policy evaluation.
+
+### Known limits
+
+- This remains fixture-sized selected-intent evidence; broader population
+  metrics, outcomes, random/distributional sampling, persistence, providers,
+  and human evidence remain open.
+
 ## 0.1.150 — 2026-08-08
 
 ### Added

@@ -1204,6 +1204,9 @@ transport-integrated sessions and broader protocol compatibility remain open.
   rather than sampled behavior. It does not perform
   random or broad population sampling, infer a distribution, or own outcome,
   transition, history, persistence, provider, or human-behavior authority.
+  Its `matched_tally` adapter composes the verified sample through the existing
+  selected-intent tally report without rerunning policy evaluation; the result
+  remains fixture-sized actor-visible evidence rather than a broader metric.
 - `ScriptedAgentFixtureScenarioFrequencyReport` defines
   `m6-scripted-agent-fixture-frequency-v1` with the two catalog rows in stable
   order and bounded counts over a validated selection. It counts explicit

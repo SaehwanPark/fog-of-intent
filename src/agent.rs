@@ -928,6 +928,17 @@ impl ScriptedAgentFixtureScenarioPopulation {
   ) -> Result<ScriptedAgentMatchedScenarioSample, ScriptedAgentMatchedScenarioSampleError> {
     self.selection.matched_sample(manifests)
   }
+
+  /// Aggregate the population's verified sample without rerunning policy evaluation.
+  pub fn matched_tally(
+    &self,
+    manifests: &[ScriptedAgentExperimentManifest],
+  ) -> Result<ScriptedAgentMatchedScenarioTallyReport, ScriptedAgentMatchedScenarioSampleError> {
+    let sample = self.matched_sample(manifests)?;
+    Ok(ScriptedAgentMatchedScenarioTallyReport::from_sample(
+      &sample,
+    ))
+  }
 }
 
 /// One closed fixture-scenario frequency row.
@@ -4755,6 +4766,14 @@ mod tests {
       population.matched_sample(&manifests),
       population.selection().matched_sample(&manifests)
     );
+    let tally = population
+      .matched_tally(&manifests)
+      .expect("caller-declared population tallies");
+    assert_eq!(tally.pair_count(), 4);
+    assert_eq!(tally.observation_count(), 8);
+    assert_eq!(tally.entries().len(), 1);
+    assert_eq!(tally.entries()[0].stabilize_count(), 7);
+    assert_eq!(tally.entries()[0].withdraw_count(), 1);
     assert_eq!(
       ScriptedAgentFixtureScenarioPopulation::generate_from_scenario_ids(&[], u64::MAX),
       Err(ScriptedAgentFixturePopulationError::EmptyPopulation)
