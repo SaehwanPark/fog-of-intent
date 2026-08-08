@@ -2,9 +2,10 @@
 
 ## Disposition
 
-Pending independent three-pass review of the implementation and evidence.
+PASS — implementation head `158c972` completed the required independent
+three-pass review with no actionable findings.
 
-## Evidence target
+## Evidence
 
 One focused host test must cover empty and populated actor-protocol readback,
 exact binding and stable field order, unchanged observation/history/commit state,
@@ -17,13 +18,22 @@ with warnings denied, repository checker, and diff checks must pass.
 
 ## Boundary questions
 
-- Are values returned only from the host-owned current draft after lifecycle
-  checks, with no staging, transition, history, or delivery side effect?
+- Are values returned only from the host-owned actor-protocol draft after
+  lifecycle checks, with no staging, transition, history, or delivery side
+  effect?
 - Are all returned DTOs bound to the current observer and observation ID, in
   deterministic message/plan/contingency order?
 - Are closed, complete, and committed states mapped through existing bounded
   actor-safe errors without exposing raw values or host details?
 
+## Boundary assessment
+
+The projection returns only bounded actor-protocol-staged DTO values, keeps
+unrelated legacy CLI draft text out of the actor readback, and preserves the
+combined draft presence semantics used by existing status/clear/commit-receipt
+contracts. No delivery, transition, history, or raw-value authority crosses
+the boundary.
+
 ## Required Fixes
 
-To be determined by independent review.
+None.

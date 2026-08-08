@@ -2,18 +2,19 @@
 
 ## Outcome
 
-Implementation is complete; independent three-pass review is pending.
-The new host readback exposes only the requesting actor's actor-protocol-staged
+Implementation and independent three-pass review are complete at head
+`158c972`; no actionable findings remain. The new host readback exposes only
+the requesting actor's actor-protocol-staged
 metadata through existing bounded draft DTOs and does not mutate host state;
 legacy CLI draft text remains on its existing path.
 
-## Verification target
+## Verification
 
 The implementation provides one focused host readback test. The expected full
 evidence is 226 Rust unit tests, 7 binary tests, and 3 RustDoc tests, with 25
 protocol, 12 session, and 33 host focused tests; formatter, Clippy with
 warnings denied, repository checker, 15 Python policy tests, and diff checks
-must pass at the reviewed head.
+pass at the reviewed head.
 
 ## Limits
 
