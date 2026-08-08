@@ -992,8 +992,8 @@ transport-integrated sessions and broader protocol compatibility remain open.
   conversion through the existing validator, absence of state-hash or
   snapshot fields, session lifecycle/error cases, codec round-trips and
   malformed-input rejection, and exhaustive codec/session error projections.
-  The focused evidence is 24 protocol tests and 12 session tests within the
-  221-unit, 7-binary, and 3-Rustdoc suite; host evidence includes the
+  The focused evidence is 25 protocol tests and 12 session tests within the
+  223-unit, 7-binary, and 3-Rustdoc suite; host evidence includes the
   authorization/redaction matrix and CLI/protocol parity regressions.
 - `CliScenarioHost::validate_actor_action` checks one DTO against the current
   actor-visible receipt and existing lane validator without mutating history,
@@ -1024,6 +1024,12 @@ transport-integrated sessions and broader protocol compatibility remain open.
   observation ID, and `present`/`absent` bits for message, plan, and
   contingency. `CliScenarioHost::actor_draft_status` is active-window-only,
   read-only, and does not deliver values or add transition/history authority.
+- `ActorDraftClearDto` and `ActorDraftClearReceiptDto` define the
+  `m5-actor-draft-clear-v1` command and six-line
+  `m5-actor-draft-clear-receipt-v1` acknowledgement. The command carries only
+  the active observer and observation ID; the receipt reports message, plan,
+  and contingency presence before an idempotent host clear. Committed,
+  complete, closed, wrong-actor, and stale requests remain actor-safe errors.
 - `ActorDraftCommitReceiptDto` defines `m5-actor-draft-commit-receipt-v1` as a
   seven-line acknowledgement of a successful commit. It exposes only observer,
   observation ID, intent, and field-presence bits; draft values and delivery

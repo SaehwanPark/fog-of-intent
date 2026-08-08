@@ -98,6 +98,22 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.121 — 2026-08-08
+
+### Added
+
+- Added `m5-actor-draft-clear-v1` and
+  `m5-actor-draft-clear-receipt-v1`, a bounded observation-bound clear command
+  and payload-free acknowledgement reporting pre-clear field presence.
+- Added focused codec and host regressions for exact fields, malformed input,
+  idempotent empty clears, authorization/freshness gating, payload redaction,
+  and unchanged observation/history.
+
+### Known limits
+
+- Clearing does not deliver metadata or define communication, transport,
+  persistence, reconnect, simultaneous-draft, or free-form plan semantics.
+
 ## 0.1.120 — 2026-08-08
 
 ### Added
