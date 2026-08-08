@@ -871,7 +871,8 @@ API access.
 - [x] Support edit/undo before commitment without rewriting committed history
   through a typed local draft boundary.
 - [ ] Add save/load and human-readable run identifiers.
-- [ ] Keep terminal rendering outside the authoritative domain.
+- [x] Keep terminal rendering outside the authoritative domain; current CLI
+  code remains a pure adapter contract with no rendering or I/O.
 - [ ] Add transcript-based acceptance tests for a complete run and common errors.
 - [ ] Check keyboard-only flow and screen-reader-oriented text structure.
 
@@ -901,6 +902,18 @@ distinction remain open.
 
 This establishes local draft semantics only. It does not execute a host command,
 persist a session, or rewrite authoritative lane history.
+
+### Current terminal-rendering boundary evidence
+
+- [x] Keep `src/kernel.rs` and `src/lane/` free of terminal I/O, rendering
+  loops, and mutable runtime presentation state.
+- [x] Keep `src/cli.rs` limited to borrowed grammar, typed requests, labels, and
+  local drafts; it performs no terminal I/O, transition, or persistence work.
+- [x] Assign any future rendering to an outer adapter that consumes
+  actor-valid projections and cannot authorize commands or mutate history.
+
+This verifies a structural boundary only. A renderer, host flow, and
+keyboard/screen-reader inspection remain open.
 
 ### Deliverables
 
