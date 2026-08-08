@@ -133,6 +133,10 @@ pub const SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_SCHEMA: &str =
 pub const SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_COMPARISON_SCHEMA: &str =
   "m6-scripted-agent-matched-scenario-tally-compare-v1";
 
+/// Stable identity for the profile-aware fixed-fixture equality gate.
+pub const SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_REGRESSION_RULE: &str =
+  "m6-fixed-profile-tally-no-change-v1";
+
 /// Maximum encoded matched-scenario tally size before parsing or allocation.
 pub const MAX_SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_BYTES: usize = 4096;
 
@@ -1906,6 +1910,20 @@ impl ScriptedAgentMatchedScenarioTallyComparisonReport {
 
   pub fn entries(&self) -> &[ScriptedAgentMatchedScenarioTallyComparisonEntry] {
     &self.entries
+  }
+
+  pub const fn regression_rule(&self) -> &'static str {
+    SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_REGRESSION_RULE
+  }
+
+  /// Return true only when top-level counts and every ordered row are equal.
+  pub fn passes_no_change_gate(&self) -> bool {
+    self.baseline_pair_count == self.candidate_pair_count
+      && self.baseline_observation_count == self.candidate_observation_count
+      && self
+        .entries
+        .iter()
+        .all(|entry| entry.baseline_counts() == entry.candidate_counts())
   }
 }
 
@@ -5170,6 +5188,15 @@ mod tests {
     assert_eq!(comparison.entries()[2].candidate_counts(), [0, 0, 8, 0, 0]);
     assert_eq!(comparison.entries()[2].deltas(), [0, 0, 0, 0, 0]);
     assert_eq!(
+      comparison.regression_rule(),
+      "m6-fixed-profile-tally-no-change-v1"
+    );
+    assert!(!comparison.passes_no_change_gate());
+    let unchanged =
+      ScriptedAgentMatchedScenarioTallyComparisonReport::from_reports(&baseline, &baseline)
+        .expect("unchanged verified tallies compare");
+    assert!(unchanged.passes_no_change_gate());
+    assert_eq!(
       comparison,
       ScriptedAgentMatchedScenarioTallyComparisonReport::from_reports(&baseline, &candidate)
         .expect("repeated comparison is stable")
@@ -5178,6 +5205,57 @@ mod tests {
       ScriptedAgentMatchedScenarioTallyComparisonReport::from_reports(&candidate, &baseline)
         .expect("reversed verified tallies compare");
     assert_eq!(reversed.entries()[0].deltas(), [2, 0, 0, 0, -2]);
+
+    let smaller_candidate_population =
+      ScriptedAgentFixtureScenarioPopulation::generate_from_scenario_ids(
+        &[
+          SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+          SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+          SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        ],
+        296,
+      )
+      .expect("smaller candidate population builds");
+    let smaller_candidate = smaller_candidate_population
+      .matched_tally(&manifests)
+      .expect("smaller candidate tally builds");
+    let changed_total = ScriptedAgentMatchedScenarioTallyComparisonReport::from_reports(
+      &baseline,
+      &smaller_candidate,
+    )
+    .expect("changed-total verified tallies compare");
+    assert_eq!(changed_total.baseline_pair_count(), 4);
+    assert_eq!(changed_total.candidate_pair_count(), 3);
+    assert!(!changed_total.passes_no_change_gate());
+
+    let redistributed_population =
+      ScriptedAgentFixtureScenarioPopulation::generate_from_scenario_ids(
+        &[
+          SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+          SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+          SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+          SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        ],
+        302,
+      )
+      .expect("redistributed population builds");
+    let redistributed = redistributed_population
+      .matched_tally(&manifests)
+      .expect("redistributed tally builds");
+    let same_total_redistribution =
+      ScriptedAgentMatchedScenarioTallyComparisonReport::from_reports(&baseline, &redistributed)
+        .expect("same-total verified tallies compare");
+    assert_eq!(same_total_redistribution.baseline_pair_count(), 4);
+    assert_eq!(same_total_redistribution.candidate_pair_count(), 4);
+    assert_eq!(
+      same_total_redistribution.entries()[0].baseline_counts(),
+      [7, 0, 0, 0, 1]
+    );
+    assert_eq!(
+      same_total_redistribution.entries()[0].candidate_counts(),
+      [6, 0, 0, 0, 2]
+    );
+    assert!(!same_total_redistribution.passes_no_change_gate());
 
     let reordered_candidate = candidate_population
       .matched_tally(&[manifests[1], manifests[0], manifests[2]])

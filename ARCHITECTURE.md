@@ -163,6 +163,9 @@ reports only when their actor and ordered profile/rule identities match. It
 retains bounded baseline/candidate counts and signed intent deltas without
 rerunning policy evaluation or claiming build provenance, causality,
 population, outcome, persistence, or provider authority.
+Its `m6-fixed-profile-tally-no-change-v1` gate is a pure equality predicate over
+those bounded counts; it adds no threshold, balance, build, causal, outcome, or
+strategic authority.
 `ScriptedAgentFixtureScenarioSelection` is a closed metadata catalog for the
 safe and RiverSide-threat fixture IDs. It binds caller-supplied observation IDs,
 projects deterministic actor-visible pairs, and composes the existing sample

@@ -98,6 +98,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.155 — 2026-08-08
+
+### Added
+
+- Added `m6-fixed-profile-tally-no-change-v1`, a provisional equality gate over
+  the profile-aware tally comparison that checks top-level counts and every
+  ordered row's five intent counts.
+
+### Known limits
+
+- The gate is a fixed regression signal only; broader thresholds, balance,
+  build provenance, causality, outcomes, persistence, providers, calibration,
+  and human evidence remain open.
+
 ## 0.1.154 — 2026-08-08
 
 ### Added
