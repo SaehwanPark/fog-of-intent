@@ -54,3 +54,17 @@ canonical policy instead of duplicating it.
   expiry helpers while preserving existing overflow errors and hashes.
 - Prevention: Keep `clippy::as_conversions` denied and add boundary tests when a
   bounded value or conversion changes.
+
+## Redaction labels should be payload-free
+
+- Context: The CLI needed to distinguish observed, believed, inferred,
+  reported, and unknown information before a renderer or host existed.
+- Symptom: A generic label-plus-value structure could accidentally pair an
+  `unknown` label with hidden state and leak it at an adapter boundary.
+- Cause: Redaction represented as ordinary metadata does not make the absence
+  of a value structurally enforceable.
+- Resolution: Model `CliInformation<T>` as a disjoint enum whose `Unknown`
+  variant has no payload; verify borrowed projections preserve labels and
+  explicit extraction returns `None` for unknown values.
+- Prevention: Keep actor-visible redactions uninhabited in adapter DTOs and add
+  tests that exercise both the label and payload boundary.

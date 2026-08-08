@@ -3,7 +3,7 @@
 **Document role:** Canonical milestone order, scope, and promotion gates
 **Status:** Active
 **Current milestone:** M2 — One-Lane Vertical Slice
-**Last reviewed:** 2026-08-06
+**Last reviewed:** 2026-08-08
 
 This document is the authoritative execution roadmap. The project proposal
 explains the broader vision and preserves the original roadmap concept; when its
@@ -32,12 +32,12 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs` | Placeholder `Hello, world!` binary |
-| Package | `Cargo.toml` | Version `0.1.59`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.64`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
 | Internal kernel/replay fixture | `src/kernel.rs`, `src/serialization.rs` | M1 complete; not playable |
-| Scenario, CLI, MCP, research, GUI | `src/cli.rs` in-session grammar plus typed read/write requests; no host | Not implemented as user-facing flows |
+| Scenario, CLI, MCP, research, GUI | `src/cli.rs` in-session grammar, typed requests, and information-label vocabulary; no host | Not implemented as user-facing flows |
 
 ## Milestone Map
 
@@ -866,12 +866,28 @@ API access.
 - [x] Add expert mode with concise, scriptable commands.
 - [x] Add research inspection only behind an explicit privileged context.
 - [x] Add concise, standard, explanatory, and research verbosity policies.
-- [ ] Label observed, believed, inferred, reported, and unknown information.
+- [x] Label observed, believed, inferred, reported, and unknown information in
+  a typed, payload-safe adapter projection contract.
 - [ ] Support edit/undo before commitment without rewriting committed history.
 - [ ] Add save/load and human-readable run identifiers.
 - [ ] Keep terminal rendering outside the authoritative domain.
 - [ ] Add transcript-based acceptance tests for a complete run and common errors.
 - [ ] Check keyboard-only flow and screen-reader-oriented text structure.
+
+### Current bounded information-label evidence
+
+- [x] Version the internal `m3-cli-information-labels-v1` vocabulary.
+- [x] Define stable `observed`, `believed`, `inferred`, `reported`, and
+  `unknown` labels with canonical names.
+- [x] Represent labeled values with `CliInformation<T>`; the `Unknown` form is
+  payload-free and cannot carry hidden state through the adapter.
+- [x] Verify borrowed projections preserve labels and explicit value extraction
+  returns payloads without changing M2 state, hashes, replay, or transition
+  behavior.
+
+This establishes provenance metadata for future CLI projections only. Rendering,
+inference, belief computation, host execution, persistence, and human
+distinction remain open.
 
 ### Deliverables
 

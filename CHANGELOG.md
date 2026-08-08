@@ -44,6 +44,22 @@ not increment the package version.
   vision/belief remains deferred; the bounded automatic-advance condition
   contract is now explicit while host scheduling remains deferred.
 
+## 0.1.64 — 2026-08-08
+
+### Added
+
+- Added the versioned `m3-cli-information-labels-v1` vocabulary for
+  `observed`, `believed`, `inferred`, `reported`, and `unknown` actor-visible
+  information.
+- Added generic `CliInformation<T>` values whose `Unknown` form carries no
+  payload, with focused tests for canonical names, redaction, borrowing, and
+  explicit extraction.
+
+### Known limits
+
+- The labels are a pure adapter contract; terminal rendering, host execution,
+  inference, persistence, and human usability evidence remain deferred.
+
 ## 0.1.63 — 2026-08-08
 
 ### Added

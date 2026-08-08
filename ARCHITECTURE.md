@@ -1,6 +1,6 @@
 # Architecture
 
-**Last reviewed:** 2026-08-06
+**Last reviewed:** 2026-08-08
 **Status:** Partially verified — M1 kernel and fixture codec are implemented;
 M2 remains an internal bounded target under construction. The current M2 v3
 contract includes the lane decision window, retained-resource aggregate,
@@ -30,7 +30,11 @@ and maps top-level commands (`play`, `replay`, `branch`, `experiment`, `export`,
 `validate`, `mcp`, `help`, `version`) with interaction modes (`Guided`, `Expert`),
 verbosity policies (`Concise`, `Standard`, `Explanatory`, `Research`), and explicit
 privilege guards (`Unprivileged`, `Privileged`) without rendering, authorizing,
-persisting, or invoking the simulation.
+persisting, or invoking the simulation. Its versioned information-label schema
+(`m3-cli-information-labels-v1`) distinguishes `observed`, `believed`,
+`inferred`, `reported`, and `unknown`; the typed `CliInformation<T>` wrapper
+cannot carry a payload for `unknown` and does not change the actor-visible
+projection boundary.
 
 The target architecture is one authoritative Rust simulation product with thin
 human, agent, and research adapters. The strongest boundary is:
@@ -222,6 +226,9 @@ to reduce type count.
 
 - Actors choose from observations, beliefs, messages, and memory available to
   their represented role.
+- CLI projections preserve whether a value is observed, believed, inferred,
+  reported, or unknown. `unknown` is a payload-free redaction rather than a
+  value that happens to carry an unknown label.
 - Research inspection may expose true state only through a separately authorized
   interface and must not contaminate playable policies or metrics.
 - Debriefs evaluate decisions using information available at decision time.

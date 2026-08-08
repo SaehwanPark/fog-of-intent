@@ -1,7 +1,7 @@
 # Project Specification
 
 **Status:** Active project-state index
-**Last reviewed:** 2026-08-06
+**Last reviewed:** 2026-08-08
 
 This file records verified past, the small active slice, and intentionally
 deferred future work. It is not the product proposal, roadmap, issue tracker, or
@@ -759,6 +759,14 @@ playability, or human-experience evidence.
   and explicit privilege guards (`Unprivileged`, `Privileged`).
 - `CliTopLevelHelpCatalog` documents top-level subcommands and their usage
   without adding runtime dependencies or executing simulation state.
+- The versioned `m3-cli-information-labels-v1` vocabulary distinguishes
+  `observed`, `believed`, `inferred`, `reported`, and `unknown` values for future
+  actor-visible CLI projections.
+- `CliInformation<T>` preserves the selected label through borrowed
+  projections; its explicit `into_option()` extraction intentionally drops
+  provenance while returning the payload, and `Unknown` remains payload-free.
+  This is adapter metadata only; no renderer, inference engine, host flow, or
+  external compatibility guarantee exists.
 
 ## Future
 
