@@ -416,6 +416,10 @@ mod tests {
     assert_eq!(risk_taking.selected_intent(), LaneIntent::Contest);
     assert_eq!(yielding.selected_intent(), LaneIntent::Yield);
     assert_eq!(
+      cautious.profile().evaluation_rule(),
+      "threat-first-fixed-score-v1"
+    );
+    assert_eq!(
       risk_taking.profile().profile_id(),
       RISK_TAKING_SCRIPTED_AGENT_PROFILE_ID
     );

@@ -1060,8 +1060,8 @@ strategy while remaining bound to actor-visible information.
 - [x] Reject public evaluation requests for intents outside that advertised
   candidate set with a bounded policy error.
 - [x] Evaluate candidates with the profile-specific fixed, inspectable
-  `threat-first-fixed-score-v1` or `contest-first-fixed-score-v1` rule and
-  select by stable maximum score.
+  `threat-first-fixed-score-v1`, `contest-first-fixed-score-v1`, or
+  `yield-first-fixed-score-v1` rule and select by stable maximum score.
 - [x] Return an actor-bound `LaneIntentRequest` for host-side legality
   validation, with reproducibility tests for identical observations.
 - [x] Compare three fixed profiles on one identical initial observation and

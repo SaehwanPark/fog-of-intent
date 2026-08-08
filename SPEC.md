@@ -851,8 +851,9 @@ external adapters remain open.
 - `ScriptedAgent` consumes only a `LanerObservation`, copies its advertised
   legal intents, adds the observation's optional visible threat response, and
   evaluates candidates with the profile-specific fixed
-  `threat-first-fixed-score-v1` or `contest-first-fixed-score-v1` table.
-  Selection is the stable maximum-score candidate in advertised order.
+  `threat-first-fixed-score-v1`, `contest-first-fixed-score-v1`, or
+  `yield-first-fixed-score-v1` table. Selection is the stable maximum-score
+  candidate in advertised order.
 - Public `evaluate_candidate` rejects an intent that is not in the advertised
   candidate set with `ScriptedAgentEvaluationError::UnavailableIntent`; this
   is a policy-boundary error and does not duplicate host legality.
