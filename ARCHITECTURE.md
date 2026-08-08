@@ -142,6 +142,10 @@ authority. `ScriptedAgentMatchedSample` reuses the runner across exactly two
 same-actor, distinct-ID observations and returns only ordered profile/rule/seed
 labels with selected intents; it does not generate populations or own outcome,
 transition, history, or provider authority.
+`ScriptedAgentExperimentVersionCatalog` is fixed metadata for the applicable
+ruleset, scenario, policy schema, and profile identities; it marks
+prompt/model/tool-schema/extractor versions as not applicable and does not
+change manifest, execution, storage, or provider boundaries.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

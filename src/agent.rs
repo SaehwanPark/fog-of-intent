@@ -49,6 +49,16 @@ pub const SCRIPTED_AGENT_EXPERIMENT_MANIFEST_SCHEMA: &str = "m6-experiment-manif
 /// The only scenario currently admitted by the bounded manifest.
 pub const SCRIPTED_AGENT_EXPERIMENT_SCENARIO_ID: &str = "m3-two-window-fixture-v1";
 
+/// Versioned identity for the applicable M6 experiment-version catalog.
+pub const SCRIPTED_AGENT_EXPERIMENT_VERSION_CATALOG_SCHEMA: &str =
+  "m6-experiment-version-catalog-v1";
+
+/// Stable ruleset label recorded by the current scripted fixture catalog.
+pub const SCRIPTED_AGENT_EXPERIMENT_RULESET_ID: &str = "m2-lane-ruleset-v4";
+
+/// Explicit marker for experiment integrations not present in this slice.
+pub const SCRIPTED_AGENT_VERSION_NOT_APPLICABLE: &str = "not-applicable";
+
 /// Maximum encoded experiment-manifest size.
 pub const MAX_SCRIPTED_AGENT_MANIFEST_BYTES: usize = 4096;
 
@@ -366,6 +376,77 @@ impl ScriptedAgentExperimentManifest {
       profile,
       ScriptedAgentSeedBundle::new(seed, StreamId::new(policy_stream), DrawId::new(policy_draw)),
     ))
+  }
+}
+
+/// Fixed version identities applicable to the deterministic M6 fixture.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentExperimentVersionCatalog {
+  schema: &'static str,
+  ruleset_id: &'static str,
+  scenario_id: &'static str,
+  policy_schema: &'static str,
+  profile_ids: [&'static str; 3],
+  prompt_version: &'static str,
+  tool_schema_version: &'static str,
+  model_version: &'static str,
+  extractor_version: &'static str,
+}
+
+impl ScriptedAgentExperimentVersionCatalog {
+  /// Return the fixed catalog for the current deterministic fixture.
+  pub const fn current() -> Self {
+    Self {
+      schema: SCRIPTED_AGENT_EXPERIMENT_VERSION_CATALOG_SCHEMA,
+      ruleset_id: SCRIPTED_AGENT_EXPERIMENT_RULESET_ID,
+      scenario_id: SCRIPTED_AGENT_EXPERIMENT_SCENARIO_ID,
+      policy_schema: SCRIPTED_AGENT_SCHEMA,
+      profile_ids: [
+        SCRIPTED_AGENT_PROFILE_ID,
+        RISK_TAKING_SCRIPTED_AGENT_PROFILE_ID,
+        YIELDING_SCRIPTED_AGENT_PROFILE_ID,
+      ],
+      prompt_version: SCRIPTED_AGENT_VERSION_NOT_APPLICABLE,
+      tool_schema_version: SCRIPTED_AGENT_VERSION_NOT_APPLICABLE,
+      model_version: SCRIPTED_AGENT_VERSION_NOT_APPLICABLE,
+      extractor_version: SCRIPTED_AGENT_VERSION_NOT_APPLICABLE,
+    }
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn ruleset_id(self) -> &'static str {
+    self.ruleset_id
+  }
+
+  pub const fn scenario_id(self) -> &'static str {
+    self.scenario_id
+  }
+
+  pub const fn policy_schema(self) -> &'static str {
+    self.policy_schema
+  }
+
+  pub const fn profile_ids(self) -> [&'static str; 3] {
+    self.profile_ids
+  }
+
+  pub const fn prompt_version(self) -> &'static str {
+    self.prompt_version
+  }
+
+  pub const fn tool_schema_version(self) -> &'static str {
+    self.tool_schema_version
+  }
+
+  pub const fn model_version(self) -> &'static str {
+    self.model_version
+  }
+
+  pub const fn extractor_version(self) -> &'static str {
+    self.extractor_version
   }
 }
 
@@ -1637,7 +1718,7 @@ mod tests {
   use crate::kernel::{DrawId, StreamId};
   use crate::lane::{
     ALLIED_AUTONOMOUS_ACTOR, JungleThreatTruth, LaneIntent, LaneSnapshot, LaneStatus,
-    ObservationId, WavePressure, WaveState, observe_player, validate_lane_request,
+    M2_LANE_RULESET, ObservationId, WavePressure, WaveState, observe_player, validate_lane_request,
   };
 
   #[test]
@@ -1778,6 +1859,29 @@ mod tests {
       ScriptedAgentExperimentManifest::decode(&"x".repeat(MAX_SCRIPTED_AGENT_MANIFEST_BYTES + 1)),
       Err(ScriptedAgentManifestError::Oversized)
     );
+  }
+
+  #[test]
+  fn experiment_version_catalog_is_literal_and_deterministic() {
+    let catalog = ScriptedAgentExperimentVersionCatalog::current();
+    assert_eq!(catalog.schema(), "m6-experiment-version-catalog-v1");
+    assert_eq!(catalog.ruleset_id(), "m2-lane-ruleset-v4");
+    assert_eq!(M2_LANE_RULESET.value(), 4);
+    assert_eq!(catalog.scenario_id(), "m3-two-window-fixture-v1");
+    assert_eq!(catalog.policy_schema(), "m4-scripted-agent-v1");
+    assert_eq!(
+      catalog.profile_ids(),
+      [
+        "cautious-laner-v1",
+        "risk-taking-laner-v1",
+        "yielding-laner-v1",
+      ]
+    );
+    assert_eq!(catalog.prompt_version(), "not-applicable");
+    assert_eq!(catalog.tool_schema_version(), "not-applicable");
+    assert_eq!(catalog.model_version(), "not-applicable");
+    assert_eq!(catalog.extractor_version(), "not-applicable");
+    assert_eq!(catalog, ScriptedAgentExperimentVersionCatalog::current());
   }
 
   #[test]

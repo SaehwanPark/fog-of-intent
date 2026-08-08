@@ -98,6 +98,22 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.131 — 2026-08-08
+
+### Added
+
+- Added `m6-experiment-version-catalog-v1`, a fixed metadata catalog for the
+  current ruleset, two-window scenario, scripted policy schema, and three
+  profile identities. Prompt, model, tool-schema, and extractor versions are
+  explicitly marked `not-applicable` for this in-process deterministic slice.
+- Added focused literal-identity and repeated-construction evidence without
+  changing manifest, batch, matched-sample, or persistence behavior.
+
+### Known limits
+
+- Provider/model integration, prompt and extractor versioning, population and
+  matched-scenario sampling, metrics, persistence, and calibration remain open.
+
 ## 0.1.130 — 2026-08-08
 
 ### Added

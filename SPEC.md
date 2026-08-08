@@ -1158,6 +1158,13 @@ transport-integrated sessions and broader protocol compatibility remain open.
   sensitivity evidence only;
   population generation/distribution sampling, outcomes, metrics, persistence,
   and provider/calibration behavior remain open.
+- `ScriptedAgentExperimentVersionCatalog` defines
+  `m6-experiment-version-catalog-v1` for the applicable ruleset, scenario,
+  scripted-policy schema, and three profile IDs. It explicitly reports
+  `not-applicable` for prompt, model, tool-schema, and extractor versions in
+  this deterministic in-process slice. The catalog is fixed metadata only; it
+  does not revise manifest codecs, run storage, policy execution, or provider
+  compatibility.
 
 ## Future
 
