@@ -2,15 +2,17 @@
 
 ## Disposition
 
-Pending independent three-pass review of the implementation and evidence.
+PASS at implementation head `ac8670d`; no actionable findings remain after
+three independent code/API, agent-ecology/domain, and docs/evidence passes.
 
-## Evidence target
+## Evidence
 
-One focused agent test must cover the exact manifest codec, all three closed
+One focused agent test covers the exact manifest codec, all three closed
 profile/rule identities, seed/stream/draw retention, and malformed inputs. The
-expected full suite is 16 focused agent tests within 229 Rust unit tests, 7
-binary tests, and 3 RustDoc tests; 15 Python policy tests, formatter, Clippy
-with warnings denied, repository checker, and diff checks must pass.
+full evidence is 16 focused agent tests within 229 Rust unit tests, 7 binary
+tests, and 3 RustDoc tests; 15 Python policy tests, formatter, Clippy with
+warnings denied, repository checker, and diff checks pass at the reviewed
+head.
 
 ## Boundary questions
 
@@ -23,4 +25,5 @@ with warnings denied, repository checker, and diff checks must pass.
 
 ## Required Fixes
 
-To be determined by independent review.
+None. Batch execution, sampling, metrics, provider metadata, persistence, and
+calibration remain explicitly deferred.
