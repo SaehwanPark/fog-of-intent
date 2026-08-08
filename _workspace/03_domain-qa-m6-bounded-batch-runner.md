@@ -2,15 +2,17 @@
 
 ## Disposition
 
-Pending independent three-pass review of the implementation and evidence.
+PASS at implementation head `9ecaa64`; no actionable findings remain after
+three independent code/API, agent-ecology/domain, and docs/evidence passes.
 
-## Evidence target
+## Evidence
 
-One focused agent test must cover deterministic order/reproducibility, explicit
-seed retention, empty-batch rejection, and the 16-manifest bound. The expected
-full suite is 17 focused agent tests within 230 Rust unit tests, 7 binary tests,
-and 3 RustDoc tests; 15 Python policy tests, formatter, Clippy with warnings
-denied, repository checker, and diff checks must pass.
+One focused agent test covers deterministic order/reproducibility, explicit
+seed retention, empty-batch rejection, and the inclusive 16-manifest bound plus
+17-manifest rejection. The full evidence is 17 focused agent tests within 230
+Rust unit tests, 7 binary tests, and 3 RustDoc tests; 15 Python policy tests,
+formatter, Clippy with warnings denied, repository checker, and diff checks pass
+at the reviewed head.
 
 ## Boundary questions
 
@@ -22,4 +24,6 @@ denied, repository checker, and diff checks must pass.
 
 ## Required Fixes
 
-To be determined by independent review.
+None. Resumable run directories, crash recovery, population sampling, metrics,
+report export, providers/models, and human-behavior evidence remain explicitly
+deferred.

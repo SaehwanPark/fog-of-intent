@@ -2,16 +2,17 @@
 
 ## Outcome
 
-Implementation is complete; independent three-pass review is pending.
+Implementation is complete; the independent three-pass review passed at
+implementation head `9ecaa64` with no actionable findings.
 The runner evaluates a bounded manifest list deterministically against one
 actor-visible observation without persistence or transition authority.
 
-## Verification target
+## Verification
 
-The implementation provides one focused agent batch-runner test. The expected
-full evidence is 230 Rust unit tests, 7 binary tests, and 3 RustDoc tests, with
-the focused agent suite at 17 tests; formatter, Clippy with warnings denied,
-repository checker, 15 Python policy tests, and diff checks must pass at the
+The implementation provides one focused agent batch-runner test. The full
+evidence is 230 Rust unit tests, 7 binary tests, and 3 RustDoc tests, with the
+focused agent suite at 17 tests; formatter, Clippy with warnings denied,
+repository checker, 15 Python policy tests, and diff checks pass at the
 reviewed head.
 
 ## Limits
