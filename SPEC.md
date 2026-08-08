@@ -837,6 +837,29 @@ remain open.
   and human keyboard/screen-reader evidence remain unimplemented. Store locking
   and fsync/crash recovery remain open.
 
+### M4 — First scripted-agent policy boundary — 2026-08-08
+
+**Status:** One actor-visible deterministic policy baseline delivered; broader
+agent ecology, population comparisons, and external adapters remain open.
+
+- `src/agent.rs` defines the versioned `m4-scripted-agent-v1` policy boundary
+  and the `cautious-laner-v1` profile. The profile records candidate,
+  evaluation, and selection rule identities so a decision can be inspected
+  without treating policy behavior as hidden simulation state.
+- `ScriptedAgent` consumes only a `LanerObservation`, copies its advertised
+  legal intents, adds the observation's optional visible threat response, and
+  evaluates candidates with the fixed `threat-first-fixed-score-v1` table.
+  Selection is the stable maximum-score candidate in advertised order.
+- `ScriptedAgentDecision` returns the selected intent together with the
+  observer-bound `LaneIntentRequest`; the host remains responsible for
+  validating freshness and legality before any transition. The policy does not
+  read true state, resolve execution inputs, mutate history, communicate, or
+  own a transition.
+- Focused tests cover the initial candidate set, visible-threat prioritization,
+  host validation, and repeated identical-observation reproducibility. This
+  evidence is a single library policy slice, not a claim of strategic quality
+  or human behavioral realism.
+
 ## Future
 
 The detailed and canonical order is in `ROADMAP.md`.

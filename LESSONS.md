@@ -255,3 +255,17 @@ canonical policy instead of duplicating it.
   transcript as complementary evidence.
 - Prevention: Do not promote library-only evidence to executable or complete
   reference-client claims without a real process regression.
+
+## Keep scripted policies actor-visible and host-validated
+
+- Context: The first M4 policy needed to demonstrate a reproducible agent
+  choice without creating a second simulation engine or privileged actor.
+- Symptom: A policy that reads true state or performs legality checks can make
+  agent behavior impossible to compare fairly with human or external-agent
+  inputs and can bypass the host's replay boundary.
+- Resolution: Generate candidates only from `LanerObservation`, record
+  versioned candidate/evaluation/selection rules, return an observer-bound
+  `LaneIntentRequest`, and let the host validate freshness and legality.
+- Prevention: Keep policy outputs inspectable and actor-validatable; defer
+  memory, communication, randomness, population comparisons, and strategic or
+  human-realism claims until each has its own evidence contract.

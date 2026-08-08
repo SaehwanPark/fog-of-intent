@@ -89,6 +89,7 @@ The controlled vocabulary for that boundary is
 Cargo.toml
 src/main.rs
 src/lib.rs
+src/agent.rs
 src/cli.rs
 src/host.rs
 src/host_artifact.rs
@@ -118,6 +119,11 @@ authoritative state evaluation, `projection.rs` owns ordered event/effect
 projection, `result.rs` owns transition result/debrief assembly, and
 `transition.rs` owns the public types and façade. The other paths are
 project-state, design-source, and agent-workflow artifacts.
+
+`src/agent.rs` is a pure, versioned policy boundary. The first
+`m4-scripted-agent-v1` profile consumes actor-visible lane observations and
+returns a request for host validation; it does not inspect true state, resolve
+execution, communicate, or mutate authoritative history.
 
 ## Target Components
 
