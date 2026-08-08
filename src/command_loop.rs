@@ -20,7 +20,7 @@ pub const CLI_COMMAND_LOOP_SCHEMA: &str = "m3-cli-command-loop-v1";
 pub const CLI_FIXTURE_SCENARIO_ID: &str = "m3-two-window-fixture-v1";
 
 /// Bounded process-level usage for the executable wrapper.
-pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--run-dir <path>]\n\noptions:\n  --scenario <id>   select the versioned two-window fixture\n  --run-dir <path>  store bounded run artifacts in this directory\n  --help            show this help\n";
+pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--run-dir <path>]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1\n  --run-dir <path>  store bounded run artifacts in this directory\n  --help            show this help\n";
 
 /// Closed set of executable fixture constructors.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
@@ -235,7 +235,7 @@ mod tests {
     );
     assert_eq!(
       CLI_APPLICATION_HELP,
-      "usage: fog-of-intent [--scenario <id>] [--run-dir <path>]\n\noptions:\n  --scenario <id>   select the versioned two-window fixture\n  --run-dir <path>  store bounded run artifacts in this directory\n  --help            show this help\n"
+      "usage: fog-of-intent [--scenario <id>] [--run-dir <path>]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1\n  --run-dir <path>  store bounded run artifacts in this directory\n  --help            show this help\n"
     );
     assert_eq!(
       parse_application_args(&[OsString::from("--scenario")]),
