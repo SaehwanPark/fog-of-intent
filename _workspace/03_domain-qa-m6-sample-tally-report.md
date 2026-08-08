@@ -2,7 +2,8 @@
 
 ## Disposition
 
-Pending independent three-pass review of the implementation and evidence.
+PASS — no actionable findings remain after the independent three-pass review
+at implementation/evidence head `9a9742a`.
 
 ## Scope reviewed
 
@@ -13,13 +14,14 @@ rows, and bounded selected-intent counts. It does not rerun policies, generate
 scenarios or populations, sample distributions, inspect outcomes, persist
 reports, or acquire transition/history/provider authority.
 
-## Evidence target
+## Evidence
 
-The existing focused matched-scenario sample-set test now asserts exact
-cautious/yielding profile and rule counts plus repeated tally equality. The
-expected full evidence is 21 focused agent tests within 234 Rust unit tests, 7
-binary tests, and 3 RustDoc tests, plus formatter, Clippy warnings denied,
-repository checker, 15 Python policy tests, and diff checks.
+The existing focused matched-scenario sample-set test asserts exact
+cautious/yielding profile and rule counts at both two-pair and four-pair
+capacity, row totals, and repeated tally equality. The full evidence is 21
+focused agent tests within 234 Rust unit tests, 7 binary tests, and 3 RustDoc
+tests, plus formatter, Clippy warnings denied, repository checker, 15 Python
+policy tests, and diff checks; all pass at the reviewed head.
 
 ## Review limits
 
