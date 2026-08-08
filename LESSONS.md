@@ -169,3 +169,17 @@ canonical policy instead of duplicating it.
   rename while retaining an in-memory default.
 - Prevention: Keep directory selection at the application edge and document
   locking, fsync/crash recovery, and binary wiring as separate evidence gates.
+
+## Keep process persistence configuration explicit
+
+- Context: The injected file store was ready for fresh-host tests, but the
+  executable still had no way to opt into it between processes.
+- Symptom: Adding an implicit directory would make ordinary fixture runs write
+  to an environment-dependent location and turn a library boundary into a
+  deployment policy.
+- Resolution: Have `src/main.rs` invoke one bounded `--run-dir <path>` parser
+  from the application-edge loop module, retain the no-argument in-memory
+  default, reject option-shaped path values, and verify save/load with two
+  separate binary processes.
+- Prevention: Keep process configuration outside the session grammar and add a
+  cross-process smoke test whenever persistence becomes executable behavior.
