@@ -5,7 +5,7 @@
 PASS: the independent three-pass review found no actionable findings at
 implementation/evidence head `10a227b`.
 
-## Scope to review
+## Scope reviewed
 
 - Does the generator bind the exact population schema, closed alternating
   scenario IDs, the caller-supplied starting ID and checked derived pairs, and
