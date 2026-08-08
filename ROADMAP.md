@@ -1199,11 +1199,11 @@ control over simulation resolution.
   simultaneous actors remain open.
 - [x] Define the bounded `m5-actor-history-v1` status DTO and host projection
   for record count plus open/complete/closed lifecycle state; detailed history
-  and replay-linked records remain open.
+  and durable/scenario replay-linked records remain open.
 - [x] Define the bounded `m5-actor-debrief-v1` completed-run summary DTO and
   host projection for per-window intent/outcome/objective labels plus final
   objective and committed-facts attribution; detailed causal debrief and
-  replay-linked records remain open.
+  durable/scenario replay-linked records remain open.
 - [x] Define the bounded `m5-actor-replay-v1` status DTO and host projection;
   it verifies immutable current history and exposes only categorical status and
   record count.
