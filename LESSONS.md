@@ -1241,6 +1241,15 @@ canonical policy instead of duplicating it.
 - Prevention: Require separate contracts for population generation, search,
   prevalence, outcome/causal metrics, persistence, and human evidence.
 
+## Keep fixed degenerate populations separate from adversarial populations
+
+- Symptom: repeated fixed-policy selections can be mistaken for exploit or
+  prevalence evidence.
+- Resolution: bound the report to one-to-four caller-declared actor-visible
+  observations and one closed repeated intent.
+- Prevention: keep adversarial generation, search, prevalence, outcomes,
+  persistence, providers, and human evidence in separate contracts.
+
 ## Keep metric candidates separate from outlier judgments
 
 - Context: M6 needed a deterministic largest-delta candidate before broader

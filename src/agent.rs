@@ -108,6 +108,13 @@ pub const SCRIPTED_AGENT_SCENARIO_DISTRIBUTION_SCALE: u16 = 10_000;
 /// Versioned identity for the bounded caller-declared stress-case matrix.
 pub const SCRIPTED_AGENT_STRESS_POPULATION_SCHEMA: &str = "m6-scripted-agent-stress-population-v1";
 
+/// Versioned identity for bounded caller-declared degenerate-policy evidence.
+pub const SCRIPTED_AGENT_DEGENERATE_POLICY_POPULATION_SCHEMA: &str =
+  "m6-scripted-agent-degenerate-policy-population-v1";
+
+/// Maximum observations in one fixed degenerate-policy population.
+pub const MAX_SCRIPTED_AGENT_DEGENERATE_POLICY_POPULATION: usize = 4;
+
 /// Versioned identity for bounded fixed-fixture frequency baseline comparisons.
 pub const SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_COMPARISON_SCHEMA: &str =
   "m6-scripted-agent-fixture-frequency-compare-v1";
@@ -1048,6 +1055,96 @@ impl ScriptedAgentStressPopulationReport {
       self.entries[3].case.id(),
       self.entries[3].result.id(),
     )
+  }
+}
+
+/// Bounded failures from fixed degenerate-policy population construction.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentDegeneratePolicyPopulationError {
+  EmptyPopulation,
+  PopulationTooLarge { max: usize, actual: usize },
+  MismatchedObserver,
+  DuplicateObservationId,
+  UnexpectedIntent,
+}
+
+/// Verified caller-declared population whose cautious policy repeats one intent.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentDegeneratePolicyPopulationReport {
+  schema: &'static str,
+  profile_id: &'static str,
+  evaluation_rule: &'static str,
+  observer: ActorId,
+  observation_count: u8,
+  selected_intent: LaneIntent,
+}
+
+impl ScriptedAgentDegeneratePolicyPopulationReport {
+  /// Build fixed degenerate evidence from actor-visible observations only.
+  pub fn from_observations(
+    observations: &[LanerObservation],
+  ) -> Result<Self, ScriptedAgentDegeneratePolicyPopulationError> {
+    if observations.is_empty() {
+      return Err(ScriptedAgentDegeneratePolicyPopulationError::EmptyPopulation);
+    }
+    if observations.len() > MAX_SCRIPTED_AGENT_DEGENERATE_POLICY_POPULATION {
+      return Err(
+        ScriptedAgentDegeneratePolicyPopulationError::PopulationTooLarge {
+          max: MAX_SCRIPTED_AGENT_DEGENERATE_POLICY_POPULATION,
+          actual: observations.len(),
+        },
+      );
+    }
+    let observer = observations[0].observer();
+    let mut seen_ids = Vec::with_capacity(observations.len());
+    for observation in observations {
+      if observation.observer() != observer {
+        return Err(ScriptedAgentDegeneratePolicyPopulationError::MismatchedObserver);
+      }
+      if seen_ids.contains(&observation.observation_id()) {
+        return Err(ScriptedAgentDegeneratePolicyPopulationError::DuplicateObservationId);
+      }
+      seen_ids.push(observation.observation_id());
+      if ScriptedAgent::cautious_v1()
+        .choose(*observation)
+        .selected_intent()
+        != LaneIntent::Stabilize
+      {
+        return Err(ScriptedAgentDegeneratePolicyPopulationError::UnexpectedIntent);
+      }
+    }
+    Ok(Self {
+      schema: SCRIPTED_AGENT_DEGENERATE_POLICY_POPULATION_SCHEMA,
+      profile_id: ScriptedAgentProfile::cautious_v1().profile_id(),
+      evaluation_rule: ScriptedAgentProfile::cautious_v1().evaluation_rule(),
+      observer,
+      observation_count: u8::try_from(observations.len()).expect("population cap fits in u8"),
+      selected_intent: LaneIntent::Stabilize,
+    })
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn profile_id(self) -> &'static str {
+    self.profile_id
+  }
+
+  pub const fn evaluation_rule(self) -> &'static str {
+    self.evaluation_rule
+  }
+
+  pub const fn observer(self) -> ActorId {
+    self.observer
+  }
+
+  pub const fn observation_count(self) -> u8 {
+    self.observation_count
+  }
+
+  pub const fn selected_intent(self) -> LaneIntent {
+    self.selected_intent
   }
 }
 
@@ -6225,6 +6322,64 @@ mod tests {
     assert_eq!(
       ScriptedAgentStressPopulationReport::from_results(results, 5),
       Err(ScriptedAgentStressPopulationError::InvalidDegenerateCount)
+    );
+  }
+
+  #[test]
+  fn degenerate_policy_population_is_bounded_and_actor_visible() {
+    let state = LaneSnapshot::initial();
+    let observations = (0..MAX_SCRIPTED_AGENT_DEGENERATE_POLICY_POPULATION)
+      .map(|offset| {
+        observe_player(
+          &state,
+          ObservationId::new(700 + u64::try_from(offset).expect("offset fits")),
+        )
+        .observation()
+      })
+      .collect::<Vec<_>>();
+    let report = ScriptedAgentDegeneratePolicyPopulationReport::from_observations(&observations)
+      .expect("fixed cautious observations repeat Stabilize");
+    assert_eq!(
+      SCRIPTED_AGENT_DEGENERATE_POLICY_POPULATION_SCHEMA,
+      "m6-scripted-agent-degenerate-policy-population-v1"
+    );
+    assert_eq!(
+      report.schema(),
+      SCRIPTED_AGENT_DEGENERATE_POLICY_POPULATION_SCHEMA
+    );
+    assert_eq!(report.profile_id(), "cautious-laner-v1");
+    assert_eq!(
+      report.evaluation_rule(),
+      "threat-first-pressure-aware-fixed-score-v1"
+    );
+    assert_eq!(report.observer(), observations[0].observer());
+    assert_eq!(report.observation_count(), 4);
+    assert_eq!(report.selected_intent(), LaneIntent::Stabilize);
+    assert_eq!(
+      ScriptedAgentDegeneratePolicyPopulationReport::from_observations(&observations),
+      Ok(report)
+    );
+    assert_eq!(
+      ScriptedAgentDegeneratePolicyPopulationReport::from_observations(&[]),
+      Err(ScriptedAgentDegeneratePolicyPopulationError::EmptyPopulation)
+    );
+    let too_many = (0..=MAX_SCRIPTED_AGENT_DEGENERATE_POLICY_POPULATION)
+      .map(|offset| {
+        observe_player(
+          &state,
+          ObservationId::new(800 + u64::try_from(offset).expect("offset fits")),
+        )
+        .observation()
+      })
+      .collect::<Vec<_>>();
+    assert_eq!(
+      ScriptedAgentDegeneratePolicyPopulationReport::from_observations(&too_many),
+      Err(
+        ScriptedAgentDegeneratePolicyPopulationError::PopulationTooLarge {
+          max: MAX_SCRIPTED_AGENT_DEGENERATE_POLICY_POPULATION,
+          actual: MAX_SCRIPTED_AGENT_DEGENERATE_POLICY_POPULATION + 1,
+        }
+      )
     );
   }
 
