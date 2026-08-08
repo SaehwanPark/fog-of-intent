@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.110`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.111`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1220,7 +1220,7 @@ values or deliver them to another actor. The provider-neutral
 accepted/rejected result for an actor receipt; it is not a runtime log or
 replay record. Focused evidence is 19 protocol tests,
 5 session tests, and 23 host tests within the 203-unit, 7-binary, and
-1-Rustdoc suite. The host observation projection is a
+3-Rustdoc suite. The host observation projection is a
 pure actor-visible DTO mapping, rejects inactive lifecycle states, and leaves
 the internal receipt private. The history DTO is a bounded status summary,
 while the debrief DTO is a completion-gated committed-facts summary rather
@@ -1242,6 +1242,8 @@ than a detailed replay or causal debrief contract.
   broad host-legality error projection remains open.
 - [x] Separate ordinary actor tools from privileged experiment-controller tools
   with a closed ordinary-actor catalog; privileged implementations remain open.
+- [x] Keep authoritative lane observation/request conversion behind crate-private
+  protocol adapters; public protocol compatibility exposes DTOs only.
 - [x] Capture provider-neutral transcript metadata and tool-schema versions in
   a bounded library DTO; runtime transport logging and persistence remain open.
 - [x] Add bounded authorization and hidden-state leakage tests over the
