@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.111`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.112`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1219,7 +1219,7 @@ values or deliver them to another actor. The provider-neutral
 `m5-actor-transcript-v1` record captures only closed tool/schema IDs and an
 accepted/rejected result for an actor receipt; it is not a runtime log or
 replay record. Focused evidence is 19 protocol tests,
-5 session tests, and 23 host tests within the 203-unit, 7-binary, and
+9 session tests, and 23 host tests within the 207-unit, 7-binary, and
 3-Rustdoc suite. The host observation projection is a
 pure actor-visible DTO mapping, rejects inactive lifecycle states, and leaves
 the internal receipt private. The history DTO is a bounded status summary,
@@ -1236,7 +1236,8 @@ than a detailed replay or causal debrief contract.
 - [ ] Keep internal domain types private from public protocol compatibility.
 - [x] Implement private action submission and host-owned window closure for the
   bounded fixture; transport and simultaneous-decision integration remain open.
-- [ ] Implement simultaneous-decision semantics where the scenario requires it.
+- [x] Implement bounded two-actor simultaneous submission semantics; host
+  transition resolution and broader ordering remain open.
 - [x] Define protocol-edge validation-error and bounded-repair behavior for
   codec/session failures and bounded read-only host action rejection;
   broad host-legality error projection remains open.

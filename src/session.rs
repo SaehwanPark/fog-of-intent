@@ -8,6 +8,7 @@ use crate::protocol::{
   ActorActionDto, ActorObservationDto, ActorProtocolError, ActorProtocolErrorCode,
   ActorProtocolRepairHint,
 };
+use std::fmt;
 
 /// Versioned actor-session contract identity.
 pub const ACTOR_SESSION_SCHEMA: &str = "m5-actor-session-v1";
@@ -178,11 +179,290 @@ impl ActorSession {
   }
 }
 
+/// Versioned two-actor simultaneous-submission contract.
+pub const ACTOR_SIMULTANEOUS_WINDOW_SCHEMA: &str = "m5-actor-simultaneous-window-v1";
+
+/// Read-only lifecycle phase for a simultaneous actor window.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ActorSimultaneousPhase {
+  AwaitingActions,
+  Ready,
+  Closed,
+}
+
+impl ActorSimultaneousPhase {
+  pub const fn id(self) -> &'static str {
+    match self {
+      Self::AwaitingActions => "awaiting_actions",
+      Self::Ready => "ready",
+      Self::Closed => "closed",
+    }
+  }
+}
+
+/// Construction failures for a simultaneous window.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ActorSimultaneousConstructionError {
+  SameActor,
+}
+
+impl ActorSimultaneousConstructionError {
+  pub const fn to_actor_error(self) -> ActorProtocolError {
+    match self {
+      Self::SameActor => ActorProtocolError::new(
+        ActorProtocolErrorCode::ActorMismatch,
+        ActorProtocolRepairHint::UseBoundActor,
+      ),
+    }
+  }
+}
+
+/// Bounded errors for private two-actor action collection.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ActorSimultaneousError {
+  ActorMismatch,
+  StaleObservation,
+  DuplicateSubmission,
+  Closed,
+}
+
+impl ActorSimultaneousError {
+  pub const fn to_actor_error(self) -> ActorProtocolError {
+    let (code, repair) = match self {
+      Self::ActorMismatch => (
+        ActorProtocolErrorCode::ActorMismatch,
+        ActorProtocolRepairHint::UseBoundActor,
+      ),
+      Self::StaleObservation => (
+        ActorProtocolErrorCode::StaleObservation,
+        ActorProtocolRepairHint::RequestFreshObservation,
+      ),
+      Self::DuplicateSubmission => (
+        ActorProtocolErrorCode::DuplicateSubmission,
+        ActorProtocolRepairHint::AwaitNextObservation,
+      ),
+      Self::Closed => (
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ),
+    };
+    ActorProtocolError::new(code, repair)
+  }
+}
+
+/// Immutable two-actor window that keeps submitted intents private.
+///
+/// The public surface exposes lifecycle and readiness only. The collected
+/// intents remain internal until a later host-owned resolution contract.
+#[derive(Clone, Copy)]
+pub struct ActorSimultaneousWindow {
+  schema: &'static str,
+  first_actor: u8,
+  second_actor: u8,
+  observation_id: u64,
+  first_intent: Option<crate::protocol::ActorProtocolIntent>,
+  second_intent: Option<crate::protocol::ActorProtocolIntent>,
+  phase: ActorSimultaneousPhase,
+}
+
+impl fmt::Debug for ActorSimultaneousWindow {
+  fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    formatter
+      .debug_struct("ActorSimultaneousWindow")
+      .field("schema", &self.schema)
+      .field("first_actor", &self.first_actor)
+      .field("second_actor", &self.second_actor)
+      .field("observation_id", &self.observation_id)
+      .field("phase", &self.phase)
+      .finish()
+  }
+}
+
+impl ActorSimultaneousWindow {
+  pub fn new(
+    first_actor: u8,
+    second_actor: u8,
+    observation_id: u64,
+  ) -> Result<Self, ActorSimultaneousConstructionError> {
+    if first_actor == second_actor {
+      return Err(ActorSimultaneousConstructionError::SameActor);
+    }
+    Ok(Self {
+      schema: ACTOR_SIMULTANEOUS_WINDOW_SCHEMA,
+      first_actor,
+      second_actor,
+      observation_id,
+      first_intent: None,
+      second_intent: None,
+      phase: ActorSimultaneousPhase::AwaitingActions,
+    })
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn first_actor(self) -> u8 {
+    self.first_actor
+  }
+
+  pub const fn second_actor(self) -> u8 {
+    self.second_actor
+  }
+
+  pub const fn observation_id(self) -> u64 {
+    self.observation_id
+  }
+
+  pub const fn phase(self) -> ActorSimultaneousPhase {
+    self.phase
+  }
+
+  pub const fn is_ready(self) -> bool {
+    matches!(self.phase, ActorSimultaneousPhase::Ready)
+  }
+
+  /// Collect one observer-bound action without exposing either intent.
+  pub fn submit(self, action: ActorActionDto) -> Result<Self, ActorSimultaneousError> {
+    if self.phase == ActorSimultaneousPhase::Closed {
+      return Err(ActorSimultaneousError::Closed);
+    }
+    if action.observation_id() != self.observation_id {
+      return Err(ActorSimultaneousError::StaleObservation);
+    }
+    let (first_intent, second_intent) = if action.observer() == self.first_actor {
+      if self.first_intent.is_some() {
+        return Err(ActorSimultaneousError::DuplicateSubmission);
+      }
+      (Some(action.intent()), self.second_intent)
+    } else if action.observer() == self.second_actor {
+      if self.second_intent.is_some() {
+        return Err(ActorSimultaneousError::DuplicateSubmission);
+      }
+      (self.first_intent, Some(action.intent()))
+    } else {
+      return Err(ActorSimultaneousError::ActorMismatch);
+    };
+    Ok(Self {
+      first_intent,
+      second_intent,
+      phase: if first_intent.is_some() && second_intent.is_some() {
+        ActorSimultaneousPhase::Ready
+      } else {
+        ActorSimultaneousPhase::AwaitingActions
+      },
+      ..self
+    })
+  }
+
+  /// Close the window; later submissions fail without exposing collected data.
+  pub const fn close(self) -> Self {
+    Self {
+      phase: ActorSimultaneousPhase::Closed,
+      ..self
+    }
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
   use crate::lane::{LaneSnapshot, ObservationId, observe_player};
   use crate::protocol::{ActorObservationDto, ActorProtocolIntent};
+
+  #[test]
+  fn simultaneous_window_waits_for_both_actions_without_exposing_intents() {
+    let window = ActorSimultaneousWindow::new(1, 2, 40).expect("distinct actors");
+    assert_eq!(window.schema(), "m5-actor-simultaneous-window-v1");
+    assert_eq!(window.phase(), ActorSimultaneousPhase::AwaitingActions);
+    assert!(!window.is_ready());
+
+    let first = window
+      .submit(ActorActionDto::new(1, 40, ActorProtocolIntent::Contest))
+      .expect("first action binds");
+    assert_eq!(first.phase(), ActorSimultaneousPhase::AwaitingActions);
+    assert!(!first.is_ready());
+    let first_debug = format!("{first:?}");
+    assert!(!first_debug.contains("Contest") && !first_debug.contains("contest"));
+
+    let ready = first
+      .submit(ActorActionDto::new(2, 40, ActorProtocolIntent::Yield))
+      .expect("second action binds");
+    assert_eq!(ready.phase(), ActorSimultaneousPhase::Ready);
+    assert!(ready.is_ready());
+    let ready_debug = format!("{ready:?}");
+    assert!(!ready_debug.contains("Contest") && !ready_debug.contains("Yield"));
+  }
+
+  #[test]
+  fn simultaneous_window_rejects_stale_cross_actor_and_duplicate_without_mutation() {
+    let window = ActorSimultaneousWindow::new(1, 2, 41).expect("distinct actors");
+    assert!(matches!(
+      window.submit(ActorActionDto::new(1, 40, ActorProtocolIntent::Contest)),
+      Err(ActorSimultaneousError::StaleObservation)
+    ));
+    assert!(matches!(
+      window.submit(ActorActionDto::new(3, 41, ActorProtocolIntent::Contest)),
+      Err(ActorSimultaneousError::ActorMismatch)
+    ));
+    let first = window
+      .submit(ActorActionDto::new(1, 41, ActorProtocolIntent::Contest))
+      .expect("first action binds");
+    assert!(matches!(
+      first.submit(ActorActionDto::new(1, 41, ActorProtocolIntent::Yield)),
+      Err(ActorSimultaneousError::DuplicateSubmission)
+    ));
+    assert_eq!(first.phase(), ActorSimultaneousPhase::AwaitingActions);
+    assert!(!first.is_ready());
+  }
+
+  #[test]
+  fn simultaneous_window_rejects_same_actor_and_closes_fail_closed() {
+    assert!(matches!(
+      ActorSimultaneousWindow::new(4, 4, 42),
+      Err(ActorSimultaneousConstructionError::SameActor)
+    ));
+    let window = ActorSimultaneousWindow::new(4, 5, 42).expect("distinct actors");
+    let closed = window.close();
+    assert_eq!(closed.phase(), ActorSimultaneousPhase::Closed);
+    assert!(matches!(
+      closed.submit(ActorActionDto::new(4, 42, ActorProtocolIntent::Contest)),
+      Err(ActorSimultaneousError::Closed)
+    ));
+  }
+
+  #[test]
+  fn simultaneous_errors_project_to_bounded_actor_repairs() {
+    let cases = [
+      (
+        ActorSimultaneousConstructionError::SameActor.to_actor_error(),
+        "actor_mismatch",
+        "use_bound_actor",
+      ),
+      (
+        ActorSimultaneousError::StaleObservation.to_actor_error(),
+        "stale_observation",
+        "request_fresh_observation",
+      ),
+      (
+        ActorSimultaneousError::DuplicateSubmission.to_actor_error(),
+        "duplicate_submission",
+        "await_next_observation",
+      ),
+      (
+        ActorSimultaneousError::Closed.to_actor_error(),
+        "closed_session",
+        "start_new_session",
+      ),
+    ];
+    for (error, code, repair) in cases {
+      assert_eq!(error.schema(), "m5-actor-error-v2");
+      assert_eq!(error.code().id(), code);
+      assert_eq!(error.repair().id(), repair);
+      let debug = format!("{error:?}");
+      assert!(!debug.contains("actor=") && !debug.contains("observation_id="));
+    }
+  }
 
   #[test]
   fn session_lifecycle_is_immutable_and_allows_next_window_after_submission() {
