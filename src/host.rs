@@ -1036,7 +1036,7 @@ mod tests {
       let error = host
         .validate_actor_action(action)
         .expect_err("invalid actor action is rejected");
-      assert_eq!(error.schema(), "m5-actor-error-v1");
+      assert_eq!(error.schema(), "m5-actor-error-v2");
       assert_eq!(error.code().id(), code);
       assert_eq!(error.repair().id(), repair);
       assert!(!format!("{error:?}").contains("hash"));

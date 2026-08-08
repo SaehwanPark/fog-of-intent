@@ -36,8 +36,11 @@ pub const ACTOR_HISTORY_SCHEMA: &str = "m5-actor-history-v1";
 /// Versioned line-oriented codec identity for the bounded DTOs.
 pub const ACTOR_PROTOCOL_CODEC_SCHEMA: &str = "m5-actor-codec-v1";
 
-/// Versioned actor-facing validation-error identity.
-pub const ACTOR_PROTOCOL_ERROR_SCHEMA: &str = "m5-actor-error-v1";
+/// Historical actor-facing validation-error identity from the initial closed vocabulary.
+pub const ACTOR_PROTOCOL_ERROR_SCHEMA_V1: &str = "m5-actor-error-v1";
+
+/// Current actor-facing validation-error identity after the debrief error pair was added.
+pub const ACTOR_PROTOCOL_ERROR_SCHEMA: &str = "m5-actor-error-v2";
 
 /// Maximum encoded DTO size accepted by the bounded parser.
 pub const MAX_ACTOR_PROTOCOL_BYTES: usize = 4096;
@@ -1592,6 +1595,8 @@ mod tests {
 
   #[test]
   fn actor_error_codec_round_trips_all_closed_ids_without_raw_detail() {
+    assert_eq!(ACTOR_PROTOCOL_ERROR_SCHEMA_V1, "m5-actor-error-v1");
+    assert_eq!(ACTOR_PROTOCOL_ERROR_SCHEMA, "m5-actor-error-v2");
     let codes = [
       ActorProtocolErrorCode::OversizedInput,
       ActorProtocolErrorCode::UnexpectedLineCount,
@@ -1642,11 +1647,11 @@ mod tests {
     );
     assert_eq!(
       canonical.encode(),
-      "schema=m5-actor-error-v1\ncode=stale_observation\nrepair=request_fresh_observation\n"
+      "schema=m5-actor-error-v2\ncode=stale_observation\nrepair=request_fresh_observation\n"
     );
     assert_eq!(
       ActorProtocolError::decode(
-        "schema=m5-actor-error-v1\ncode=unknown\nrepair=request_observation\n"
+        "schema=m5-actor-error-v2\ncode=unknown\nrepair=request_observation\n"
       ),
       Err(ActorProtocolCodecError::InvalidValue)
     );
@@ -1656,19 +1661,25 @@ mod tests {
     );
     assert_eq!(
       debrief_unavailable.encode(),
-      "schema=m5-actor-error-v1\ncode=debrief_unavailable\nrepair=await_completion\n"
+      "schema=m5-actor-error-v2\ncode=debrief_unavailable\nrepair=await_completion\n"
     );
     assert_eq!(
       ActorProtocolError::decode(&debrief_unavailable.encode()),
       Ok(debrief_unavailable)
     );
     assert_eq!(
-      ActorProtocolError::decode("schema=m5-actor-error-v1\ncode=invalid_value\nrepair=unknown\n"),
+      ActorProtocolError::decode(
+        "schema=m5-actor-error-v1\ncode=stale_observation\nrepair=request_fresh_observation\n"
+      ),
+      Err(ActorProtocolCodecError::UnsupportedSchema)
+    );
+    assert_eq!(
+      ActorProtocolError::decode("schema=m5-actor-error-v2\ncode=invalid_value\nrepair=unknown\n"),
       Err(ActorProtocolCodecError::InvalidValue)
     );
     assert_eq!(
       ActorProtocolError::decode(
-        "schema=m5-actor-error-v1\ncode=invalid_value\nrepair=resend_valid_payload\nextra=x\n"
+        "schema=m5-actor-error-v2\ncode=invalid_value\nrepair=resend_valid_payload\nextra=x\n"
       ),
       Err(ActorProtocolCodecError::UnexpectedLineCount {
         expected: 3,
@@ -1774,7 +1785,7 @@ mod tests {
     ];
     for (error, code, repair) in cases {
       let projected = error.to_actor_error();
-      assert_eq!(projected.schema(), "m5-actor-error-v1");
+      assert_eq!(projected.schema(), "m5-actor-error-v2");
       assert_eq!(projected.code().id(), code);
       assert_eq!(projected.repair().id(), repair);
       let debug = format!("{projected:?}");

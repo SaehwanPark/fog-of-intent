@@ -959,7 +959,7 @@ transport-integrated sessions and broader protocol compatibility remain open.
   use the versioned `m5-actor-codec-v1` line format with a 4096-byte cap,
   exact bounded fields, and closed intent IDs. Parsing is pure and fail-closed;
   decoded actions still require host validation.
-- `m5-actor-error-v1` projects every codec and immutable-session freshness
+- `m5-actor-error-v2` projects every codec and immutable-session freshness
   failure into a closed actor-safe code and deterministic repair hint. The
   projection contains no raw payload, actor ID, state hash, domain error, or
   transport detail; hints are advisory and do not rewrite, retry, or submit.
@@ -973,7 +973,7 @@ transport-integrated sessions and broader protocol compatibility remain open.
   actor-visible receipt and existing lane validator without mutating history,
   staging a plan, resolving execution, or closing a window. It projects only
   actor mismatch, stale observation, closed-window, and generic validator
-  rejection through `m5-actor-error-v1`; raw lane errors and authoritative
+  rejection through `m5-actor-error-v2`; raw lane errors and authoritative
   values remain private. Focused host evidence adds one read-only regression.
 - `CliScenarioHost::submit_actor_action` reuses that validation, appends the
   accepted request through the existing host/lane history path, and closes one

@@ -1164,10 +1164,10 @@ control over simulation resolution.
 - [x] Add the bounded `m5-actor-codec-v1` line-oriented encode/decode contract
   for observation and intent-action DTOs, with size, field, line-count, and
   closed-intent checks; transport I/O and persistence remain open.
-- [x] Define the versioned `m5-actor-error-v1` actor-safe validation-error
+- [x] Define the versioned `m5-actor-error-v2` actor-safe validation-error
   categories and deterministic repair hints for codec/session failures;
   automatic repair and host-legality error projection remain open.
-- [x] Add exact bounded `m5-actor-error-v1` codec coverage for every closed
+- [x] Add exact bounded `m5-actor-error-v2` codec coverage for every closed
   error and repair ID; automatic repair and transport remain open.
 - [x] Project successful host actor submissions through a bounded result DTO
   containing only fixture window and categorical outcome; detailed debrief and
@@ -1199,7 +1199,7 @@ This is a pure library adapter boundary with no MCP transport, async runtime,
 or provider-specific behavior. The DTOs expose only four advertised intents
 plus an optional visible threat response and do not replace host legality. The
 session state machine is immutable metadata and does not submit or commit a
-transition. The `m5-actor-error-v1` projection exposes only stable error and
+transition. The `m5-actor-error-v2` projection exposes only stable error and
 repair IDs for codec/session failures and host action rejection; repair is
 advisory and does not rewrite payloads or retry host work. The host-owned
 submission path appends only after current-receipt and lane validation, then
@@ -1218,10 +1218,9 @@ than a detailed replay or causal debrief contract.
 
 - [x] Define the bounded library session lifecycle and actor binding;
   transport-integrated lifecycle and authority remain open.
-- [ ] Define the remaining versioned DTOs for observations, legal actions,
-  messages, plans, contingencies, commit, history, replay, and detailed
-  outcome/debrief review; the bounded observation/action/history/debrief
-  projections are delivered.
+- [ ] Define remaining integration/contracts for messages, plans,
+  contingencies, commit, replay, and detailed outcome/debrief review; bounded
+  observation/action/draft/history/debrief projections are delivered.
 - [ ] Keep internal domain types private from public protocol compatibility.
 - [x] Implement private action submission and host-owned window closure for the
   bounded fixture; transport and simultaneous-decision integration remain open.

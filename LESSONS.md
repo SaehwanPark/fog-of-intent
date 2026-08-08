@@ -487,7 +487,7 @@ canonical policy instead of duplicating it.
   expose unstable details, encourage retry loops at the wrong boundary, or
   let the adapter impersonate host legality and transition authority.
 - Resolution: Project codec and session failures into the versioned
-  `m5-actor-error-v1` schema with closed codes and deterministic repair hints;
+  versioned actor-error schema with closed codes and deterministic repair hints;
   omit raw payloads, IDs, hashes, and domain errors, and keep hints advisory.
 - Prevention: Treat host-legality error redaction, automatic repair, transport
   retry, and reconnect as separate contracts with their own evidence.

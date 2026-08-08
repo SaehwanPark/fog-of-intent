@@ -317,7 +317,7 @@ mod tests {
     ];
     for (error, code, repair) in cases {
       let projected = error.to_actor_error();
-      assert_eq!(projected.schema(), "m5-actor-error-v1");
+      assert_eq!(projected.schema(), "m5-actor-error-v2");
       assert_eq!(projected.code().id(), code);
       assert_eq!(projected.repair().id(), repair);
       let debug = format!("{projected:?}");
