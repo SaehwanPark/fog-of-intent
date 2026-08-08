@@ -95,6 +95,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.100 — 2026-08-08
+
+### Added
+
+- Added bounded `m5-actor-draft-v1` metadata DTOs for message, plan, and
+  contingency values, with observation binding, 256-byte payload caps, and
+  closed plan IDs.
+- Added round-trip and malformed/control/size-bound coverage without staging
+  host drafts or adding communication/transition authority.
+
+### Known limits
+
+- Host draft staging, free-form plan semantics, transport, persistence,
+  provider metadata, and broader message/coordination behavior remain open.
+
 ## 0.1.99 — 2026-08-08
 
 ### Added
