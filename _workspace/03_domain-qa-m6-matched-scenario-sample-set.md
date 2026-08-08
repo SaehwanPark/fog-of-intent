@@ -2,7 +2,8 @@
 
 ## Disposition
 
-Pending independent three-pass review of the implementation and evidence.
+PASS — no actionable findings remain after the independent three-pass review
+at implementation/evidence head `0a4bb99`.
 
 ## Scope reviewed
 
@@ -13,13 +14,15 @@ matched-sample and seeded batch contracts in stable order. It does not generate
 scenarios or populations, choose distributions, calculate outcomes or metrics,
 persist samples, or acquire host/lane/provider authority.
 
-## Evidence target
+## Evidence
 
-One focused agent test covers two ordered pairs, repeated equality, nested ID
-order, and empty, over-capacity, mixed-actor, and global-duplicate-ID rejection.
-The expected full evidence is 21 focused agent tests within 234 Rust unit
-tests, 7 binary tests, and 3 RustDoc tests, plus formatter, Clippy warnings
-denied, repository checker, 15 Python policy tests, and diff checks.
+One focused agent test covers two ordered pairs, two-manifest nested order,
+repeated equality, inclusive four-pair capacity, nested ID order, and empty,
+over-capacity, mixed-actor, and global-duplicate-ID rejection. The full
+evidence is 21 focused agent tests within 234 Rust unit tests, 7 binary tests,
+and 3 RustDoc tests, plus formatter, Clippy warnings denied, repository
+checker, 15 Python policy tests, and diff checks; all pass at the reviewed
+head.
 
 ## Review limits
 
