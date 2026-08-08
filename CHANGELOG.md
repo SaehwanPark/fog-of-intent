@@ -98,6 +98,22 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.126 — 2026-08-08
+
+### Added
+
+- Added the versioned `m5-actor-message-v1` recipient-scoped envelope with
+  bounded actor-authored text, sender/recipient IDs, observation binding, and
+  an exact line-oriented codec.
+- Added focused protocol coverage for canonical encoding, closed numeric and
+  text bounds, malformed fields, and self-delivery rejection.
+
+### Known limits
+
+- The envelope is protocol metadata only; authentication, routing, delivery,
+  ordering, retries, trust, transport, and communication-quality evidence
+  remain open.
+
 ## 0.1.125 — 2026-08-08
 
 ### Added

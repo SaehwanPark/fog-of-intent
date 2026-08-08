@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.125`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.126`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1189,6 +1189,9 @@ control over simulation resolution.
 - [x] Define `m5-actor-draft-commit-receipt-v1` as a payload-free acknowledgement
   of the committed intent and accepted message/plan/contingency field presence;
   metadata delivery and communication semantics remain open.
+- [x] Define the recipient-scoped `m5-actor-message-v1` envelope with bounded
+  actor-authored text and observation binding; routing, delivery, ordering,
+  and communication semantics remain open.
 - [x] Add a read-only host adapter that validates an actor action against the
   current receipt and maps mismatch, stale, closed-window, and generic lane
   rejection to actor-safe codes.
@@ -1255,8 +1258,8 @@ committed intent, and `present`/`absent` bits for each draft field; it never
 echoes values or claims communication delivery. The provider-neutral
 `m5-actor-transcript-v1` record captures only closed tool/schema IDs and an
 accepted/rejected result for an actor receipt; it is not a runtime log or
-replay record. Focused evidence is 25 protocol tests,
-12 session tests, and 34 host tests within the 227-unit, 7-binary, and
+replay record. Focused evidence is 26 protocol tests,
+12 session tests, and 34 host tests within the 228-unit, 7-binary, and
 3-Rustdoc suite. The host observation projection is a
 pure actor-visible DTO mapping, rejects inactive lifecycle states, and leaves
 the internal receipt private. The history DTO is a bounded status summary,
@@ -1286,7 +1289,10 @@ plan, and contingency; it never echoes draft values or claims delivery.
 The `CliScenarioHost::actor_debrief_from_run` adapter applies the same local
 restore and completion gate before returning the existing categorical summary;
 the receiving host remains unchanged and detailed causal review stays private.
-The `m5-actor-draft-clear-v1` command carries only the active observer and
+The `ActorMessageDto` envelope binds bounded actor-authored text to a sender,
+recipient, and observation ID without routing or delivery authority; transport,
+recipient visibility, ordering, and communication semantics remain open. The
+`m5-actor-draft-clear-v1` command carries only the active observer and
 observation ID, while its receipt reports which fields were present before the
 host cleared them; it is idempotent for an empty draft and adds no delivery or
 transition authority.
@@ -1298,7 +1304,7 @@ transition authority.
 - [ ] Define remaining integration/contracts for messages, plans,
   contingencies, durable/scenario replay-linked records, and detailed
   outcome/debrief review;
-  bounded observation/action/commit/draft/draft-readback/draft-status/draft-clear/history/replay/replay-record/saved-replay-record/replay-debrief-record/saved-replay-debrief-record/saved-debrief-summary/debrief projections
+  bounded observation/action/commit/draft/message/draft-readback/draft-status/draft-clear/history/replay/replay-record/saved-replay-record/replay-debrief-record/saved-replay-debrief-record/saved-debrief-summary/debrief projections
   are delivered.
 - [x] Keep authoritative lane observation/request conversion behind crate-private
   protocol adapters; public protocol compatibility exposes DTOs only.
