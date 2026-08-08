@@ -43,9 +43,12 @@ strategic diversity. Evaluation applies either the cautious
 `threat-first-pressure-aware-fixed-score-v1`, risk-taking `contest-first-fixed-score-v1`, or
 yielding `yield-first-fixed-score-v1` table and labels each candidate as a
 threat response, risk preference, yield preference, stable default, or
-available alternative. Selection uses `max-score-stable-order-v1`: a strictly
-higher score replaces the current best, while an equal score keeps the first
-advertised candidate. The policy returns a request; it does not
+available alternative. Default selection uses `max-score-stable-order-v1`: a
+strictly higher score replaces the current best, while an equal score keeps the
+first advertised candidate. The opt-in `choose_with_seed` path uses the
+versioned `m4-scripted-agent-random-v1` bundle and
+`max-score-seeded-tie-v1` only for equal top-score candidates. The policy
+returns a request; it does not
 validate, execute, or commit that request.
 
 ## Communication, Trust, and Team Coordination
@@ -56,10 +59,12 @@ identity, candidates, selected intent, and the host-validatable request.
 
 ## Randomness and Reproducibility
 
-This profile uses no random stream. Identical observations produce equal
-decisions, and candidate order is inherited from the observation contract.
-Seed bundles, stochastic selection, top-k/nucleus sampling, and execution
-randomness are separate future evidence gates.
+The default profile path uses no random stream, so identical observations
+produce equal decisions and candidate order is inherited from the observation
+contract. The opt-in seeded path accepts an explicit seed plus policy
+`StreamId`/`DrawId`, records the bundle on the decision, and changes only an
+equal top-score tie. Broad sampling, top-k/nucleus selection, and execution
+randomness remain separate future evidence gates.
 
 ## Scenarios, Populations, and Metrics
 
@@ -118,5 +123,5 @@ hidden state to explain.
   reproducible?
 - Which matched-scenario metrics distinguish candidate breadth from execution
   randomness without implying human realism?
-- When should explicit random streams be added, and how will their seed
-  bundles be persisted and replayed?
+- How should broader random sampling and seed-bundle persistence be added
+  without weakening the bounded policy/replay contract?

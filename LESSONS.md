@@ -412,3 +412,16 @@ canonical policy instead of duplicating it.
   leaving threat-response selection and host validation unchanged.
 - Prevention: Keep preference labels descriptive and actor-safe; defer richer
   risk, planning, memory, communication, and human-behavior parameters.
+
+## Make policy randomness explicit and opt-in
+
+- Context: M4 needed a reproducible seed contract without changing the fixed
+  profile comparison or introducing an implicit global generator.
+- Symptom: A random tie-break can silently destroy replay identity when its
+  seed, stream, or draw is not part of the policy input.
+- Resolution: Add a versioned seed bundle carrying an explicit policy
+  `StreamId`/`DrawId`; use it only in `choose_with_seed` for equal top-score
+  candidates while preserving the default stable-order path.
+- Prevention: Record the bundle with seeded decisions, resolve randomness at
+  the policy edge, and defer broad sampling until seed/version and replay
+  contracts cover the larger experiment surface.

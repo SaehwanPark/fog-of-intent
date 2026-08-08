@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.91`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.92`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1048,7 +1048,8 @@ strategy while remaining bound to actor-visible information.
   candidate transformation remains open.
 - [x] Create a small three-profile versioned baseline catalog; broader profiles
   remain open.
-- [ ] Use explicit policy random streams and reproducible seed bundles.
+- [x] Use an explicit policy seed bundle and reproducible stream/draw identity
+  for opt-in top-1 tie selection; broader random sampling remains open.
 - [x] Add one matched-input comparison over the same actor-visible observation;
   matched-scenario populations remain open.
 - [x] Define one bounded monotonic utility effect: Anchor's `Stabilize` score
@@ -1073,12 +1074,17 @@ strategy while remaining bound to actor-visible information.
   candidate set with a bounded policy error.
 - [x] Evaluate candidates with the profile-specific fixed, inspectable
   `threat-first-pressure-aware-fixed-score-v1`, `contest-first-fixed-score-v1`, or
-  `yield-first-fixed-score-v1` rule and select by stable maximum score.
+  `yield-first-fixed-score-v1` rule and select by stable maximum score by
+  default.
+- [x] Define the versioned `m4-scripted-agent-random-v1` seed bundle and
+  `max-score-seeded-tie-v1` opt-in rule. It uses only the supplied seed and
+  policy stream/draw to choose among equal top-score candidates; the default
+  path remains stable-order deterministic.
 - [x] Expose each profile's baseline preferred intent separately from a
   visible-threat `Withdraw` override.
-- [x] Bind `max-score-stable-order-v1` to every profile and prove equal-score
-  ties retain the first advertised candidate; top-k/nucleus selection remains
-  open.
+- [x] Bind `max-score-stable-order-v1` to every profile and prove the default
+  equal-score path retains the first advertised candidate; top-k/nucleus
+  selection remains open.
 - [x] Return an actor-bound `LaneIntentRequest` for host-side legality
   validation, with reproducibility tests for identical observations.
 - [x] Compare three fixed profiles on one identical initial observation and
@@ -1098,11 +1104,9 @@ strategy while remaining bound to actor-visible information.
   profile, and rule IDs, observation count, and selected-intent counts.
 
 This is a three-profile library-only comparison with bounded score and
-selected-action reports. It
-does not establish a
-population, broader role heuristics, memory, communication, randomness,
-matched-scenario metrics, strategic quality, human realism, or an executable
-agent adapter.
+selected-action reports. It does not establish a population, broader role
+heuristics, memory, communication, broad random sampling, matched-scenario
+metrics, strategic quality, human realism, or an executable agent adapter.
 
 ### Deliverables
 
