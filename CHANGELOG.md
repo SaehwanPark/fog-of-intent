@@ -95,6 +95,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.94 — 2026-08-08
+
+### Added
+
+- Added the versioned `m5-actor-protocol-v1` observation/action DTO boundary
+  with closed intent IDs and bounded actor/turn/observation identity.
+- Added host-bound request conversion and hidden-state/authority regressions
+  without introducing MCP transport, async orchestration, or provider SDKs.
+
+### Known limits
+
+- Session lifecycle, plan/message DTOs, private submission, transport,
+  simultaneous decisions, and provider-neutral transcripts remain open.
+
 ## 0.1.93 — 2026-08-08
 
 ### Added

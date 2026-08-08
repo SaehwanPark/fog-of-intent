@@ -7,6 +7,7 @@ pub mod host;
 pub mod host_artifact;
 pub mod kernel;
 pub mod lane;
+pub mod protocol;
 pub mod run_store;
 pub mod serialization;
 pub mod terminal;

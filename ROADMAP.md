@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.93`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.94`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1148,6 +1148,19 @@ quality, human realism, or an executable agent adapter.
 External scripted, parametric, and selected language-model agents can complete
 the same scenario through a versioned MCP adapter without privileged state or
 control over simulation resolution.
+
+### Current bounded actor-protocol evidence
+
+- [x] Define `m5-actor-protocol-v1` with primitive actor-visible observation
+  and intent-action DTOs, closed intent IDs, and observer/turn/observation
+  identity.
+- [x] Convert the bounded action DTO back to an observer-bound
+  `LaneIntentRequest` for existing host validation; transport, session
+  lifecycle, and plan/message metadata remain open.
+
+This is a pure library adapter boundary with no MCP transport, async runtime,
+or provider-specific behavior. The DTOs expose only four advertised intents
+plus an optional visible threat response and do not replace host legality.
 
 ### Scope
 

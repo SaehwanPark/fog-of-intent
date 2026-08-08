@@ -440,3 +440,16 @@ canonical policy instead of duplicating it.
 - Prevention: Keep policy replay records separate from authoritative history,
   state hashes, execution inputs, and durable stores until those integrations
   have their own contracts and evidence.
+
+## Keep protocol DTOs narrower than domain observations
+
+- Context: M5 needed an actor-facing observation/action boundary before adding
+  transport or session orchestration.
+- Symptom: Exposing `LanerObservation` or `LaneIntentRequest` directly would
+  make internal domain types part of protocol compatibility and could let a
+  caller confuse DTO construction with legality.
+- Resolution: Map only primitive actor/turn/observation identities, closed
+  intent IDs, and the bounded advertised action set into versioned DTOs; convert
+  actions back to host-bound requests without validating them in the adapter.
+- Prevention: Keep transport, lifecycle, plan/message metadata, and host
+  legality outside the DTO module until each has its own versioned contract.
