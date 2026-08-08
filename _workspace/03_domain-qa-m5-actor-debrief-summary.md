@@ -2,8 +2,7 @@
 
 ## Status
 
-Pending the required independent three-pass review; local production evidence
-is green for the bounded slice.
+Pass — the required independent three-pass review found no actionable issues.
 
 ## Reviewed Inputs
 
@@ -55,7 +54,9 @@ experience, or balance.
 
 ## Required Fixes
 
-None identified locally; confirm through the independent three-pass review.
+None. The reviewer explicitly confirmed the v2 error vocabulary, historical v1
+boundary, roadmap scope wording, actor-safe fields, host/lane authority, and
+bounded lifecycle behavior.
 
 ## Residual Risks
 
@@ -65,6 +66,9 @@ provenance separately rather than extending this DTO opportunistically.
 
 ## Verification Evidence
 
-Focused `actor_debrief` tests pass. Full evidence will be recorded after format,
-Clippy, all Rust/Rustdoc, repository, Python, and diff checks and the required
-reviewer pass complete.
+Focused evidence includes 2 debrief, 15 protocol, 5 session, and 20 host tests
+within 196 Rust unit tests, 7 binary integration tests, and 1 RustDoc test.
+Format, Clippy with warnings denied, repository checker, 14 Python checks, and
+diff check all pass. The current actor-error codec is `m5-actor-error-v2`; v1
+is retained only as a historical identifier and is rejected by the current
+decoder.

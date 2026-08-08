@@ -12,7 +12,7 @@ actor-safe errors.
 ## Changed Files
 
 - `src/protocol.rs`: debrief value enums, fixed-window DTO, exact codec, and
-  closed debrief-unavailable error/repair IDs.
+  the v2 closed debrief-unavailable error/repair IDs; v1 remains historical.
 - `src/host.rs`: completion-gated actor debrief projection and focused
   lifecycle/hidden-field regression.
 - `Cargo.toml`, `README.md`, `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`,
@@ -23,14 +23,14 @@ actor-safe errors.
 
 ## Verification
 
-Pending final full-gate snapshot: expected current evidence is 15 focused
-protocol, 5 session, and 20 host tests within 196 Rust unit tests, 7 binary
-integration tests, and 1 RustDoc test, plus formatter, Clippy with warnings
-denied, repository checker, 14 Python checks, and diff check.
+Current evidence is 2 focused debrief, 15 protocol, 5 session, and 20 host
+tests within 196 Rust unit tests, 7 binary integration tests, and 1 RustDoc
+test, plus formatter, Clippy with warnings denied, repository checker, 14
+Python checks, and diff check.
 
 ## Domain QA Disposition
 
-Pending the required independent three-pass review at PR handoff.
+Pass — the required independent three-pass review found no actionable issues.
 
 ## Limits and Next Dependencies
 
