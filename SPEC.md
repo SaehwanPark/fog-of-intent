@@ -1204,6 +1204,9 @@ transport-integrated sessions and broader protocol compatibility remain open.
   rejects malformed or non-catalog text and returns a decoded value only when
   it matches an already verified report; it is evidence transport, not durable
   export.
+- The report's `to_markdown` projection emits only its schema, selection count,
+  and ordered catalog rows as a concise in-process evidence summary; it performs
+  no I/O and is not a durable report pipeline.
 
 ## Future
 

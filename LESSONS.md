@@ -1007,3 +1007,16 @@ canonical policy instead of duplicating it.
 - Prevention: Keep codec errors bounded and actor-safe, and treat report
   encoding as evidence transport rather than persistence or distribution
   authority.
+
+## Render verified evidence without widening export authority
+
+- Context: M6 needed a concise human-readable report after the machine-readable
+  frequency codec was delivered, while durable export remained out of scope.
+- Symptom: A renderer that accepts arbitrary fields or performs file I/O can
+  silently become a report pipeline and blur the boundary between evidence and
+  persistence.
+- Resolution: Render only the already verified report's schema, bounded total,
+  and stable catalog rows through a pure `&self` Markdown projection.
+- Prevention: Keep presentation projections deterministic and side-effect-free;
+  introduce persistence, broader metrics, or export formats only with separate
+  contracts and evidence.

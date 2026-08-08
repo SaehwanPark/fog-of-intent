@@ -167,7 +167,8 @@ replay, persistence, provider, or outcome authority.
 labels in stable catalog order; it is bounded metadata over validated input,
 not population, outcome, strategic, persistence, or provider evidence. Its
 line-oriented codec validates fixed fields and returns only values matching an
-already verified report; it is not durable export.
+already verified report; it is not durable export. Its pure Markdown projection
+renders the same verified fields without I/O or additional authority.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

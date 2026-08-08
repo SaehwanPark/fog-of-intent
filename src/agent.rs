@@ -751,6 +751,19 @@ impl ScriptedAgentFixtureScenarioFrequencyReport {
     )
   }
 
+  /// Render the verified report as a concise, non-persistent Markdown summary.
+  pub fn to_markdown(&self) -> String {
+    format!(
+      "# Scenario Frequency\n\n- schema: {}\n- selection_count: {}\n\n| scenario_id | count |\n| --- | ---: |\n| {} | {} |\n| {} | {} |\n",
+      self.schema,
+      self.selection_count,
+      self.entries[0].scenario_id,
+      self.entries[0].count,
+      self.entries[1].scenario_id,
+      self.entries[1].count,
+    )
+  }
+
   /// Decode and validate a report against an already verified value.
   pub fn decode(
     input: &str,
@@ -3450,6 +3463,10 @@ mod tests {
       "schema=m6-scripted-agent-fixture-frequency-v1\nselection_count=4\nentries=2\nrow=safe-fixture-v1|2\nrow=river-side-threat-v1|2\n"
     );
     assert_eq!(
+      report.to_markdown(),
+      "# Scenario Frequency\n\n- schema: m6-scripted-agent-fixture-frequency-v1\n- selection_count: 4\n\n| scenario_id | count |\n| --- | ---: |\n| safe-fixture-v1 | 2 |\n| river-side-threat-v1 | 2 |\n"
+    );
+    assert_eq!(
       ScriptedAgentFixtureScenarioFrequencyReport::decode(&encoded, &report),
       Ok(report.clone())
     );
@@ -3476,6 +3493,10 @@ mod tests {
       singleton_report.selection_count()
     );
     let singleton_encoded = singleton_report.encode();
+    assert_eq!(
+      singleton_report.to_markdown(),
+      "# Scenario Frequency\n\n- schema: m6-scripted-agent-fixture-frequency-v1\n- selection_count: 1\n\n| scenario_id | count |\n| --- | ---: |\n| safe-fixture-v1 | 1 |\n| river-side-threat-v1 | 0 |\n"
+    );
     assert_eq!(
       ScriptedAgentFixtureScenarioFrequencyReport::decode(&singleton_encoded, &singleton_report,),
       Ok(singleton_report.clone())

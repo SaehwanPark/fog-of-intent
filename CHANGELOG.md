@@ -98,6 +98,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.138 — 2026-08-08
+
+### Added
+
+- Added a concise pure Markdown evidence projection for the verified
+  `m6-scripted-agent-fixture-frequency-v1` report, preserving schema, bounded
+  selection count, and stable catalog rows without durable export.
+
+### Known limits
+
+- Durable export, arbitrary report construction, population generation,
+  random/distributional sampling, outcomes, strategic metrics, persistence,
+  providers, calibration, and human evidence remain open.
+
 ## 0.1.137 — 2026-08-08
 
 ### Added
