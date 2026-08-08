@@ -309,6 +309,16 @@ mod tests {
       candidate.intent() == LaneIntent::Contest
         && candidate.reason() == ScriptedAgentReason::AvailableAlternative
     }));
+    assert_eq!(
+      agent
+        .evaluate_candidate(receipt.observation(), LaneIntent::Contest)
+        .expect("advertised intent evaluates"),
+      ScriptedAgentCandidate {
+        intent: LaneIntent::Contest,
+        score: 60,
+        reason: ScriptedAgentReason::AvailableAlternative,
+      }
+    );
     validate_lane_request(&state, &receipt, &decision.request()).expect("policy request is legal");
   }
 
@@ -344,6 +354,16 @@ mod tests {
         && candidate.reason() == ScriptedAgentReason::ThreatResponse
         && candidate.score() == 100
     }));
+    assert_eq!(
+      ScriptedAgent::cautious_v1()
+        .evaluate_candidate(observation, LaneIntent::Withdraw)
+        .expect("visible threat response evaluates"),
+      ScriptedAgentCandidate {
+        intent: LaneIntent::Withdraw,
+        score: 100,
+        reason: ScriptedAgentReason::ThreatResponse,
+      }
+    );
   }
 
   #[test]
