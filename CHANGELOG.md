@@ -95,6 +95,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.78 — 2026-08-08
+
+### Added
+
+- Added a clean-checkout binary transcript regression that exercises the
+  documented two-window commands through replay, debrief, and quit.
+- Added actor-safe output/status assertions distinguishing executable evidence
+  from library-only host and store tests.
+
+### Known limits
+
+- The transcript covers only the bounded deterministic fixture; complete
+  playable behavior, multiple scenarios, branch graphs, and human accessibility
+  remain deferred.
+
 ## 0.1.77 — 2026-08-08
 
 ### Added

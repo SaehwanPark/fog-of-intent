@@ -73,6 +73,26 @@ fn run_default_binary(binary: &Path, working_directory: &Path, input: &str) -> O
     .expect("wait for default fixture binary")
 }
 
+fn run_scenario_binary(binary: &Path, scenario: &str, input: &str) -> Output {
+  let mut child = Command::new(binary)
+    .arg("--scenario")
+    .arg(scenario)
+    .stdin(Stdio::piped())
+    .stdout(Stdio::piped())
+    .stderr(Stdio::piped())
+    .spawn()
+    .expect("spawn scenario fixture binary");
+  child
+    .stdin
+    .as_mut()
+    .expect("scenario fixture stdin")
+    .write_all(input.as_bytes())
+    .expect("write scenario fixture input");
+  child
+    .wait_with_output()
+    .expect("wait for scenario fixture binary")
+}
+
 #[test]
 fn run_directory_wires_save_and_load_across_processes() {
   let binary = binary_path();
@@ -184,6 +204,31 @@ fn binary_version_aliases_are_successful_and_host_free() {
     .output()
     .expect("run combined version arguments");
   assert!(!combined.status.success());
+}
+
+#[test]
+fn binary_completes_the_documented_two_window_transcript() {
+  let output = run_scenario_binary(
+    &binary_path(),
+    "m3-two-window-fixture-v1",
+    "observe\nmessage ping ally\ncontingency retreat if threat\nplan contest\ncommit\nadvance\nplan stabilize\ncommit\nadvance\nreplay\ndebrief\nquit\n",
+  );
+
+  assert!(
+    output.status.success(),
+    "transcript stderr: {:?}",
+    output.stderr
+  );
+  assert!(output.stderr.is_empty());
+  let stdout = String::from_utf8(output.stdout).expect("transcript UTF-8 output");
+  assert!(stdout.contains("observation: schema="));
+  assert!(stdout.contains("draft: status=staged field=message"));
+  assert!(stdout.contains("draft: status=staged field=contingency"));
+  assert!(stdout.contains("advanced: window=first"));
+  assert!(stdout.contains("advanced: window=second"));
+  assert!(stdout.contains("replay: status=verified run_id=current records=2"));
+  assert!(stdout.contains("debrief: schema="));
+  assert!(stdout.ends_with("quit: status=closed\n"));
 }
 
 #[test]
