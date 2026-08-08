@@ -369,6 +369,7 @@ pub enum ActorProtocolErrorCode {
   ClosedSession,
   WindowClosed,
   HostValidationRejected,
+  HostTransitionRejected,
 }
 
 impl ActorProtocolErrorCode {
@@ -389,6 +390,7 @@ impl ActorProtocolErrorCode {
       Self::ClosedSession => "closed_session",
       Self::WindowClosed => "window_closed",
       Self::HostValidationRejected => "host_validation_rejected",
+      Self::HostTransitionRejected => "host_transition_rejected",
     }
   }
 }
