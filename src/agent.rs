@@ -694,6 +694,7 @@ pub enum ScriptedAgentFixturePopulationError {
   EmptyPopulation,
   PopulationTooLarge { max: usize, actual: usize },
   ObservationIdOverflow,
+  InvalidSelection(ScriptedAgentFixtureScenarioSelectionError),
 }
 
 /// Closed fixture variants available to the bounded M6 scenario selector.
@@ -851,13 +852,36 @@ impl ScriptedAgentFixtureScenarioPopulation {
       });
     }
     let mut scenario_ids = Vec::with_capacity(count);
-    let mut observation_ids = Vec::with_capacity(count);
     for index in 0..count {
       scenario_ids.push(if index % 2 == 0 {
         SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID
       } else {
         SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID
       });
+    }
+    Self::generate_from_scenario_ids(&scenario_ids, first_observation_id)
+  }
+
+  /// Generate a caller-declared ordered composition from the closed catalog.
+  pub fn generate_from_scenario_ids(
+    scenario_ids: &[&str],
+    first_observation_id: u64,
+  ) -> Result<Self, ScriptedAgentFixturePopulationError> {
+    if scenario_ids.is_empty() {
+      return Err(ScriptedAgentFixturePopulationError::EmptyPopulation);
+    }
+    if scenario_ids.len() > MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS {
+      return Err(ScriptedAgentFixturePopulationError::PopulationTooLarge {
+        max: MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS,
+        actual: scenario_ids.len(),
+      });
+    }
+    for scenario_id in scenario_ids {
+      ScriptedAgentFixtureScenario::parse_id(scenario_id)
+        .map_err(ScriptedAgentFixturePopulationError::InvalidSelection)?;
+    }
+    let mut observation_ids = Vec::with_capacity(scenario_ids.len());
+    for index in 0..scenario_ids.len() {
       let offset = index
         .checked_mul(2)
         .and_then(|value| u64::try_from(value).ok())
@@ -870,9 +894,8 @@ impl ScriptedAgentFixtureScenarioPopulation {
         .ok_or(ScriptedAgentFixturePopulationError::ObservationIdOverflow)?;
       observation_ids.push([ObservationId::new(first), ObservationId::new(second)]);
     }
-    let selection =
-      ScriptedAgentFixtureScenarioSelection::from_ids(&scenario_ids, &observation_ids)
-        .map_err(|_| ScriptedAgentFixturePopulationError::ObservationIdOverflow)?;
+    let selection = ScriptedAgentFixtureScenarioSelection::from_ids(scenario_ids, &observation_ids)
+      .map_err(ScriptedAgentFixturePopulationError::InvalidSelection)?;
     Ok(Self {
       schema: SCRIPTED_AGENT_FIXTURE_POPULATION_SCHEMA,
       selection,
@@ -4687,6 +4710,80 @@ mod tests {
           actual: MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS + 1,
         }
       )
+    );
+  }
+
+  #[test]
+  fn caller_declared_population_composition_preserves_order_and_frequency() {
+    let population = ScriptedAgentFixtureScenarioPopulation::generate_from_scenario_ids(
+      &[
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+      ],
+      220,
+    )
+    .expect("caller-declared composition builds");
+    assert_eq!(
+      population.scenarios(),
+      &[
+        ScriptedAgentFixtureScenario::Safe,
+        ScriptedAgentFixtureScenario::Safe,
+        ScriptedAgentFixtureScenario::Safe,
+        ScriptedAgentFixtureScenario::RiverSideThreat,
+      ]
+    );
+    assert_eq!(
+      population.observation_ids(),
+      &[
+        [ObservationId::new(220), ObservationId::new(221)],
+        [ObservationId::new(222), ObservationId::new(223)],
+        [ObservationId::new(224), ObservationId::new(225)],
+        [ObservationId::new(226), ObservationId::new(227)],
+      ]
+    );
+    let frequency =
+      ScriptedAgentFixtureScenarioFrequencyReport::from_selection(population.selection());
+    assert_eq!(frequency.entries()[0].count(), 3);
+    assert_eq!(frequency.entries()[1].count(), 1);
+    let manifests = [ScriptedAgentExperimentManifest::new(
+      ScriptedAgentProfile::cautious_v1(),
+      ScriptedAgentSeedBundle::new(41, StreamId::new(42), DrawId::new(43)),
+    )];
+    assert_eq!(
+      population.matched_sample(&manifests),
+      population.selection().matched_sample(&manifests)
+    );
+    assert_eq!(
+      ScriptedAgentFixtureScenarioPopulation::generate_from_scenario_ids(&[], u64::MAX),
+      Err(ScriptedAgentFixturePopulationError::EmptyPopulation)
+    );
+    assert_eq!(
+      ScriptedAgentFixtureScenarioPopulation::generate_from_scenario_ids(
+        &["unknown-fixture-v1"; MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS + 1],
+        u64::MAX,
+      ),
+      Err(ScriptedAgentFixturePopulationError::PopulationTooLarge {
+        max: MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS,
+        actual: MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS + 1,
+      })
+    );
+    assert_eq!(
+      ScriptedAgentFixtureScenarioPopulation::generate_from_scenario_ids(
+        &["unknown-fixture-v1"],
+        u64::MAX,
+      ),
+      Err(ScriptedAgentFixturePopulationError::InvalidSelection(
+        ScriptedAgentFixtureScenarioSelectionError::UnknownScenario,
+      ))
+    );
+    assert_eq!(
+      ScriptedAgentFixtureScenarioPopulation::generate_from_scenario_ids(
+        &[SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID],
+        u64::MAX,
+      ),
+      Err(ScriptedAgentFixturePopulationError::ObservationIdOverflow)
     );
   }
 

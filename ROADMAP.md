@@ -1386,6 +1386,9 @@ representative replays, and an evidence-limited report.
 - [x] Add a bounded deterministic fixed-fixture population generator over the
   closed scenario catalog; it is capped at four alternating entries and uses
   a caller-supplied starting observation ID to derive checked sequential pairs.
+- [x] Compose caller-declared ordered populations from the closed fixture
+  catalog and expose skewed fixed-fixture frequency evidence; random,
+  representative, and broader distributional sampling remain open.
 - [ ] Add broader scenario selection and distributional sampling evidence;
   population diversity and representative sampling remain open.
 - [x] Emit bounded selected-intent tallies over caller-supplied sample sets;

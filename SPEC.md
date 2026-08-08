@@ -1199,7 +1199,9 @@ transport-integrated sessions and broader protocol compatibility remain open.
   to four entries from that closed catalog. It alternates the safe and
   RiverSide-threat IDs, derives checked sequential observation-ID pairs from a
   caller-supplied starting ID in stable order, and composes the existing
-  verified matched-sample path. It does not perform
+  verified matched-sample path. Its ordered-composition constructor accepts
+  caller-declared closed IDs, so skewed fixed-fixture counts are explicit input
+  rather than sampled behavior. It does not perform
   random or broad population sampling, infer a distribution, or own outcome,
   transition, history, persistence, provider, or human-behavior authority.
 - `ScriptedAgentFixtureScenarioFrequencyReport` defines
