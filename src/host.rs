@@ -22,7 +22,7 @@ use crate::protocol::{
   ActorActionDto, ActorActionResultDto, ActorActionResultOutcome, ActorActionResultWindow,
   ActorCommitDto, ActorCommitResultDto, ActorDebriefDto, ActorDraftDto, ActorDraftField,
   ActorDraftReceiptDto, ActorHistoryDto, ActorHistoryStatus, ActorObservationDto,
-  ActorProtocolError, ActorProtocolErrorCode, ActorProtocolRepairHint,
+  ActorProtocolError, ActorProtocolErrorCode, ActorProtocolRepairHint, ActorReplayDto,
 };
 use crate::run_store::{CliRunStore, CliRunStoreError};
 
@@ -218,6 +218,28 @@ impl CliScenarioHost {
     };
     ActorHistoryDto::new(self.record_count(), status)
       .expect("host history status stays within the two-window fixture bounds")
+  }
+
+  /// Verify current immutable history and return only bounded actor-safe status.
+  pub fn actor_replay(&self) -> Result<ActorReplayDto, ActorProtocolError> {
+    if self.closed {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ));
+    }
+    self.history.verify_replay().map_err(|_| {
+      ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      )
+    })?;
+    ActorReplayDto::new(self.record_count()).map_err(|_| {
+      ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      )
+    })
   }
 
   /// Validate one actor action without mutating host state or history.
@@ -870,6 +892,7 @@ fn forced_out_inputs(stream: u8) -> LaneResolvedInputs {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::protocol::ActorReplayVerification;
   use std::sync::atomic::{AtomicU64, Ordering};
 
   static NEXT_STORE_ROOT: AtomicU64 = AtomicU64::new(0);
@@ -1061,6 +1084,61 @@ mod tests {
       closed.actor_history(),
       ActorHistoryDto::new(0, ActorHistoryStatus::Closed).expect("closed history is bounded")
     );
+  }
+
+  #[test]
+  fn actor_replay_projection_verifies_history_without_exposing_records() {
+    let mut host = CliScenarioHost::fixture();
+    let initial_observation = host.observation();
+    let initial = host.actor_replay().expect("empty history replays");
+    assert_eq!(initial.records(), 0);
+    assert_eq!(initial.verification(), ActorReplayVerification::Verified);
+    assert_eq!(
+      initial.encode(),
+      "schema=m5-actor-replay-v1\nrecords=0\nverification=verified\n"
+    );
+    assert!(!format!("{initial:?}").contains("hash"));
+    assert_eq!(host.record_count(), 0);
+    assert_eq!(host.observation(), initial_observation);
+
+    host.apply_line("plan contest").expect("plan stages");
+    host.apply_line("commit").expect("commit stages");
+    host.apply_line("advance").expect("first window advances");
+    let one = host.actor_replay().expect("one record replays");
+    assert_eq!(one.records(), 1);
+    host
+      .apply_line("plan stabilize")
+      .expect("second plan stages");
+    host.apply_line("commit").expect("second commit stages");
+    host.apply_line("advance").expect("second window advances");
+    let complete = host.actor_replay().expect("complete history replays");
+    assert_eq!(complete.records(), 2);
+
+    let mut closed = CliScenarioHost::fixture();
+    closed.apply_line("quit").expect("host closes");
+    assert_eq!(
+      closed.actor_replay(),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
+    );
+
+    let mut tampered = CliScenarioHost::fixture();
+    tampered.apply_line("plan contest").expect("plan stages");
+    tampered.apply_line("commit").expect("commit stages");
+    tampered
+      .apply_line("advance")
+      .expect("first window advances");
+    tampered.history.replay_id = "tampered";
+    assert_eq!(
+      tampered.actor_replay(),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
+    );
+    assert_eq!(tampered.record_count(), 1);
   }
 
   #[test]
