@@ -39,6 +39,9 @@ pub const ACTOR_DRAFT_SCHEMA: &str = "m5-actor-draft-v1";
 /// Versioned actor draft-staging acknowledgement identity.
 pub const ACTOR_DRAFT_RECEIPT_SCHEMA: &str = "m5-actor-draft-receipt-v1";
 
+/// Versioned provider-neutral actor transcript identity.
+pub const ACTOR_TRANSCRIPT_SCHEMA: &str = "m5-actor-transcript-v1";
+
 /// Versioned actor-visible bounded history-status identity.
 pub const ACTOR_HISTORY_SCHEMA: &str = "m5-actor-history-v1";
 
@@ -1103,6 +1106,184 @@ impl ActorDraftReceiptDto {
   }
 }
 
+/// Closed provider-neutral actor tool identities.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ActorTranscriptTool {
+  Observation,
+  Draft,
+  DraftReceipt,
+  Commit,
+  Action,
+}
+
+impl ActorTranscriptTool {
+  pub const fn id(self) -> &'static str {
+    match self {
+      Self::Observation => "observation",
+      Self::Draft => "draft",
+      Self::DraftReceipt => "draft_receipt",
+      Self::Commit => "commit",
+      Self::Action => "action",
+    }
+  }
+
+  pub const fn schema_id(self) -> &'static str {
+    match self {
+      Self::Observation => ACTOR_OBSERVATION_SCHEMA,
+      Self::Draft => ACTOR_DRAFT_SCHEMA,
+      Self::DraftReceipt => ACTOR_DRAFT_RECEIPT_SCHEMA,
+      Self::Commit => ACTOR_COMMIT_SCHEMA,
+      Self::Action => ACTOR_ACTION_SCHEMA,
+    }
+  }
+
+  fn parse_id(value: &str) -> Result<Self, ActorProtocolCodecError> {
+    match value {
+      "observation" => Ok(Self::Observation),
+      "draft" => Ok(Self::Draft),
+      "draft_receipt" => Ok(Self::DraftReceipt),
+      "commit" => Ok(Self::Commit),
+      "action" => Ok(Self::Action),
+      _ => Err(ActorProtocolCodecError::InvalidValue),
+    }
+  }
+}
+
+/// Closed provider-neutral actor operation result values.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ActorTranscriptResult {
+  Accepted,
+  Rejected,
+}
+
+impl ActorTranscriptResult {
+  pub const fn id(self) -> &'static str {
+    match self {
+      Self::Accepted => "accepted",
+      Self::Rejected => "rejected",
+    }
+  }
+
+  fn parse_id(value: &str) -> Result<Self, ActorProtocolCodecError> {
+    match value {
+      "accepted" => Ok(Self::Accepted),
+      "rejected" => Ok(Self::Rejected),
+      _ => Err(ActorProtocolCodecError::InvalidValue),
+    }
+  }
+}
+
+/// Bounded provider-neutral actor operation transcript metadata.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ActorTranscriptDto {
+  schema: &'static str,
+  observer: u8,
+  observation_id: u64,
+  tool: ActorTranscriptTool,
+  tool_schema: &'static str,
+  result: ActorTranscriptResult,
+}
+
+impl ActorTranscriptDto {
+  pub const fn new(
+    observer: u8,
+    observation_id: u64,
+    tool: ActorTranscriptTool,
+    result: ActorTranscriptResult,
+  ) -> Self {
+    Self {
+      schema: ACTOR_TRANSCRIPT_SCHEMA,
+      observer,
+      observation_id,
+      tool,
+      tool_schema: tool.schema_id(),
+      result,
+    }
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn observer(self) -> u8 {
+    self.observer
+  }
+
+  pub const fn observation_id(self) -> u64 {
+    self.observation_id
+  }
+
+  pub const fn tool(self) -> ActorTranscriptTool {
+    self.tool
+  }
+
+  pub const fn tool_schema(self) -> &'static str {
+    self.tool_schema
+  }
+
+  pub const fn result(self) -> ActorTranscriptResult {
+    self.result
+  }
+
+  /// Encode provider-neutral transcript metadata as stable line-oriented text.
+  pub fn encode(self) -> String {
+    format!(
+      "schema={}\nobserver={}\nobservation_id={}\ntool={}\ntool_schema={}\nresult={}\n",
+      self.schema,
+      self.observer,
+      self.observation_id,
+      self.tool.id(),
+      self.tool_schema,
+      self.result.id()
+    )
+  }
+
+  /// Decode bounded transcript metadata without runtime or simulation authority.
+  pub fn decode(input: &str) -> Result<Self, ActorProtocolCodecError> {
+    let fields = parse_fields(input, 6)?;
+    let mut schema = None;
+    let mut observer = None;
+    let mut observation_id = None;
+    let mut tool = None;
+    let mut tool_schema = None;
+    let mut result = None;
+    for (key, value) in fields {
+      let slot = match key {
+        "schema" => &mut schema,
+        "observer" => &mut observer,
+        "observation_id" => &mut observation_id,
+        "tool" => &mut tool,
+        "tool_schema" => &mut tool_schema,
+        "result" => &mut result,
+        _ => return Err(ActorProtocolCodecError::UnknownField),
+      };
+      if slot.is_some() {
+        return Err(ActorProtocolCodecError::DuplicateField);
+      }
+      *slot = Some(value);
+    }
+    if schema != Some(ACTOR_TRANSCRIPT_SCHEMA) {
+      return Err(ActorProtocolCodecError::UnsupportedSchema);
+    }
+    let tool = ActorTranscriptTool::parse_id(tool.ok_or(ActorProtocolCodecError::MissingField)?)?;
+    if tool_schema != Some(tool.schema_id()) {
+      return Err(ActorProtocolCodecError::UnsupportedSchema);
+    }
+    Ok(Self::new(
+      observer
+        .ok_or(ActorProtocolCodecError::MissingField)?
+        .parse::<u8>()
+        .map_err(|_| ActorProtocolCodecError::InvalidValue)?,
+      observation_id
+        .ok_or(ActorProtocolCodecError::MissingField)?
+        .parse::<u64>()
+        .map_err(|_| ActorProtocolCodecError::InvalidValue)?,
+      tool,
+      ActorTranscriptResult::parse_id(result.ok_or(ActorProtocolCodecError::MissingField)?)?,
+    ))
+  }
+}
+
 /// Closed actor-visible lifecycle status for the bounded fixture history.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ActorHistoryStatus {
@@ -1926,6 +2107,108 @@ mod tests {
       Err(ActorProtocolCodecError::UnexpectedLineCount {
         expected: 4,
         actual: 5,
+      })
+    );
+  }
+
+  #[test]
+  fn actor_transcript_codec_binds_closed_tools_and_results() {
+    let tools = [
+      ActorTranscriptTool::Observation,
+      ActorTranscriptTool::Draft,
+      ActorTranscriptTool::DraftReceipt,
+      ActorTranscriptTool::Commit,
+      ActorTranscriptTool::Action,
+    ];
+    for tool in tools {
+      for result in [
+        ActorTranscriptResult::Accepted,
+        ActorTranscriptResult::Rejected,
+      ] {
+        let transcript = ActorTranscriptDto::new(1, 42, tool, result);
+        assert_eq!(transcript.schema(), "m5-actor-transcript-v1");
+        assert_eq!(transcript.tool(), tool);
+        assert_eq!(transcript.tool_schema(), tool.schema_id());
+        assert_eq!(transcript.result(), result);
+        if tool == ActorTranscriptTool::Observation && result == ActorTranscriptResult::Accepted {
+          assert_eq!(
+            transcript.encode(),
+            "schema=m5-actor-transcript-v1\nobserver=1\nobservation_id=42\ntool=observation\ntool_schema=m5-actor-observation-v1\nresult=accepted\n"
+          );
+        }
+        assert_eq!(
+          ActorTranscriptDto::decode(&transcript.encode()),
+          Ok(transcript)
+        );
+        let visible = format!("{:?}\n{}", transcript, transcript.encode()).to_ascii_lowercase();
+        for marker in [
+          "payload",
+          "state",
+          "hash",
+          "execution",
+          "trace",
+          "source",
+          "provenance",
+          "transport",
+          "prompt",
+          "model",
+        ] {
+          assert!(
+            !visible.contains(marker),
+            "transcript leaked marker {marker}: {visible}"
+          );
+        }
+      }
+    }
+    assert_eq!(
+      ActorTranscriptDto::decode(
+        "schema=m5-actor-transcript-v1\nobserver=1\nobservation_id=42\ntool=unknown\ntool_schema=m5-actor-observation-v1\nresult=accepted\n"
+      ),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ActorTranscriptDto::decode(
+        "schema=m5-actor-transcript-v1\nobserver=1\nobservation_id=42\ntool=observation\ntool_schema=m5-actor-action-v1\nresult=accepted\n"
+      ),
+      Err(ActorProtocolCodecError::UnsupportedSchema)
+    );
+    assert_eq!(
+      ActorTranscriptDto::decode(
+        "schema=m5-actor-transcript-v0\nobserver=1\nobservation_id=42\ntool=observation\ntool_schema=m5-actor-observation-v1\nresult=accepted\n"
+      ),
+      Err(ActorProtocolCodecError::UnsupportedSchema)
+    );
+    assert_eq!(
+      ActorTranscriptDto::decode(
+        "schema=m5-actor-transcript-v1\nobserver=1\nobservation_id=42\ntool=observation\ntool_schema=m5-actor-observation-v1\nunknown=accepted\n"
+      ),
+      Err(ActorProtocolCodecError::UnknownField)
+    );
+    assert_eq!(
+      ActorTranscriptDto::decode(
+        "schema=m5-actor-transcript-v1\nobserver=1\nobservation_id=42\ntool=observation\ntool_schema=m5-actor-observation-v1\n"
+      ),
+      Err(ActorProtocolCodecError::MissingField)
+    );
+    assert_eq!(
+      ActorTranscriptDto::decode(
+        "schema=m5-actor-transcript-v1\nobserver=nope\nobservation_id=42\ntool=observation\ntool_schema=m5-actor-observation-v1\nresult=accepted\n"
+      ),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ActorTranscriptDto::decode(
+        "schema=m5-actor-transcript-v1\nobserver=1\nobservation_id=42\ntool=observation\ntool_schema=m5-actor-observation-v1\nresult=maybe\n"
+      ),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ActorTranscriptDto::decode(
+        "schema=m5-actor-transcript-v1\nobserver=1\nobservation_id=42\ntool=observation\ntool_schema=m5-actor-observation-v1\nresult=accepted\nextra=x\n"
+      ),
+      Err(ActorProtocolCodecError::UnexpectedLineCount {
+        expected: 6,
+        actual: 7,
       })
     );
   }

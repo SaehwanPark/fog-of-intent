@@ -98,6 +98,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.109 — 2026-08-08
+
+### Added
+
+- Added `m5-actor-transcript-v1`, a provider-neutral six-line record for
+  bounded actor tool/schema identity and accepted/rejected outcomes.
+- Added exact closed-catalog codec coverage without retaining payloads, raw
+  errors, prompts, model metadata, transport details, or simulation state.
+
+### Known limits
+
+- Transcript metadata remains a pure library value; runtime logging,
+  persistence, provider compatibility, transport, and replay integration remain
+  open.
+
 ## 0.1.108 — 2026-08-08
 
 ### Added
