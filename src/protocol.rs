@@ -213,6 +213,15 @@ impl ActorObservationDto {
     if !(4..=5).contains(&available_actions.len()) {
       return Err(ActorProtocolCodecError::InvalidValue);
     }
+    let base_actions = [
+      ActorProtocolIntent::Stabilize,
+      ActorProtocolIntent::Contest,
+      ActorProtocolIntent::Yield,
+      ActorProtocolIntent::Recall,
+    ];
+    if available_actions.get(..4) != Some(base_actions.as_slice()) {
+      return Err(ActorProtocolCodecError::InvalidValue);
+    }
     let visible_threat_response = match threat.ok_or(ActorProtocolCodecError::MissingField)? {
       "unknown" => None,
       value => Some(ActorProtocolIntent::parse_id(value)?),
@@ -359,14 +368,15 @@ fn parse_fields(
   if input.len() > MAX_ACTOR_PROTOCOL_BYTES {
     return Err(ActorProtocolCodecError::Oversized);
   }
+  let actual_lines = input.lines().count();
+  if actual_lines > expected_lines {
+    return Err(ActorProtocolCodecError::UnexpectedLineCount {
+      expected: expected_lines,
+      actual: actual_lines,
+    });
+  }
   let mut fields = Vec::with_capacity(expected_lines);
   for line in input.lines() {
-    if fields.len() == expected_lines {
-      return Err(ActorProtocolCodecError::UnexpectedLineCount {
-        expected: expected_lines,
-        actual: expected_lines + 1,
-      });
-    }
     let (key, value) = line
       .split_once('=')
       .ok_or(ActorProtocolCodecError::InvalidValue)?;
@@ -377,12 +387,6 @@ fn parse_fields(
   }
   if fields.len() < expected_lines {
     return Ok(fields);
-  }
-  if fields.len() != expected_lines {
-    return Err(ActorProtocolCodecError::UnexpectedLineCount {
-      expected: expected_lines,
-      actual: fields.len(),
-    });
   }
   Ok(fields)
 }
@@ -446,6 +450,10 @@ mod tests {
     assert_eq!(
       dto.available_actions().last(),
       Some(&ActorProtocolIntent::Withdraw)
+    );
+    assert_eq!(
+      ActorObservationDto::decode(&dto.encode()).expect("threat observation decodes"),
+      dto
     );
   }
 
@@ -522,6 +530,12 @@ mod tests {
       ),
       Err(ActorProtocolCodecError::InvalidValue)
     );
+    assert_eq!(
+      ActorObservationDto::decode(
+        "schema=m5-actor-observation-v1\nobserver=1\nturn=0\nobservation_id=33\nactions=stabilize,contest,yield,withdraw\nthreat=unknown\n"
+      ),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
   }
 
   #[test]
@@ -532,12 +546,12 @@ mod tests {
       Err(ActorProtocolCodecError::Oversized)
     );
     let extra =
-      "schema=m5-actor-action-v1\nobserver=1\nobservation_id=34\nintent=contest\nextra=x\n";
+      "schema=m5-actor-action-v1\nobserver=1\nobservation_id=34\nintent=contest\nextra=x\nmore=y\n";
     assert_eq!(
       ActorActionDto::decode(extra),
       Err(ActorProtocolCodecError::UnexpectedLineCount {
         expected: 4,
-        actual: 5
+        actual: 6
       })
     );
   }
