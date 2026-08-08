@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.101`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.102`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1179,6 +1179,9 @@ control over simulation resolution.
 - [x] Stage observation-bound actor draft metadata through the host-owned draft
   boundary with replacement and committed-window checks; communication
   delivery remains open.
+- [x] Expose the current actor-visible receipt through the versioned observation
+  DTO without mutating host history; transport and simultaneous actors remain
+  open.
 
 This is a pure library adapter boundary with no MCP transport, async runtime,
 or provider-specific behavior. The DTOs expose only four advertised intents
@@ -1192,8 +1195,9 @@ closes the fixture window through the existing deterministic transition.
 The `m5-actor-draft-v1` DTO adds bounded message, plan, and contingency
 metadata without communication authority. The host stages those DTOs only
 before commit and never turns them into a transition by itself. Focused
-evidence is 11 protocol tests, 5 session tests, and 16 host tests within the
-188-unit, 7-binary, and 1-Rustdoc suite.
+evidence is 11 protocol tests, 5 session tests, and 17 host tests within the
+189-unit, 7-binary, and 1-Rustdoc suite. The host observation projection is a
+pure actor-visible DTO mapping and leaves the internal receipt private.
 
 ### Scope
 

@@ -548,3 +548,15 @@ canonical policy instead of duplicating it.
 - Prevention: Test replacement plus every boundary while asserting unchanged
   observation and record count; keep communication, transport, and
   simultaneous-draft semantics in separate slices.
+
+## Project actor observations at the host edge
+
+- Context: Actor action and draft DTOs need a current observation without
+  exposing the internal lane receipt as a protocol contract.
+- Symptom: Letting an adapter reach into host internals duplicates observation
+  binding and can accidentally expose hashes, resolved inputs, or true state.
+- Resolution: Have the host map its current receipt through the existing
+  `ActorObservationDto` projection and prove the mapping is equal across window
+  changes while record count and state authority remain host-owned.
+- Prevention: Keep the DTO actor-visible and pure; add transport, simultaneous
+  actor, and richer session semantics only behind separate contracts.

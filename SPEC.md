@@ -968,7 +968,7 @@ transport-integrated sessions and broader protocol compatibility remain open.
   snapshot fields, session lifecycle/error cases, codec round-trips and
   malformed-input rejection, and exhaustive codec/session error projections.
   The focused evidence is 11 protocol tests and 5 session tests within the
-  188-unit, 7-binary, and 1-Rustdoc suite.
+  189-unit, 7-binary, and 1-Rustdoc suite.
 - `CliScenarioHost::validate_actor_action` checks one DTO against the current
   actor-visible receipt and existing lane validator without mutating history,
   staging a plan, resolving execution, or closing a window. It projects only
@@ -988,6 +988,10 @@ transport-integrated sessions and broader protocol compatibility remain open.
   observation and replaces one internal draft field before commit. It rejects
   stale, wrong-actor, committed, complete, and closed edits without changing
   history; commit/advance remain the existing host-owned boundary.
+- `CliScenarioHost::actor_observation` projects the current host receipt through
+  `m5-actor-observation-v1` without exposing the internal lane observation or
+  mutating history. The projection remains actor-visible and observation-bound;
+  transport and simultaneous-actor coordination remain open.
   This is a pure library boundary, not an MCP transport or complete-session
   claim; communication delivery, transport, simultaneity, and broader
   host-error projection remain open.
