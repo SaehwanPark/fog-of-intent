@@ -95,6 +95,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.95 — 2026-08-08
+
+### Added
+
+- Added the immutable `m5-actor-session-v1` lifecycle for ordinary actor
+  binding, current-observation freshness, duplicate-submit rejection, and
+  fail-closed close behavior.
+- Kept session checks separate from host legality, transition, history, and
+  replay authority.
+
+### Known limits
+
+- Session transport, reconnect/disconnect policy, simultaneous submission,
+  repair behavior, and provider-neutral transcripts remain open.
+
 ## 0.1.94 — 2026-08-08
 
 ### Added

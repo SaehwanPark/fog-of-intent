@@ -932,8 +932,9 @@ open.
 
 ### M5 — First actor-protocol DTO boundary — 2026-08-08
 
-**Status:** Bounded observation/action DTO projection delivered; transport,
-session lifecycle, and broader protocol compatibility remain open.
+**Status:** Bounded observation/action DTO projection and immutable library
+session lifecycle delivered; transport-integrated sessions and broader protocol
+compatibility remain open.
 
 - `src/protocol.rs` defines the versioned `m5-actor-protocol-v1`,
   `m5-actor-observation-v1`, and `m5-actor-action-v1` identities with a closed
@@ -946,10 +947,18 @@ session lifecycle, and broader protocol compatibility remain open.
   existing `LaneIntentRequest`; the adapter does not validate legality or
   authorize a transition. The host remains the sole legality and transition
   authority.
+- `src/session.rs` defines the bounded `m5-actor-session-v1` lifecycle over
+  those DTOs; transport-integrated lifecycle, reconnect, and privileged actor
+  authority remain open.
+- `ActorSession` defines the versioned `m5-actor-session-v1` immutable
+  lifecycle: one ordinary actor, one current observation, one accepted action
+  per window, and explicit close. It rejects cross-actor, stale, duplicate,
+  no-observation, and closed-session operations without validating intent
+  legality or mutating history.
 - Focused tests cover stable IDs, safe/threat action breadth, DTO-to-request
   conversion through the existing validator, and absence of state-hash or
-  snapshot fields. This is a pure library boundary, not an MCP transport or
-  session-completion claim.
+  snapshot fields, plus session lifecycle/error cases. This is a pure library
+  boundary, not an MCP transport or complete-session claim.
 
 ## Future
 
