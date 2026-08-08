@@ -844,7 +844,8 @@ canonical policy instead of duplicating it.
   delivery or a second actor's visibility if ownership and order are implicit.
 - Resolution: Read only the requesting actor's actor-protocol draft, return
   existing bounded DTOs in a fixed field order, preserve observation, commit,
-  and history state, and keep legacy CLI draft text on its existing path.
+  and history state, and keep legacy CLI draft text on its existing path while
+  retaining mixed-adapter presence/clear semantics in the shared draft.
 - Prevention: Treat draft readback as local metadata inspection; introduce
   recipients, transport, and simultaneous visibility only through a separate
   communication contract.

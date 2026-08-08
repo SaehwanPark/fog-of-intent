@@ -20,9 +20,10 @@ communication to another actor or a lane/history command.
 
 One focused host test covers empty and populated actor-protocol readback,
 exact observation binding and field order, unchanged observation/history/
-commit state, committed/complete/closed rejection, and CLI-only malformed or
-oversized draft text remaining outside this DTO projection. Existing draft
-codec and staging tests retain malformed-value and replacement coverage.
+commit state, committed/complete/closed rejection, mixed CLI/protocol draft
+presence and clear parity, and CLI-only malformed or oversized draft text
+remaining outside this DTO projection. Existing draft codec and staging tests
+retain malformed-value and replacement coverage.
 
 ## Limits
 

@@ -624,9 +624,9 @@ impl CliScenarioHost {
     let result = ActorDraftClearReceiptDto::new(
       clear.observer(),
       clear.observation_id(),
-      presence(&self.protocol_draft.message),
-      presence(&self.protocol_draft.plan),
-      presence(&self.protocol_draft.contingency),
+      presence(&self.draft.message),
+      presence(&self.draft.plan),
+      presence(&self.draft.contingency),
     );
     self.clear_drafts();
     Ok(result)
@@ -686,17 +686,17 @@ impl CliScenarioHost {
     &mut self,
     commit: ActorCommitDto,
   ) -> Result<ActorDraftCommitReceiptDto, ActorProtocolError> {
-    let message = if self.protocol_draft.message.is_some() {
+    let message = if self.draft.message.is_some() {
       ActorDraftPresence::Present
     } else {
       ActorDraftPresence::Absent
     };
-    let plan = if self.protocol_draft.plan.is_some() {
+    let plan = if self.draft.plan.is_some() {
       ActorDraftPresence::Present
     } else {
       ActorDraftPresence::Absent
     };
-    let contingency = if self.protocol_draft.contingency.is_some() {
+    let contingency = if self.draft.contingency.is_some() {
       ActorDraftPresence::Present
     } else {
       ActorDraftPresence::Absent
@@ -852,7 +852,7 @@ impl CliScenarioHost {
         if self.committed_intent.is_some() {
           return Err(CliHostError::CommittedBoundary { verb: "message" });
         }
-        self.protocol_draft = HostDraft::empty();
+        self.protocol_draft.message = None;
         self.draft.message = Some(text.to_owned());
         Ok(CliHostOutput::DraftStaged { field: "message" })
       }
@@ -860,7 +860,7 @@ impl CliScenarioHost {
         if self.committed_intent.is_some() {
           return Err(CliHostError::CommittedBoundary { verb: "plan" });
         }
-        self.protocol_draft = HostDraft::empty();
+        self.protocol_draft.plan = None;
         self.draft.plan = Some(text.to_owned());
         Ok(CliHostOutput::DraftStaged { field: "plan" })
       }
@@ -870,7 +870,7 @@ impl CliScenarioHost {
             verb: "contingency",
           });
         }
-        self.protocol_draft = HostDraft::empty();
+        self.protocol_draft.contingency = None;
         self.draft.contingency = Some(text.to_owned());
         Ok(CliHostOutput::DraftStaged {
           field: "contingency",
@@ -2468,6 +2468,60 @@ mod tests {
       .apply_line(&format!("message {}", "x".repeat(257)))
       .expect("CLI accepts legacy draft text");
     assert_eq!(cli_draft.actor_draft(), Ok(Vec::new()));
+
+    let mut mixed = CliScenarioHost::fixture();
+    let mixed_observation = mixed.observation();
+    mixed
+      .stage_actor_draft(
+        ActorDraftDto::new(
+          mixed_observation.observer().value(),
+          mixed_observation.observation_id().value(),
+          ActorDraftField::Message,
+          "actor message",
+        )
+        .expect("actor message is bounded"),
+      )
+      .expect("actor message stages");
+    mixed
+      .apply_line("plan contest")
+      .expect("CLI plan stages alongside actor metadata");
+    assert_eq!(
+      mixed.actor_draft(),
+      Ok(vec![
+        ActorDraftDto::new(
+          mixed_observation.observer().value(),
+          mixed_observation.observation_id().value(),
+          ActorDraftField::Message,
+          "actor message",
+        )
+        .expect("actor message is bounded"),
+      ])
+    );
+    assert_eq!(
+      mixed.actor_draft_status(),
+      Ok(ActorDraftStatusDto::new(
+        mixed_observation.observer().value(),
+        mixed_observation.observation_id().value(),
+        ActorDraftPresence::Present,
+        ActorDraftPresence::Present,
+        ActorDraftPresence::Absent,
+      ))
+    );
+    let mixed_clear = ActorDraftClearDto::new(
+      mixed_observation.observer().value(),
+      mixed_observation.observation_id().value(),
+    );
+    assert_eq!(
+      mixed.clear_actor_draft(mixed_clear),
+      Ok(ActorDraftClearReceiptDto::new(
+        mixed_observation.observer().value(),
+        mixed_observation.observation_id().value(),
+        ActorDraftPresence::Present,
+        ActorDraftPresence::Present,
+        ActorDraftPresence::Absent,
+      ))
+    );
+    assert_eq!(mixed.actor_draft(), Ok(Vec::new()));
 
     host
       .commit_actor_draft(ActorCommitDto::new(
