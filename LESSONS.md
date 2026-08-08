@@ -81,3 +81,17 @@ canonical policy instead of duplicating it.
   and consume it into `CliCommittedDraft`, which exposes only read-only getters.
 - Prevention: Model irreversible adapter boundaries with consuming operations
   and marker types before adding host or persistence integration.
+
+## Validate artifact identifiers at the adapter edge
+
+- Context: Save/load/replay/export grammar values were arbitrary non-empty
+  strings before persistence existed.
+- Symptom: A future host could receive whitespace, path separators, or
+  overlong identifiers and have to reinterpret adapter input inconsistently.
+- Cause: Non-empty validation does not define a portable human-readable ID
+  syntax or a bounded failure contract.
+- Resolution: Add borrowed `CliRunId` validation with explicit length and
+  character rules, then carry the type through affected request mappings while
+  leaving storage and authority to the host.
+- Prevention: Validate adapter identifiers before host execution and keep ID
+  syntax separate from persistence, branch points, and replay identity.
