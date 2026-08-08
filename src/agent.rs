@@ -2855,6 +2855,28 @@ mod tests {
         8
       );
     }
+    let capacity_encoded = capacity_tally.encode();
+    assert_eq!(
+      ScriptedAgentMatchedScenarioTallyReport::decode(&capacity_encoded, &capacity_tally),
+      Ok(capacity_tally.clone())
+    );
+
+    let max_manifest_batch = [manifests[0]; MAX_SCRIPTED_AGENT_BATCH_MANIFESTS];
+    let max_entry_sample =
+      ScriptedAgentMatchedScenarioSample::from_observations(&[pairs[0]], &max_manifest_batch)
+        .expect("inclusive entry cap runs");
+    let max_entry_tally = ScriptedAgentMatchedScenarioTallyReport::from_sample(&max_entry_sample);
+    assert_eq!(max_entry_tally.pair_count(), 1);
+    assert_eq!(max_entry_tally.observation_count(), 2);
+    assert_eq!(
+      max_entry_tally.entries().len(),
+      MAX_SCRIPTED_AGENT_BATCH_MANIFESTS
+    );
+    let max_entry_encoded = max_entry_tally.encode();
+    assert_eq!(
+      ScriptedAgentMatchedScenarioTallyReport::decode(&max_entry_encoded, &max_entry_tally),
+      Ok(max_entry_tally)
+    );
 
     assert_eq!(
       ScriptedAgentMatchedScenarioSample::from_observations(&[], &manifests),
