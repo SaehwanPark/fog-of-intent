@@ -224,11 +224,16 @@ fn binary_completes_the_documented_two_window_transcript() {
   assert!(stdout.contains("observation: schema="));
   assert!(stdout.contains("draft: status=staged field=message"));
   assert!(stdout.contains("draft: status=staged field=contingency"));
+  assert!(stdout.contains("commit: status=committed intent=contest"));
+  assert!(stdout.contains("commit: status=committed intent=stabilize"));
   assert!(stdout.contains("advanced: window=first"));
   assert!(stdout.contains("advanced: window=second"));
   assert!(stdout.contains("replay: status=verified run_id=current records=2"));
   assert!(stdout.contains("debrief: schema="));
   assert!(stdout.ends_with("quit: status=closed\n"));
+  assert!(!stdout.contains("hash"));
+  assert!(!stdout.contains("source_"));
+  assert!(!stdout.contains("error:"));
 }
 
 #[test]
