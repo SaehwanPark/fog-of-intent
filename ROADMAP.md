@@ -1407,7 +1407,9 @@ representative replays, and an evidence-limited report.
 - [x] Compare caller-declared verified fixed-fixture frequency reports with
   bounded ordered row deltas; independent build provenance and causal
   attribution remain open.
-- [ ] Preserve crashes, timeouts, missing branches, and inconclusive results.
+- [x] Preserve caller-declared crashes, timeouts, missing branches, and
+  inconclusive results in a bounded status envelope; automatic runtime
+  detection and process diagnostics remain open.
 - [ ] Compare build-to-build behavior against a declared baseline.
 
 ### Deliverables
@@ -1416,8 +1418,9 @@ representative replays, and an evidence-limited report.
 - Versioned bounded cursor artifacts, matched-observation and matched-scenario
   selected-intent/tally evidence with a machine-readable codec, a closed
   fixed-fixture scenario catalog/selector and scenario-frequency evidence with
-  a pure Markdown projection, and an applicable version catalog; decision/result
-  artifacts and representative replays remain open.
+  a pure Markdown projection, an applicable version catalog, and a
+  caller-declared run-disposition envelope; decision/result artifacts,
+  automatic failure detection, and representative replays remain open.
 - Regression report template and threshold rationale.
 - CI or scheduled entry point only after runtime cost is measured.
 

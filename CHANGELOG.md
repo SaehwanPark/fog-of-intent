@@ -98,6 +98,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.141 — 2026-08-08
+
+### Added
+
+- Added `m6-scripted-agent-run-disposition-v1`, a bounded caller-declared
+  envelope for `completed`, `crashed`, `timed_out`, `missing_branch`, and
+  `inconclusive` run statuses with no process diagnostics or raw failure detail.
+
+### Known limits
+
+- Automatic crash/timeout detection, process diagnostics, decision/result
+  attachment, durable export, independent build provenance, causal attribution,
+  population sampling, provider execution, outcome metrics, and human evidence
+  remain open.
+
 ## 0.1.140 — 2026-08-08
 
 ### Added
