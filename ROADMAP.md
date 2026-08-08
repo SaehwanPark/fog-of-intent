@@ -1381,7 +1381,8 @@ representative replays, and an evidence-limited report.
   repeated IDs are explicit ordered samples, while broad population generation
   and distributional sampling remain open.
 - [x] Emit a bounded fixed-fixture scenario-frequency report over validated
-  selections; it is explicit selection evidence, not a population distribution.
+  selections and a verified-report-bound machine-readable codec; it is explicit
+  selection evidence, not a population distribution or durable export.
 - [ ] Add population generation, broader scenario selection, and distributional
   sampling evidence.
 - [x] Emit bounded selected-intent tallies over caller-supplied sample sets;

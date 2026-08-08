@@ -18,12 +18,12 @@ calibration authority.
 ## Verification
 
 The focused frequency-report test covers literal schema/row IDs, stable order,
-exact 2/2 counts over four explicit choices, total/row-sum equality, and
-repeated construction, plus the singleton safe=1/River=0 boundary. The full
-evidence is one focused report test within 23 focused agent tests, 236 unit
-tests, 7 binary tests, and 3 RustDoc tests, plus formatter, Clippy warnings
-denied, repository checker, 15 Python policy tests, and diff checks; all pass at
-reviewed head `eee3861`.
+exact 2/2 counts over four explicit choices, total/row-sum equality, repeated
+construction, and the singleton safe=1/River=0 boundary. The full evidence is
+one focused report test within 23 focused agent tests, 236 unit tests, 7 binary
+tests, and 3 RustDoc tests, plus formatter, Clippy warnings denied, repository
+checker, 15 Python policy tests, and diff checks; all pass at reviewed head
+`eee3861`.
 
 ## Open boundaries
 
