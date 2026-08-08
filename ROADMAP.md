@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.118`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.119`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1210,6 +1210,10 @@ control over simulation resolution.
 - [x] Define the bounded `m5-actor-replay-record-v1` DTO and host projection;
   it exposes at most two replay-verified window/intent/outcome records without
   hashes, resolved inputs, traces, or causal detail.
+- [x] Define the bounded `m5-actor-replay-debrief-record-v1` DTO and host
+  projection for two complete replay-verified windows with categorical
+  objective labels and committed-facts attribution; detailed causal review
+  remains open.
 
 This is a pure library adapter boundary with no MCP transport, async runtime,
 or provider-specific behavior. The DTOs expose only four advertised intents
@@ -1231,8 +1235,8 @@ committed intent, and `present`/`absent` bits for each draft field; it never
 echoes values or claims communication delivery. The provider-neutral
 `m5-actor-transcript-v1` record captures only closed tool/schema IDs and an
 accepted/rejected result for an actor receipt; it is not a runtime log or
-replay record. Focused evidence is 22 protocol tests,
-12 session tests, and 27 host tests within the 217-unit, 7-binary, and
+replay record. Focused evidence is 23 protocol tests,
+12 session tests, and 28 host tests within the 219-unit, 7-binary, and
 3-Rustdoc suite. The host observation projection is a
 pure actor-visible DTO mapping, rejects inactive lifecycle states, and leaves
 the internal receipt private. The history DTO is a bounded status summary,
@@ -1243,8 +1247,11 @@ deterministic core module list for async, wall-clock, and network transport
 primitives; this is source-ownership evidence rather than transport behavior.
 The `m5-actor-replay-v1` DTO and host projection add only verified status and
 bounded record count. The `m5-actor-replay-record-v1` projection exposes at
-most two verified categorical window/intent/outcome entries; hashes, resolved
-inputs, execution traces, and causal detail remain private.
+most two verified categorical window/intent/outcome entries. The
+`m5-actor-replay-debrief-record-v1` projection adds only categorical objective
+labels and the committed-facts attribution limit after complete-history
+verification; hashes, resolved inputs, execution traces, and causal detail
+remain private.
 
 ### Scope
 
@@ -1253,7 +1260,7 @@ inputs, execution traces, and causal detail remain private.
 - [ ] Define remaining integration/contracts for messages, plans,
   contingencies, durable/scenario replay-linked records, and detailed
   outcome/debrief review;
-  bounded observation/action/commit/draft/history/replay/replay-record/debrief projections
+  bounded observation/action/commit/draft/history/replay/replay-record/replay-debrief-record/debrief projections
   are delivered.
 - [x] Keep authoritative lane observation/request conversion behind crate-private
   protocol adapters; public protocol compatibility exposes DTOs only.

@@ -20,9 +20,10 @@ use crate::lane::{
 };
 use crate::protocol::{
   ActorActionDto, ActorActionResultDto, ActorActionResultOutcome, ActorActionResultWindow,
-  ActorCommitDto, ActorCommitResultDto, ActorDebriefDto, ActorDraftCommitReceiptDto, ActorDraftDto,
-  ActorDraftField, ActorDraftPresence, ActorDraftReceiptDto, ActorHistoryDto, ActorHistoryStatus,
-  ActorObservationDto, ActorProtocolError, ActorProtocolErrorCode, ActorProtocolRepairHint,
+  ActorCommitDto, ActorCommitResultDto, ActorDebriefDto, ActorDebriefObjective,
+  ActorDraftCommitReceiptDto, ActorDraftDto, ActorDraftField, ActorDraftPresence,
+  ActorDraftReceiptDto, ActorHistoryDto, ActorHistoryStatus, ActorObservationDto,
+  ActorProtocolError, ActorProtocolErrorCode, ActorProtocolRepairHint, ActorReplayDebriefRecordDto,
   ActorReplayDto, ActorReplayRecordDto,
 };
 use crate::run_store::{CliRunStore, CliRunStoreError};
@@ -280,6 +281,64 @@ impl CliScenarioHost {
             LaneOutcome::ForcedOut => ActorActionResultOutcome::ForcedOut,
           };
           ActorReplayRecordDto::new(window, intent, outcome)
+        })
+        .collect(),
+    )
+  }
+
+  /// Return verified categorical debrief records for a completed host.
+  pub fn actor_replay_debrief_records(
+    &self,
+  ) -> Result<Vec<ActorReplayDebriefRecordDto>, ActorProtocolError> {
+    if self.closed {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ));
+    }
+    if !self.is_complete() {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::DebriefUnavailable,
+        ActorProtocolRepairHint::AwaitCompletion,
+      ));
+    }
+    let report = build_scenario_debrief(&self.history)
+      .map_err(|_| {
+        ActorProtocolError::new(
+          ActorProtocolErrorCode::HostTransitionRejected,
+          ActorProtocolRepairHint::StartNewSession,
+        )
+      })?
+      .report();
+    Ok(
+      report
+        .windows()
+        .into_iter()
+        .map(|window| {
+          let window_id = match window.window() {
+            ScenarioWindow::First => ActorActionResultWindow::First,
+            ScenarioWindow::Second => ActorActionResultWindow::Second,
+          };
+          let intent = match window.intent() {
+            LaneIntent::Stabilize => crate::protocol::ActorProtocolIntent::Stabilize,
+            LaneIntent::Contest => crate::protocol::ActorProtocolIntent::Contest,
+            LaneIntent::Yield => crate::protocol::ActorProtocolIntent::Yield,
+            LaneIntent::Recall => crate::protocol::ActorProtocolIntent::Recall,
+            LaneIntent::Withdraw => crate::protocol::ActorProtocolIntent::Withdraw,
+          };
+          let outcome = match window.outcome() {
+            LaneOutcome::HeldSpace => ActorActionResultOutcome::HeldSpace,
+            LaneOutcome::YieldedSpace => ActorActionResultOutcome::YieldedSpace,
+            LaneOutcome::ForcedOut => ActorActionResultOutcome::ForcedOut,
+          };
+          let objective = match window.objective() {
+            crate::lane::ObjectiveDisposition::GoalAchieved => ActorDebriefObjective::GoalAchieved,
+            crate::lane::ObjectiveDisposition::GoalPartiallyAchieved => {
+              ActorDebriefObjective::GoalPartiallyAchieved
+            }
+            crate::lane::ObjectiveDisposition::GoalMissed => ActorDebriefObjective::GoalMissed,
+          };
+          ActorReplayDebriefRecordDto::new(window_id, intent, outcome, objective)
         })
         .collect(),
     )
@@ -1273,6 +1332,82 @@ mod tests {
       ))
     );
     assert_eq!(tampered.record_count(), 1);
+  }
+
+  #[test]
+  fn actor_replay_debrief_records_are_complete_and_categorical() {
+    let mut host = CliScenarioHost::fixture();
+    let initial_observation = host.observation();
+    assert_eq!(
+      host.actor_replay_debrief_records(),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::DebriefUnavailable,
+        ActorProtocolRepairHint::AwaitCompletion,
+      ))
+    );
+    assert_eq!(host.record_count(), 0);
+    assert_eq!(host.observation(), initial_observation);
+
+    for command in [
+      "plan contest",
+      "commit",
+      "advance",
+      "plan stabilize",
+      "commit",
+      "advance",
+    ] {
+      host.apply_line(command).expect("fixture completes");
+    }
+    let first = ActorReplayDebriefRecordDto::new(
+      ActorActionResultWindow::First,
+      crate::protocol::ActorProtocolIntent::Contest,
+      ActorActionResultOutcome::HeldSpace,
+      ActorDebriefObjective::GoalAchieved,
+    );
+    let second = ActorReplayDebriefRecordDto::new(
+      ActorActionResultWindow::Second,
+      crate::protocol::ActorProtocolIntent::Stabilize,
+      ActorActionResultOutcome::YieldedSpace,
+      ActorDebriefObjective::GoalMissed,
+    );
+    assert_eq!(host.actor_replay_debrief_records(), Ok(vec![first, second]));
+    assert_eq!(
+      first.attribution(),
+      crate::protocol::ActorDebriefAttributionLimit::CommittedFactsOnly
+    );
+    assert_eq!(first.verification(), ActorReplayVerification::Verified);
+    assert!(!format!("{first:?}").contains("StateHash"));
+    assert!(!format!("{first:?}").contains("trace"));
+    assert_eq!(host.record_count(), 2);
+    host.apply_line("quit").expect("complete host closes");
+    assert_eq!(
+      host.actor_replay_debrief_records(),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
+    );
+
+    let mut tampered = CliScenarioHost::fixture();
+    for command in [
+      "plan contest",
+      "commit",
+      "advance",
+      "plan stabilize",
+      "commit",
+      "advance",
+    ] {
+      tampered.apply_line(command).expect("fixture completes");
+    }
+    tampered.history.replay_id = "tampered";
+    assert_eq!(
+      tampered.actor_replay_debrief_records(),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
+    );
+    assert_eq!(tampered.record_count(), 2);
   }
 
   #[test]
