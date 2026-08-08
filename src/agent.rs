@@ -6355,6 +6355,11 @@ mod tests {
     assert_eq!(report.observer(), observations[0].observer());
     assert_eq!(report.observation_count(), 4);
     assert_eq!(report.selected_intent(), LaneIntent::Stabilize);
+    let singleton =
+      ScriptedAgentDegeneratePolicyPopulationReport::from_observations(&observations[..1])
+        .expect("inclusive one-member population fits");
+    assert_eq!(singleton.observation_count(), 1);
+    assert_eq!(singleton.selected_intent(), LaneIntent::Stabilize);
     assert_eq!(
       ScriptedAgentDegeneratePolicyPopulationReport::from_observations(&observations),
       Ok(report)
@@ -6362,6 +6367,19 @@ mod tests {
     assert_eq!(
       ScriptedAgentDegeneratePolicyPopulationReport::from_observations(&[]),
       Err(ScriptedAgentDegeneratePolicyPopulationError::EmptyPopulation)
+    );
+    assert_eq!(
+      ScriptedAgentDegeneratePolicyPopulationReport::from_observations(&[
+        observations[0],
+        observations[0],
+      ]),
+      Err(ScriptedAgentDegeneratePolicyPopulationError::DuplicateObservationId)
+    );
+    let river_observation = ScriptedAgentFixtureScenario::RiverSideThreat
+      .observations([ObservationId::new(900), ObservationId::new(901)])[1];
+    assert_eq!(
+      ScriptedAgentDegeneratePolicyPopulationReport::from_observations(&[river_observation]),
+      Err(ScriptedAgentDegeneratePolicyPopulationError::UnexpectedIntent)
     );
     let too_many = (0..=MAX_SCRIPTED_AGENT_DEGENERATE_POLICY_POPULATION)
       .map(|offset| {
