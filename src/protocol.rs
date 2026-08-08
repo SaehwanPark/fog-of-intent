@@ -512,6 +512,7 @@ pub enum ActorProtocolErrorCode {
   WindowClosed,
   HostValidationRejected,
   HostTransitionRejected,
+  DraftBoundary,
 }
 
 impl ActorProtocolErrorCode {
@@ -533,6 +534,7 @@ impl ActorProtocolErrorCode {
       Self::WindowClosed => "window_closed",
       Self::HostValidationRejected => "host_validation_rejected",
       Self::HostTransitionRejected => "host_transition_rejected",
+      Self::DraftBoundary => "draft_boundary",
     }
   }
 }

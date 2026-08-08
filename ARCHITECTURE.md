@@ -138,8 +138,10 @@ actor-safe `m5-actor-error-v1` code/repair vocabulary without retaining raw
 input or parser details. `src/host.rs` owns the actor-action validation and
 submission entry points: it delegates legality to the lane validator and
 closes a fixture window only after successful validation and history append.
-`ActorDraftDto` remains a bounded metadata envelope in the protocol edge; it
-does not stage host drafts or add communication authority.
+`ActorDraftDto` remains a bounded metadata envelope in the protocol edge, while
+`src/host.rs` owns its observation-bound pre-commit staging. Staging replaces
+one internal draft field but does not add communication authority or transition
+authority.
 
 `src/session.rs` owns immutable ordinary-actor session freshness and lifecycle
 metadata only. It cannot validate an intent, submit a transition, or mutate
