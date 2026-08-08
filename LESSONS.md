@@ -1010,6 +1010,19 @@ canonical policy instead of duplicating it.
   persistence, providers, and human evidence behind separate contracts and
   evidence gates.
 
+## Keep caller-declared composition separate from distributional sampling
+
+- Context: A fixed-fixture generator needed to express a skewed ordered input
+  without claiming that the skew came from random or representative sampling.
+- Symptom: Treating caller-selected safe/threat counts as a distribution can
+  overstate coverage, diversity, or behavioral evidence.
+- Resolution: Accept only closed scenario IDs, preserve their caller-declared
+  order, derive checked observation pairs from one starting ID, and reuse the
+  existing verified frequency/matched-sample paths.
+- Prevention: Label explicit composition as input metadata and keep random,
+  representative, outcome, strategic, persistence, provider, and human claims
+  behind separate evidence gates.
+
 ## Bind aggregate codecs to verified reports
 
 - Context: A bounded frequency summary needed machine-readable transport before

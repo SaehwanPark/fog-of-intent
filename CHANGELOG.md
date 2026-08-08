@@ -98,6 +98,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.150 — 2026-08-08
+
+### Added
+
+- Added ordered caller-declared composition to
+  `m6-scripted-agent-fixture-population-v1`. Closed fixture IDs remain bounded
+  to four entries, derive checked sequential observation pairs from one starting
+  ID, and feed the existing frequency and matched-sample evidence paths.
+
+### Known limits
+
+- The composition is explicit fixed-fixture input, not random or representative
+  population sampling; broader distributions, outcomes, metrics, persistence,
+  providers, and human evidence remain open.
+
 ## 0.1.149 — 2026-08-08
 
 ### Added

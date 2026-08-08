@@ -166,9 +166,11 @@ population, sample a distribution, resolve a transition, or own history,
 replay, persistence, provider, or outcome authority.
 `ScriptedAgentFixtureScenarioPopulation` composes that catalog into one to four
 deterministic alternating entries, deriving checked sequential observation-ID
-pairs from a caller-supplied starting ID. It is a fixed-fixture generator only;
-broader/random population sampling, distributional metrics, outcomes, and
-human-behavior evidence remain outside the core.
+pairs from a caller-supplied starting ID. Its ordered-composition constructor
+also accepts caller-declared closed IDs, preserving skewed fixed-fixture input
+without sampling authority. It is a fixed-fixture generator only; broader/random
+population sampling, distributional metrics, outcomes, and human-behavior
+evidence remain outside the core.
 `ScriptedAgentFixtureScenarioFrequencyReport` counts those explicit selection
 labels in stable catalog order; it is bounded metadata over validated input,
 not population, outcome, strategic, persistence, or provider evidence. Its
