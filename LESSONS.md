@@ -722,3 +722,15 @@ canonical policy instead of duplicating it.
   timeout, and disconnect; decode malformed actions before session checks.
 - Prevention: Keep timing/reconnect orchestration at the edge and map all
   malformed, stale, and duplicate failures through the bounded error codec.
+
+## Prove edge exclusion with a narrow static guard
+
+- Context: The deterministic core must stay independent of transport and async
+  orchestration while edge adapters evolve incrementally.
+- Symptom: Architecture prose can promise that boundary without catching a
+  future runtime import or network primitive in a core module.
+- Resolution: Keep an explicit list of core Rust modules and have the repository
+  checker reject async syntax/runtime imports, wall-clock imports, and network
+  transport types there; test both rejection and clean-core paths.
+- Prevention: Treat the guard as ownership evidence, not as proof of complete
+  transport behavior, and keep adapter-edge I/O and future MCP work separate.

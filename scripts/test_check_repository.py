@@ -177,6 +177,51 @@ class FormatPolicyTests(unittest.TestCase):
       self.assertTrue(any("two spaces" in error for error in errors))
 
 
+class CoreBoundaryTests(unittest.TestCase):
+  def write_core_files(self, root: Path) -> None:
+    for relative in check_repository.CORE_RUST_FILES:
+      path = root / relative
+      path.parent.mkdir(parents=True, exist_ok=True)
+      path.write_text("")
+
+  def test_rejects_async_wall_clock_and_transport_primitives_in_core(self) -> None:
+    with tempfile.TemporaryDirectory() as directory:
+      root = Path(directory)
+      self.write_core_files(root)
+      (root / "src" / "kernel.rs").write_text(
+        "use tokio::runtime::Runtime;\n"
+        "use std::time::Instant;\n"
+        "use std::time;\n"
+        "use std::future;\n"
+        "use std::task;\n"
+        "async fn run() { value.await; }\n"
+        "let closure = async || 1;\n"
+        "let moved = async move |value| value;\n"
+        "use std::net::TcpStream;\n"
+      )
+      errors: list[str] = []
+      check_repository.check_core_boundary(root, errors)
+      self.assertTrue(any("async-runtime reference" in error for error in errors))
+      self.assertTrue(any("wall-clock import" in error for error in errors))
+      self.assertTrue(any("async syntax" in error for error in errors))
+      self.assertTrue(any("await expression" in error for error in errors))
+      self.assertTrue(any("transport import" in error for error in errors))
+      self.assertTrue(any("transport type" in error for error in errors))
+      self.assertTrue(all("src/kernel.rs" in error for error in errors))
+
+      (root / "src" / "kernel.rs").write_text("fn run() {}\n")
+      errors = []
+      check_repository.check_core_boundary(root, errors)
+      self.assertEqual(errors, [])
+
+      extra = root / "src" / "lane" / "new_core.rs"
+      extra.write_text("use std::time::Instant;\n")
+      errors = []
+      check_repository.check_core_boundary(root, errors)
+      self.assertTrue(any("unclassified core boundary file" in error for error in errors))
+      self.assertTrue(any("wall-clock import" in error for error in errors))
+
+
 class DependencyExceptionTests(unittest.TestCase):
   def dependency(self, name: str, req: str = "^1.0", source: str | None = "registry") -> dict[str, str]:
     return {"name": name, "req": req, "source": source or "path"}

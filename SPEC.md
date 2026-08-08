@@ -966,6 +966,9 @@ transport-integrated sessions and broader protocol compatibility remain open.
   failure into a closed actor-safe code and deterministic repair hint. The
   projection contains no raw payload, actor ID, state hash, domain error, or
   transport detail; hints are advisory and do not rewrite, retry, or submit.
+- The repository checker statically scans every deterministic core module for
+  async syntax/runtime imports, wall-clock imports, and network transport types;
+  the guard has focused fixture tests and leaves synchronous I/O at edge modules.
 - Focused tests cover stable IDs, safe/threat action breadth, DTO-to-request
   conversion through the existing validator, absence of state-hash or
   snapshot fields, session lifecycle/error cases, codec round-trips and

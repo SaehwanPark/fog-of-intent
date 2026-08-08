@@ -376,6 +376,9 @@ Verified today:
 - Cargo binary package;
 - package license metadata set to MIT;
 - no third-party dependencies.
+- `scripts/check_repository.py` scans the deterministic core modules for async
+  syntax/runtime imports, wall-clock imports, and network transport types; its
+  focused tests keep those concerns at the adapter edge.
 
 Proposed but not adopted:
 
