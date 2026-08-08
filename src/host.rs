@@ -907,6 +907,24 @@ mod tests {
       host.actor_history(),
       ActorHistoryDto::new(2, ActorHistoryStatus::Complete).expect("complete history is bounded")
     );
+    host.apply_line("quit").expect("complete host closes");
+    assert_eq!(
+      host.actor_history(),
+      ActorHistoryDto::new(2, ActorHistoryStatus::Closed)
+        .expect("closed complete history is bounded")
+    );
+
+    let mut partially_closed = CliScenarioHost::fixture();
+    for command in ["plan contest", "commit", "advance", "quit"] {
+      partially_closed
+        .apply_line(command)
+        .expect("partial host command succeeds");
+    }
+    assert_eq!(
+      partially_closed.actor_history(),
+      ActorHistoryDto::new(1, ActorHistoryStatus::Closed)
+        .expect("closed partial history is bounded")
+    );
 
     let mut closed = CliScenarioHost::fixture();
     closed.apply_line("quit").expect("host closes");

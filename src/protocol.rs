@@ -962,15 +962,18 @@ mod tests {
   fn actor_history_codec_round_trips_bounded_lifecycle_statuses() {
     let cases = [
       (0, ActorHistoryStatus::Open),
+      (1, ActorHistoryStatus::Open),
       (2, ActorHistoryStatus::Complete),
+      (0, ActorHistoryStatus::Closed),
       (1, ActorHistoryStatus::Closed),
+      (2, ActorHistoryStatus::Closed),
     ];
     for (records, status) in cases {
       let dto = ActorHistoryDto::new(records, status).expect("history status is bounded");
       assert_eq!(dto.schema(), "m5-actor-history-v1");
       assert_eq!(dto.records(), records);
       assert_eq!(dto.status(), status);
-      if status == ActorHistoryStatus::Open {
+      if records == 0 && status == ActorHistoryStatus::Open {
         assert_eq!(
           dto.encode(),
           "schema=m5-actor-history-v1\nrecords=0\nstatus=open\n"
@@ -978,12 +981,21 @@ mod tests {
       }
       assert_eq!(ActorHistoryDto::decode(&dto.encode()), Ok(dto));
     }
+    for (records, status) in [
+      (2, ActorHistoryStatus::Open),
+      (0, ActorHistoryStatus::Complete),
+      (1, ActorHistoryStatus::Complete),
+      (3, ActorHistoryStatus::Open),
+      (3, ActorHistoryStatus::Complete),
+      (3, ActorHistoryStatus::Closed),
+    ] {
+      assert_eq!(
+        ActorHistoryDto::new(records, status),
+        Err(ActorProtocolCodecError::InvalidValue)
+      );
+    }
     assert_eq!(
-      ActorHistoryDto::new(2, ActorHistoryStatus::Open),
-      Err(ActorProtocolCodecError::InvalidValue)
-    );
-    assert_eq!(
-      ActorHistoryDto::new(1, ActorHistoryStatus::Complete),
+      ActorHistoryDto::decode("schema=m5-actor-history-v1\nrecords=3\nstatus=closed\n"),
       Err(ActorProtocolCodecError::InvalidValue)
     );
     assert_eq!(
