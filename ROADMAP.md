@@ -1397,6 +1397,9 @@ representative replays, and an evidence-limited report.
   open.
 - [x] Round-trip the profile-aware fixed-fixture tally through its verified
   bounded codec and reject a tampered row; durable export remains open.
+- [x] Compare two caller-declared verified profile-aware tally reports with
+  ordered row identities and signed count deltas; build provenance, causality,
+  broader metrics, and outcomes remain open.
 - [ ] Add broader scenario selection and distributional sampling evidence;
   population diversity and representative sampling remain open.
 - [x] Emit bounded selected-intent tallies over caller-supplied sample sets;

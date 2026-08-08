@@ -129,6 +129,10 @@ pub const MAX_SCRIPTED_AGENT_OPERATIONAL_LOG_BYTES: usize = 4096;
 pub const SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_SCHEMA: &str =
   "m6-scripted-agent-matched-scenario-tally-v1";
 
+/// Versioned identity for bounded comparisons of verified profile-aware tallies.
+pub const SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_COMPARISON_SCHEMA: &str =
+  "m6-scripted-agent-matched-scenario-tally-compare-v1";
+
 /// Maximum encoded matched-scenario tally size before parsing or allocation.
 pub const MAX_SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_BYTES: usize = 4096;
 
@@ -1738,6 +1742,170 @@ impl ScriptedAgentMatchedScenarioTally {
 
   pub const fn withdraw_count(self) -> u8 {
     self.withdraw_count
+  }
+}
+
+/// Bounded failures from a profile-aware tally comparison.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentMatchedScenarioTallyComparisonError {
+  MismatchedObserver,
+  MismatchedRows,
+}
+
+/// One actor-safe baseline/candidate row in a verified tally comparison.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentMatchedScenarioTallyComparisonEntry {
+  profile_id: &'static str,
+  evaluation_rule: &'static str,
+  baseline_stabilize_count: u8,
+  baseline_contest_count: u8,
+  baseline_yield_count: u8,
+  baseline_recall_count: u8,
+  baseline_withdraw_count: u8,
+  candidate_stabilize_count: u8,
+  candidate_contest_count: u8,
+  candidate_yield_count: u8,
+  candidate_recall_count: u8,
+  candidate_withdraw_count: u8,
+}
+
+impl ScriptedAgentMatchedScenarioTallyComparisonEntry {
+  pub const fn profile_id(self) -> &'static str {
+    self.profile_id
+  }
+
+  pub const fn evaluation_rule(self) -> &'static str {
+    self.evaluation_rule
+  }
+
+  /// Return counts in `[Stabilize, Contest, Yield, Recall, Withdraw]` order.
+  pub const fn baseline_counts(self) -> [u8; 5] {
+    [
+      self.baseline_stabilize_count,
+      self.baseline_contest_count,
+      self.baseline_yield_count,
+      self.baseline_recall_count,
+      self.baseline_withdraw_count,
+    ]
+  }
+
+  /// Return counts in `[Stabilize, Contest, Yield, Recall, Withdraw]` order.
+  pub const fn candidate_counts(self) -> [u8; 5] {
+    [
+      self.candidate_stabilize_count,
+      self.candidate_contest_count,
+      self.candidate_yield_count,
+      self.candidate_recall_count,
+      self.candidate_withdraw_count,
+    ]
+  }
+
+  /// Return candidate-minus-baseline deltas in
+  /// `[Stabilize, Contest, Yield, Recall, Withdraw]` order.
+  pub fn deltas(self) -> [i16; 5] {
+    let baseline = self.baseline_counts();
+    let candidate = self.candidate_counts();
+    [
+      i16::from(candidate[0]) - i16::from(baseline[0]),
+      i16::from(candidate[1]) - i16::from(baseline[1]),
+      i16::from(candidate[2]) - i16::from(baseline[2]),
+      i16::from(candidate[3]) - i16::from(baseline[3]),
+      i16::from(candidate[4]) - i16::from(baseline[4]),
+    ]
+  }
+}
+
+/// Bounded actor-safe count deltas between two verified tally reports.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentMatchedScenarioTallyComparisonReport {
+  schema: &'static str,
+  observer: ActorId,
+  baseline_pair_count: u8,
+  baseline_observation_count: u8,
+  candidate_pair_count: u8,
+  candidate_observation_count: u8,
+  entries: Vec<ScriptedAgentMatchedScenarioTallyComparisonEntry>,
+}
+
+impl ScriptedAgentMatchedScenarioTallyComparisonReport {
+  /// Compare two verified reports without rerunning policy evaluation.
+  pub fn from_reports(
+    baseline: &ScriptedAgentMatchedScenarioTallyReport,
+    candidate: &ScriptedAgentMatchedScenarioTallyReport,
+  ) -> Result<Self, ScriptedAgentMatchedScenarioTallyComparisonError> {
+    if baseline.observer != candidate.observer {
+      return Err(ScriptedAgentMatchedScenarioTallyComparisonError::MismatchedObserver);
+    }
+    if baseline.entries.len() != candidate.entries.len()
+      || baseline
+        .entries
+        .iter()
+        .zip(&candidate.entries)
+        .any(|(baseline, candidate)| {
+          baseline.profile_id != candidate.profile_id
+            || baseline.evaluation_rule != candidate.evaluation_rule
+        })
+    {
+      return Err(ScriptedAgentMatchedScenarioTallyComparisonError::MismatchedRows);
+    }
+    let entries = baseline
+      .entries
+      .iter()
+      .zip(&candidate.entries)
+      .map(
+        |(baseline, candidate)| ScriptedAgentMatchedScenarioTallyComparisonEntry {
+          profile_id: baseline.profile_id,
+          evaluation_rule: baseline.evaluation_rule,
+          baseline_stabilize_count: baseline.stabilize_count,
+          baseline_contest_count: baseline.contest_count,
+          baseline_yield_count: baseline.yield_count,
+          baseline_recall_count: baseline.recall_count,
+          baseline_withdraw_count: baseline.withdraw_count,
+          candidate_stabilize_count: candidate.stabilize_count,
+          candidate_contest_count: candidate.contest_count,
+          candidate_yield_count: candidate.yield_count,
+          candidate_recall_count: candidate.recall_count,
+          candidate_withdraw_count: candidate.withdraw_count,
+        },
+      )
+      .collect();
+    Ok(Self {
+      schema: SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_COMPARISON_SCHEMA,
+      observer: baseline.observer,
+      baseline_pair_count: baseline.pair_count,
+      baseline_observation_count: baseline.observation_count,
+      candidate_pair_count: candidate.pair_count,
+      candidate_observation_count: candidate.observation_count,
+      entries,
+    })
+  }
+
+  pub const fn schema(&self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn observer(&self) -> ActorId {
+    self.observer
+  }
+
+  pub const fn baseline_pair_count(&self) -> u8 {
+    self.baseline_pair_count
+  }
+
+  pub const fn baseline_observation_count(&self) -> u8 {
+    self.baseline_observation_count
+  }
+
+  pub const fn candidate_pair_count(&self) -> u8 {
+    self.candidate_pair_count
+  }
+
+  pub const fn candidate_observation_count(&self) -> u8 {
+    self.candidate_observation_count
+  }
+
+  pub fn entries(&self) -> &[ScriptedAgentMatchedScenarioTallyComparisonEntry] {
+    &self.entries
   }
 }
 
@@ -4915,6 +5083,125 @@ mod tests {
     assert_eq!(
       ScriptedAgentMatchedScenarioTallyReport::decode(&tampered, &tally),
       Err(ScriptedAgentMatchedScenarioTallyCodecError::InputMismatch)
+    );
+  }
+
+  #[test]
+  fn profile_aware_tally_comparison_preserves_rows_and_signed_deltas() {
+    let manifests = [
+      ScriptedAgentExperimentManifest::new(
+        ScriptedAgentProfile::cautious_v1(),
+        ScriptedAgentSeedBundle::new(71, StreamId::new(72), DrawId::new(73)),
+      ),
+      ScriptedAgentExperimentManifest::new(
+        ScriptedAgentProfile::risk_taking_v1(),
+        ScriptedAgentSeedBundle::new(74, StreamId::new(75), DrawId::new(76)),
+      ),
+      ScriptedAgentExperimentManifest::new(
+        ScriptedAgentProfile::yielding_v1(),
+        ScriptedAgentSeedBundle::new(77, StreamId::new(78), DrawId::new(79)),
+      ),
+    ];
+    let baseline_population = ScriptedAgentFixtureScenarioPopulation::generate_from_scenario_ids(
+      &[
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+      ],
+      280,
+    )
+    .expect("baseline population builds");
+    let candidate_population = ScriptedAgentFixtureScenarioPopulation::generate_from_scenario_ids(
+      &[
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+      ],
+      288,
+    )
+    .expect("candidate population builds");
+    let baseline = baseline_population
+      .matched_tally(&manifests)
+      .expect("baseline tally builds");
+    let candidate = candidate_population
+      .matched_tally(&manifests)
+      .expect("candidate tally builds");
+    let comparison =
+      ScriptedAgentMatchedScenarioTallyComparisonReport::from_reports(&baseline, &candidate)
+        .expect("matching verified tallies compare");
+    assert_eq!(
+      SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_COMPARISON_SCHEMA,
+      "m6-scripted-agent-matched-scenario-tally-compare-v1"
+    );
+    assert_eq!(
+      comparison.schema(),
+      "m6-scripted-agent-matched-scenario-tally-compare-v1"
+    );
+    assert_eq!(comparison.observer(), baseline.observer());
+    assert_eq!(comparison.baseline_pair_count(), 4);
+    assert_eq!(comparison.baseline_observation_count(), 8);
+    assert_eq!(comparison.candidate_pair_count(), 4);
+    assert_eq!(comparison.candidate_observation_count(), 8);
+    assert_eq!(comparison.entries().len(), 3);
+    assert_eq!(comparison.entries()[0].profile_id(), "cautious-laner-v1");
+    assert_eq!(
+      comparison.entries()[0].evaluation_rule(),
+      "threat-first-pressure-aware-fixed-score-v1"
+    );
+    assert_eq!(comparison.entries()[0].baseline_counts(), [7, 0, 0, 0, 1]);
+    assert_eq!(comparison.entries()[0].candidate_counts(), [5, 0, 0, 0, 3]);
+    assert_eq!(comparison.entries()[0].deltas(), [-2, 0, 0, 0, 2]);
+    assert_eq!(comparison.entries()[1].profile_id(), "risk-taking-laner-v1");
+    assert_eq!(
+      comparison.entries()[1].evaluation_rule(),
+      "contest-first-fixed-score-v1"
+    );
+    assert_eq!(comparison.entries()[1].baseline_counts(), [0, 8, 0, 0, 0]);
+    assert_eq!(comparison.entries()[1].candidate_counts(), [0, 8, 0, 0, 0]);
+    assert_eq!(comparison.entries()[1].deltas(), [0, 0, 0, 0, 0]);
+    assert_eq!(comparison.entries()[2].profile_id(), "yielding-laner-v1");
+    assert_eq!(
+      comparison.entries()[2].evaluation_rule(),
+      "yield-first-fixed-score-v1"
+    );
+    assert_eq!(comparison.entries()[2].baseline_counts(), [0, 0, 8, 0, 0]);
+    assert_eq!(comparison.entries()[2].candidate_counts(), [0, 0, 8, 0, 0]);
+    assert_eq!(comparison.entries()[2].deltas(), [0, 0, 0, 0, 0]);
+    assert_eq!(
+      comparison,
+      ScriptedAgentMatchedScenarioTallyComparisonReport::from_reports(&baseline, &candidate)
+        .expect("repeated comparison is stable")
+    );
+    let reversed =
+      ScriptedAgentMatchedScenarioTallyComparisonReport::from_reports(&candidate, &baseline)
+        .expect("reversed verified tallies compare");
+    assert_eq!(reversed.entries()[0].deltas(), [2, 0, 0, 0, -2]);
+
+    let reordered_candidate = candidate_population
+      .matched_tally(&[manifests[1], manifests[0], manifests[2]])
+      .expect("reordered candidate tally builds");
+    assert_eq!(
+      ScriptedAgentMatchedScenarioTallyComparisonReport::from_reports(
+        &baseline,
+        &reordered_candidate,
+      ),
+      Err(ScriptedAgentMatchedScenarioTallyComparisonError::MismatchedRows)
+    );
+
+    let mut alternate_observations = candidate_population.observations();
+    for pair in &mut alternate_observations {
+      pair[0].observer = ALLIED_AUTONOMOUS_ACTOR;
+      pair[1].observer = ALLIED_AUTONOMOUS_ACTOR;
+    }
+    let alternate_sample =
+      ScriptedAgentMatchedScenarioSample::from_observations(&alternate_observations, &manifests)
+        .expect("alternate observer sample builds");
+    let alternate = ScriptedAgentMatchedScenarioTallyReport::from_sample(&alternate_sample);
+    assert_eq!(
+      ScriptedAgentMatchedScenarioTallyComparisonReport::from_reports(&baseline, &alternate),
+      Err(ScriptedAgentMatchedScenarioTallyComparisonError::MismatchedObserver)
     );
   }
 
