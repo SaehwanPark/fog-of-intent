@@ -2,15 +2,17 @@
 
 ## Outcome
 
-Implementation is ready for independent review at the current branch head.
+PASS — no actionable findings remain after independent three-pass review at
+implementation/evidence head `d325de1`.
 
-## Verification target
+## Verification
 
-The focused agent regression should bind the closed sequence/status IDs,
-classify complete, missing, reordered, and optional checkpoint/resume logs,
-prove repeated read-only status construction, and preserve the full event log
-within 34 focused agent tests and 247 Rust unit tests, 7 binary tests, 3
-RustDoc tests, 15 Python tests, formatter, Clippy, repository, and diff gates.
+The focused agent regression binds the closed sequence/status IDs, classifies
+complete, missing, reordered, and optional checkpoint/resume logs, proves
+repeated read-only status construction, and preserves the full event log. The
+full evidence is 34 focused agent tests within 247 Rust unit tests, 7 binary
+tests, 3 RustDoc tests, 15 Python tests, formatter, Clippy, repository, and
+diff gates; all pass at `d325de1`.
 
 ## Limits
 
