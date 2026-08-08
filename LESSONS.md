@@ -587,6 +587,19 @@ canonical policy instead of duplicating it.
 - Prevention: Test empty/partial/complete projections, closed sessions, and
   tampered-history rejection while asserting the host remains read-only.
 
+## Keep replay-linked debrief records categorical
+
+- Context: M5 needed per-window outcome review linked to verified history while
+  preserving the actor-safe committed-facts boundary.
+- Symptom: Returning the internal debrief record would expose hashes, resolved
+  inputs, execution traces, or causal explanations and blur review with
+  privileged inspection.
+- Resolution: Require an active complete host, rebuild the existing
+  replay-verified debrief, and expose only window, intent, outcome, objective,
+  `committed_facts_only`, and `verified` labels for the two fixture windows.
+- Prevention: Gate incomplete/closed/tampered histories with bounded errors and
+  keep detailed causal review, persistence, and transport in separate slices.
+
 ## Encode actor errors as closed IDs only
 
 - Context: M5 needed a transport-ready shape for actor-safe validation errors

@@ -98,6 +98,23 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.119 — 2026-08-08
+
+### Added
+
+- Added `m5-actor-replay-debrief-record-v1`, a bounded replay-linked debrief
+  record projection for the two complete fixture windows with categorical
+  objective labels and committed-facts attribution.
+- Added focused codec and host regressions for exact fields, malformed input,
+  completion gating, replay verification, tamper/closed errors, and omission
+  of causal and provenance detail.
+
+### Known limits
+
+- The projection remains in-process and categorical; detailed causal review,
+  durable/scenario replay, transport, persistence, reconnect, and providers
+  remain open.
+
 ## 0.1.118 — 2026-08-08
 
 ### Added

@@ -72,6 +72,9 @@ pub const ACTOR_REPLAY_SCHEMA: &str = "m5-actor-replay-v1";
 /// Versioned actor-visible replay-record identity.
 pub const ACTOR_REPLAY_RECORD_SCHEMA: &str = "m5-actor-replay-record-v1";
 
+/// Versioned actor-visible replay-linked debrief-record identity.
+pub const ACTOR_REPLAY_DEBRIEF_RECORD_SCHEMA: &str = "m5-actor-replay-debrief-record-v1";
+
 /// Versioned line-oriented codec identity for the bounded DTOs.
 pub const ACTOR_PROTOCOL_CODEC_SCHEMA: &str = "m5-actor-codec-v1";
 
@@ -1820,6 +1823,127 @@ impl ActorReplayRecordDto {
   }
 }
 
+/// Bounded actor-visible debrief record linked to verified history.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ActorReplayDebriefRecordDto {
+  schema: &'static str,
+  window: ActorActionResultWindow,
+  intent: ActorProtocolIntent,
+  outcome: ActorActionResultOutcome,
+  objective: ActorDebriefObjective,
+  attribution: ActorDebriefAttributionLimit,
+  verification: ActorReplayVerification,
+}
+
+impl ActorReplayDebriefRecordDto {
+  pub const fn new(
+    window: ActorActionResultWindow,
+    intent: ActorProtocolIntent,
+    outcome: ActorActionResultOutcome,
+    objective: ActorDebriefObjective,
+  ) -> Self {
+    Self {
+      schema: ACTOR_REPLAY_DEBRIEF_RECORD_SCHEMA,
+      window,
+      intent,
+      outcome,
+      objective,
+      attribution: ActorDebriefAttributionLimit::CommittedFactsOnly,
+      verification: ActorReplayVerification::Verified,
+    }
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn window(self) -> ActorActionResultWindow {
+    self.window
+  }
+
+  pub const fn intent(self) -> ActorProtocolIntent {
+    self.intent
+  }
+
+  pub const fn outcome(self) -> ActorActionResultOutcome {
+    self.outcome
+  }
+
+  pub const fn objective(self) -> ActorDebriefObjective {
+    self.objective
+  }
+
+  pub const fn attribution(self) -> ActorDebriefAttributionLimit {
+    self.attribution
+  }
+
+  pub const fn verification(self) -> ActorReplayVerification {
+    self.verification
+  }
+
+  /// Encode one verified categorical debrief record without causal detail.
+  pub fn encode(self) -> String {
+    format!(
+      "schema={}\nwindow={}\nintent={}\noutcome={}\nobjective={}\nattribution={}\nverification={}\n",
+      self.schema,
+      self.window.id(),
+      self.intent.id(),
+      self.outcome.id(),
+      self.objective.id(),
+      self.attribution.id(),
+      self.verification.id(),
+    )
+  }
+
+  /// Decode one bounded replay-linked debrief record without authority.
+  pub fn decode(input: &str) -> Result<Self, ActorProtocolCodecError> {
+    let fields = parse_fields(input, 7)?;
+    let mut schema = None;
+    let mut window = None;
+    let mut intent = None;
+    let mut outcome = None;
+    let mut objective = None;
+    let mut attribution = None;
+    let mut verification = None;
+    for (key, value) in fields {
+      let slot = match key {
+        "schema" => &mut schema,
+        "window" => &mut window,
+        "intent" => &mut intent,
+        "outcome" => &mut outcome,
+        "objective" => &mut objective,
+        "attribution" => &mut attribution,
+        "verification" => &mut verification,
+        _ => return Err(ActorProtocolCodecError::UnknownField),
+      };
+      if slot.is_some() {
+        return Err(ActorProtocolCodecError::DuplicateField);
+      }
+      *slot = Some(value);
+    }
+    if schema != Some(ACTOR_REPLAY_DEBRIEF_RECORD_SCHEMA) {
+      return Err(ActorProtocolCodecError::UnsupportedSchema);
+    }
+    let attribution = ActorDebriefAttributionLimit::parse_id(
+      attribution.ok_or(ActorProtocolCodecError::MissingField)?,
+    )?;
+    let verification = ActorReplayVerification::parse_id(
+      verification.ok_or(ActorProtocolCodecError::MissingField)?,
+    )?;
+    if attribution != ActorDebriefAttributionLimit::CommittedFactsOnly
+      || verification != ActorReplayVerification::Verified
+    {
+      return Err(ActorProtocolCodecError::InvalidValue);
+    }
+    Ok(Self::new(
+      ActorActionResultWindow::parse_id(window.ok_or(ActorProtocolCodecError::MissingField)?)?,
+      ActorProtocolIntent::parse_id(intent.ok_or(ActorProtocolCodecError::MissingField)?)?,
+      ActorActionResultOutcome::parse_id(outcome.ok_or(ActorProtocolCodecError::MissingField)?)?,
+      ActorDebriefObjective::parse_id(objective.ok_or(ActorProtocolCodecError::MissingField)?)?,
+    ))
+  }
+}
+
 /// Bounded protocol codec failures.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ActorProtocolCodecError {
@@ -2968,6 +3092,118 @@ mod tests {
       Err(ActorProtocolCodecError::UnexpectedLineCount {
         expected: 5,
         actual: 6,
+      })
+    );
+  }
+
+  #[test]
+  fn actor_replay_debrief_record_codec_is_verified_and_committed_facts_only() {
+    let cases = [
+      (
+        ActorActionResultWindow::First,
+        ActorProtocolIntent::Contest,
+        ActorActionResultOutcome::HeldSpace,
+        ActorDebriefObjective::GoalAchieved,
+      ),
+      (
+        ActorActionResultWindow::Second,
+        ActorProtocolIntent::Stabilize,
+        ActorActionResultOutcome::YieldedSpace,
+        ActorDebriefObjective::GoalPartiallyAchieved,
+      ),
+    ];
+    for (window, intent, outcome, objective) in cases {
+      let dto = ActorReplayDebriefRecordDto::new(window, intent, outcome, objective);
+      assert_eq!(dto.schema(), "m5-actor-replay-debrief-record-v1");
+      assert_eq!(
+        dto.attribution(),
+        ActorDebriefAttributionLimit::CommittedFactsOnly
+      );
+      assert_eq!(dto.verification(), ActorReplayVerification::Verified);
+      assert_eq!(
+        dto.encode(),
+        format!(
+          "schema=m5-actor-replay-debrief-record-v1\nwindow={}\nintent={}\noutcome={}\nobjective={}\nattribution=committed_facts_only\nverification=verified\n",
+          window.id(),
+          intent.id(),
+          outcome.id(),
+          objective.id()
+        )
+      );
+      assert_eq!(ActorReplayDebriefRecordDto::decode(&dto.encode()), Ok(dto));
+      assert!(!format!("{dto:?}").contains("StateHash"));
+      assert!(!dto.encode().contains("trace"));
+      assert!(!dto.encode().contains("health"));
+    }
+    assert_eq!(
+      ActorReplayDebriefRecordDto::decode(
+        "schema=m5-actor-replay-debrief-record-v1\nwindow=first\nintent=contest\noutcome=held_space\nunknown=goal_achieved\nattribution=committed_facts_only\nverification=verified\n"
+      ),
+      Err(ActorProtocolCodecError::UnknownField)
+    );
+    assert_eq!(
+      ActorReplayDebriefRecordDto::decode(
+        "schema=m5-actor-replay-debrief-record-v1\nwindow=first\nintent=contest\nintent=yield\noutcome=held_space\nattribution=committed_facts_only\nverification=verified\n"
+      ),
+      Err(ActorProtocolCodecError::DuplicateField)
+    );
+    assert_eq!(
+      ActorReplayDebriefRecordDto::decode(
+        "schema=m5-actor-replay-debrief-record-v1\nwindow=first\nintent=contest\noutcome=held_space\nobjective=goal_achieved\nattribution=committed_facts_only\n"
+      ),
+      Err(ActorProtocolCodecError::MissingField)
+    );
+    assert_eq!(
+      ActorReplayDebriefRecordDto::decode(
+        "schema=m5-actor-replay-debrief-record-v0\nwindow=first\nintent=contest\noutcome=held_space\nobjective=goal_achieved\nattribution=committed_facts_only\nverification=verified\n"
+      ),
+      Err(ActorProtocolCodecError::UnsupportedSchema)
+    );
+    for (field, value) in [
+      ("window", "third"),
+      ("intent", "unknown"),
+      ("outcome", "unknown"),
+      ("objective", "unknown"),
+      ("attribution", "other"),
+      ("verification", "unknown"),
+    ] {
+      let input = format!(
+        "schema=m5-actor-replay-debrief-record-v1\nwindow={}\nintent={}\noutcome={}\nobjective={}\nattribution={}\nverification={}\n",
+        if field == "window" { value } else { "first" },
+        if field == "intent" { value } else { "contest" },
+        if field == "outcome" {
+          value
+        } else {
+          "held_space"
+        },
+        if field == "objective" {
+          value
+        } else {
+          "goal_achieved"
+        },
+        if field == "attribution" {
+          value
+        } else {
+          "committed_facts_only"
+        },
+        if field == "verification" {
+          value
+        } else {
+          "verified"
+        },
+      );
+      assert_eq!(
+        ActorReplayDebriefRecordDto::decode(&input),
+        Err(ActorProtocolCodecError::InvalidValue)
+      );
+    }
+    assert_eq!(
+      ActorReplayDebriefRecordDto::decode(
+        "schema=m5-actor-replay-debrief-record-v1\nwindow=first\nintent=contest\noutcome=held_space\nobjective=goal_achieved\nattribution=committed_facts_only\nverification=verified\nextra=x\n"
+      ),
+      Err(ActorProtocolCodecError::UnexpectedLineCount {
+        expected: 7,
+        actual: 8,
       })
     );
   }
