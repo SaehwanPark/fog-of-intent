@@ -2,7 +2,8 @@
 
 ## Disposition
 
-Pending independent three-pass review of the implementation and evidence.
+PASS — no actionable findings remain after the independent three-pass review
+at implementation/evidence head `5b3040f`.
 
 ## Scope reviewed
 
@@ -13,13 +14,14 @@ Prompt, model, tool-schema, and extractor versions are explicitly
 provider-free. The catalog does not revise manifests, execute policies, or own
 host, lane, transition, history, replay, persistence, or provider authority.
 
-## Evidence target
+## Evidence
 
 One focused agent test binds the literal catalog schema, all applicable IDs,
-all four `not-applicable` labels, and repeated equality. The expected full
-evidence is 20 focused agent tests within 233 Rust unit tests, 7 binary tests,
-and 3 RustDoc tests, plus formatter, Clippy warnings denied, repository
-checker, 15 Python policy tests, and diff checks.
+the authoritative ruleset value, all four `not-applicable` labels, and
+repeated equality. The full evidence is 20 focused agent tests within 233 Rust
+unit tests, 7 binary tests, and 3 RustDoc tests, plus formatter, Clippy
+warnings denied, repository checker, 15 Python policy tests, and diff checks;
+all pass at the reviewed head.
 
 ## Review limits
 
