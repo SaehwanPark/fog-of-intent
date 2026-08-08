@@ -98,6 +98,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.162 — 2026-08-08
+
+### Added
+
+- Added `m6-scripted-agent-replay-sequence-evidence-v1`, a pure bounded report
+  joining one decision record's deterministic replay identity with the
+  caller-declared operational start/chunk/finish sequence status.
+
+### Known limits
+
+- The report does not establish causal-trace completeness, runtime event
+  production, scenario-wide replay identity, persistence, providers, or human
+  evidence.
+
 ## 0.1.161 — 2026-08-08
 
 ### Added

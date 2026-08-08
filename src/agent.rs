@@ -140,6 +140,14 @@ pub const SCRIPTED_AGENT_OPERATIONAL_LOG_SEQUENCE_SCHEMA: &str =
 pub const SCRIPTED_AGENT_OPERATIONAL_LOG_SEQUENCE_RULE: &str =
   "m6-operational-start-chunk-finish-v1";
 
+/// Versioned identity for bounded decision-replay and sequence evidence.
+pub const SCRIPTED_AGENT_REPLAY_SEQUENCE_EVIDENCE_SCHEMA: &str =
+  "m6-scripted-agent-replay-sequence-evidence-v1";
+
+/// Stable identity for the bounded replay/sequence evidence rule.
+pub const SCRIPTED_AGENT_REPLAY_SEQUENCE_EVIDENCE_RULE: &str =
+  "m6-replay-identity-operational-sequence-v1";
+
 /// Maximum number of operational events retained in one in-memory log.
 pub const MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS: usize = 16;
 
@@ -1347,6 +1355,73 @@ impl ScriptedAgentOperationalLogSequenceReport {
 
   pub const fn status(self) -> ScriptedAgentOperationalLogSequenceStatus {
     self.status
+  }
+}
+
+/// Whether a recorded scripted-agent decision reproduced exactly.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentReplayIdentityStatus {
+  Verified,
+  DecisionMismatch,
+}
+
+impl ScriptedAgentReplayIdentityStatus {
+  pub const fn id(self) -> &'static str {
+    match self {
+      Self::Verified => "verified",
+      Self::DecisionMismatch => "decision_mismatch",
+    }
+  }
+}
+
+/// Bounded evidence joining decision replay identity with operational sequence status.
+///
+/// This report checks one actor-visible decision record against its deterministic
+/// replay and one caller-declared operational log against the fixed lifecycle
+/// sequence. It does not establish causal-trace completeness, runtime event
+/// production, or scenario-wide replay identity.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentReplaySequenceEvidenceReport {
+  schema: &'static str,
+  rule: &'static str,
+  replay_identity: ScriptedAgentReplayIdentityStatus,
+  sequence_status: ScriptedAgentOperationalLogSequenceStatus,
+}
+
+impl ScriptedAgentReplaySequenceEvidenceReport {
+  /// Build pure evidence from one replay record and one operational label log.
+  pub fn from_record_and_log(
+    record: &ScriptedAgentReplayRecord,
+    log: &ScriptedAgentOperationalLog,
+  ) -> Self {
+    let replay_identity = match record.replay() {
+      Ok(_) => ScriptedAgentReplayIdentityStatus::Verified,
+      Err(ScriptedAgentReplayError::DecisionMismatch) => {
+        ScriptedAgentReplayIdentityStatus::DecisionMismatch
+      }
+    };
+    Self {
+      schema: SCRIPTED_AGENT_REPLAY_SEQUENCE_EVIDENCE_SCHEMA,
+      rule: SCRIPTED_AGENT_REPLAY_SEQUENCE_EVIDENCE_RULE,
+      replay_identity,
+      sequence_status: ScriptedAgentOperationalLogSequenceReport::from_log(log).status(),
+    }
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn rule(self) -> &'static str {
+    self.rule
+  }
+
+  pub const fn replay_identity(self) -> ScriptedAgentReplayIdentityStatus {
+    self.replay_identity
+  }
+
+  pub const fn sequence_status(self) -> ScriptedAgentOperationalLogSequenceStatus {
+    self.sequence_status
   }
 }
 
@@ -6977,6 +7052,69 @@ mod tests {
     assert_eq!(
       seeded_record.replay(),
       Err(ScriptedAgentReplayError::DecisionMismatch)
+    );
+  }
+
+  #[test]
+  fn replay_sequence_evidence_binds_decision_identity_and_log_status() {
+    let state = LaneSnapshot::initial();
+    let observation = observe_player(&state, ObservationId::new(23)).observation();
+    let expected = ScriptedAgentReplayRecord::capture(
+      ScriptedAgent::cautious_v1(),
+      observation,
+      LaneIntent::Stabilize,
+      None,
+    );
+    let mut complete = ScriptedAgentOperationalLog::new();
+    for event in [
+      ScriptedAgentOperationalEvent::BatchStarted,
+      ScriptedAgentOperationalEvent::ChunkCompleted,
+      ScriptedAgentOperationalEvent::BatchFinished,
+    ] {
+      complete.append(event).expect("sequence fixture fits");
+    }
+    let evidence =
+      ScriptedAgentReplaySequenceEvidenceReport::from_record_and_log(&expected, &complete);
+    assert_eq!(
+      evidence.schema(),
+      "m6-scripted-agent-replay-sequence-evidence-v1"
+    );
+    assert_eq!(
+      evidence.rule(),
+      "m6-replay-identity-operational-sequence-v1"
+    );
+    assert_eq!(
+      evidence.replay_identity(),
+      ScriptedAgentReplayIdentityStatus::Verified
+    );
+    assert_eq!(evidence.replay_identity().id(), "verified");
+    assert_eq!(
+      evidence.sequence_status(),
+      ScriptedAgentOperationalLogSequenceStatus::Complete
+    );
+
+    let mut incomplete = ScriptedAgentOperationalLog::new();
+    incomplete
+      .append(ScriptedAgentOperationalEvent::BatchStarted)
+      .expect("sequence fixture fits");
+    assert_eq!(
+      ScriptedAgentReplaySequenceEvidenceReport::from_record_and_log(&expected, &incomplete,)
+        .sequence_status(),
+      ScriptedAgentOperationalLogSequenceStatus::MissingChunk
+    );
+
+    let mut tampered = expected.clone();
+    tampered.decision.selected_intent = LaneIntent::Contest;
+    let mismatch =
+      ScriptedAgentReplaySequenceEvidenceReport::from_record_and_log(&tampered, &complete);
+    assert_eq!(
+      mismatch.replay_identity(),
+      ScriptedAgentReplayIdentityStatus::DecisionMismatch
+    );
+    assert_eq!(mismatch.replay_identity().id(), "decision_mismatch");
+    assert_eq!(
+      mismatch.sequence_status(),
+      ScriptedAgentOperationalLogSequenceStatus::Complete
     );
   }
 

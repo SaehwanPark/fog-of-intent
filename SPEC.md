@@ -1229,8 +1229,16 @@ transport-integrated sessions and broader protocol compatibility remain open.
   `m6-operational-start-chunk-finish-v1` rule. It classifies complete,
   missing-start, missing-chunk, missing-finish, and invalid-order labels while
   permitting checkpoint/resume events between chunk and finish. It is a pure
-  operational-label check, not causal-trace completeness, replay-identity
-  verification, runtime detection, persistence, or recovery authority.
+  operational-label check, not causal-trace completeness, runtime detection,
+  persistence, or recovery authority.
+- `ScriptedAgentReplaySequenceEvidenceReport` defines
+  `m6-scripted-agent-replay-sequence-evidence-v1` under
+  `m6-replay-identity-operational-sequence-v1`. It records whether one
+  actor-visible scripted decision replays exactly (`verified` or
+  `decision_mismatch`) alongside the caller-declared operational sequence
+  status. This is a pure bounded decision-replay check, not causal-trace
+  completeness, scenario-wide replay identity, runtime production,
+  persistence, or provider authority.
 - `ScriptedAgentFixtureScenarioSelection` defines
   `m6-scripted-agent-fixture-scenarios-v1` over the closed
   `safe-fixture-v1` and `river-side-threat-v1` IDs. It binds one or more
