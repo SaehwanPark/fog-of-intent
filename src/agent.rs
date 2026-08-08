@@ -3082,6 +3082,13 @@ mod tests {
       ScriptedAgentFixtureScenarioSelection::from_ids(&scenario_ids, &observation_ids)
         .expect("closed fixture selection builds");
     assert_eq!(
+      [
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+      ],
+      ["safe-fixture-v1", "river-side-threat-v1"]
+    );
+    assert_eq!(
       SCRIPTED_AGENT_FIXTURE_SCENARIO_CATALOG_SCHEMA,
       "m6-scripted-agent-fixture-scenarios-v1"
     );
