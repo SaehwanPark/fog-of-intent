@@ -2,17 +2,19 @@
 
 ## Outcome
 
-Implementation and evidence are pending independent three-pass review at the
-implementation/evidence head.
+Implementation and evidence are complete at head `ba2ab2a`; the independent
+three-pass review passed with no actionable findings. The slice adds explicit
+ordered composition over the closed fixture catalog without claiming sampled
+or representative population behavior.
 
-## Verification target
+## Verification
 
-One focused fixture-selection regression should cover safe-heavy ordered
-composition, exact 3/1 frequency counts, complete matched-sample composition,
-unknown-ID failure, and the existing alternating/bounds/overflow evidence. The
-full target is 28 focused agent tests within 241 Rust unit + 7 binary + 3
-RustDoc tests, plus 15 Python tests and formatter, Clippy, repository, and diff
-gates.
+One focused fixture-selection regression covers safe-heavy ordered composition,
+exact 3/1 frequency counts, complete matched-sample composition, unknown-ID
+failure, and direct public-constructor error precedence alongside the existing
+alternating/bounds/overflow evidence. The full evidence is 28 focused agent
+tests within 241 Rust unit + 7 binary + 3 RustDoc tests, plus 15 Python tests;
+formatter, Clippy, repository, and diff gates pass at `ba2ab2a`.
 
 ## Limits
 
