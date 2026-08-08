@@ -117,6 +117,16 @@ impl ScriptedAgentProfile {
   pub const fn role(self) -> ScriptedAgentRole {
     self.role
   }
+
+  /// Return the profile's fixed baseline preference before visible-threat
+  /// overrides are considered.
+  pub const fn preferred_intent(self) -> LaneIntent {
+    match self.evaluation {
+      ScriptedAgentEvaluationRule::Threat => LaneIntent::Stabilize,
+      ScriptedAgentEvaluationRule::Contest => LaneIntent::Contest,
+      ScriptedAgentEvaluationRule::Yield => LaneIntent::Yield,
+    }
+  }
 }
 
 /// Why the policy assigned a candidate its score.
@@ -826,6 +836,12 @@ mod tests {
       yielding.profile().selection_rule(),
       "max-score-stable-order-v1"
     );
+    assert_eq!(cautious.profile().preferred_intent(), LaneIntent::Stabilize);
+    assert_eq!(
+      risk_taking.profile().preferred_intent(),
+      LaneIntent::Contest
+    );
+    assert_eq!(yielding.profile().preferred_intent(), LaneIntent::Yield);
     assert_eq!(
       cautious.profile().evaluation_rule(),
       "threat-first-pressure-aware-fixed-score-v1"

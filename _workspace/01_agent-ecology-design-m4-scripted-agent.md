@@ -28,9 +28,10 @@ introduced, so no population-level comparison is claimed.
 
 The policy input is a copied `LanerObservation`, including observer identity,
 observation ID, bounded wave pressure, advertised legal intents, and an
-optional visible threat response. The Anchor profile uses only that observed
-pressure as a bounded utility feature; the profile has no memory store, private
-state, wall-clock input, provider input, or hidden-state access. Observation
+optional visible threat response. Each profile exposes a fixed baseline
+preferred intent separately from the threat response. The Anchor profile uses
+only that observed pressure as a bounded utility feature; the profile has no
+memory store, private state, wall-clock input, provider input, or hidden-state access. Observation
 freshness and source binding remain host-owned.
 
 ## Candidate Generation, Evaluation, and Selection

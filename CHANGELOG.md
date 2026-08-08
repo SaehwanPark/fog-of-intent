@@ -95,6 +95,18 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.91 — 2026-08-08
+
+### Added
+
+- Added `ScriptedAgentProfile::preferred_intent()` to expose each fixed
+  baseline preference separately from the visible-threat override.
+
+### Known limits
+
+- Baseline preference metadata covers the three fixture profiles; richer risk,
+  planning, memory, communication, and human-behavior parameters remain open.
+
 ## 0.1.90 — 2026-08-08
 
 ### Added
