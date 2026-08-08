@@ -1389,6 +1389,9 @@ representative replays, and an evidence-limited report.
 - [x] Compose caller-declared ordered populations from the closed fixture
   catalog and expose skewed fixed-fixture frequency evidence; random,
   representative, and broader distributional sampling remain open.
+- [x] Compose bounded fixed-fixture populations directly into the existing
+  selected-intent tally path; broader population metrics and outcomes remain
+  open.
 - [ ] Add broader scenario selection and distributional sampling evidence;
   population diversity and representative sampling remain open.
 - [x] Emit bounded selected-intent tallies over caller-supplied sample sets;

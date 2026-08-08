@@ -171,6 +171,9 @@ also accepts caller-declared closed IDs, preserving skewed fixed-fixture input
 without sampling authority. It is a fixed-fixture generator only; broader/random
 population sampling, distributional metrics, outcomes, and human-behavior
 evidence remain outside the core.
+`matched_tally` reuses the existing verified sample/tally path over those
+entries and does not rerun policy evaluation or add population-metric,
+transition, history, persistence, provider, or outcome authority.
 `ScriptedAgentFixtureScenarioFrequencyReport` counts those explicit selection
 labels in stable catalog order; it is bounded metadata over validated input,
 not population, outcome, strategic, persistence, or provider evidence. Its
