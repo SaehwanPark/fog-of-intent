@@ -98,6 +98,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.166 — 2026-08-08
+
+### Added
+
+- Added `m6-actor-illegal-command-population-v1`, a bounded actor-visible
+  report over one to four repeated invalid commands validated through the
+  host, retaining only the stable `host_validation_rejected` category.
+
+### Known limits
+
+- This is host-validation boundary evidence only; exploit-seeking,
+  communication-abuse, prevalence, outcomes, persistence, providers, and
+  human evidence remain open.
+
 ## 0.1.165 — 2026-08-08
 
 ### Added

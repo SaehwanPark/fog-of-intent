@@ -1250,6 +1250,19 @@ canonical policy instead of duplicating it.
 - Prevention: keep adversarial generation, search, prevalence, outcomes,
   persistence, providers, and human evidence in separate contracts.
 
+## Keep illegal-command populations at the validation boundary
+
+- Context: M6 needed repeated invalid-command evidence without authorizing an
+  exploit search or communication-abuse population.
+- Symptom: repeated rejection can be mistaken for adversarial prevalence or a
+  statement about runtime behavior if command payloads and failure details are
+  carried into the report.
+- Resolution: bind one active actor-visible observation to one caller-declared
+  invalid command repeated one to four times, validate it through the host,
+  and retain only `host_validation_rejected` plus bounded binding metadata.
+- Prevention: keep exploit search, communication semantics, prevalence,
+  outcomes, persistence, providers, and human evidence in separate contracts.
+
 ## Keep metric candidates separate from outlier judgments
 
 - Context: M6 needed a deterministic largest-delta candidate before broader

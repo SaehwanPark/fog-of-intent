@@ -1422,8 +1422,10 @@ representative replays, and an evidence-limited report.
 - [x] Add a bounded caller-declared four-case stress matrix over existing
   validation, freshness, message-codec, and deterministic-policy boundaries;
   actual adversarial/degenerate populations and exploit search remain open.
-- [ ] Add illegal-command, exploit-seeking, and communication-abuse policy
-  populations.
+- [x] Add a bounded caller-declared illegal-command population over repeated
+  actor-visible host validation rejection; exploit-seeking and
+  communication-abuse populations remain open.
+- [ ] Add exploit-seeking and communication-abuse policy populations.
 - [x] Add a bounded caller-declared degenerate-policy population over repeated
   actor-visible `Stabilize` selections; broad adversarial populations,
   prevalence, and outcomes remain open.
