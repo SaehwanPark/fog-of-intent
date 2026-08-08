@@ -2,7 +2,8 @@
 
 ## Disposition
 
-Pending independent three-pass review of implementation and evidence head.
+PASS — independent three-pass review found no actionable findings at
+implementation/evidence head `db34688`.
 
 ## Scope reviewed
 
@@ -12,14 +13,15 @@ safe-then-RiverSide count deltas; it does not rerun policy code or add build,
 scenario, transition, history, replay, persistence, provider, population, or
 outcome authority.
 
-## Evidence target
+## Evidence
 
 One focused agent test binds the literal comparison schema and row IDs, proves
 1/1 versus 2/2 totals, stable order, positive signed deltas, repeated
-construction, and reversed negative deltas. The expected full evidence is one
-focused comparison test within 24 focused agent tests, 237 Rust unit tests, 7
-binary tests, and 3 RustDoc tests, plus formatter, Clippy warnings denied,
-repository checker, 15 Python policy tests, and diff checks.
+construction, and reversed negative deltas. The full evidence is one focused
+comparison test within 24 focused agent tests, 237 Rust unit tests, 7 binary
+tests, and 3 RustDoc tests, plus formatter, Clippy warnings denied, repository
+checker, 15 Python policy tests, and diff checks; all pass at reviewed head
+`db34688`.
 
 ## Review limits
 
