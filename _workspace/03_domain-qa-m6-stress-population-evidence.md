@@ -21,7 +21,7 @@ implementation/evidence head `a5ff9d0`.
 One focused agent regression binds the literal schema/case/result IDs, drives
 the illegal and stale cases through `CliScenarioHost::validate_actor_action`,
 asserts exact `ActorProtocolCodecError::InvalidValue` for communication abuse,
-proves repeated-Stabilize selection, accepts degenerate counts 1 through 4,
+proves repeated-Stabilize selection, accepts the inclusive maximum count 4,
 rejects 0 and 5, and checks stable order, reproducibility, and exact Markdown.
 The full evidence is 32 focused agent tests within 245 Rust unit tests, 7
 binary tests, 3 RustDoc tests, 15 Python tests, formatter, Clippy with warnings
