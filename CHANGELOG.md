@@ -98,6 +98,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.114 — 2026-08-08
+
+### Added
+
+- Versioned the immutable actor session as `m5-actor-session-v2` with explicit
+  client-requested, caller-signaled timeout, and disconnect closure reasons.
+- Added bounded encoded-action acceptance that maps malformed codec input before
+  actor, stale, and duplicate session checks.
+
+### Known limits
+
+- Timeout is an explicit caller event rather than wall-clock scheduling;
+  transport framing, reconnect, persistence, and async orchestration remain
+  open.
+
 ## 0.1.113 — 2026-08-08
 
 ### Added

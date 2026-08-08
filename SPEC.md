@@ -947,10 +947,10 @@ transport-integrated sessions and broader protocol compatibility remain open.
   existing `LaneIntentRequest`; the adapter does not validate legality or
   authorize a transition. The host remains the sole legality and transition
   authority.
-- `src/session.rs` defines the bounded `m5-actor-session-v1` lifecycle over
+- `src/session.rs` defines the bounded `m5-actor-session-v2` lifecycle over
   those DTOs; transport-integrated lifecycle, reconnect, and privileged actor
   authority remain open.
-- `ActorSession` defines the versioned `m5-actor-session-v1` immutable
+- `ActorSession` defines the versioned `m5-actor-session-v2` immutable
   lifecycle: one ordinary actor, one current observation, one accepted action
   per window, and explicit close. It rejects cross-actor, stale, duplicate,
   no-observation, and closed-session operations without validating intent
@@ -967,8 +967,8 @@ transport-integrated sessions and broader protocol compatibility remain open.
   conversion through the existing validator, absence of state-hash or
   snapshot fields, session lifecycle/error cases, codec round-trips and
   malformed-input rejection, and exhaustive codec/session error projections.
-  The focused evidence is 19 protocol tests and 9 session tests within the
-  208-unit, 7-binary, and 3-Rustdoc suite; host evidence includes the
+  The focused evidence is 19 protocol tests and 12 session tests within the
+  211-unit, 7-binary, and 3-Rustdoc suite; host evidence includes the
   authorization/redaction matrix and CLI/protocol parity regressions.
 - `CliScenarioHost::validate_actor_action` checks one DTO against the current
   actor-visible receipt and existing lane validator without mutating history,
@@ -1019,6 +1019,11 @@ transport-integrated sessions and broader protocol compatibility remain open.
   plan/commit/advance path with actor DTO projection and action submission on
   the same fixture. This is bounded CLI/protocol evidence; MCP transport parity
   remains open.
+- `ActorSession::accept_encoded_action` decodes one bounded action and projects
+  malformed codec failures through the closed actor-error vocabulary before
+  applying actor/freshness/duplicate checks. `ActorSession` records an explicit
+  client-requested, timeout, or disconnect closure reason; these are
+  caller-signaled events and do not read a clock or implement reconnect.
 - `ActorCommitDto` and `ActorCommitResultDto` define `m5-actor-commit-v1` and
   `m5-actor-commit-result-v1` for an observer/receipt-bound explicit intent and
   bounded intent acknowledgement. `CliScenarioHost::commit_actor_draft`

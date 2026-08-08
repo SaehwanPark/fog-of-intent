@@ -168,9 +168,9 @@ the same fixture. This proves bounded CLI/protocol parity without introducing
 MCP transport or provider authority.
 
 `src/session.rs` owns immutable ordinary-actor session freshness and lifecycle
-metadata only. It cannot validate an intent, submit a transition, or mutate
-history; its freshness failures use the same bounded protocol error
-vocabulary.
+metadata only. Its `m5-actor-session-v2` boundary maps encoded malformed,
+stale, duplicate, timeout, and disconnect events into bounded actor-safe
+outcomes; it cannot validate an intent, submit a transition, or mutate history.
 
 ## Target Components
 

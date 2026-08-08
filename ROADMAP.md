@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.113`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.114`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1157,10 +1157,11 @@ control over simulation resolution.
 - [x] Convert the bounded action DTO back to an observer-bound
   `LaneIntentRequest` for existing host validation; transport, session
   reconnect, and plan/message metadata remain open.
-- [x] Define the immutable `m5-actor-session-v1` lifecycle that binds one
+- [x] Define the immutable `m5-actor-session-v2` lifecycle that binds one
   ordinary actor to one current observation, rejects cross-actor/stale/
-  duplicate submissions, and closes fail-closed; host legality and history
-  remain outside the session adapter.
+  duplicate submissions, maps bounded encoded-action failures, and records
+  explicit client/timeout/disconnect closure reasons; host legality, timing,
+  reconnect, and history remain outside the session adapter.
 - [x] Add the bounded `m5-actor-codec-v1` line-oriented encode/decode contract
   for observation and intent-action DTOs, with size, field, line-count, and
   closed-intent checks; transport I/O and persistence remain open.
@@ -1219,7 +1220,7 @@ values or deliver them to another actor. The provider-neutral
 `m5-actor-transcript-v1` record captures only closed tool/schema IDs and an
 accepted/rejected result for an actor receipt; it is not a runtime log or
 replay record. Focused evidence is 19 protocol tests,
-9 session tests, and 24 host tests within the 208-unit, 7-binary, and
+12 session tests, and 24 host tests within the 211-unit, 7-binary, and
 3-Rustdoc suite. The host observation projection is a
 pure actor-visible DTO mapping, rejects inactive lifecycle states, and leaves
 the internal receipt private. The history DTO is a bounded status summary,
@@ -1251,8 +1252,9 @@ than a detailed replay or causal debrief contract.
   privacy remain open.
 - [x] Add bounded CLI/protocol action and projection parity tests; MCP transport
   parity remains open.
-- [ ] Add timeout, malformed-response, duplicate-submit, stale-window, and
-  disconnect behavior.
+- [x] Add deterministic session timeout/disconnect closure and malformed,
+  duplicate, and stale action behavior; wall-clock transport timing,
+  reconnect, and framing remain open.
 - [ ] Verify that transport and async orchestration stay outside the core.
 
 ### Deliverables
