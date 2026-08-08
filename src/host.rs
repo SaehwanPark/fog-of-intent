@@ -13,8 +13,9 @@ use crate::cli::{
 use crate::host_artifact::CliHostArtifact;
 use crate::kernel::{DrawId, InputTrace, StreamId};
 use crate::lane::{
-  LaneDamage, LaneIntent, LaneIntentRequest, LaneOutcome, LaneResolvedInputs, LaneScenarioHistory,
-  LaneWaveResult, ObservationId, PLAYER_LANER, ScenarioDebriefReport, ScenarioWindow,
+  BranchExecutionSelection, LaneDamage, LaneExecutionRelation, LaneHistory, LaneIntent,
+  LaneIntentRequest, LaneOutcome, LaneResolvedInputs, LaneScenarioHistory, LaneWaveResult,
+  ObservationId, PLAYER_LANER, ScenarioDebriefReport, ScenarioWindow, branch_from_window,
   build_scenario_debrief, observe_player,
 };
 use crate::run_store::{CliRunStore, CliRunStoreError};
@@ -69,6 +70,14 @@ pub enum CliHostOutput {
     run_id: Option<String>,
     records: u8,
   },
+  Branched {
+    point_id: String,
+    parent_intent: LaneIntent,
+    branch_intent: LaneIntent,
+    parent_outcome: LaneOutcome,
+    branch_outcome: LaneOutcome,
+    execution_relation: LaneExecutionRelation,
+  },
   Saved {
     run_id: String,
     records: u8,
@@ -94,11 +103,13 @@ pub enum CliHostError<'a> {
   InvalidPlan { text: String },
   CommittedBoundary { verb: &'static str },
   MissingPlan,
+  BranchMissingPlan,
   MissingCommittedIntent,
   NothingToUndo,
   RunNotFound { run_id: String },
   AdvanceRejected,
   ReplayRejected,
+  BranchUnavailable,
   DebriefUnavailable,
   ScenarioComplete,
   StorageUnavailable,
@@ -317,8 +328,57 @@ impl CliScenarioHost {
           records: u8::try_from(records).expect("two-window history fits in u8"),
         })
       }
-      CliProcessRequest::Branch { .. } => Err(CliHostError::UnsupportedCommand { verb: "branch" }),
+      CliProcessRequest::Branch { point_id } => self.branch(point_id),
     }
+  }
+
+  fn branch<'a>(&self, point_id: Option<&str>) -> Result<CliHostOutput, CliHostError<'a>> {
+    let point_id = point_id.unwrap_or("first");
+    if point_id != "first" || self.history.records().len() != 1 {
+      return Err(CliHostError::BranchUnavailable);
+    }
+    let alternate_text = self
+      .draft
+      .plan
+      .as_deref()
+      .ok_or(CliHostError::BranchMissingPlan)?;
+    let alternate_intent =
+      parse_plan_intent(alternate_text).ok_or_else(|| CliHostError::InvalidPlan {
+        text: alternate_text.to_owned(),
+      })?;
+    let scenario_record = self
+      .history
+      .records()
+      .first()
+      .ok_or(CliHostError::BranchUnavailable)?;
+    let transition = scenario_record.transition().clone();
+    let parent_intent = transition.command().intent();
+    let mut parent = LaneHistory::new(self.history.initial_state())
+      .map_err(|_| CliHostError::BranchUnavailable)?;
+    parent.current_state = transition.result().next_state();
+    parent.records.push(transition);
+    let request = LaneIntentRequest::new(
+      PLAYER_LANER,
+      scenario_record.transition().command().observation_id(),
+      alternate_intent,
+    );
+    let branch = branch_from_window(
+      &parent,
+      &request,
+      BranchExecutionSelection::matched_parent(),
+    )
+    .map_err(|_| CliHostError::BranchUnavailable)?;
+    let review = branch
+      .review(&parent)
+      .map_err(|_| CliHostError::BranchUnavailable)?;
+    Ok(CliHostOutput::Branched {
+      point_id: point_id.to_owned(),
+      parent_intent,
+      branch_intent: review.branch_intent(),
+      parent_outcome: review.parent_outcome(),
+      branch_outcome: review.branch_outcome(),
+      execution_relation: review.execution_relation(),
+    })
   }
 
   fn apply_session<'a>(
@@ -814,7 +874,110 @@ mod tests {
     );
     assert_eq!(
       host.apply_line("branch point-0"),
-      Err(CliHostError::UnsupportedCommand { verb: "branch" })
+      Err(CliHostError::BranchUnavailable)
+    );
+  }
+
+  #[test]
+  fn branch_review_is_read_only_and_preserves_parent_artifact() {
+    let root = temporary_store_root();
+    let mut host = CliScenarioHost::fixture_with_store(CliRunStore::new(&root));
+    for command in ["plan contest", "commit", "advance", "save parent"] {
+      host.apply_line(command).expect("parent command");
+    }
+    let before_observation = host.observation();
+    let before_artifact = host.saved.as_ref().expect("parent saved").artifact.clone();
+
+    host.apply_line("plan yield").expect("alternate plan");
+    assert!(matches!(
+      host.apply_line("branch first"),
+      Ok(CliHostOutput::Branched {
+        point_id,
+        parent_intent: LaneIntent::Contest,
+        branch_intent: LaneIntent::Yield,
+        execution_relation: LaneExecutionRelation::Matched,
+        ..
+      }) if point_id == "first"
+    ));
+    assert_eq!(host.record_count(), 1);
+    assert_eq!(host.observation(), before_observation);
+    assert_eq!(
+      host.saved.as_ref().expect("parent saved").artifact,
+      before_artifact
+    );
+    assert_eq!(
+      host.apply_line("replay"),
+      Ok(CliHostOutput::ReplayVerified {
+        run_id: None,
+        records: 1
+      })
+    );
+
+    host
+      .apply_line("plan stabilize")
+      .expect("second alternate plan");
+    assert!(matches!(
+      host.apply_line("branch"),
+      Ok(CliHostOutput::Branched {
+        point_id,
+        branch_intent: LaneIntent::Stabilize,
+        execution_relation: LaneExecutionRelation::Matched,
+        ..
+      }) if point_id == "first"
+    ));
+    assert_eq!(
+      host.apply_line("load parent"),
+      Ok(CliHostOutput::Loaded {
+        run_id: "parent".to_owned(),
+        records: 1
+      })
+    );
+    let _ = std::fs::remove_dir_all(root);
+  }
+
+  #[test]
+  fn branch_rejects_missing_invalid_same_and_unsupported_requests() {
+    let mut host = CliScenarioHost::fixture();
+    assert_eq!(
+      host.apply_line("branch first"),
+      Err(CliHostError::BranchUnavailable)
+    );
+    for command in ["plan contest", "commit", "advance"] {
+      host.apply_line(command).expect("parent command");
+    }
+    assert_eq!(
+      host.apply_line("branch first"),
+      Err(CliHostError::BranchMissingPlan)
+    );
+    host.apply_line("plan ???").expect("invalid alternate plan");
+    assert_eq!(
+      host.apply_line("branch first"),
+      Err(CliHostError::InvalidPlan {
+        text: "???".to_owned()
+      })
+    );
+    host
+      .apply_line("plan contest")
+      .expect("same alternate plan");
+    assert_eq!(
+      host.apply_line("branch first"),
+      Err(CliHostError::BranchUnavailable)
+    );
+    host.apply_line("plan yield").expect("valid alternate plan");
+    assert_eq!(
+      host.apply_line("branch second"),
+      Err(CliHostError::BranchUnavailable)
+    );
+    host.apply_line("plan yield").expect("valid alternate plan");
+    host.apply_line("branch first").expect("valid branch");
+    host
+      .apply_line("plan stabilize")
+      .expect("second-window plan");
+    host.apply_line("commit").expect("second-window commit");
+    host.apply_line("advance").expect("second-window advance");
+    assert_eq!(
+      host.apply_line("branch first"),
+      Err(CliHostError::BranchUnavailable)
     );
   }
 

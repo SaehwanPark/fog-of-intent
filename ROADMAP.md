@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Line-oriented bounded fixture loop with explicit `--run-dir` artifact storage; no scenario selection |
-| Package | `Cargo.toml` | Version `0.1.73`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.74`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -861,8 +861,8 @@ API access.
   `commit`, and `advance`; the bounded host fixture executes only the existing
   two-window scenario.
 - [x] Define typed adapter requests for `review`, `debrief`, `replay`, and
-  `branch`; branch execution remains open while replay/debrief are covered by
-  the bounded host fixture.
+  `branch`; the bounded host fixture executes the matched-parent `first` point
+  while regenerated and multi-window branching remain open.
 - [x] Define typed adapter requests for `save`, `load`, `undo`, and `quit`; the
   host fixture provides versioned, replay-validated artifacts and an injected
   file store; the binary accepts one explicit `--run-dir` option.
@@ -924,7 +924,7 @@ persist a session, or rewrite authoritative lane history.
 This verifies a structural boundary, bounded host flow, injected file storage,
 pure text projection, the thin line-oriented fixture I/O loop, and explicit
 binary store wiring. Complete reference-client behavior, scenario selection,
-branch execution, and keyboard/screen-reader inspection remain open.
+regenerated/graph branching, and keyboard/screen-reader inspection remain open.
 
 ### Current bounded run-identifier evidence
 
@@ -965,8 +965,8 @@ still does not satisfy the M3 complete-run exit evidence.
 - [ ] Check keyboard-only flow and screen-reader-oriented text structure.
 
 This is host-backed scenario, injected file-store, text-projection, and
-bounded two-process executable evidence, but not the complete M3 reference
-client or accessibility evidence.
+bounded two-process executable evidence with a matched-parent branch, but not
+the complete M3 reference client or accessibility evidence.
 
 ### Current bounded terminal-text evidence
 

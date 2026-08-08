@@ -11,8 +11,8 @@ use crate::cli::{
 };
 use crate::host::{CliHostError, CliHostOutput};
 use crate::lane::{
-  JungleThreatRegion, LaneIntent, LaneOutcome, LanePosition, LaneWaveResult, ObjectiveDisposition,
-  ScenarioWindow, ThreatReport,
+  JungleThreatRegion, LaneExecutionRelation, LaneIntent, LaneOutcome, LanePosition, LaneWaveResult,
+  ObjectiveDisposition, ScenarioWindow, ThreatReport,
 };
 
 /// Versioned contract for deterministic, dependency-free terminal text.
@@ -163,6 +163,25 @@ pub fn render_output(output: &CliHostOutput) -> String {
         records
       ),
     ),
+    CliHostOutput::Branched {
+      point_id,
+      parent_intent,
+      branch_intent,
+      parent_outcome,
+      branch_outcome,
+      execution_relation,
+    } => line(
+      &mut text,
+      format_args!(
+        "branch: status=verified point={} parent_intent={} branch_intent={} parent_outcome={} branch_outcome={} execution={}",
+        safe_text(point_id),
+        intent_name(*parent_intent),
+        intent_name(*branch_intent),
+        outcome_name(*parent_outcome),
+        outcome_name(*branch_outcome),
+        execution_relation_name(*execution_relation)
+      ),
+    ),
     CliHostOutput::Saved { run_id, records } => line(
       &mut text,
       format_args!(
@@ -205,6 +224,9 @@ pub fn render_error(error: &CliHostError<'_>) -> String {
       format!("{verb} is locked after commit; advance first or start a new window")
     }
     CliHostError::MissingPlan => "commit needs a plan; stage plan <intent> first".to_owned(),
+    CliHostError::BranchMissingPlan => {
+      "branch needs an alternate plan; stage plan <intent> first".to_owned()
+    }
     CliHostError::MissingCommittedIntent => {
       "advance needs a committed plan; stage and commit an intent first".to_owned()
     }
@@ -221,6 +243,10 @@ pub fn render_error(error: &CliHostError<'_>) -> String {
     }
     CliHostError::ReplayRejected => {
       "replay verification failed; return to a verified saved run".to_owned()
+    }
+    CliHostError::BranchUnavailable => {
+      "branch is unavailable; use branch first after the first window with an alternate plan"
+        .to_owned()
     }
     CliHostError::DebriefUnavailable => {
       "debrief is unavailable until both scenario windows are complete".to_owned()
@@ -345,6 +371,14 @@ fn outcome_name(outcome: LaneOutcome) -> &'static str {
   }
 }
 
+fn execution_relation_name(relation: LaneExecutionRelation) -> &'static str {
+  match relation {
+    LaneExecutionRelation::Matched => "matched",
+    LaneExecutionRelation::MatchedWithResourceNormalization => "matched-resource-normalized",
+    LaneExecutionRelation::Regenerated => "regenerated",
+  }
+}
+
 fn wave_name(wave: LaneWaveResult) -> &'static str {
   match wave {
     LaneWaveResult::Advanced => "advanced",
@@ -437,6 +471,24 @@ mod tests {
   }
 
   #[test]
+  fn branch_rendering_stays_actor_safe_and_labeled() {
+    let rendered = render_output(&CliHostOutput::Branched {
+      point_id: "first".to_owned(),
+      parent_intent: LaneIntent::Contest,
+      branch_intent: LaneIntent::Yield,
+      parent_outcome: LaneOutcome::HeldSpace,
+      branch_outcome: LaneOutcome::YieldedSpace,
+      execution_relation: LaneExecutionRelation::Matched,
+    });
+    assert_eq!(
+      rendered,
+      "branch: status=verified point=first parent_intent=contest branch_intent=yield parent_outcome=held_space branch_outcome=yielded_space execution=matched\n"
+    );
+    assert!(!rendered.contains("hash"));
+    assert!(!rendered.contains('\u{1b}'));
+  }
+
+  #[test]
   fn errors_are_actionable_and_control_characters_are_sanitized() {
     let mut host = CliScenarioHost::fixture();
     let error = host
@@ -454,6 +506,10 @@ mod tests {
     assert!(boundary.contains("advance first"));
     let storage = render_error(&CliHostError::StorageUnavailable);
     assert!(storage.contains("configured run directory"));
+    let branch = render_error(&CliHostError::BranchUnavailable);
+    assert!(branch.contains("branch first"));
+    let branch_plan = render_error(&CliHostError::BranchMissingPlan);
+    assert!(branch_plan.contains("branch needs an alternate plan"));
 
     let mut malformed_host = CliScenarioHost::new([malformed_inputs(), malformed_inputs()]);
     malformed_host

@@ -77,7 +77,7 @@ players?
 | --- | --- |
 | Current roadmap milestone | M2 — One-Lane Vertical Slice (Active) |
 | Repository governance and canonical docs | Complete — M0 |
-| Rust package | `0.1.73`, edition 2024, Rust `1.96`, no dependencies, single package |
+| Rust package | `0.1.74`, edition 2024, Rust `1.96`, no dependencies, single package |
 | Executable behavior | Runs a line-oriented deterministic two-window fixture loop with optional `--run-dir` artifact storage; no scenario selection |
 | Deterministic kernel | M1 fixture/codec complete; M2 v3 internal lane-window, explicit four-actor roster, retained-resource aggregate, intent, observation, branch, coordination, objective, strategy-fixture, scenario, replay, delayed-origin provenance, debrief, advance-condition, and belief/report contracts implemented |
 | One-lane scenario | Internal diagnostic windows and fixtures cover bounded intents, observations, coordination, resources, replay, and debrief projections — full scenario not complete |
@@ -109,7 +109,7 @@ quit: status=closed
 ```
 
 The default binary is intentionally a bounded fixture adapter: it has no
-scenario selection, branch execution, or complete accessibility inspection. To
+scenario selection, regenerated/graph branching, or complete accessibility inspection. To
 persist bounded artifacts between processes, provide an explicit directory:
 
 ```sh

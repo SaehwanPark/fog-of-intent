@@ -95,6 +95,23 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.74 — 2026-08-08
+
+### Added
+
+- Added bounded host execution for the existing `branch` grammar at the
+  supported `first` decision point using a staged alternate plan and
+  matched-parent execution.
+- Added actor-safe branch comparison text and tests proving parent history,
+  replay, and saved artifacts remain unchanged.
+- Added the M3 host-branch design, QA, handoff, and lesson records.
+
+### Known limits
+
+- Regenerated execution, branch IDs/graphs, branch persistence, multi-window
+  branching, scenario selection, and keyboard/screen-reader evidence remain
+  open.
+
 ## 0.1.73 — 2026-08-08
 
 ### Added
