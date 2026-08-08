@@ -2,7 +2,8 @@
 
 ## Outcome
 
-Pending independent domain QA and final handoff review.
+PASS — independent domain QA and final handoff review found no actionable
+findings at implementation/evidence head `2704a55`.
 
 ## Delivered contract
 
@@ -12,13 +13,14 @@ selection totals and both ordered safe/threat counts are identical. The
 rationale is limited to deterministic fixed-fixture baseline mismatch
 detection; no independent build or causal claim is made.
 
-## Verification target
+## Verification
 
 The focused comparison test covers the exact rule ID, changed 1/1-to-2/2 gate
-failure, and unchanged gate success. The expected full evidence is one focused
+failure, and unchanged gate success. The full evidence is one focused
 comparison test within 24 focused agent tests, 237 unit tests, 7 binary tests,
 and 3 RustDoc tests, plus formatter, Clippy warnings denied, repository
-checker, 15 Python policy tests, and diff checks.
+checker, 15 Python policy tests, and diff checks; all pass at reviewed head
+`2704a55`.
 
 ## Open boundaries
 
