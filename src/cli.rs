@@ -1555,7 +1555,10 @@ mod tests {
   #[test]
   fn run_ids_accept_readable_forms_and_reject_malformed_values() {
     assert_eq!(CLI_RUN_ID_SCHEMA, "m3-cli-run-id-v1");
+    assert_eq!(CliRunId::parse("a").unwrap().as_str(), "a");
     assert_eq!(run_id("run-1_v2.final").as_str(), "run-1_v2.final");
+    let max_length = "a".repeat(MAX_CLI_RUN_ID_BYTES);
+    assert_eq!(CliRunId::parse(&max_length).unwrap().as_str(), max_length);
     assert_eq!(CliRunId::parse(""), Err(CliRunIdError::Empty));
     assert_eq!(
       CliRunId::parse("-run"),
@@ -1960,6 +1963,12 @@ mod tests {
         error: CliRunIdError::InvalidCharacter { character: '/' }
       })
     );
+    assert_eq!(
+      session_request(CliCommand::Load("run/id")),
+      Err(CliSessionError::InvalidRunId {
+        error: CliRunIdError::InvalidCharacter { character: '/' }
+      })
+    );
   }
 
   #[test]
@@ -2224,6 +2233,19 @@ mod tests {
     };
     assert_eq!(
       top_level_request(invalid_run, CliPrivilegeLevel::Unprivileged),
+      Err(CliTopLevelError::InvalidRunId {
+        field: "run_id",
+        error: CliRunIdError::InvalidCharacter { character: '/' }
+      })
+    );
+
+    let invalid_export = CliTopLevelCommand::Export {
+      run_id: "run/id",
+      format: "json",
+      unredacted: false,
+    };
+    assert_eq!(
+      top_level_request(invalid_export, CliPrivilegeLevel::Unprivileged),
       Err(CliTopLevelError::InvalidRunId {
         field: "run_id",
         error: CliRunIdError::InvalidCharacter { character: '/' }
