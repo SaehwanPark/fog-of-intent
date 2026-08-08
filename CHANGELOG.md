@@ -95,6 +95,19 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.89 — 2026-08-08
+
+### Added
+
+- Bound the `max-score-stable-order-v1` selection rule with exact rule-ID
+  assertions for all three profiles and an equal-score regression proving
+  first-advertised tie behavior.
+
+### Known limits
+
+- Selection remains deterministic top-1 fixture behavior; top-k/nucleus
+  sampling, randomness, populations, outcomes, and human realism remain open.
+
 ## 0.1.88 — 2026-08-08
 
 ### Added
