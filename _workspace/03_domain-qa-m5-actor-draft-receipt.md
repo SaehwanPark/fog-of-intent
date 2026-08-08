@@ -29,8 +29,8 @@ read random or resolved inputs.
 
 ## Evidence and Claim Limits
 
-Evidence will be one deterministic fixture, one pure receipt codec test, and
-one host adapter test. It will not claim communication delivery, client
+Evidence is one deterministic fixture, one pure receipt codec test, and one
+host adapter test. It does not claim communication delivery, client
 compatibility, simultaneous ordering, persistence, accessibility, or complete
 MCP behavior.
 
