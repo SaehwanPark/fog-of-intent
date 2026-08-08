@@ -245,6 +245,10 @@ resume labels between chunk and finish. `ScriptedAgentReplaySequenceEvidenceRepo
 adds only the deterministic replay identity status of one existing decision
 record beside that sequence status. These reports add no causal-trace, runtime,
 scenario-wide replay, persistence, recovery, provider, or history authority.
+`ScriptedAgentTallyOutlierThresholdReport` is a separate provisional
+fixed-fixture threshold over verified signed count deltas; it does not infer
+outliers, select replays, or add causal, population, persistence, provider,
+or history authority.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

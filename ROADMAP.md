@@ -1427,7 +1427,11 @@ representative replays, and an evidence-limited report.
 - [x] Rank a caller-declared largest absolute intent-count candidate from
   verified profile-aware comparison rows with stable row/intent ties; actual
   outlier detection and representative replay selection remain open.
-- [ ] Detect outliers and select representative replays deterministically.
+- [x] Emit a provisional inclusive fixed-fixture threshold signal over the
+  verified largest-delta candidate; calibrated outlier detection and
+  representative replay selection remain open.
+- [ ] Calibrate outlier detection and select representative replays
+  deterministically.
 - [x] Classify caller-declared operational `batch_started` →
   `chunk_completed` → `batch_finished` label order with optional checkpoint/
   resume labels; causal-trace completeness and scenario-wide replay identity

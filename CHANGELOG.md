@@ -98,6 +98,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.163 — 2026-08-08
+
+### Added
+
+- Added `m6-scripted-agent-tally-outlier-threshold-v1`, a pure provisional
+  `above_threshold`/`below_threshold`/`no_candidate` signal over verified
+  signed intent-count deltas using an inclusive magnitude threshold of 2.
+
+### Known limits
+
+- The threshold is fixed-fixture evidence only; calibrated outlier detection,
+  representative replay selection, causal attribution, persistence, providers,
+  and human evidence remain open.
+
 ## 0.1.162 — 2026-08-08
 
 ### Added

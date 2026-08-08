@@ -1248,8 +1248,9 @@ canonical policy instead of duplicating it.
 - Symptom: Naming a largest count delta an outlier can imply a threshold,
   causal explanation, or representative behavior claim.
 - Resolution: Expose only the first largest absolute signed delta from a
-  verified comparison, with literal rule/schema IDs and stable row/intent ties.
-- Prevention: Keep outlier definitions, calibration, replay selection,
+  verified comparison, then classify it with a clearly provisional fixed
+  threshold rather than naming it an outlier.
+- Prevention: Keep calibrated outlier definitions, replay selection,
   population inference, causality, persistence, and human evidence separate.
 
 ## Keep event-order checks separate from causal traces

@@ -123,6 +123,17 @@ pub const SCRIPTED_AGENT_TALLY_OUTLIER_CANDIDATE_SCHEMA: &str =
 /// Stable identity for the bounded largest-absolute-delta selection rule.
 pub const SCRIPTED_AGENT_TALLY_OUTLIER_CANDIDATE_RULE: &str = "m6-largest-absolute-intent-delta-v1";
 
+/// Versioned identity for a provisional fixed-fixture outlier threshold signal.
+pub const SCRIPTED_AGENT_TALLY_OUTLIER_THRESHOLD_SCHEMA: &str =
+  "m6-scripted-agent-tally-outlier-threshold-v1";
+
+/// Stable identity for the provisional fixed-fixture threshold rule.
+pub const SCRIPTED_AGENT_TALLY_OUTLIER_THRESHOLD_RULE: &str =
+  "m6-fixed-intent-delta-outlier-threshold-v1";
+
+/// Provisional inclusive magnitude threshold over signed intent-count deltas.
+pub const SCRIPTED_AGENT_TALLY_OUTLIER_THRESHOLD_MAGNITUDE: u16 = 2;
+
 /// Versioned identity for caller-declared build labels on comparisons.
 pub const SCRIPTED_AGENT_BUILD_ID_SCHEMA: &str = "m6-scripted-agent-build-id-v1";
 
@@ -2265,6 +2276,70 @@ impl ScriptedAgentMatchedScenarioTallyOutlierCandidate {
 
   pub const fn magnitude(self) -> u16 {
     self.magnitude
+  }
+}
+
+/// Closed result of the provisional fixed-fixture outlier threshold signal.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentTallyOutlierThresholdStatus {
+  AboveThreshold,
+  BelowThreshold,
+  NoCandidate,
+}
+
+impl ScriptedAgentTallyOutlierThresholdStatus {
+  pub const fn id(self) -> &'static str {
+    match self {
+      Self::AboveThreshold => "above_threshold",
+      Self::BelowThreshold => "below_threshold",
+      Self::NoCandidate => "no_candidate",
+    }
+  }
+}
+
+/// Bounded provisional threshold evidence over a verified tally comparison.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentTallyOutlierThresholdReport {
+  schema: &'static str,
+  rule: &'static str,
+  threshold: u16,
+  status: ScriptedAgentTallyOutlierThresholdStatus,
+}
+
+impl ScriptedAgentTallyOutlierThresholdReport {
+  /// Classify the existing largest-delta candidate without rerunning policy.
+  pub fn from_comparison(comparison: &ScriptedAgentMatchedScenarioTallyComparisonReport) -> Self {
+    let status = match comparison.largest_delta_candidate() {
+      Some(candidate)
+        if candidate.magnitude() >= SCRIPTED_AGENT_TALLY_OUTLIER_THRESHOLD_MAGNITUDE =>
+      {
+        ScriptedAgentTallyOutlierThresholdStatus::AboveThreshold
+      }
+      Some(_) => ScriptedAgentTallyOutlierThresholdStatus::BelowThreshold,
+      None => ScriptedAgentTallyOutlierThresholdStatus::NoCandidate,
+    };
+    Self {
+      schema: SCRIPTED_AGENT_TALLY_OUTLIER_THRESHOLD_SCHEMA,
+      rule: SCRIPTED_AGENT_TALLY_OUTLIER_THRESHOLD_RULE,
+      threshold: SCRIPTED_AGENT_TALLY_OUTLIER_THRESHOLD_MAGNITUDE,
+      status,
+    }
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn rule(self) -> &'static str {
+    self.rule
+  }
+
+  pub const fn threshold(self) -> u16 {
+    self.threshold
+  }
+
+  pub const fn status(self) -> ScriptedAgentTallyOutlierThresholdStatus {
+    self.status
   }
 }
 
@@ -6467,6 +6542,100 @@ mod tests {
       ScriptedAgentMatchedScenarioTallyComparisonReport::from_reports(&baseline, &baseline)
         .expect("unchanged verified tallies compare");
     assert_eq!(unchanged.largest_delta_candidate(), None);
+  }
+
+  #[test]
+  fn profile_aware_tally_outlier_threshold_is_provisional_and_bounded() {
+    let manifest = [ScriptedAgentExperimentManifest::new(
+      ScriptedAgentProfile::cautious_v1(),
+      ScriptedAgentSeedBundle::new(91, StreamId::new(92), DrawId::new(93)),
+    )];
+    let baseline_population = ScriptedAgentFixtureScenarioPopulation::generate_from_scenario_ids(
+      &[
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+      ],
+      500,
+    )
+    .expect("baseline population builds");
+    let candidate_population = ScriptedAgentFixtureScenarioPopulation::generate_from_scenario_ids(
+      &[
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+      ],
+      506,
+    )
+    .expect("candidate population builds");
+    let baseline = baseline_population
+      .matched_tally(&manifest)
+      .expect("baseline tally builds");
+    let candidate = candidate_population
+      .matched_tally(&manifest)
+      .expect("candidate tally builds");
+    let below =
+      ScriptedAgentMatchedScenarioTallyComparisonReport::from_reports(&baseline, &candidate)
+        .expect("verified tallies compare");
+    let below_report = ScriptedAgentTallyOutlierThresholdReport::from_comparison(&below);
+    assert_eq!(
+      below_report.schema(),
+      "m6-scripted-agent-tally-outlier-threshold-v1"
+    );
+    assert_eq!(
+      below_report.rule(),
+      "m6-fixed-intent-delta-outlier-threshold-v1"
+    );
+    assert_eq!(below_report.threshold(), 2);
+    assert_eq!(
+      below_report.status(),
+      ScriptedAgentTallyOutlierThresholdStatus::BelowThreshold
+    );
+    assert_eq!(below_report.status().id(), "below_threshold");
+
+    let above = ScriptedAgentFixtureScenarioPopulation::generate_from_scenario_ids(
+      &[
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+      ],
+      512,
+    )
+    .expect("above-threshold population builds")
+    .matched_tally(&manifest)
+    .expect("above-threshold tally builds");
+    let baseline_four = ScriptedAgentFixtureScenarioPopulation::generate_from_scenario_ids(
+      &[
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+      ],
+      520,
+    )
+    .expect("four-pair baseline population builds")
+    .matched_tally(&manifest)
+    .expect("four-pair baseline tally builds");
+    let above_comparison =
+      ScriptedAgentMatchedScenarioTallyComparisonReport::from_reports(&baseline_four, &above)
+        .expect("above-threshold tallies compare");
+    let above_report = ScriptedAgentTallyOutlierThresholdReport::from_comparison(&above_comparison);
+    assert_eq!(
+      above_report.status(),
+      ScriptedAgentTallyOutlierThresholdStatus::AboveThreshold
+    );
+    assert_eq!(above_report.status().id(), "above_threshold");
+
+    let unchanged =
+      ScriptedAgentMatchedScenarioTallyComparisonReport::from_reports(&baseline, &baseline)
+        .expect("unchanged tallies compare");
+    let unchanged_report = ScriptedAgentTallyOutlierThresholdReport::from_comparison(&unchanged);
+    assert_eq!(
+      unchanged_report.status(),
+      ScriptedAgentTallyOutlierThresholdStatus::NoCandidate
+    );
+    assert_eq!(unchanged_report.status().id(), "no_candidate");
   }
 
   #[test]
