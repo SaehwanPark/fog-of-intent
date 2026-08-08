@@ -1074,6 +1074,19 @@ canonical policy instead of duplicating it.
   build provenance, causality, distributions, outcomes, persistence, providers,
   and calibration behind separate contracts.
 
+## Keep fixed equality gates narrower than thresholds
+
+- Context: M6 needed a regression signal over profile-aware tally comparisons
+  before broader metrics or balance thresholds were authorized.
+- Symptom: A generic threshold can imply balance, causality, or strategic
+  quality even when the inputs are only caller-declared fixed-fixture reports.
+- Resolution: Version a pure no-change rule that compares top-level counts and
+  every ordered row's closed intent counts, with unchanged, changed-total, and
+  same-total redistribution evidence.
+- Prevention: Keep the gate a regression predicate; introduce thresholds,
+  outcomes, build provenance, and strategic interpretation only with separate
+  evidence contracts.
+
 ## Keep provisional regression gates explicit and narrow
 
 - Context: M6 needed one useful regression signal before broad threshold or

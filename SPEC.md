@@ -1194,6 +1194,11 @@ transport-integrated sessions and broader protocol compatibility remain open.
   intent deltas. This is caller-declared selected-intent evidence only; it
   does not establish build provenance, causality, population distributions,
   outcomes, strategic quality, persistence, or provider behavior.
+- The comparison exposes `m6-fixed-profile-tally-no-change-v1`, a provisional
+  equality gate that passes only when baseline/candidate pair and observation
+  counts and every ordered row's five intent counts match. It is a fixed
+  regression signal, not a balance threshold, build comparison, causal metric,
+  outcome measure, or strategic-quality claim.
 - `ScriptedAgentFixtureScenarioSelection` defines
   `m6-scripted-agent-fixture-scenarios-v1` over the closed
   `safe-fixture-v1` and `river-side-threat-v1` IDs. It binds one or more
