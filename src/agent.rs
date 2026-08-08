@@ -89,6 +89,10 @@ pub const SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID: &str = "safe-fixture-v1";
 /// Stable ID for the visible RiverSide-threat fixture variant.
 pub const SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID: &str = "river-side-threat-v1";
 
+/// Versioned identity for bounded fixed-fixture scenario-frequency evidence.
+pub const SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_SCHEMA: &str =
+  "m6-scripted-agent-fixture-frequency-v1";
+
 /// Versioned identity for bounded matched-scenario selected-intent tallies.
 pub const SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_SCHEMA: &str =
   "m6-scripted-agent-matched-scenario-tally-v1";
@@ -651,6 +655,71 @@ impl ScriptedAgentFixtureScenarioSelection {
   ) -> Result<ScriptedAgentMatchedScenarioSample, ScriptedAgentMatchedScenarioSampleError> {
     let observations = self.observations();
     ScriptedAgentMatchedScenarioSample::from_observations(&observations, manifests)
+  }
+}
+
+/// One closed fixture-scenario frequency row.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentFixtureScenarioFrequencyEntry {
+  scenario_id: &'static str,
+  count: u8,
+}
+
+impl ScriptedAgentFixtureScenarioFrequencyEntry {
+  pub const fn scenario_id(self) -> &'static str {
+    self.scenario_id
+  }
+
+  pub const fn count(self) -> u8 {
+    self.count
+  }
+}
+
+/// Bounded frequency evidence over one validated fixed-fixture selection.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentFixtureScenarioFrequencyReport {
+  schema: &'static str,
+  selection_count: u8,
+  entries: [ScriptedAgentFixtureScenarioFrequencyEntry; 2],
+}
+
+impl ScriptedAgentFixtureScenarioFrequencyReport {
+  /// Count explicit scenario selections without rerunning policy evaluation.
+  pub fn from_selection(selection: &ScriptedAgentFixtureScenarioSelection) -> Self {
+    let mut safe_count = 0_u8;
+    let mut river_side_count = 0_u8;
+    for scenario in selection.scenarios() {
+      match scenario {
+        ScriptedAgentFixtureScenario::Safe => safe_count += 1,
+        ScriptedAgentFixtureScenario::RiverSideThreat => river_side_count += 1,
+      }
+    }
+    Self {
+      schema: SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_SCHEMA,
+      selection_count: safe_count + river_side_count,
+      entries: [
+        ScriptedAgentFixtureScenarioFrequencyEntry {
+          scenario_id: SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+          count: safe_count,
+        },
+        ScriptedAgentFixtureScenarioFrequencyEntry {
+          scenario_id: SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+          count: river_side_count,
+        },
+      ],
+    }
+  }
+
+  pub const fn schema(&self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn selection_count(&self) -> u8 {
+    self.selection_count
+  }
+
+  pub const fn entries(&self) -> &[ScriptedAgentFixtureScenarioFrequencyEntry; 2] {
+    &self.entries
   }
 }
 
@@ -3194,6 +3263,47 @@ mod tests {
           actual: MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS + 1,
         }
       )
+    );
+  }
+
+  #[test]
+  fn fixture_scenario_frequency_report_counts_ordered_selection() {
+    let selection = ScriptedAgentFixtureScenarioSelection::from_ids(
+      &[
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+      ],
+      &[
+        [ObservationId::new(130), ObservationId::new(131)],
+        [ObservationId::new(132), ObservationId::new(133)],
+        [ObservationId::new(134), ObservationId::new(135)],
+        [ObservationId::new(136), ObservationId::new(137)],
+      ],
+    )
+    .expect("frequency selection builds");
+    let report = ScriptedAgentFixtureScenarioFrequencyReport::from_selection(&selection);
+    assert_eq!(
+      SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_SCHEMA,
+      "m6-scripted-agent-fixture-frequency-v1"
+    );
+    assert_eq!(
+      report.schema(),
+      SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_SCHEMA
+    );
+    assert_eq!(report.selection_count(), 4);
+    assert_eq!(report.entries()[0].scenario_id(), "safe-fixture-v1");
+    assert_eq!(report.entries()[0].count(), 2);
+    assert_eq!(report.entries()[1].scenario_id(), "river-side-threat-v1");
+    assert_eq!(report.entries()[1].count(), 2);
+    assert_eq!(
+      report.entries()[0].count() + report.entries()[1].count(),
+      report.selection_count()
+    );
+    assert_eq!(
+      report,
+      ScriptedAgentFixtureScenarioFrequencyReport::from_selection(&selection)
     );
   }
 

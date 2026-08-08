@@ -1380,6 +1380,8 @@ representative replays, and an evidence-limited report.
 - [x] Add a closed fixed-fixture scenario catalog and deterministic selector;
   repeated IDs are explicit ordered samples, while broad population generation
   and distributional sampling remain open.
+- [x] Emit a bounded fixed-fixture scenario-frequency report over validated
+  selections; it is explicit selection evidence, not a population distribution.
 - [ ] Add population generation, broader scenario selection, and distributional
   sampling evidence.
 - [x] Emit bounded selected-intent tallies over caller-supplied sample sets;
@@ -1406,8 +1408,9 @@ representative replays, and an evidence-limited report.
 - Experiment manifest schema and batch runner.
 - Versioned bounded cursor artifacts, matched-observation and matched-scenario
   selected-intent/tally evidence with a machine-readable codec, a closed
-  fixed-fixture scenario catalog/selector, and an applicable version catalog;
-  decision/result artifacts and representative replays remain open.
+  fixed-fixture scenario catalog/selector and scenario-frequency evidence, and
+  an applicable version catalog; decision/result artifacts and representative
+  replays remain open.
 - Regression report template and threshold rationale.
 - CI or scheduled entry point only after runtime cost is measured.
 

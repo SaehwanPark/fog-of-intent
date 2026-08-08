@@ -1194,6 +1194,11 @@ transport-integrated sessions and broader protocol compatibility remain open.
   contract. It is a deterministic fixed-fixture selector, not population
   generation; broader/random scenario generation, distributional evidence, and
   transition/history authority remain outside this contract.
+- `ScriptedAgentFixtureScenarioFrequencyReport` defines
+  `m6-scripted-agent-fixture-frequency-v1` with the two catalog rows in stable
+  order and bounded counts over a validated selection. It counts explicit
+  repeated choices only and does not claim a generated population, a general
+  distribution, outcomes, or strategic metrics.
 
 ## Future
 
