@@ -574,6 +574,19 @@ canonical policy instead of duplicating it.
 - Prevention: Keep detailed records, replay, debrief, and persistence behind
   separate contracts and tests.
 
+## Expose replay records only after verification
+
+- Context: M5 needed a bounded actor-facing view of committed window records
+  without making authoritative history internals part of the protocol.
+- Symptom: Projecting records before replay verification, or copying their
+  hashes and inputs into a DTO, would let tampered or implementation-specific
+  provenance cross the actor boundary.
+- Resolution: Verify the existing immutable history first, then map at most two
+  records to categorical window, intent, outcome, and `verified` fields. Keep
+  record identity, hashes, resolved inputs, traces, and causal detail private.
+- Prevention: Test empty/partial/complete projections, closed sessions, and
+  tampered-history rejection while asserting the host remains read-only.
+
 ## Encode actor errors as closed IDs only
 
 - Context: M5 needed a transport-ready shape for actor-safe validation errors

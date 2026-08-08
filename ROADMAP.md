@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.117`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.118`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1199,14 +1199,17 @@ control over simulation resolution.
   simultaneous actors remain open.
 - [x] Define the bounded `m5-actor-history-v1` status DTO and host projection
   for record count plus open/complete/closed lifecycle state; detailed history
-  and replay-linked records remain open.
+  and durable/scenario replay-linked records remain open.
 - [x] Define the bounded `m5-actor-debrief-v1` completed-run summary DTO and
   host projection for per-window intent/outcome/objective labels plus final
   objective and committed-facts attribution; detailed causal debrief and
-  replay-linked records remain open.
+  durable/scenario replay-linked records remain open.
 - [x] Define the bounded `m5-actor-replay-v1` status DTO and host projection;
   it verifies immutable current history and exposes only categorical status and
   record count.
+- [x] Define the bounded `m5-actor-replay-record-v1` DTO and host projection;
+  it exposes at most two replay-verified window/intent/outcome records without
+  hashes, resolved inputs, traces, or causal detail.
 
 This is a pure library adapter boundary with no MCP transport, async runtime,
 or provider-specific behavior. The DTOs expose only four advertised intents
@@ -1228,8 +1231,8 @@ committed intent, and `present`/`absent` bits for each draft field; it never
 echoes values or claims communication delivery. The provider-neutral
 `m5-actor-transcript-v1` record captures only closed tool/schema IDs and an
 accepted/rejected result for an actor receipt; it is not a runtime log or
-replay record. Focused evidence is 21 protocol tests,
-12 session tests, and 26 host tests within the 215-unit, 7-binary, and
+replay record. Focused evidence is 22 protocol tests,
+12 session tests, and 27 host tests within the 217-unit, 7-binary, and
 3-Rustdoc suite. The host observation projection is a
 pure actor-visible DTO mapping, rejects inactive lifecycle states, and leaves
 the internal receipt private. The history DTO is a bounded status summary,
@@ -1239,16 +1242,18 @@ The repository checker adds one focused boundary test and scans the
 deterministic core module list for async, wall-clock, and network transport
 primitives; this is source-ownership evidence rather than transport behavior.
 The `m5-actor-replay-v1` DTO and host projection add only verified status and
-bounded record count; replay records, hashes, inputs, and causal traces remain
-private.
+bounded record count. The `m5-actor-replay-record-v1` projection exposes at
+most two verified categorical window/intent/outcome entries; hashes, resolved
+inputs, execution traces, and causal detail remain private.
 
 ### Scope
 
 - [x] Define the bounded library session lifecycle and actor binding;
   transport-integrated lifecycle and authority remain open.
 - [ ] Define remaining integration/contracts for messages, plans,
-  contingencies, replay-linked records, and detailed outcome/debrief review;
-  bounded observation/action/commit/draft/history/replay/debrief projections
+  contingencies, durable/scenario replay-linked records, and detailed
+  outcome/debrief review;
+  bounded observation/action/commit/draft/history/replay/replay-record/debrief projections
   are delivered.
 - [x] Keep authoritative lane observation/request conversion behind crate-private
   protocol adapters; public protocol compatibility exposes DTOs only.

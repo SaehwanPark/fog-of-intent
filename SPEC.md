@@ -968,7 +968,12 @@ transport-integrated sessions and broader protocol compatibility remain open.
   transport detail; hints are advisory and do not rewrite, retry, or submit.
 - `ActorReplayDto` exposes only `m5-actor-replay-v1`, a bounded record count,
   and the closed `verified` result after host-owned immutable-history replay;
-  records, hashes, resolved inputs, and traces remain private.
+  detailed records, hashes, resolved inputs, and traces remain private.
+- `ActorReplayRecordDto` defines `m5-actor-replay-record-v1` as a five-line
+  categorical record containing only a first/second window, closed intent and
+  outcome IDs, and the `verified` marker. `CliScenarioHost::actor_replay_records`
+  verifies immutable current history before returning at most two records;
+  hashes, resolved inputs, execution traces, and causal detail remain private.
 - `ActorDraftCommitReceiptDto` defines `m5-actor-draft-commit-receipt-v1` as a
   seven-line, payload-free acknowledgement containing the bound observer,
   observation ID, committed intent, and `present`/`absent` bits for message,
@@ -982,8 +987,8 @@ transport-integrated sessions and broader protocol compatibility remain open.
   conversion through the existing validator, absence of state-hash or
   snapshot fields, session lifecycle/error cases, codec round-trips and
   malformed-input rejection, and exhaustive codec/session error projections.
-  The focused evidence is 21 protocol tests and 12 session tests within the
-  215-unit, 7-binary, and 3-Rustdoc suite; host evidence includes the
+  The focused evidence is 22 protocol tests and 12 session tests within the
+  217-unit, 7-binary, and 3-Rustdoc suite; host evidence includes the
   authorization/redaction matrix and CLI/protocol parity regressions.
 - `CliScenarioHost::validate_actor_action` checks one DTO against the current
   actor-visible receipt and existing lane validator without mutating history,
@@ -1015,6 +1020,10 @@ transport-integrated sessions and broader protocol compatibility remain open.
   semantics remain outside the contract. The host wrapper captures presence
   before delegating to `commit_actor_draft`, so failures preserve the existing
   actor-safe error and repair behavior.
+- `CliScenarioHost::actor_replay_records` returns at most two
+  `ActorReplayRecordDto` values after replay verification. The projection is
+  read-only and categorical; it does not expose record identity, hashes,
+  resolved inputs, execution traces, or causal replay detail.
 - The host authorization/redaction matrix proves wrong-actor action, draft,
   commit, and draft-receipt requests fail as `actor_mismatch` without changing
   the observation or record count, and checks actor-visible DTOs/results for

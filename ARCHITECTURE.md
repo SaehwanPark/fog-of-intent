@@ -131,13 +131,14 @@ policy seed bundle, and the library-only decision replay record remains
 outside transition, host history, and durable persistence authority.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft-receipt/
-draft-commit-receipt/transcript DTO projection. It
+draft-commit-receipt/replay-record/transcript DTO projection. It
 maps primitive actor-visible fields and closed intent IDs without exposing
 internal observation/request types as a transport contract; host validation
 still owns legality. It also maps codec failures to the versioned,
 actor-safe `m5-actor-error-v2` code/repair vocabulary and its bounded codec
 without retaining raw input or parser details. `src/host.rs` owns the
-actor-observation, actor-commit, history-status, action-result, and completion-gated debrief
+actor-observation, actor-commit, history-status, replay-status, replay-record,
+action-result, and completion-gated debrief
 projections plus actor-action validation and submission entry points: it delegates legality to the lane
 validator and closes a fixture window only after successful validation and
 history append.
@@ -176,7 +177,9 @@ stale, duplicate, timeout, and disconnect events into bounded actor-safe
 outcomes; it cannot validate an intent, submit a transition, or mutate history.
 `ActorReplayDto` is a read-only host projection of successful current-history
 verification; it exposes only a categorical result and bounded record count,
-never replay records, hashes, resolved inputs, or traces.
+never hashes, resolved inputs, or traces. `ActorReplayRecordDto` is a bounded
+categorical window/intent/outcome entry returned only after the same replay
+verification and never carries record identity, provenance, or causal detail.
 
 ## Target Components
 

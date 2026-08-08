@@ -23,7 +23,7 @@ use crate::protocol::{
   ActorCommitDto, ActorCommitResultDto, ActorDebriefDto, ActorDraftCommitReceiptDto, ActorDraftDto,
   ActorDraftField, ActorDraftPresence, ActorDraftReceiptDto, ActorHistoryDto, ActorHistoryStatus,
   ActorObservationDto, ActorProtocolError, ActorProtocolErrorCode, ActorProtocolRepairHint,
-  ActorReplayDto,
+  ActorReplayDto, ActorReplayRecordDto,
 };
 use crate::run_store::{CliRunStore, CliRunStoreError};
 
@@ -241,6 +241,48 @@ impl CliScenarioHost {
         ActorProtocolRepairHint::StartNewSession,
       )
     })
+  }
+
+  /// Verify current history and return only bounded categorical replay records.
+  pub fn actor_replay_records(&self) -> Result<Vec<ActorReplayRecordDto>, ActorProtocolError> {
+    if self.closed {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ));
+    }
+    self.history.verify_replay().map_err(|_| {
+      ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      )
+    })?;
+    Ok(
+      self
+        .history
+        .records()
+        .iter()
+        .map(|record| {
+          let window = match record.window() {
+            ScenarioWindow::First => ActorActionResultWindow::First,
+            ScenarioWindow::Second => ActorActionResultWindow::Second,
+          };
+          let intent = match record.transition().command().intent() {
+            LaneIntent::Stabilize => crate::protocol::ActorProtocolIntent::Stabilize,
+            LaneIntent::Contest => crate::protocol::ActorProtocolIntent::Contest,
+            LaneIntent::Yield => crate::protocol::ActorProtocolIntent::Yield,
+            LaneIntent::Recall => crate::protocol::ActorProtocolIntent::Recall,
+            LaneIntent::Withdraw => crate::protocol::ActorProtocolIntent::Withdraw,
+          };
+          let outcome = match record.transition().result().outcome() {
+            LaneOutcome::HeldSpace => ActorActionResultOutcome::HeldSpace,
+            LaneOutcome::YieldedSpace => ActorActionResultOutcome::YieldedSpace,
+            LaneOutcome::ForcedOut => ActorActionResultOutcome::ForcedOut,
+          };
+          ActorReplayRecordDto::new(window, intent, outcome)
+        })
+        .collect(),
+    )
   }
 
   /// Validate one actor action without mutating host state or history.
@@ -1168,6 +1210,63 @@ mod tests {
     tampered.history.replay_id = "tampered";
     assert_eq!(
       tampered.actor_replay(),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
+    );
+    assert_eq!(tampered.record_count(), 1);
+  }
+
+  #[test]
+  fn actor_replay_records_are_verified_categorical_projections() {
+    let mut host = CliScenarioHost::fixture();
+    let initial_observation = host.observation();
+    assert_eq!(host.actor_replay_records(), Ok(Vec::new()));
+    assert_eq!(host.record_count(), 0);
+    assert_eq!(host.observation(), initial_observation);
+
+    for command in ["plan contest", "commit", "advance"] {
+      host.apply_line(command).expect("first window advances");
+    }
+    let first = ActorReplayRecordDto::new(
+      ActorActionResultWindow::First,
+      crate::protocol::ActorProtocolIntent::Contest,
+      ActorActionResultOutcome::HeldSpace,
+    );
+    assert_eq!(host.actor_replay_records(), Ok(vec![first]));
+    assert_eq!(first.verification(), ActorReplayVerification::Verified);
+    assert!(!format!("{first:?}").contains("StateHash"));
+    assert!(!first.encode().contains("execution"));
+
+    for command in ["plan stabilize", "commit", "advance"] {
+      host.apply_line(command).expect("second window advances");
+    }
+    let second = ActorReplayRecordDto::new(
+      ActorActionResultWindow::Second,
+      crate::protocol::ActorProtocolIntent::Stabilize,
+      ActorActionResultOutcome::YieldedSpace,
+    );
+    assert_eq!(host.actor_replay_records(), Ok(vec![first, second]));
+    assert_eq!(host.record_count(), 2);
+
+    let mut closed = CliScenarioHost::fixture();
+    closed.apply_line("quit").expect("host closes");
+    assert_eq!(
+      closed.actor_replay_records(),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
+    );
+
+    let mut tampered = CliScenarioHost::fixture();
+    for command in ["plan contest", "commit", "advance"] {
+      tampered.apply_line(command).expect("first window advances");
+    }
+    tampered.history.replay_id = "tampered";
+    assert_eq!(
+      tampered.actor_replay_records(),
       Err(ActorProtocolError::new(
         ActorProtocolErrorCode::HostTransitionRejected,
         ActorProtocolRepairHint::StartNewSession,
