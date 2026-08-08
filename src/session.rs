@@ -1,8 +1,9 @@
 //! Immutable actor-session lifecycle at the M5 protocol edge.
 //!
 //! This module binds one ordinary actor to one session and one current
-//! observation at a time. It checks session freshness and duplicate submission
-//! only; host legality, transition, history, and replay remain outside it.
+//! observation at a time, maps bounded encoded-action failures, and records
+//! explicit closure metadata. Host legality, transition, history, and replay
+//! remain outside it.
 
 use crate::protocol::{
   ActorActionDto, ActorObservationDto, ActorProtocolCodecError, ActorProtocolError,
@@ -10,7 +11,10 @@ use crate::protocol::{
 };
 use std::fmt;
 
-/// Versioned actor-session contract identity.
+/// Historical actor-session contract identity.
+pub const ACTOR_SESSION_SCHEMA_V1: &str = "m5-actor-session-v1";
+
+/// Current actor-session contract identity.
 pub const ACTOR_SESSION_SCHEMA: &str = "m5-actor-session-v2";
 
 /// Lifecycle phases for one actor-bound protocol session.
@@ -218,10 +222,14 @@ impl ActorSession {
   }
 
   pub const fn close_for(self, reason: ActorSessionCloseReason) -> Self {
-    Self {
-      phase: ActorSessionPhase::Closed,
-      close_reason: Some(reason),
-      ..self
+    if let ActorSessionPhase::Closed = self.phase {
+      self
+    } else {
+      Self {
+        phase: ActorSessionPhase::Closed,
+        close_reason: Some(reason),
+        ..self
+      }
     }
   }
 }
@@ -684,6 +692,8 @@ mod tests {
 
   #[test]
   fn session_termination_reasons_are_explicit_and_fail_closed() {
+    assert_eq!(ACTOR_SESSION_SCHEMA_V1, "m5-actor-session-v1");
+    assert_eq!(ACTOR_SESSION_SCHEMA, "m5-actor-session-v2");
     let action = ActorActionDto::new(1, 34, ActorProtocolIntent::Yield);
     let cases = [
       (ActorSession::new(13, 1).close(), "client_requested"),
@@ -691,7 +701,7 @@ mod tests {
       (ActorSession::new(15, 1).disconnect(), "disconnected"),
     ];
     for (session, reason) in cases {
-      assert_eq!(session.schema(), "m5-actor-session-v2");
+      assert_eq!(session.schema(), ACTOR_SESSION_SCHEMA);
       assert_eq!(session.phase(), ActorSessionPhase::Closed);
       assert_eq!(
         session.close_reason().map(ActorSessionCloseReason::id),
@@ -702,6 +712,11 @@ mod tests {
         Err(ActorSessionError::Closed)
       );
     }
+    let timed_out = ActorSession::new(16, 1).timeout();
+    assert_eq!(
+      timed_out.disconnect().close_reason(),
+      Some(ActorSessionCloseReason::TimedOut)
+    );
   }
 
   #[test]

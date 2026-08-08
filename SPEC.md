@@ -950,6 +950,9 @@ transport-integrated sessions and broader protocol compatibility remain open.
 - `src/session.rs` defines the bounded `m5-actor-session-v2` lifecycle over
   those DTOs; transport-integrated lifecycle, reconnect, and privileged actor
   authority remain open.
+- `m5-actor-session-v1` is retained as the historical pre-closure-reason
+  identity; the current session contract is v2 and provides no v1 migration or
+  decoder.
 - `ActorSession` defines the versioned `m5-actor-session-v2` immutable
   lifecycle: one ordinary actor, one current observation, one accepted action
   per window, and explicit close. It rejects cross-actor, stale, duplicate,

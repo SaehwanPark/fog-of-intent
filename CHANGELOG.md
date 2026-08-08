@@ -106,6 +106,8 @@ not increment the package version.
   client-requested, caller-signaled timeout, and disconnect closure reasons.
 - Added bounded encoded-action acceptance that maps malformed codec input before
   actor, stale, and duplicate session checks.
+- Retained `m5-actor-session-v1` as a historical identity; no v1 migration or
+  decoder is provided for the current v2 session contract.
 
 ### Known limits
 
