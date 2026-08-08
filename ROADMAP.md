@@ -1178,7 +1178,7 @@ session state machine is immutable metadata and does not submit or commit a
 transition. The `m5-actor-error-v1` projection exposes only stable error and
 repair IDs for codec/session failures and read-only host action rejection;
 repair is advisory and does not rewrite payloads or retry host work. Focused
-evidence is 9 protocol tests, 5 session tests, and 12 host tests within the
+evidence is 9 protocol tests, 5 session tests, and 14 host tests within the
 184-unit, 7-binary, and 1-Rustdoc suite.
 
 ### Scope
