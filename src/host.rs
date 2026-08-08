@@ -256,7 +256,7 @@ impl CliScenarioHost {
     if self.committed_intent.is_some() {
       return Err(ActorProtocolError::new(
         ActorProtocolErrorCode::DraftBoundary,
-        ActorProtocolRepairHint::RequestFreshObservation,
+        ActorProtocolRepairHint::AwaitNextObservation,
       ));
     }
     if draft.observation_id() != receipt.observation().observation_id().value() {
@@ -996,7 +996,7 @@ mod tests {
       host.stage_actor_draft(make_draft(ActorDraftField::Message, "too late")),
       Err(ActorProtocolError::new(
         ActorProtocolErrorCode::DraftBoundary,
-        ActorProtocolRepairHint::RequestFreshObservation,
+        ActorProtocolRepairHint::AwaitNextObservation,
       ))
     );
 
@@ -1025,7 +1025,7 @@ mod tests {
       host.stage_actor_draft(stale),
       Err(ActorProtocolError::new(
         ActorProtocolErrorCode::DraftBoundary,
-        ActorProtocolRepairHint::RequestFreshObservation,
+        ActorProtocolRepairHint::AwaitNextObservation,
       ))
     );
 

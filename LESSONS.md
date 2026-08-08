@@ -542,7 +542,9 @@ canonical policy instead of duplicating it.
 - Resolution: Bind staging to the current actor receipt, reject complete,
   committed, stale, and closed boundaries with actor-safe errors, and replace
   only the selected internal field. Leave commit, advance, legality, and
-  history on their existing host-owned paths.
+  history on their existing host-owned paths. For a committed draft, direct
+  recovery to await the next observation because the current receipt remains
+  unchanged until the host advances.
 - Prevention: Test replacement plus every boundary while asserting unchanged
   observation and record count; keep communication, transport, and
   simultaneous-draft semantics in separate slices.
