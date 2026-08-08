@@ -481,4 +481,61 @@ mod tests {
     validate_lane_request(&state, &receipt, &risk_taking.request()).expect("risk-taking is legal");
     validate_lane_request(&state, &receipt, &yielding.request()).expect("yielding is legal");
   }
+
+  #[test]
+  fn visible_threat_changes_only_the_cautious_profile_selection() {
+    let initial = LaneSnapshot::initial();
+    let threat_state = LaneSnapshot::new(
+      initial.ruleset(),
+      initial.turn(),
+      LaneStatus::Open,
+      initial.player(),
+      initial.opponent(),
+      initial.wave(),
+      JungleThreatTruth::RiverSide,
+    );
+    let safe_receipt = observe_player(&initial, ObservationId::new(14));
+    let threat_receipt = observe_player(&threat_state, ObservationId::new(14));
+
+    let cautious = ScriptedAgent::cautious_v1();
+    let risk_taking = ScriptedAgent::risk_taking_v1();
+    let yielding = ScriptedAgent::yielding_v1();
+    let cautious_safe = cautious.choose(safe_receipt.observation());
+    let cautious_threat = cautious.choose(threat_receipt.observation());
+    let risk_safe = risk_taking.choose(safe_receipt.observation());
+    let risk_threat = risk_taking.choose(threat_receipt.observation());
+    let yielding_safe = yielding.choose(safe_receipt.observation());
+    let yielding_threat = yielding.choose(threat_receipt.observation());
+
+    assert_eq!(cautious_safe.selected_intent(), LaneIntent::Stabilize);
+    assert_eq!(cautious_threat.selected_intent(), LaneIntent::Withdraw);
+    assert_eq!(risk_safe.selected_intent(), LaneIntent::Contest);
+    assert_eq!(risk_threat.selected_intent(), LaneIntent::Contest);
+    assert_eq!(yielding_safe.selected_intent(), LaneIntent::Yield);
+    assert_eq!(yielding_threat.selected_intent(), LaneIntent::Yield);
+    assert!(cautious_threat.candidates().iter().any(|candidate| {
+      candidate.intent() == LaneIntent::Withdraw
+        && candidate.reason() == ScriptedAgentReason::ThreatResponse
+    }));
+    assert!(risk_threat.candidates().iter().any(|candidate| {
+      candidate.intent() == LaneIntent::Withdraw
+        && candidate.reason() == ScriptedAgentReason::ThreatResponse
+    }));
+    assert!(yielding_threat.candidates().iter().any(|candidate| {
+      candidate.intent() == LaneIntent::Withdraw
+        && candidate.reason() == ScriptedAgentReason::ThreatResponse
+    }));
+    validate_lane_request(&initial, &safe_receipt, &cautious_safe.request())
+      .expect("cautious safe request is legal");
+    validate_lane_request(&threat_state, &threat_receipt, &cautious_threat.request())
+      .expect("cautious threat request is legal");
+    validate_lane_request(&initial, &safe_receipt, &risk_safe.request())
+      .expect("risk safe request is legal");
+    validate_lane_request(&threat_state, &threat_receipt, &risk_threat.request())
+      .expect("risk threat request is legal");
+    validate_lane_request(&initial, &safe_receipt, &yielding_safe.request())
+      .expect("yielding safe request is legal");
+    validate_lane_request(&threat_state, &threat_receipt, &yielding_threat.request())
+      .expect("yielding threat request is legal");
+  }
 }

@@ -867,6 +867,10 @@ external adapters remain open.
   requests pass the existing lane validator. This demonstrates a reproducible
   profile difference only; it is not a strategic-quality or human-realism
   result.
+- A visible RiverSide threat changes only the cautious profile's selection to
+  `Withdraw`; the risk-taking and yielding profiles retain their fixed intents
+  while all requests remain valid. This is profile-sensitivity evidence over
+  two fixture observations, not an outcome or balance claim.
 - Focused tests cover the initial candidate set, visible-threat prioritization,
   host validation, repeated identical-observation reproducibility, and the
   matched profile difference plus unavailable-intent rejection. This evidence
