@@ -80,6 +80,8 @@ The controlled vocabulary for that boundary is
 Cargo.toml
 src/main.rs
 src/lib.rs
+src/cli.rs
+src/host.rs
 src/kernel.rs
 src/lane/
 src/serialization.rs
@@ -94,9 +96,9 @@ docs/
 _workspace/
 ```
 
-`src/lib.rs`, `src/kernel.rs`, `src/lane/`, and `src/serialization.rs` are the
-current internal kernel/fixture surface; `src/main.rs` remains a placeholder
-executable. The lane surface is split into private responsibility-oriented
+`src/lib.rs`, `src/cli.rs`, `src/host.rs`, `src/kernel.rs`, `src/lane/`, and
+`src/serialization.rs` are the current internal kernel/adapter/fixture surface;
+`src/main.rs` remains a placeholder executable. The lane surface is split into private responsibility-oriented
 modules behind the existing `crate::lane::*` facade: `evaluation.rs` owns
 authoritative state evaluation, `projection.rs` owns ordered event/effect
 projection, `result.rs` owns transition result/debrief assembly, and
