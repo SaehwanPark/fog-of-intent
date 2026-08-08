@@ -2,15 +2,16 @@
 
 ## Outcome
 
-Implementation is ready for independent review at the current branch head.
+Implementation and evidence are complete at head `aa2d878`; the independent
+three-pass review passed with no actionable findings.
 
-## Verification target
+## Verification
 
-The focused comparison regression is expected to bind the literal rule ID,
-prove unchanged success, and reject changed-total and same-total redistribution
-comparisons within 31 focused agent tests and 244 Rust unit tests, 7 binary
-tests, 3 RustDoc tests, 15 Python tests, formatter, Clippy, repository, and
-diff gates.
+One focused comparison regression binds the literal rule ID, proves unchanged
+success, rejects the 4/8→3/6 changed-total comparison, and rejects the 4/8→4/8
+same-total redistribution comparison. The full evidence is 31 focused agent
+tests within 244 Rust unit tests, 7 binary tests, 3 RustDoc tests, and 15
+Python tests; formatter, Clippy, repository, and diff gates pass at `aa2d878`.
 
 ## Limits
 
