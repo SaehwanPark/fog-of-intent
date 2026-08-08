@@ -5,7 +5,7 @@
 PASS at implementation head `de27e42`; no actionable findings remain after
 three independent code/API, domain-authority, and docs/evidence passes.
 
-## Evidence target
+## Evidence
 
 One focused host persistence/debrief test covers fresh-host retrieval from a
 validated complete artifact, incomplete-run gating, exact summary fields,

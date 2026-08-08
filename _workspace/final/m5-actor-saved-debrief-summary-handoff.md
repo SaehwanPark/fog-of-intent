@@ -8,7 +8,7 @@ The new adapter retrieves the existing categorical actor debrief summary from
 one validated complete injected-store artifact without mutating the receiving
 host.
 
-## Verification target
+## Verification
 
 The implementation provides one focused host persistence/debrief test. The
 full evidence is 227 Rust unit tests, 7 binary tests, and 3 RustDoc tests, with
