@@ -653,3 +653,14 @@ canonical policy instead of duplicating it.
   marker scan, asserting unchanged observation and history.
 - Prevention: Treat this as library evidence only; keep network authentication,
   simultaneous privacy, and privileged tools in separate contracts.
+
+## Keep provider transcripts separate from replay
+
+- Context: M5 needs compatibility metadata for actor-facing tools before a
+  transport or provider adapter exists.
+- Symptom: Reusing simulation history or recording raw requests would couple
+  provider/tool compatibility to authoritative replay and leak payloads.
+- Resolution: Record only actor receipt identity, closed tool/schema IDs, and
+  accepted/rejected status in a versioned pure DTO.
+- Prevention: Keep runtime retention, prompts, model metadata, transport, and
+  replay integration behind separate contracts and evidence gates.
