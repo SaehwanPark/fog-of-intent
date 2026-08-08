@@ -11,10 +11,10 @@ window/intent/outcome records and no provenance or causal detail.
 ## Verification
 
 The implementation provides one focused protocol codec test and one focused
-host projection test. The full evidence target is 217 Rust unit tests, 7 binary
+host projection test. The full evidence is 217 Rust unit tests, 7 binary
 tests, and 3 RustDoc tests, with 22 protocol, 12 session, and 27 host focused
 tests; formatter, Clippy with warnings denied, repository checker, 15 Python
-  policy tests, and diff checks pass at the reviewed head.
+policy tests, and diff checks pass at the reviewed head.
 
 ## Limits
 
