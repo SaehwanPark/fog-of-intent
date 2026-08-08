@@ -98,6 +98,22 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.133 — 2026-08-08
+
+### Added
+
+- Added `m6-scripted-agent-matched-scenario-tally-v1`, a bounded selected-intent
+  aggregation over verified caller-supplied sample sets with shared observer,
+  pair/observation counts, and ordered profile/rule rows.
+- Added exact fixture tally and repeated-equality evidence without rerunning
+  policy evaluation or adding population, outcome, persistence, or provider
+  authority.
+
+### Known limits
+
+- Population/distributional sampling, outcome and strategic metrics, scenario
+  generation, persistence, providers, and calibration remain open.
+
 ## 0.1.132 — 2026-08-08
 
 ### Added

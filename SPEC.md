@@ -1140,8 +1140,9 @@ transport-integrated sessions and broader protocol compatibility remain open.
   policy seed bundle in an eight-line codec; it does not run agents, sample
   populations, or produce metrics. Unknown profiles/rules, malformed IDs, and
   malformed codec fields fail closed.
-- Population sampling, aggregate metrics, provider/model/prompt versions,
-  decision/result persistence, and calibration evidence remain open.
+- Population sampling, broader aggregate/distributional or outcome metrics,
+  provider/model/prompt versions, decision/result persistence, and calibration
+  evidence remain open beyond the bounded selected-intent tally.
 - `ScriptedAgentBatchRunner` evaluates a non-empty ordered list of at most 16
   manifests against one actor-visible observation using each manifest's
   explicit seeded tie rule. `ScriptedAgentBatchCheckpoint` and the injected
@@ -1172,6 +1173,12 @@ transport-integrated sessions and broader protocol compatibility remain open.
   order. This is bounded sensitivity composition only; scenario generation,
   population sampling, distributional metrics, outcomes, persistence, and
   provider/calibration behavior remain open.
+- `ScriptedAgentMatchedScenarioTallyReport` defines
+  `m6-scripted-agent-matched-scenario-tally-v1` over a verified sample set. It
+  retains the shared observer, pair/observation counts, ordered profile/rule
+  rows, and bounded counts for the five closed intents; each row totals at most
+  eight observations. This is fixture-sized selected-intent aggregation, not a
+  population distribution, outcome metric, persistence, or provider contract.
 
 ## Future
 

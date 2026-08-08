@@ -946,3 +946,15 @@ canonical policy instead of duplicating it.
 - Prevention: Keep pair order and explicit inputs visible, and defer scenario
   generation, populations, distributions, outcomes, and metrics to separate
   evidence contracts.
+
+## Aggregate only verified sample outputs
+
+- Context: M6 needed selected-intent counts over caller-supplied sample pairs
+  after the sample-set identity checks had succeeded.
+- Symptom: Accepting free-form counts or rerunning policies during aggregation
+  can hide provenance errors and duplicate policy authority.
+- Resolution: Build the tally only from `ScriptedAgentMatchedScenarioSample`,
+  preserving profile/rule order and bounding every row to at most eight intents.
+- Prevention: Keep aggregation actor-safe and fixture-sized; defer population
+  distributions, outcomes, strategic metrics, and persistence to separate
+  verified inputs and reports.

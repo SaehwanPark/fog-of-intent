@@ -78,6 +78,10 @@ pub const SCRIPTED_AGENT_MATCHED_SAMPLE_SCHEMA: &str = "m6-scripted-agent-matche
 pub const SCRIPTED_AGENT_MATCHED_SCENARIO_SAMPLE_SCHEMA: &str =
   "m6-scripted-agent-matched-scenarios-v1";
 
+/// Versioned identity for bounded matched-scenario selected-intent tallies.
+pub const SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_SCHEMA: &str =
+  "m6-scripted-agent-matched-scenario-tally-v1";
+
 /// Maximum number of caller-supplied matched pairs in one sample set.
 pub const MAX_SCRIPTED_AGENT_MATCHED_SCENARIO_SAMPLES: usize = 4;
 
@@ -655,6 +659,133 @@ impl ScriptedAgentMatchedScenarioSample {
 
   pub fn samples(&self) -> &[ScriptedAgentMatchedSample] {
     &self.samples
+  }
+}
+
+/// One actor-safe selected-intent tally for a sampled profile.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentMatchedScenarioTally {
+  profile_id: &'static str,
+  evaluation_rule: &'static str,
+  pair_count: u8,
+  observation_count: u8,
+  stabilize_count: u8,
+  contest_count: u8,
+  yield_count: u8,
+  recall_count: u8,
+  withdraw_count: u8,
+}
+
+impl ScriptedAgentMatchedScenarioTally {
+  pub const fn profile_id(self) -> &'static str {
+    self.profile_id
+  }
+
+  pub const fn evaluation_rule(self) -> &'static str {
+    self.evaluation_rule
+  }
+
+  pub const fn pair_count(self) -> u8 {
+    self.pair_count
+  }
+
+  pub const fn observation_count(self) -> u8 {
+    self.observation_count
+  }
+
+  pub const fn stabilize_count(self) -> u8 {
+    self.stabilize_count
+  }
+
+  pub const fn contest_count(self) -> u8 {
+    self.contest_count
+  }
+
+  pub const fn yield_count(self) -> u8 {
+    self.yield_count
+  }
+
+  pub const fn recall_count(self) -> u8 {
+    self.recall_count
+  }
+
+  pub const fn withdraw_count(self) -> u8 {
+    self.withdraw_count
+  }
+}
+
+/// Bounded actor-safe selected-intent counts over one verified sample set.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentMatchedScenarioTallyReport {
+  schema: &'static str,
+  observer: ActorId,
+  pair_count: u8,
+  observation_count: u8,
+  entries: Vec<ScriptedAgentMatchedScenarioTally>,
+}
+
+impl ScriptedAgentMatchedScenarioTallyReport {
+  /// Aggregate a validated sample set without rerunning policy evaluation.
+  pub fn from_sample(sample: &ScriptedAgentMatchedScenarioSample) -> Self {
+    let pair_count = u8::try_from(sample.samples.len()).expect("sample cap fits in u8");
+    let observation_count = pair_count * 2;
+    let manifest_count = sample.samples[0].entries().len();
+    let entries = (0..manifest_count)
+      .map(|index| {
+        let first = sample.samples[0].entries()[index];
+        let mut tally = ScriptedAgentMatchedScenarioTally {
+          profile_id: first.profile_id(),
+          evaluation_rule: first.evaluation_rule(),
+          pair_count,
+          observation_count,
+          stabilize_count: 0,
+          contest_count: 0,
+          yield_count: 0,
+          recall_count: 0,
+          withdraw_count: 0,
+        };
+        for matched in &sample.samples {
+          let entry = matched.entries()[index];
+          for intent in entry.selected_intents() {
+            match intent {
+              LaneIntent::Stabilize => tally.stabilize_count += 1,
+              LaneIntent::Contest => tally.contest_count += 1,
+              LaneIntent::Yield => tally.yield_count += 1,
+              LaneIntent::Recall => tally.recall_count += 1,
+              LaneIntent::Withdraw => tally.withdraw_count += 1,
+            }
+          }
+        }
+        tally
+      })
+      .collect();
+    Self {
+      schema: SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_SCHEMA,
+      observer: sample.observer,
+      pair_count,
+      observation_count,
+      entries,
+    }
+  }
+
+  pub const fn schema(&self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn observer(&self) -> ActorId {
+    self.observer
+  }
+
+  pub const fn pair_count(&self) -> u8 {
+    self.pair_count
+  }
+
+  pub const fn observation_count(&self) -> u8 {
+    self.observation_count
+  }
+
+  pub fn entries(&self) -> &[ScriptedAgentMatchedScenarioTally] {
+    &self.entries
   }
 }
 
@@ -2308,6 +2439,52 @@ mod tests {
       ScriptedAgentMatchedScenarioSample::from_observations(&pairs, &manifests)
         .expect("matched scenario sample repeats")
     );
+    let tally = ScriptedAgentMatchedScenarioTallyReport::from_sample(&sample);
+    assert_eq!(
+      tally.schema(),
+      "m6-scripted-agent-matched-scenario-tally-v1"
+    );
+    assert_eq!(tally.observer(), sample.observer());
+    assert_eq!(tally.pair_count(), 2);
+    assert_eq!(tally.observation_count(), 4);
+    assert_eq!(tally.entries().len(), 2);
+    assert_eq!(tally.entries()[0].profile_id(), SCRIPTED_AGENT_PROFILE_ID);
+    assert_eq!(
+      tally.entries()[0].evaluation_rule(),
+      "threat-first-pressure-aware-fixed-score-v1"
+    );
+    assert_eq!(tally.entries()[0].stabilize_count(), 2);
+    assert_eq!(tally.entries()[0].contest_count(), 0);
+    assert_eq!(tally.entries()[0].withdraw_count(), 2);
+    assert_eq!(
+      tally.entries()[0].stabilize_count()
+        + tally.entries()[0].contest_count()
+        + tally.entries()[0].yield_count()
+        + tally.entries()[0].recall_count()
+        + tally.entries()[0].withdraw_count(),
+      tally.entries()[0].observation_count()
+    );
+    assert_eq!(
+      tally.entries()[1].profile_id(),
+      YIELDING_SCRIPTED_AGENT_PROFILE_ID
+    );
+    assert_eq!(
+      tally.entries()[1].evaluation_rule(),
+      "yield-first-fixed-score-v1"
+    );
+    assert_eq!(tally.entries()[1].yield_count(), 4);
+    assert_eq!(
+      tally.entries()[1].stabilize_count()
+        + tally.entries()[1].contest_count()
+        + tally.entries()[1].yield_count()
+        + tally.entries()[1].recall_count()
+        + tally.entries()[1].withdraw_count(),
+      tally.entries()[1].observation_count()
+    );
+    assert_eq!(
+      tally,
+      ScriptedAgentMatchedScenarioTallyReport::from_sample(&sample)
+    );
 
     let at_capacity = [
       [
@@ -2338,6 +2515,23 @@ mod tests {
       capacity_sample.samples()[3].observation_ids(),
       &[ObservationId::new(86), ObservationId::new(87)]
     );
+    let capacity_tally = ScriptedAgentMatchedScenarioTallyReport::from_sample(&capacity_sample);
+    assert_eq!(capacity_tally.pair_count(), 4);
+    assert_eq!(capacity_tally.observation_count(), 8);
+    assert_eq!(capacity_tally.entries().len(), 2);
+    assert_eq!(capacity_tally.entries()[0].stabilize_count(), 4);
+    assert_eq!(capacity_tally.entries()[0].withdraw_count(), 4);
+    assert_eq!(capacity_tally.entries()[1].yield_count(), 8);
+    for entry in capacity_tally.entries() {
+      assert_eq!(
+        entry.stabilize_count()
+          + entry.contest_count()
+          + entry.yield_count()
+          + entry.recall_count()
+          + entry.withdraw_count(),
+        8
+      );
+    }
 
     assert_eq!(
       ScriptedAgentMatchedScenarioSample::from_observations(&[], &manifests),
