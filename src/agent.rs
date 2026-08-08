@@ -3323,6 +3323,34 @@ mod tests {
     assert_eq!(invalid_log.entries(), invalid_before.as_slice());
 
     assert_eq!(MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS, 16);
+    let mut at_capacity_log = ScriptedAgentOperationalLog::new();
+    for _ in 0..MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS - 3 {
+      at_capacity_log
+        .append(ScriptedAgentOperationalEvent::CheckpointSaved)
+        .expect("inclusive-capacity fixture fits");
+    }
+    let at_capacity_decisions = ScriptedAgentBatchRunner::run_with_operational_log(
+      observation,
+      &manifests,
+      &mut at_capacity_log,
+    )
+    .expect("exactly three lifecycle events fit at the inclusive cap");
+    assert_eq!(at_capacity_decisions, expected);
+    assert_eq!(at_capacity_log.len(), MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS);
+    assert_eq!(
+      at_capacity_log
+        .entries()
+        .iter()
+        .rev()
+        .take(3)
+        .map(|entry| entry.event().id())
+        .collect::<Vec<_>>()
+        .into_iter()
+        .rev()
+        .collect::<Vec<_>>(),
+      ["batch_started", "chunk_completed", "batch_finished"]
+    );
+
     let mut full_log = ScriptedAgentOperationalLog::new();
     for _ in 0..MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS - 2 {
       full_log
