@@ -1,10 +1,13 @@
-//! Deterministic actor-visible scripted-agent policy for the M4 baseline.
+//! Actor-visible scripted-agent policy for the M4 baseline.
 //!
 //! The policy consumes only a [`crate::lane::LanerObservation`]. It generates
 //! legal candidates from that observation, evaluates them with a versioned
-//! fixed score table, and returns a request for the host to validate. It never
-//! reads true state, resolves execution inputs, or owns a transition.
+//! fixed score table, and returns a request for the host to validate. Its
+//! default path is deterministic; an opt-in seeded path resolves equal-score
+//! ties from an explicit policy bundle. It never reads true state, resolves
+//! execution inputs, or owns a transition.
 
+use crate::kernel::{DrawId, InputTrace, StreamId};
 use crate::lane::{LaneIntent, LaneIntentRequest, LanerObservation};
 
 /// Versioned identity for the first scripted-agent policy boundary.
@@ -24,6 +27,12 @@ pub const SCRIPTED_AGENT_METRICS_SCHEMA: &str = "m4-scripted-agent-metrics-v1";
 
 /// Versioned bounded selected-action tally schema.
 pub const SCRIPTED_AGENT_ACTION_TALLY_SCHEMA: &str = "m4-scripted-agent-action-tally-v2";
+
+/// Versioned identity for the explicit policy seed bundle contract.
+pub const SCRIPTED_AGENT_RANDOMNESS_SCHEMA: &str = "m4-scripted-agent-random-v1";
+
+/// Stable identity for seeded top-1 tie resolution.
+pub const SCRIPTED_AGENT_SEEDED_SELECTION_RULE: &str = "max-score-seeded-tie-v1";
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum ScriptedAgentEvaluationRule {
@@ -129,6 +138,51 @@ impl ScriptedAgentProfile {
   }
 }
 
+/// Explicit policy-only seed and stream/draw identity.
+///
+/// The caller owns this bundle and must retain it with any seeded decision if
+/// the decision is to be reproduced later. It is never derived from true
+/// state, a clock, or an implicit global random generator.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentSeedBundle {
+  seed: u64,
+  policy_trace: InputTrace,
+}
+
+impl ScriptedAgentSeedBundle {
+  pub fn new(seed: u64, policy_stream: StreamId, policy_draw: DrawId) -> Self {
+    Self {
+      seed,
+      policy_trace: InputTrace::new(policy_stream, policy_draw),
+    }
+  }
+
+  pub const fn schema(self) -> &'static str {
+    SCRIPTED_AGENT_RANDOMNESS_SCHEMA
+  }
+
+  pub const fn seed(self) -> u64 {
+    self.seed
+  }
+
+  pub const fn policy_trace(self) -> InputTrace {
+    self.policy_trace
+  }
+
+  fn tie_index(self, upper_bound: usize) -> usize {
+    assert!(upper_bound > 0, "seeded tie selection requires a candidate");
+    let mut value = self.seed
+      ^ (u64::from(self.policy_trace.stream().value()) << 32)
+      ^ u64::from(self.policy_trace.draw().value());
+    value = value.wrapping_add(0x9e3779b97f4a7c15);
+    value = (value ^ (value >> 30)).wrapping_mul(0xbf58476d1ce4e5b9);
+    value = (value ^ (value >> 27)).wrapping_mul(0x94d049bb133111eb);
+    value ^= value >> 31;
+    let bound = u64::try_from(upper_bound).expect("candidate count fits in u64");
+    usize::try_from(value % bound).expect("tie index fits in usize")
+  }
+}
+
 /// Why the policy assigned a candidate its score.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ScriptedAgentReason {
@@ -177,6 +231,8 @@ pub struct ScriptedAgentDecision {
   candidates: Vec<ScriptedAgentCandidate>,
   selected_intent: LaneIntent,
   request: LaneIntentRequest,
+  selection_rule: &'static str,
+  seed_bundle: Option<ScriptedAgentSeedBundle>,
 }
 
 impl ScriptedAgentDecision {
@@ -202,6 +258,14 @@ impl ScriptedAgentDecision {
 
   pub const fn request(&self) -> LaneIntentRequest {
     self.request
+  }
+
+  pub const fn selection_rule(&self) -> &'static str {
+    self.selection_rule
+  }
+
+  pub const fn seed_bundle(&self) -> Option<ScriptedAgentSeedBundle> {
+    self.seed_bundle
   }
 }
 
@@ -430,7 +494,7 @@ impl ScriptedAgentActionTallyReport {
   }
 }
 
-/// Deterministic scripted-agent policy with no random stream or hidden input.
+/// Scripted-agent policy with no implicit random stream or hidden input.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub struct ScriptedAgent {
   profile: ScriptedAgentProfile,
@@ -562,6 +626,53 @@ impl ScriptedAgent {
       .expect("actor observation must advertise an intent")
   }
 
+  fn select_candidate_with_seed(
+    candidates: &[ScriptedAgentCandidate],
+    seed_bundle: ScriptedAgentSeedBundle,
+  ) -> ScriptedAgentCandidate {
+    let max_score = candidates
+      .iter()
+      .map(|candidate| candidate.score())
+      .max()
+      .expect("actor observation must advertise an intent");
+    let tied_count = candidates
+      .iter()
+      .filter(|candidate| candidate.score() == max_score)
+      .count();
+    let selected_tie = seed_bundle.tie_index(tied_count);
+    candidates
+      .iter()
+      .copied()
+      .filter(|candidate| candidate.score() == max_score)
+      .nth(selected_tie)
+      .expect("seeded tie index must select a candidate")
+  }
+
+  fn decision(
+    self,
+    observation: LanerObservation,
+    candidates: Vec<ScriptedAgentCandidate>,
+    selected: ScriptedAgentCandidate,
+    selection_rule: &'static str,
+    seed_bundle: Option<ScriptedAgentSeedBundle>,
+  ) -> ScriptedAgentDecision {
+    let request = LaneIntentRequest::new(
+      observation.observer(),
+      observation.observation_id(),
+      selected.intent,
+    );
+    ScriptedAgentDecision {
+      profile: self.profile,
+      observer: observation.observer(),
+      observation_id: observation.observation_id(),
+      candidates,
+      selected_intent: selected.intent,
+      request,
+      selection_rule,
+      seed_bundle,
+    }
+  }
+
   /// Generate, evaluate, and select one deterministic actor-visible request.
   pub fn choose(self, observation: LanerObservation) -> ScriptedAgentDecision {
     let candidates = self
@@ -570,25 +681,47 @@ impl ScriptedAgent {
       .map(|intent| self.score_candidate(observation, intent))
       .collect::<Vec<_>>();
     let selected = Self::select_candidate(&candidates).intent;
-    let request = LaneIntentRequest::new(
-      observation.observer(),
-      observation.observation_id(),
-      selected,
-    );
-    ScriptedAgentDecision {
-      profile: self.profile,
-      observer: observation.observer(),
-      observation_id: observation.observation_id(),
+    let selected = candidates
+      .iter()
+      .copied()
+      .find(|candidate| candidate.intent() == selected)
+      .expect("selected intent must be in candidates");
+    self.decision(
+      observation,
       candidates,
-      selected_intent: selected,
-      request,
-    }
+      selected,
+      self.profile.selection_rule(),
+      None,
+    )
+  }
+
+  /// Generate and select one request using an explicit reproducible policy
+  /// stream. The seed affects only ties among equal top-scoring candidates.
+  pub fn choose_with_seed(
+    self,
+    observation: LanerObservation,
+    seed_bundle: ScriptedAgentSeedBundle,
+  ) -> ScriptedAgentDecision {
+    let candidates = self
+      .generate_candidates(observation)
+      .into_iter()
+      .map(|intent| self.score_candidate(observation, intent))
+      .collect::<Vec<_>>();
+    let selected = Self::select_candidate_with_seed(&candidates, seed_bundle);
+    self.decision(
+      observation,
+      candidates,
+      selected,
+      SCRIPTED_AGENT_SEEDED_SELECTION_RULE,
+      Some(seed_bundle),
+    )
   }
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::kernel::{DrawId, StreamId};
   use crate::lane::{
     ALLIED_AUTONOMOUS_ACTOR, JungleThreatTruth, LaneIntent, LaneSnapshot, LaneStatus,
     ObservationId, WavePressure, WaveState, observe_player, validate_lane_request,
@@ -679,6 +812,61 @@ mod tests {
     let agent = ScriptedAgent::cautious_v1();
 
     assert_eq!(agent.choose(observation), agent.choose(observation));
+  }
+
+  #[test]
+  fn seeded_decision_records_bundle_and_repeats_for_identical_inputs() {
+    let state = LaneSnapshot::initial();
+    let observation = observe_player(&state, ObservationId::new(19)).observation();
+    let seed = ScriptedAgentSeedBundle::new(42, StreamId::new(21), DrawId::new(3));
+    let decision = ScriptedAgent::cautious_v1().choose_with_seed(observation, seed);
+
+    assert_eq!(seed.schema(), "m4-scripted-agent-random-v1");
+    assert_eq!(seed.seed(), 42);
+    assert_eq!(seed.policy_trace().stream().value(), 21);
+    assert_eq!(seed.policy_trace().draw().value(), 3);
+    assert_eq!(decision.seed_bundle(), Some(seed));
+    assert_eq!(decision.selection_rule(), "max-score-seeded-tie-v1");
+    assert_eq!(decision.selected_intent(), LaneIntent::Stabilize);
+    assert_eq!(
+      decision,
+      ScriptedAgent::cautious_v1().choose_with_seed(observation, seed)
+    );
+    validate_lane_request(
+      &state,
+      &observe_player(&state, ObservationId::new(19)),
+      &decision.request(),
+    )
+    .expect("seeded policy request is legal");
+  }
+
+  #[test]
+  fn seeded_tie_selection_is_reproducible_and_stream_scoped() {
+    let candidates = [
+      ScriptedAgentCandidate {
+        intent: LaneIntent::Contest,
+        score: 70,
+        reason: ScriptedAgentReason::AvailableAlternative,
+      },
+      ScriptedAgentCandidate {
+        intent: LaneIntent::Stabilize,
+        score: 70,
+        reason: ScriptedAgentReason::StableDefault,
+      },
+    ];
+    let first_seed = ScriptedAgentSeedBundle::new(1, StreamId::new(21), DrawId::new(3));
+    let same_seed = ScriptedAgentSeedBundle::new(1, StreamId::new(21), DrawId::new(3));
+    let next_draw = ScriptedAgentSeedBundle::new(1, StreamId::new(21), DrawId::new(4));
+
+    let first = ScriptedAgent::select_candidate_with_seed(&candidates, first_seed);
+    assert_eq!(
+      first,
+      ScriptedAgent::select_candidate_with_seed(&candidates, same_seed)
+    );
+    assert_ne!(
+      first,
+      ScriptedAgent::select_candidate_with_seed(&candidates, next_draw)
+    );
   }
 
   #[test]

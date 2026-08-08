@@ -95,6 +95,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.92 — 2026-08-08
+
+### Added
+
+- Added the versioned `m4-scripted-agent-random-v1` seed bundle with explicit
+  policy `StreamId`/`DrawId` inputs and an opt-in `choose_with_seed` path.
+- Seeded selection uses `max-score-seeded-tie-v1` only for equal top-score
+  candidates; the default profile path remains stable-order deterministic.
+
+### Known limits
+
+- Broad random sampling, top-k/nucleus selection, experiment manifests,
+  populations, outcomes, and human-behavior claims remain open.
+
 ## 0.1.91 — 2026-08-08
 
 ### Added

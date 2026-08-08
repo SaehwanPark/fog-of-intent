@@ -862,7 +862,11 @@ open.
   evaluates candidates with the profile-specific fixed
   `threat-first-pressure-aware-fixed-score-v1`, `contest-first-fixed-score-v1`, or
   `yield-first-fixed-score-v1` table. Selection is the stable maximum-score
-  candidate in advertised order.
+  candidate in advertised order by default. `ScriptedAgent::choose_with_seed`
+  is an opt-in policy-edge path using the versioned
+  `m4-scripted-agent-random-v1` seed bundle and
+  `max-score-seeded-tie-v1` rule to choose only among equal top-score
+  candidates from the supplied policy stream/draw.
 - Candidate breadth is the actor-visible advertised intent count plus one
   distinct visible threat response when present; it is not random sampling or
   strategic diversity evidence. The safe fixture exposes four candidates and
@@ -908,12 +912,17 @@ open.
   yielding `Yield` twice. All six requests still pass the lane validator. This
   is a two-observation action tally, not a population distribution or outcome
   metric.
+- `ScriptedAgentSeedBundle` carries the versioned policy seed and explicit
+  stream/draw identity. Identical seeded inputs reproduce the same decision,
+  while a changed draw can select a different equal-score tie member; the
+  resulting request still passes host validation. This is a policy-edge
+  reproducibility check, not broad random-sampling evidence.
 - Focused tests cover the initial candidate set, visible-threat prioritization,
   host validation, repeated identical-observation reproducibility, the
   matched profile difference plus unavailable-intent rejection, and the
-  low/high-pressure Anchor score relation. This evidence plus the reproducible
-  comparison report is a bounded library metric slice, not a claim of
-  strategic quality or human behavioral realism.
+  low/high-pressure Anchor score relation, plus seeded tie reproducibility.
+  This evidence plus the reproducible comparison report is a bounded library
+  metric slice, not a claim of strategic quality or human behavioral realism.
 
 ## Future
 

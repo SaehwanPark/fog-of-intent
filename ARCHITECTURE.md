@@ -124,7 +124,8 @@ project-state, design-source, and agent-workflow artifacts.
 `m4-scripted-agent-v1` cautious, risk-taking, and yielding profiles consume
 actor-visible lane observations and return requests for host validation; they
 do not inspect true state, resolve execution, communicate, or mutate
-authoritative history.
+authoritative history. An opt-in seeded tie path accepts only an explicit
+policy seed bundle and remains outside transition and replay authority.
 
 ## Target Components
 

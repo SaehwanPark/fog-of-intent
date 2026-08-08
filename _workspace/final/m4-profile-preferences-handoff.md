@@ -15,4 +15,6 @@ plus formatting, Clippy, repository-policy, 14 Python, and diff checks.
 ## Open boundaries
 
 Richer risk, loss aversion, planning, attention, trust, memory, communication,
-randomness, populations, outcomes, and human behavioral realism remain open.
+broad random sampling, populations, outcomes, and human behavioral realism
+remain open. The separate opt-in `m4-scripted-agent-random-v1` seed-bundle
+slice now covers only reproducible equal-score tie selection.
