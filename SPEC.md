@@ -955,10 +955,15 @@ compatibility remain open.
   per window, and explicit close. It rejects cross-actor, stale, duplicate,
   no-observation, and closed-session operations without validating intent
   legality or mutating history.
+- `ActorObservationDto::encode/decode` and `ActorActionDto::encode/decode`
+  use the versioned `m5-actor-codec-v1` line format with a 4096-byte cap,
+  exact bounded fields, and closed intent IDs. Parsing is pure and fail-closed;
+  decoded actions still require host validation.
 - Focused tests cover stable IDs, safe/threat action breadth, DTO-to-request
-  conversion through the existing validator, and absence of state-hash or
-  snapshot fields, plus session lifecycle/error cases. This is a pure library
-  boundary, not an MCP transport or complete-session claim.
+  conversion through the existing validator, absence of state-hash or
+  snapshot fields, session lifecycle/error cases, and codec round-trips and
+  malformed-input rejection. This is a pure library boundary, not an MCP
+  transport or complete-session claim.
 
 ## Future
 
