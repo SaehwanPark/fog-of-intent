@@ -93,6 +93,9 @@ pub const SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID: &str = "river-side-thre
 pub const SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_SCHEMA: &str =
   "m6-scripted-agent-fixture-frequency-v1";
 
+/// Maximum encoded scenario-frequency report size before parsing/allocation.
+pub const MAX_SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_BYTES: usize = 4096;
+
 /// Versioned identity for bounded matched-scenario selected-intent tallies.
 pub const SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_SCHEMA: &str =
   "m6-scripted-agent-matched-scenario-tally-v1";
@@ -683,6 +686,19 @@ pub struct ScriptedAgentFixtureScenarioFrequencyReport {
   entries: [ScriptedAgentFixtureScenarioFrequencyEntry; 2],
 }
 
+/// Bounded failures from the scenario-frequency codec.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentFixtureScenarioFrequencyCodecError {
+  Oversized,
+  UnexpectedLineCount { expected: usize, actual: usize },
+  UnknownField,
+  DuplicateField,
+  MissingField,
+  UnsupportedSchema,
+  InvalidValue,
+  InputMismatch,
+}
+
 impl ScriptedAgentFixtureScenarioFrequencyReport {
   /// Count explicit scenario selections without rerunning policy evaluation.
   pub fn from_selection(selection: &ScriptedAgentFixtureScenarioSelection) -> Self {
@@ -720,6 +736,129 @@ impl ScriptedAgentFixtureScenarioFrequencyReport {
 
   pub const fn entries(&self) -> &[ScriptedAgentFixtureScenarioFrequencyEntry; 2] {
     &self.entries
+  }
+
+  /// Encode the verified frequency report as bounded line-oriented text.
+  pub fn encode(&self) -> String {
+    format!(
+      "schema={}\nselection_count={}\nentries=2\nrow={}|{}\nrow={}|{}\n",
+      self.schema,
+      self.selection_count,
+      self.entries[0].scenario_id,
+      self.entries[0].count,
+      self.entries[1].scenario_id,
+      self.entries[1].count,
+    )
+  }
+
+  /// Decode and validate a report against an already verified value.
+  pub fn decode(
+    input: &str,
+    expected: &Self,
+  ) -> Result<Self, ScriptedAgentFixtureScenarioFrequencyCodecError> {
+    let decoded = Self::decode_unverified(input)?;
+    if decoded != *expected {
+      return Err(ScriptedAgentFixtureScenarioFrequencyCodecError::InputMismatch);
+    }
+    Ok(decoded)
+  }
+
+  fn decode_unverified(
+    input: &str,
+  ) -> Result<Self, ScriptedAgentFixtureScenarioFrequencyCodecError> {
+    if input.len() > MAX_SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_BYTES {
+      return Err(ScriptedAgentFixtureScenarioFrequencyCodecError::Oversized);
+    }
+    let lines = input.lines().collect::<Vec<_>>();
+    let mut schema = None;
+    let mut selection_count = None;
+    let mut entries_count = None;
+    let mut rows = Vec::new();
+    for line in lines.iter() {
+      let (key, value) = line
+        .split_once('=')
+        .ok_or(ScriptedAgentFixtureScenarioFrequencyCodecError::InvalidValue)?;
+      if key.is_empty() || value.is_empty() {
+        return Err(ScriptedAgentFixtureScenarioFrequencyCodecError::InvalidValue);
+      }
+      match key {
+        "schema" => {
+          if schema.is_some() {
+            return Err(ScriptedAgentFixtureScenarioFrequencyCodecError::DuplicateField);
+          }
+          schema = Some(value);
+        }
+        "selection_count" => {
+          if selection_count.is_some() {
+            return Err(ScriptedAgentFixtureScenarioFrequencyCodecError::DuplicateField);
+          }
+          selection_count = Some(value);
+        }
+        "entries" => {
+          if entries_count.is_some() {
+            return Err(ScriptedAgentFixtureScenarioFrequencyCodecError::DuplicateField);
+          }
+          entries_count = Some(value);
+        }
+        "row" => rows.push(value),
+        _ => return Err(ScriptedAgentFixtureScenarioFrequencyCodecError::UnknownField),
+      }
+    }
+    if schema != Some(SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_SCHEMA) {
+      return Err(ScriptedAgentFixtureScenarioFrequencyCodecError::UnsupportedSchema);
+    }
+    let selection_count = selection_count
+      .ok_or(ScriptedAgentFixtureScenarioFrequencyCodecError::MissingField)?
+      .parse::<u8>()
+      .map_err(|_| ScriptedAgentFixtureScenarioFrequencyCodecError::InvalidValue)?;
+    if !(1..=MAX_SCRIPTED_AGENT_FIXTURE_SCENARIOS).contains(&usize::from(selection_count)) {
+      return Err(ScriptedAgentFixtureScenarioFrequencyCodecError::InvalidValue);
+    }
+    let entries_count = entries_count
+      .ok_or(ScriptedAgentFixtureScenarioFrequencyCodecError::MissingField)?
+      .parse::<usize>()
+      .map_err(|_| ScriptedAgentFixtureScenarioFrequencyCodecError::InvalidValue)?;
+    if entries_count != 2 {
+      return Err(ScriptedAgentFixtureScenarioFrequencyCodecError::InvalidValue);
+    }
+    if lines.len() != 5 || rows.len() != 2 {
+      return Err(
+        ScriptedAgentFixtureScenarioFrequencyCodecError::UnexpectedLineCount {
+          expected: 5,
+          actual: lines.len(),
+        },
+      );
+    }
+    let mut entries = [
+      ScriptedAgentFixtureScenarioFrequencyEntry {
+        scenario_id: SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        count: 0,
+      },
+      ScriptedAgentFixtureScenarioFrequencyEntry {
+        scenario_id: SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        count: 0,
+      },
+    ];
+    for (index, row) in rows.into_iter().enumerate() {
+      let fields = row.split('|').collect::<Vec<_>>();
+      if fields.len() != 2 {
+        return Err(ScriptedAgentFixtureScenarioFrequencyCodecError::InvalidValue);
+      }
+      if fields[0] != entries[index].scenario_id {
+        return Err(ScriptedAgentFixtureScenarioFrequencyCodecError::InvalidValue);
+      }
+      entries[index].count = fields[1]
+        .parse::<u8>()
+        .map_err(|_| ScriptedAgentFixtureScenarioFrequencyCodecError::InvalidValue)?;
+    }
+    if entries[0].count + entries[1].count != selection_count {
+      return Err(ScriptedAgentFixtureScenarioFrequencyCodecError::InvalidValue);
+    }
+    Ok(Self {
+      schema: SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_SCHEMA,
+      selection_count,
+      entries,
+    })
   }
 }
 
@@ -3305,6 +3444,15 @@ mod tests {
       report,
       ScriptedAgentFixtureScenarioFrequencyReport::from_selection(&selection)
     );
+    let encoded = report.encode();
+    assert_eq!(
+      encoded,
+      "schema=m6-scripted-agent-fixture-frequency-v1\nselection_count=4\nentries=2\nrow=safe-fixture-v1|2\nrow=river-side-threat-v1|2\n"
+    );
+    assert_eq!(
+      ScriptedAgentFixtureScenarioFrequencyReport::decode(&encoded, &report),
+      Ok(report.clone())
+    );
 
     let singleton = ScriptedAgentFixtureScenarioSelection::from_ids(
       &[SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID],
@@ -3326,6 +3474,83 @@ mod tests {
     assert_eq!(
       singleton_report.entries()[0].count() + singleton_report.entries()[1].count(),
       singleton_report.selection_count()
+    );
+    let singleton_encoded = singleton_report.encode();
+    assert_eq!(
+      ScriptedAgentFixtureScenarioFrequencyReport::decode(&singleton_encoded, &singleton_report,),
+      Ok(singleton_report.clone())
+    );
+    for malformed in [
+      (
+        encoded.replacen(
+          "schema=m6-scripted-agent-fixture-frequency-v1",
+          "schema=other",
+          1,
+        ),
+        ScriptedAgentFixtureScenarioFrequencyCodecError::UnsupportedSchema,
+      ),
+      (
+        encoded.replacen("entries=2", "unknown=2", 1),
+        ScriptedAgentFixtureScenarioFrequencyCodecError::UnknownField,
+      ),
+      (
+        encoded.replacen(
+          "entries=2",
+          "schema=m6-scripted-agent-fixture-frequency-v1",
+          1,
+        ),
+        ScriptedAgentFixtureScenarioFrequencyCodecError::DuplicateField,
+      ),
+      (
+        encoded.replacen("entries=2\n", "", 1),
+        ScriptedAgentFixtureScenarioFrequencyCodecError::MissingField,
+      ),
+      (
+        format!("{encoded}row=safe-fixture-v1|2\n"),
+        ScriptedAgentFixtureScenarioFrequencyCodecError::UnexpectedLineCount {
+          expected: 5,
+          actual: 6,
+        },
+      ),
+      (
+        encoded.replacen("row=safe-fixture-v1|2", "row=unknown-fixture-v1|2", 1),
+        ScriptedAgentFixtureScenarioFrequencyCodecError::InvalidValue,
+      ),
+      (
+        encoded.replacen("row=safe-fixture-v1|2", "row=safe-fixture-v1|oops", 1),
+        ScriptedAgentFixtureScenarioFrequencyCodecError::InvalidValue,
+      ),
+      (
+        encoded.replacen("row=safe-fixture-v1|2", "row=safe-fixture-v1|1", 1),
+        ScriptedAgentFixtureScenarioFrequencyCodecError::InvalidValue,
+      ),
+      (
+        encoded.replacen("entries=2", "entries=3", 1),
+        ScriptedAgentFixtureScenarioFrequencyCodecError::InvalidValue,
+      ),
+    ] {
+      assert_eq!(
+        ScriptedAgentFixtureScenarioFrequencyReport::decode(&malformed.0, &report),
+        Err(malformed.1)
+      );
+    }
+    assert_eq!(
+      ScriptedAgentFixtureScenarioFrequencyReport::decode(
+        &encoded.replacen(
+          "row=safe-fixture-v1|2\nrow=river-side-threat-v1|2",
+          "row=safe-fixture-v1|1\nrow=river-side-threat-v1|3",
+          1,
+        ),
+        &report,
+      ),
+      Err(ScriptedAgentFixtureScenarioFrequencyCodecError::InputMismatch)
+    );
+    assert_eq!(
+      ScriptedAgentFixtureScenarioFrequencyReport::decode(
+        &"x".repeat(MAX_SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_BYTES + 1),
+        &report,
+      ),
+      Err(ScriptedAgentFixtureScenarioFrequencyCodecError::Oversized)
     );
   }
 

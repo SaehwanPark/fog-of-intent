@@ -106,6 +106,9 @@ not increment the package version.
   over explicit safe/threat fixture selections. It counts repeated choices from
   validated input without rerunning policies or claiming a generated
   population, general distribution, outcomes, persistence, or providers.
+- Added a 4096-byte closed line codec for that report; decoding is accepted only
+  when it matches an already verified report and does not create a durable
+  export pipeline.
 
 ### Known limits
 

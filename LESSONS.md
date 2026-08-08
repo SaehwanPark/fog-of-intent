@@ -994,3 +994,16 @@ canonical policy instead of duplicating it.
   frequencies only.
 - Prevention: Leave population, random/distributional, outcome, strategic, and
   calibration metrics behind separate contracts and evidence gates.
+
+## Bind aggregate codecs to verified reports
+
+- Context: A bounded frequency summary needed machine-readable transport before
+  durable export or population reporting was authorized.
+- Symptom: Parsing self-consistent counts into a trusted aggregate lets callers
+  forge evidence or swap closed row identities without provenance.
+- Resolution: Parse privately under a fixed schema/line bound, validate closed
+  rows and sums, then compare the result with a constructor-validated report
+  before returning it.
+- Prevention: Keep codec errors bounded and actor-safe, and treat report
+  encoding as evidence transport rather than persistence or distribution
+  authority.

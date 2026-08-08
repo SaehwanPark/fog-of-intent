@@ -1199,6 +1199,11 @@ transport-integrated sessions and broader protocol compatibility remain open.
   order and bounded counts over a validated selection. It counts explicit
   repeated choices only and does not claim a generated population, a general
   distribution, outcomes, or strategic metrics.
+- The frequency report codec uses the same schema with a 4096-byte bound, fixed
+  `schema`, `selection_count`, and `entries` fields, and two ordered rows. It
+  rejects malformed or non-catalog text and returns a decoded value only when
+  it matches an already verified report; it is evidence transport, not durable
+  export.
 
 ## Future
 

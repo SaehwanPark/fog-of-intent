@@ -165,7 +165,9 @@ population, sample a distribution, resolve a transition, or own history,
 replay, persistence, provider, or outcome authority.
 `ScriptedAgentFixtureScenarioFrequencyReport` counts those explicit selection
 labels in stable catalog order; it is bounded metadata over validated input,
-not population, outcome, strategic, persistence, or provider evidence.
+not population, outcome, strategic, persistence, or provider evidence. Its
+line-oriented codec validates fixed fields and returns only values matching an
+already verified report; it is not durable export.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO
