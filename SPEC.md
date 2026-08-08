@@ -1207,6 +1207,11 @@ transport-integrated sessions and broader protocol compatibility remain open.
 - The report's `to_markdown` projection emits only its schema, selection count,
   and ordered catalog rows as a concise in-process evidence summary; it performs
   no I/O and is not a durable report pipeline.
+- `ScriptedAgentFixtureScenarioFrequencyComparisonReport` compares two
+  caller-declared verified frequency reports under
+  `m6-scripted-agent-fixture-frequency-compare-v1`, preserving ordered counts
+  and signed candidate-minus-baseline deltas. It does not establish independent
+  build provenance or causal attribution.
 
 ## Future
 
