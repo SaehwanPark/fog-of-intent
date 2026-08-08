@@ -196,7 +196,8 @@ filesystem activity a runtime diagnostic or durably persist the operational log.
 `ScriptedAgentOperationalLogStore` uses a separate bounded codec and file
 suffixes, including caller-declared bounded segments, so operational labels
 cannot collide with host artifacts or batch cursor files; automatic rotation
-and crash recovery remain outer concerns.
+and crash recovery remain outer concerns. Its segment inventory is an
+observational directory scan rather than a persistence or scheduling authority.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

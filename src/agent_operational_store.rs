@@ -4,9 +4,11 @@
 //! namespace. It does not persist simulation history, decisions, diagnostics,
 //! or provider data.
 
+use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::agent::{ScriptedAgentOperationalLog, ScriptedAgentOperationalLogCodecError};
+use crate::cli::CliRunId;
 use crate::run_store::{
   CLI_RUN_OPERATIONAL_LOG_SEGMENT_SUFFIX, CLI_RUN_OPERATIONAL_LOG_SEGMENT_TEMP_SUFFIX,
   CLI_RUN_OPERATIONAL_LOG_SUFFIX, CLI_RUN_OPERATIONAL_LOG_TEMP_SUFFIX, CliRunStore,
@@ -106,6 +108,39 @@ impl ScriptedAgentOperationalLogStore {
       .map_err(map_store_error)?;
     ScriptedAgentOperationalLog::decode(&encoded)
       .map_err(|error| ScriptedAgentOperationalLogStoreError::InvalidLog { error })
+  }
+
+  /// List recognized caller-declared segment indices in stable order.
+  ///
+  /// This is an observational directory scan only; it does not infer
+  /// rotation order, merge files, or provide race-hard filesystem semantics.
+  pub fn list_segments(
+    &self,
+    run_id: &str,
+  ) -> Result<Vec<u8>, ScriptedAgentOperationalLogStoreError> {
+    CliRunId::parse(run_id)
+      .map_err(|_| ScriptedAgentOperationalLogStoreError::StorageUnavailable)?;
+    let prefix = format!("{run_id}{CLI_RUN_OPERATIONAL_LOG_SEGMENT_SUFFIX}");
+    let entries = fs::read_dir(self.root())
+      .map_err(|_| ScriptedAgentOperationalLogStoreError::StorageUnavailable)?;
+    let mut segments = Vec::new();
+    for entry in entries {
+      let entry = entry.map_err(|_| ScriptedAgentOperationalLogStoreError::StorageUnavailable)?;
+      let name = entry.file_name();
+      let name = name.to_string_lossy();
+      let Some(value) = name.strip_prefix(&prefix) else {
+        continue;
+      };
+      let Ok(segment) = value.parse::<u8>() else {
+        continue;
+      };
+      if segment < MAX_SCRIPTED_AGENT_OPERATIONAL_LOG_SEGMENTS {
+        segments.push(segment);
+      }
+    }
+    segments.sort_unstable();
+    segments.dedup();
+    Ok(segments)
   }
 }
 

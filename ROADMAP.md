@@ -1417,6 +1417,8 @@ representative replays, and an evidence-limited report.
 - [x] Store caller-declared operational-log segments under bounded distinct
   suffixes; automatic rotation, crash recovery, and durable scenario-wide
   recovery remain open.
+- [x] List recognized caller-declared operational-log segment indices in stable
+  order; race-hard scanning and automatic rotation remain open.
 - [x] Export bounded machine-readable data and a concise pure Markdown
   evidence report for the verified fixed-fixture frequency slice; durable
   export, arbitrary report pipelines, and broader metrics remain open.

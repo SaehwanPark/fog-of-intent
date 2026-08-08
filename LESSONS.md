@@ -1124,3 +1124,14 @@ canonical policy instead of duplicating it.
   the caller.
 - Prevention: Test segment coexistence and invalid-index rejection while
   keeping automatic rotation, crash recovery, and export explicitly open.
+
+## Keep segment inventory observational
+
+- Context: Callers may need to discover which bounded segment files exist
+  before choosing a follow-up load.
+- Symptom: Treating directory order or temporary files as lifecycle state
+  turns an adapter scan into implicit rotation or crash recovery.
+- Resolution: Parse only the closed numeric suffix range, sort and deduplicate
+  recognized indices, and map scan failures to the generic storage boundary.
+- Prevention: Ignore malformed/temporary names, test invalid-run and missing
+  roots, and keep race-hard scanning semantics explicitly deferred.

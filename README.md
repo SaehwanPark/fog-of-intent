@@ -77,7 +77,7 @@ players?
 | --- | --- |
 | Current roadmap milestone | M2 — One-Lane Vertical Slice (Active) |
 | Repository governance and canonical docs | Complete — M0 |
-| Rust package | `0.1.147`, edition 2024, Rust `1.96`, no dependencies, single package |
+| Rust package | `0.1.148`, edition 2024, Rust `1.96`, no dependencies, single package |
 | Executable behavior | Reports package version with standalone `--version`/`-V`, or runs the documented line-oriented deterministic two-window fixture transcript with explicit versioned `--scenario m3-two-window-fixture-v1` selection and optional `--run-dir` artifact storage |
 | Deterministic kernel | M1 fixture/codec complete; M2 v3 internal lane-window, explicit four-actor roster, retained-resource aggregate, intent, observation, branch, coordination, objective, strategy-fixture, scenario, replay, delayed-origin provenance, debrief, advance-condition, and belief/report contracts implemented |
 | One-lane scenario | Internal diagnostic windows and fixtures cover bounded intents, observations, coordination, resources, replay, and debrief projections — full scenario not complete |
@@ -86,6 +86,9 @@ players?
 | Behavioral experiments and calibration | Versioned bounded experiment manifests and applicable version-catalog metadata, deterministic in-process batch with caller-driven start/chunk/finish/checkpoint-saved/batch-resumed event production, matched-observation, caller-supplied matched-scenario sample-set, selected-intent tally, machine-readable tally, fixed-fixture frequency, pure Markdown evidence, caller-declared baseline/build-labeled comparison, a fixed no-change regression gate, injected cursor-resume evidence, a caller-declared run-disposition envelope, and a bounded non-authoritative operational event codec/store with caller-declared bounded segments; decision persistence, population sampling, distributional/outcome/strategic metrics, independent build/source verification, automatic runtime failure detection, checkpoint failure diagnostics, automatic rotation/crash recovery, durable/scenario-wide event-log recovery, and calibration remain open — M6/M7 |
 | Team play, full match, human alpha, optional GUI | Not implemented — M8-M11 |
 | Public alpha | Not release-ready — M12 |
+
+The bounded operational-log adapter can save/load caller-declared segments
+`0..=3` and list recognized indices; it does not infer rotation or crash state.
 
 See the [canonical roadmap](ROADMAP.md) for dependencies, scope, promotion
 evidence, and explicit deferrals.
