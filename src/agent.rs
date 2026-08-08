@@ -2938,16 +2938,21 @@ mod tests {
   #[test]
   fn run_disposition_codec_preserves_all_closed_statuses_and_rejects_malformed_text() {
     let dispositions = [
-      ScriptedAgentRunDisposition::Completed,
-      ScriptedAgentRunDisposition::Crashed,
-      ScriptedAgentRunDisposition::TimedOut,
-      ScriptedAgentRunDisposition::MissingBranch,
-      ScriptedAgentRunDisposition::Inconclusive,
+      (ScriptedAgentRunDisposition::Completed, "completed"),
+      (ScriptedAgentRunDisposition::Crashed, "crashed"),
+      (ScriptedAgentRunDisposition::TimedOut, "timed_out"),
+      (ScriptedAgentRunDisposition::MissingBranch, "missing_branch"),
+      (ScriptedAgentRunDisposition::Inconclusive, "inconclusive"),
     ];
-    for disposition in dispositions {
+    for (disposition, expected_id) in dispositions {
       let record = ScriptedAgentRunDispositionRecord::new(disposition);
       assert_eq!(record.schema(), SCRIPTED_AGENT_RUN_DISPOSITION_SCHEMA);
       assert_eq!(record.disposition(), disposition);
+      assert_eq!(disposition.id(), expected_id);
+      assert_eq!(
+        record.encode(),
+        format!("schema=m6-scripted-agent-run-disposition-v1\ndisposition={expected_id}\n")
+      );
       assert_eq!(
         ScriptedAgentRunDispositionRecord::decode(&record.encode()),
         Ok(record)
@@ -2997,10 +3002,13 @@ mod tests {
         Err(expected)
       );
     }
+    assert_eq!(MAX_SCRIPTED_AGENT_RUN_DISPOSITION_BYTES, 4096);
     assert_eq!(
-      ScriptedAgentRunDispositionRecord::decode(
-        &"x".repeat(MAX_SCRIPTED_AGENT_RUN_DISPOSITION_BYTES + 1),
-      ),
+      ScriptedAgentRunDispositionRecord::decode(&"x".repeat(4096)),
+      Err(ScriptedAgentRunDispositionCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ScriptedAgentRunDispositionRecord::decode(&"x".repeat(4097)),
       Err(ScriptedAgentRunDispositionCodecError::Oversized)
     );
   }
