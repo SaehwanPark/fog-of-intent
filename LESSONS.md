@@ -1101,3 +1101,14 @@ canonical policy instead of duplicating it.
   and append the label only after success; keep failure paths non-mutating.
 - Prevention: Treat storage event production as a post-success edge effect and
   keep event-log persistence and runtime diagnostics behind separate contracts.
+
+## Namespace operational logs separately from checkpoints
+
+- Context: A bounded event codec can be persisted through the existing injected
+  file-store boundary without becoming simulation history.
+- Symptom: Reusing the host-artifact or batch-cursor suffix lets unrelated
+  payloads replace one another under the same run ID.
+- Resolution: Give the operational log its own closed codec and suffix while
+  retaining the shared run-ID validation and atomic replacement behavior.
+- Prevention: Keep crash recovery, rotation, export, and runtime diagnostics
+  outside this narrow adapter and verify same-root/same-ID coexistence.

@@ -98,6 +98,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.146 — 2026-08-08
+
+### Added
+
+- Added the bounded `m6-scripted-agent-operational-log-v1` codec and a
+  distinct injected `.foi-operational-log` store namespace. Logs persist only
+  ordered payload-free event IDs and remain separate from host artifacts and
+  batch checkpoints.
+
+### Known limits
+
+- Crash recovery, rotation, external export, runtime diagnostics, and broader
+  operational-log pipelines remain open.
+
 ## 0.1.145 — 2026-08-08
 
 ### Added

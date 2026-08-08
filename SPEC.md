@@ -1234,19 +1234,27 @@ transport-integrated sessions and broader protocol compatibility remain open.
   ordered, payload-free `batch_started`, `chunk_completed`, `checkpoint_saved`,
   `batch_resumed`, and `batch_finished` events. It is explicitly
   non-authoritative and separate from committed history and evidence reports;
-  runtime event producers, tracing/transport, durations, diagnostics,
-  persistence, and scheduling remain open.
+  automatic/runtime event producers, tracing/transport, durations, diagnostics,
+  durable/scenario-wide persistence, and scheduling remain open.
 - `ScriptedAgentBatchRunner::run_with_operational_log` is a caller-driven
   producer for one complete deterministic batch. It preflights the existing
   16-entry log before evaluation, appends only ordered
   `batch_started`/`chunk_completed`/`batch_finished` labels, and preserves
   decision parity. Invalid batches and insufficient capacity leave the log
-  unchanged; checkpoint/resume production and runtime diagnostics remain open.
+  unchanged; broader checkpoint/resume production and runtime diagnostics
+  remain open.
 - `ScriptedAgentBatchRunStore::save_with_operational_log` and
   `load_with_operational_log` append `checkpoint_saved` and `batch_resumed`
   only after successful bounded cursor storage/decode, respectively. Each
   preflights one log slot, and storage, codec, or capacity failures do not
   append an event; the operational log itself remains non-authoritative.
+- `ScriptedAgentOperationalLog::encode/decode` uses the exact bounded
+  `m6-scripted-agent-operational-log-v1` two-header plus event-line shape,
+  rejects unknown/duplicate/missing/schema/value/line/size violations, and
+  preserves the closed five-ID order. `ScriptedAgentOperationalLogStore`
+  reuses the existing injected atomic store under a distinct
+  `.foi-operational-log` suffix; it does not replace host artifacts or batch
+  checkpoints, and crash recovery/rotation/external export remain open.
 
 ## Future
 

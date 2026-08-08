@@ -1401,16 +1401,19 @@ representative replays, and an evidence-limited report.
 - [x] Define one provisional fixed-fixture regression gate with written
   threshold rationale; broader gates remain open.
 - [x] Define a bounded non-authoritative operational event log container
-  separate from committed simulation artifacts; runtime log production,
-  transport, and persistence remain open.
+  separate from committed simulation artifacts; automatic runtime log
+  production, transport, and durable/scenario-wide persistence remain open.
 - [x] Produce caller-driven `batch_started`, `chunk_completed`, and
   `batch_finished` labels around one complete deterministic in-process batch;
   checkpoint/resume producers, runtime failure detection, transport, and
-  persistence remain open.
+  durable/scenario-wide operational-log persistence remain open.
 - [x] Produce caller-driven `checkpoint_saved` and `batch_resumed` labels only
   after successful bounded cursor save/load; capacity preflight and failure
-  nonmutation remain explicit, while runtime diagnostics and event-log
-  persistence remain open.
+  nonmutation remain explicit, while runtime diagnostics and durable/scenario-
+  wide event-log recovery/rotation remain open.
+- [x] Encode bounded payload-free operational logs and store them in a distinct
+  injected namespace; crash recovery, rotation, external export, and runtime
+  diagnostics remain open.
 - [x] Export bounded machine-readable data and a concise pure Markdown
   evidence report for the verified fixed-fixture frequency slice; durable
   export, arbitrary report pipelines, and broader metrics remain open.

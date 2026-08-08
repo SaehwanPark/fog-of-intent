@@ -92,6 +92,7 @@ src/lib.rs
 src/agent.rs
 src/cli.rs
 src/agent_batch_store.rs
+src/agent_operational_store.rs
 src/host.rs
 src/host_artifact.rs
 src/run_store.rs
@@ -113,7 +114,7 @@ docs/
 _workspace/
 ```
 
-`src/lib.rs`, `src/cli.rs`, `src/agent_batch_store.rs`, `src/host.rs`, `src/host_artifact.rs`, `src/run_store.rs`, `src/terminal.rs`, `src/protocol.rs`, `src/session.rs`, `src/kernel.rs`,
+`src/lib.rs`, `src/cli.rs`, `src/agent_batch_store.rs`, `src/agent_operational_store.rs`, `src/host.rs`, `src/host_artifact.rs`, `src/run_store.rs`, `src/terminal.rs`, `src/protocol.rs`, `src/session.rs`, `src/kernel.rs`,
 `src/lane/`, and `src/serialization.rs` are the current internal
 kernel/adapter/fixture surface;
 `src/main.rs` parses bounded process options and runs the fixture loop. The lane surface is split into private responsibility-oriented
@@ -184,14 +185,17 @@ own execution, persistence, provider, or experiment authority.
 `ScriptedAgentOperationalLog` is a separate bounded in-memory container for
 ordered payload-free batch lifecycle event labels. It is non-authoritative and
 does not reconstruct history, emit runtime logs, inspect time/process state, or
-persist operational data.
+durably persist operational data.
 The batch runner can append a caller-driven start/chunk/finish trio only after
 validation and capacity preflight; this producer preserves batch decision
 parity and does not provide checkpoint, failure-detection, or transport
 authority.
 The injected checkpoint store similarly appends save/resume labels only after
 successful bounded storage operations and one-slot preflight; it does not make
-filesystem activity a runtime diagnostic or persist the operational log.
+filesystem activity a runtime diagnostic or durably persist the operational log.
+`ScriptedAgentOperationalLogStore` uses a separate bounded codec and file
+suffix, so operational labels cannot collide with host artifacts or batch
+cursor files; crash recovery and rotation remain outer concerns.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

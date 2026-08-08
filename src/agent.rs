@@ -116,8 +116,14 @@ pub const SCRIPTED_AGENT_BUILD_ID_SCHEMA: &str = "m6-scripted-agent-build-id-v1"
 /// Versioned identity for the non-authoritative operational event vocabulary.
 pub const SCRIPTED_AGENT_OPERATIONAL_EVENT_SCHEMA: &str = "m6-scripted-agent-operational-event-v1";
 
+/// Versioned identity for the bounded operational-log codec.
+pub const SCRIPTED_AGENT_OPERATIONAL_LOG_SCHEMA: &str = "m6-scripted-agent-operational-log-v1";
+
 /// Maximum number of operational events retained in one in-memory log.
 pub const MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS: usize = 16;
+
+/// Maximum encoded size of one operational log.
+pub const MAX_SCRIPTED_AGENT_OPERATIONAL_LOG_BYTES: usize = 4096;
 
 /// Versioned identity for bounded matched-scenario selected-intent tallies.
 pub const SCRIPTED_AGENT_MATCHED_SCENARIO_TALLY_SCHEMA: &str =
@@ -870,6 +876,17 @@ impl ScriptedAgentOperationalEvent {
       Self::BatchFinished => "batch_finished",
     }
   }
+
+  fn parse_id(value: &str) -> Option<Self> {
+    match value {
+      "batch_started" => Some(Self::BatchStarted),
+      "chunk_completed" => Some(Self::ChunkCompleted),
+      "checkpoint_saved" => Some(Self::CheckpointSaved),
+      "batch_resumed" => Some(Self::BatchResumed),
+      "batch_finished" => Some(Self::BatchFinished),
+      _ => None,
+    }
+  }
 }
 
 /// One payload-free event in a non-authoritative operational log.
@@ -900,6 +917,18 @@ impl ScriptedAgentOperationalEventRecord {
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ScriptedAgentOperationalLogError {
   CapacityExceeded { max: usize },
+}
+
+/// Bounded failures from operational-log encoding and decoding.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentOperationalLogCodecError {
+  Oversized,
+  UnexpectedLineCount { expected: usize, actual: usize },
+  UnknownField,
+  DuplicateField,
+  MissingField,
+  UnsupportedSchema,
+  InvalidValue,
 }
 
 /// Bounded failures from producing one complete batch lifecycle trace.
@@ -953,6 +982,100 @@ impl ScriptedAgentOperationalLog {
 
   pub fn entries(&self) -> &[ScriptedAgentOperationalEventRecord] {
     &self.entries
+  }
+
+  /// Encode the bounded payload-free event log as canonical text.
+  pub fn encode(&self) -> String {
+    let mut encoded = format!(
+      "schema={}\nentries={}\n",
+      SCRIPTED_AGENT_OPERATIONAL_LOG_SCHEMA,
+      self.entries.len(),
+    );
+    for entry in &self.entries {
+      encoded.push_str(&format!("event={}\n", entry.event().id()));
+    }
+    encoded
+  }
+
+  /// Decode and validate one bounded payload-free event log.
+  pub fn decode(input: &str) -> Result<Self, ScriptedAgentOperationalLogCodecError> {
+    if input.len() > MAX_SCRIPTED_AGENT_OPERATIONAL_LOG_BYTES {
+      return Err(ScriptedAgentOperationalLogCodecError::Oversized);
+    }
+    let lines = input.lines().collect::<Vec<_>>();
+    if lines.len() > MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS + 2 {
+      return Err(ScriptedAgentOperationalLogCodecError::UnexpectedLineCount {
+        expected: MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS + 2,
+        actual: lines.len(),
+      });
+    }
+    let mut schema = None;
+    let mut entries_count = None;
+    let mut event_ids = Vec::new();
+    for line in lines.iter() {
+      let (key, value) = line
+        .split_once('=')
+        .ok_or(ScriptedAgentOperationalLogCodecError::InvalidValue)?;
+      if key.is_empty() || value.is_empty() {
+        return Err(ScriptedAgentOperationalLogCodecError::InvalidValue);
+      }
+      match key {
+        "schema" => {
+          if schema.is_some() {
+            return Err(ScriptedAgentOperationalLogCodecError::DuplicateField);
+          }
+          schema = Some(value);
+        }
+        "entries" => {
+          if entries_count.is_some() {
+            return Err(ScriptedAgentOperationalLogCodecError::DuplicateField);
+          }
+          entries_count = Some(value);
+        }
+        "event" => event_ids.push(value),
+        _ => return Err(ScriptedAgentOperationalLogCodecError::UnknownField),
+      }
+    }
+    if schema != Some(SCRIPTED_AGENT_OPERATIONAL_LOG_SCHEMA) {
+      return Err(ScriptedAgentOperationalLogCodecError::UnsupportedSchema);
+    }
+    let entries_count = entries_count
+      .ok_or(ScriptedAgentOperationalLogCodecError::MissingField)?
+      .parse::<usize>()
+      .map_err(|_| ScriptedAgentOperationalLogCodecError::InvalidValue)?;
+    if entries_count > MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS {
+      return Err(ScriptedAgentOperationalLogCodecError::InvalidValue);
+    }
+    let expected_lines = 2 + entries_count;
+    if lines.len() != expected_lines || event_ids.len() != entries_count {
+      return Err(ScriptedAgentOperationalLogCodecError::UnexpectedLineCount {
+        expected: expected_lines,
+        actual: lines.len(),
+      });
+    }
+    let first_key = lines[0].split_once('=').map(|(key, _)| key);
+    let second_key = lines[1].split_once('=').map(|(key, _)| key);
+    if first_key != Some("schema")
+      || second_key != Some("entries")
+      || lines
+        .iter()
+        .skip(2)
+        .any(|line| line.split_once('=').map(|(key, _)| key) != Some("event"))
+    {
+      return Err(ScriptedAgentOperationalLogCodecError::InvalidValue);
+    }
+    let entries = event_ids
+      .into_iter()
+      .map(|id| {
+        ScriptedAgentOperationalEvent::parse_id(id)
+          .map(ScriptedAgentOperationalEventRecord::new)
+          .ok_or(ScriptedAgentOperationalLogCodecError::InvalidValue)
+      })
+      .collect::<Result<Vec<_>, _>>()?;
+    Ok(Self {
+      schema: SCRIPTED_AGENT_OPERATIONAL_EVENT_SCHEMA,
+      entries,
+    })
   }
 }
 
@@ -3261,6 +3384,111 @@ mod tests {
       log.entries()[4].event(),
       ScriptedAgentOperationalEvent::BatchFinished
     );
+    assert_eq!(
+      log.encode(),
+      "schema=m6-scripted-agent-operational-log-v1\nentries=5\nevent=batch_started\nevent=chunk_completed\nevent=checkpoint_saved\nevent=batch_resumed\nevent=batch_finished\n"
+    );
+    assert_eq!(
+      ScriptedAgentOperationalLog::decode(&log.encode()),
+      Ok(log.clone())
+    );
+    let encoded = log.encode();
+    for (malformed, expected) in [
+      (
+        encoded.replacen(
+          "schema=m6-scripted-agent-operational-log-v1",
+          "schema=other",
+          1,
+        ),
+        ScriptedAgentOperationalLogCodecError::UnsupportedSchema,
+      ),
+      (
+        encoded.replacen("entries=5", "unknown=5", 1),
+        ScriptedAgentOperationalLogCodecError::UnknownField,
+      ),
+      (
+        encoded.replacen(
+          "entries=5\n",
+          "schema=m6-scripted-agent-operational-log-v1\nentries=5\n",
+          1,
+        ),
+        ScriptedAgentOperationalLogCodecError::DuplicateField,
+      ),
+      (
+        encoded.replacen("entries=5\n", "", 1),
+        ScriptedAgentOperationalLogCodecError::MissingField,
+      ),
+      (
+        encoded.replacen("event=batch_finished", "event=unknown", 1),
+        ScriptedAgentOperationalLogCodecError::InvalidValue,
+      ),
+      (
+        "not-a-field".to_owned(),
+        ScriptedAgentOperationalLogCodecError::InvalidValue,
+      ),
+      (
+        "schema=\nentries=0\n".to_owned(),
+        ScriptedAgentOperationalLogCodecError::InvalidValue,
+      ),
+      (
+        encoded.replacen("entries=5", "entries=not-a-number", 1),
+        ScriptedAgentOperationalLogCodecError::InvalidValue,
+      ),
+      (
+        encoded.replacen("entries=5", "entries=17", 1),
+        ScriptedAgentOperationalLogCodecError::InvalidValue,
+      ),
+      (
+        format!("{encoded}event=batch_started\n"),
+        ScriptedAgentOperationalLogCodecError::UnexpectedLineCount {
+          expected: 7,
+          actual: 8,
+        },
+      ),
+      (
+        format!(
+          "schema=m6-scripted-agent-operational-log-v1\nentries=16\n{}",
+          "event=batch_started\n".repeat(17)
+        ),
+        ScriptedAgentOperationalLogCodecError::UnexpectedLineCount {
+          expected: 18,
+          actual: 19,
+        },
+      ),
+    ] {
+      assert_eq!(
+        ScriptedAgentOperationalLog::decode(&malformed),
+        Err(expected)
+      );
+    }
+    let swapped_headers = "entries=5\nschema=m6-scripted-agent-operational-log-v1\nevent=batch_started\nevent=chunk_completed\nevent=checkpoint_saved\nevent=batch_resumed\nevent=batch_finished\n";
+    assert_eq!(
+      ScriptedAgentOperationalLog::decode(swapped_headers),
+      Err(ScriptedAgentOperationalLogCodecError::InvalidValue)
+    );
+    let event_before_headers = "event=batch_started\nentries=5\nschema=m6-scripted-agent-operational-log-v1\nevent=chunk_completed\nevent=checkpoint_saved\nevent=batch_resumed\nevent=batch_finished\n";
+    assert_eq!(
+      ScriptedAgentOperationalLog::decode(event_before_headers),
+      Err(ScriptedAgentOperationalLogCodecError::InvalidValue)
+    );
+    assert_eq!(MAX_SCRIPTED_AGENT_OPERATIONAL_LOG_BYTES, 4096);
+    assert_eq!(
+      SCRIPTED_AGENT_OPERATIONAL_LOG_SCHEMA,
+      "m6-scripted-agent-operational-log-v1"
+    );
+    let inclusive_size_input = format!("{}\n", "x".repeat(4095));
+    assert_eq!(
+      inclusive_size_input.len(),
+      MAX_SCRIPTED_AGENT_OPERATIONAL_LOG_BYTES
+    );
+    assert_eq!(
+      ScriptedAgentOperationalLog::decode(&inclusive_size_input),
+      Err(ScriptedAgentOperationalLogCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ScriptedAgentOperationalLog::decode(&"x".repeat(4097)),
+      Err(ScriptedAgentOperationalLogCodecError::Oversized)
+    );
     assert_eq!(MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS, 16);
     for _ in events.len()..MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS {
       log
@@ -3277,6 +3505,10 @@ mod tests {
     );
     assert_eq!(log.len(), MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS);
     assert_eq!(log.entries(), entries_before_overflow.as_slice());
+    assert_eq!(
+      ScriptedAgentOperationalLog::decode(&log.encode()),
+      Ok(log.clone())
+    );
   }
 
   #[test]
@@ -3466,6 +3698,28 @@ mod tests {
       operational_log.entries()[1].event(),
       ScriptedAgentOperationalEvent::BatchResumed
     );
+    let operational_store =
+      crate::agent_operational_store::ScriptedAgentOperationalLogStore::new(&root);
+    operational_store
+      .save("resume", &operational_log)
+      .expect("operational log saves beside checkpoint");
+    assert_eq!(
+      host_store
+        .load("resume")
+        .expect("host artifact survives log save"),
+      host_artifact
+    );
+    assert_eq!(
+      store.load("resume").expect("checkpoint survives log save"),
+      checkpoint
+    );
+    assert!(root.join("resume.foi-operational-log").is_file());
+    assert_eq!(
+      operational_store
+        .load("resume")
+        .expect("operational log loads"),
+      operational_log
+    );
     std::fs::write(root.join("broken.foi-batch-run"), "bad")
       .expect("malformed checkpoint fixture writes");
     let log_before_decode_error = operational_log.entries().to_vec();
@@ -3509,6 +3763,16 @@ mod tests {
       )
     );
     assert_eq!(storage_error_log.entries(), storage_error_before.as_slice());
+    std::fs::write(root.join("broken.foi-operational-log"), "bad")
+      .expect("malformed operational log fixture writes");
+    assert_eq!(
+      operational_store.load("broken"),
+      Err(
+        crate::agent_operational_store::ScriptedAgentOperationalLogStoreError::InvalidLog {
+          error: ScriptedAgentOperationalLogCodecError::InvalidValue,
+        }
+      )
+    );
     for _ in operational_log.len()..MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS {
       operational_log
         .append(ScriptedAgentOperationalEvent::BatchStarted)
