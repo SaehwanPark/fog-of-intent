@@ -573,3 +573,15 @@ canonical policy instead of duplicating it.
   state without changing history.
 - Prevention: Keep detailed records, replay, debrief, and persistence behind
   separate contracts and tests.
+
+## Encode actor errors as closed IDs only
+
+- Context: M5 needed a transport-ready shape for actor-safe validation errors
+  without making repair or host work implicit.
+- Symptom: Serializing debug/domain errors would leak raw payloads, hashes, or
+  authoritative values and make clients depend on unstable internals.
+- Resolution: Encode only the versioned schema, closed error code, and closed
+  repair hint with exact bounded lines; decode rejects unknown IDs and extra
+  fields before any caller can act.
+- Prevention: Keep hints advisory-only and preserve host legality, transition,
+  history, and automatic-retry authority outside the codec.

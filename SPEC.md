@@ -967,8 +967,8 @@ transport-integrated sessions and broader protocol compatibility remain open.
   conversion through the existing validator, absence of state-hash or
   snapshot fields, session lifecycle/error cases, codec round-trips and
   malformed-input rejection, and exhaustive codec/session error projections.
-  The focused evidence is 12 protocol tests and 5 session tests within the
-  191-unit, 7-binary, and 1-Rustdoc suite.
+  The focused evidence is 13 protocol tests and 5 session tests within the
+  192-unit, 7-binary, and 1-Rustdoc suite.
 - `CliScenarioHost::validate_actor_action` checks one DTO against the current
   actor-visible receipt and existing lane validator without mutating history,
   staging a plan, resolving execution, or closing a window. It projects only

@@ -643,6 +643,29 @@ impl ActorProtocolErrorCode {
       Self::DraftBoundary => "draft_boundary",
     }
   }
+
+  fn parse_id(value: &str) -> Result<Self, ActorProtocolCodecError> {
+    match value {
+      "oversized_input" => Ok(Self::OversizedInput),
+      "unexpected_line_count" => Ok(Self::UnexpectedLineCount),
+      "unknown_field" => Ok(Self::UnknownField),
+      "duplicate_field" => Ok(Self::DuplicateField),
+      "missing_field" => Ok(Self::MissingField),
+      "unsupported_schema" => Ok(Self::UnsupportedSchema),
+      "invalid_value" => Ok(Self::InvalidValue),
+      "actor_mismatch" => Ok(Self::ActorMismatch),
+      "observation_already_open" => Ok(Self::ObservationAlreadyOpen),
+      "no_observation" => Ok(Self::NoObservation),
+      "stale_observation" => Ok(Self::StaleObservation),
+      "duplicate_submission" => Ok(Self::DuplicateSubmission),
+      "closed_session" => Ok(Self::ClosedSession),
+      "window_closed" => Ok(Self::WindowClosed),
+      "host_validation_rejected" => Ok(Self::HostValidationRejected),
+      "host_transition_rejected" => Ok(Self::HostTransitionRejected),
+      "draft_boundary" => Ok(Self::DraftBoundary),
+      _ => Err(ActorProtocolCodecError::InvalidValue),
+    }
+  }
 }
 
 /// Deterministic caller guidance for one actor-facing validation failure.
@@ -679,6 +702,24 @@ impl ActorProtocolRepairHint {
       Self::ResendAdvertisedAction => "resend_advertised_action",
     }
   }
+
+  fn parse_id(value: &str) -> Result<Self, ActorProtocolCodecError> {
+    match value {
+      "retry_within_size_bound" => Ok(Self::RetryWithinSizeBound),
+      "resend_exact_payload" => Ok(Self::ResendExactPayload),
+      "resend_complete_payload" => Ok(Self::ResendCompletePayload),
+      "use_supported_schema" => Ok(Self::UseSupportedSchema),
+      "resend_valid_payload" => Ok(Self::ResendValidPayload),
+      "use_bound_actor" => Ok(Self::UseBoundActor),
+      "submit_current_action" => Ok(Self::SubmitCurrentAction),
+      "request_observation" => Ok(Self::RequestObservation),
+      "request_fresh_observation" => Ok(Self::RequestFreshObservation),
+      "await_next_observation" => Ok(Self::AwaitNextObservation),
+      "start_new_session" => Ok(Self::StartNewSession),
+      "resend_advertised_action" => Ok(Self::ResendAdvertisedAction),
+      _ => Err(ActorProtocolCodecError::InvalidValue),
+    }
+  }
 }
 
 /// Bounded actor-facing validation error with a deterministic repair hint.
@@ -708,6 +749,46 @@ impl ActorProtocolError {
       code,
       repair,
     }
+  }
+
+  /// Encode the bounded actor-safe error as stable line-oriented text.
+  pub fn encode(self) -> String {
+    format!(
+      "schema={}\ncode={}\nrepair={}\n",
+      self.schema,
+      self.code.id(),
+      self.repair.id()
+    )
+  }
+
+  /// Decode a bounded actor-safe error without raw payload or domain detail.
+  pub fn decode(input: &str) -> Result<Self, ActorProtocolCodecError> {
+    let fields = parse_fields(input, 3)?;
+    let mut schema = None;
+    let mut code = None;
+    let mut repair = None;
+    for (key, value) in fields {
+      let slot = match key {
+        "schema" => &mut schema,
+        "code" => &mut code,
+        "repair" => &mut repair,
+        _ => return Err(ActorProtocolCodecError::UnknownField),
+      };
+      if slot.is_some() {
+        return Err(ActorProtocolCodecError::DuplicateField);
+      }
+      *slot = Some(value);
+    }
+    if schema != Some(ACTOR_PROTOCOL_ERROR_SCHEMA) {
+      return Err(ActorProtocolCodecError::UnsupportedSchema);
+    }
+    Ok(Self {
+      schema: ACTOR_PROTOCOL_ERROR_SCHEMA,
+      code: ActorProtocolErrorCode::parse_id(code.ok_or(ActorProtocolCodecError::MissingField)?)?,
+      repair: ActorProtocolRepairHint::parse_id(
+        repair.ok_or(ActorProtocolCodecError::MissingField)?,
+      )?,
+    })
   }
 }
 
@@ -1004,6 +1085,79 @@ mod tests {
     );
     assert_eq!(
       ActorHistoryDto::decode("schema=m5-actor-history-v1\nrecords=0\nstatus=open\nextra=x\n"),
+      Err(ActorProtocolCodecError::UnexpectedLineCount {
+        expected: 3,
+        actual: 4,
+      })
+    );
+  }
+
+  #[test]
+  fn actor_error_codec_round_trips_all_closed_ids_without_raw_detail() {
+    let codes = [
+      ActorProtocolErrorCode::OversizedInput,
+      ActorProtocolErrorCode::UnexpectedLineCount,
+      ActorProtocolErrorCode::UnknownField,
+      ActorProtocolErrorCode::DuplicateField,
+      ActorProtocolErrorCode::MissingField,
+      ActorProtocolErrorCode::UnsupportedSchema,
+      ActorProtocolErrorCode::InvalidValue,
+      ActorProtocolErrorCode::ActorMismatch,
+      ActorProtocolErrorCode::ObservationAlreadyOpen,
+      ActorProtocolErrorCode::NoObservation,
+      ActorProtocolErrorCode::StaleObservation,
+      ActorProtocolErrorCode::DuplicateSubmission,
+      ActorProtocolErrorCode::ClosedSession,
+      ActorProtocolErrorCode::WindowClosed,
+      ActorProtocolErrorCode::HostValidationRejected,
+      ActorProtocolErrorCode::HostTransitionRejected,
+      ActorProtocolErrorCode::DraftBoundary,
+    ];
+    for code in codes {
+      let error = ActorProtocolError::new(code, ActorProtocolRepairHint::ResendValidPayload);
+      assert_eq!(ActorProtocolError::decode(&error.encode()), Ok(error));
+      assert!(!format!("{error:?}").contains("hash"));
+    }
+    let repairs = [
+      ActorProtocolRepairHint::RetryWithinSizeBound,
+      ActorProtocolRepairHint::ResendExactPayload,
+      ActorProtocolRepairHint::ResendCompletePayload,
+      ActorProtocolRepairHint::UseSupportedSchema,
+      ActorProtocolRepairHint::ResendValidPayload,
+      ActorProtocolRepairHint::UseBoundActor,
+      ActorProtocolRepairHint::SubmitCurrentAction,
+      ActorProtocolRepairHint::RequestObservation,
+      ActorProtocolRepairHint::RequestFreshObservation,
+      ActorProtocolRepairHint::AwaitNextObservation,
+      ActorProtocolRepairHint::StartNewSession,
+      ActorProtocolRepairHint::ResendAdvertisedAction,
+    ];
+    for repair in repairs {
+      let error = ActorProtocolError::new(ActorProtocolErrorCode::InvalidValue, repair);
+      assert_eq!(ActorProtocolError::decode(&error.encode()), Ok(error));
+    }
+    let canonical = ActorProtocolError::new(
+      ActorProtocolErrorCode::StaleObservation,
+      ActorProtocolRepairHint::RequestFreshObservation,
+    );
+    assert_eq!(
+      canonical.encode(),
+      "schema=m5-actor-error-v1\ncode=stale_observation\nrepair=request_fresh_observation\n"
+    );
+    assert_eq!(
+      ActorProtocolError::decode(
+        "schema=m5-actor-error-v1\ncode=unknown\nrepair=request_observation\n"
+      ),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ActorProtocolError::decode("schema=m5-actor-error-v1\ncode=invalid_value\nrepair=unknown\n"),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ActorProtocolError::decode(
+        "schema=m5-actor-error-v1\ncode=invalid_value\nrepair=resend_valid_payload\nextra=x\n"
+      ),
       Err(ActorProtocolCodecError::UnexpectedLineCount {
         expected: 3,
         actual: 4,

@@ -95,6 +95,19 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.104 — 2026-08-08
+
+### Added
+
+- Added exact `m5-actor-error-v1` encode/decode for closed error and repair IDs,
+  with bounded line count/size and no raw payload or domain detail.
+- Added exhaustive closed-ID round-trip and malformed-wire coverage.
+
+### Known limits
+
+- Error codec repair remains advisory-only; automatic repair, transport,
+  persistence, and broader MCP compatibility remain open.
+
 ## 0.1.103 — 2026-08-08
 
 ### Added
