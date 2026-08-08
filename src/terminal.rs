@@ -224,6 +224,9 @@ pub fn render_error(error: &CliHostError<'_>) -> String {
       format!("{verb} is locked after commit; advance first or start a new window")
     }
     CliHostError::MissingPlan => "commit needs a plan; stage plan <intent> first".to_owned(),
+    CliHostError::BranchMissingPlan => {
+      "branch needs an alternate plan; stage plan <intent> first".to_owned()
+    }
     CliHostError::MissingCommittedIntent => {
       "advance needs a committed plan; stage and commit an intent first".to_owned()
     }
@@ -505,6 +508,8 @@ mod tests {
     assert!(storage.contains("configured run directory"));
     let branch = render_error(&CliHostError::BranchUnavailable);
     assert!(branch.contains("branch first"));
+    let branch_plan = render_error(&CliHostError::BranchMissingPlan);
+    assert!(branch_plan.contains("branch needs an alternate plan"));
 
     let mut malformed_host = CliScenarioHost::new([malformed_inputs(), malformed_inputs()]);
     malformed_host

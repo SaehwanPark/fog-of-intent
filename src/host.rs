@@ -103,6 +103,7 @@ pub enum CliHostError<'a> {
   InvalidPlan { text: String },
   CommittedBoundary { verb: &'static str },
   MissingPlan,
+  BranchMissingPlan,
   MissingCommittedIntent,
   NothingToUndo,
   RunNotFound { run_id: String },
@@ -340,7 +341,7 @@ impl CliScenarioHost {
       .draft
       .plan
       .as_deref()
-      .ok_or(CliHostError::MissingPlan)?;
+      .ok_or(CliHostError::BranchMissingPlan)?;
     let alternate_intent =
       parse_plan_intent(alternate_text).ok_or_else(|| CliHostError::InvalidPlan {
         text: alternate_text.to_owned(),
@@ -946,7 +947,7 @@ mod tests {
     }
     assert_eq!(
       host.apply_line("branch first"),
-      Err(CliHostError::MissingPlan)
+      Err(CliHostError::BranchMissingPlan)
     );
     host.apply_line("plan ???").expect("invalid alternate plan");
     assert_eq!(
