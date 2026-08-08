@@ -32,8 +32,8 @@ authority and information-boundary contracts.
 
 ## Evidence
 
-- Three focused host tests passed.
-- Full pinned Rust suite: 122 tests passed; one compile-fail Rustdoc test
+- Four focused host tests passed.
+- Full pinned Rust suite: 123 tests passed; one compile-fail Rustdoc test
   passed.
 - `cargo +1.96.0 fmt --all -- --check`
 - `cargo +1.96.0 clippy --locked --all-targets --all-features -- -D warnings`
