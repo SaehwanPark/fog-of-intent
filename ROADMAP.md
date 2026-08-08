@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Line-oriented bounded fixture loop with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.75`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.76`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -884,7 +884,10 @@ API access.
   common errors.
 - [x] Add one explicit, versioned executable fixture ID with fail-closed
   missing/unknown argument handling; broader scenario catalogs remain open.
-- [ ] Check keyboard-only flow and screen-reader-oriented text structure.
+- [x] Verify machine-checkable plain labeled text structure for representative
+  output and recoverable command-loop errors.
+- [ ] Check keyboard-only flow and screen-reader semantics with human-oriented
+  inspection.
 
 ### Current bounded information-label evidence
 
@@ -965,11 +968,12 @@ still does not satisfy the M3 complete-run exit evidence.
   debrief, and quit.
 - [x] Add line-oriented terminal I/O/command-loop integration around the host
   contract and wire an explicit `--run-dir` option at the executable edge.
-- [ ] Check keyboard-only flow and screen-reader-oriented text structure.
+- [ ] Check keyboard-only flow and screen-reader semantics with human-oriented
+  inspection.
 
 This is host-backed scenario, injected file-store, text-projection, and
 bounded two-process executable evidence with a matched-parent branch, but not
-the complete M3 reference client or accessibility evidence.
+the complete M3 reference client or human accessibility evidence.
 
 ### Current bounded terminal-text evidence
 
@@ -977,6 +981,8 @@ the complete M3 reference client or accessibility evidence.
   without ANSI styling, terminal I/O, or hidden-state lookup.
 - [x] Sanitize control characters in echoed user context and keep domain
   failures redacted to the bounded host error categories.
+- [x] Check representative output and command-loop error lines for stable
+  lowercase labels, newline structure, and absence of ANSI/control characters.
 - [ ] Validate complete interactive behavior, keyboard/focus behavior, and
   screen-reader semantics with human-oriented inspection.
 

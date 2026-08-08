@@ -95,6 +95,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.76 — 2026-08-08
+
+### Added
+
+- Added machine-checked representative CLI text-structure evidence for stable
+  lowercase labels, newline-delimited command-loop lines, and plain text without
+  ANSI/control characters.
+- Kept control-character sanitization and actor-valid projection boundaries in
+  the pure renderer while documenting the remaining human accessibility gap.
+
+### Known limits
+
+- Text-shape checks do not establish keyboard-only usability, focus behavior,
+  screen-reader semantics, human accessibility, or complete client behavior.
+
 ## 0.1.75 — 2026-08-08
 
 ### Added

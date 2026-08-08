@@ -212,3 +212,19 @@ canonical policy instead of duplicating it.
 - Prevention: Keep scenario construction at the application edge, keep errors
   path-free and stable, and require a focused process-status regression before
   adding another selectable fixture.
+
+## Separate text-shape evidence from human accessibility
+
+- Context: The pure renderer needed stronger evidence for a keyboard-first
+  adapter without pretending that a test can stand in for users or assistive
+  technology.
+- Symptom: A plain-text/no-ANSI assertion can be misread as a screen-reader or
+  keyboard usability result if the claim boundary is not explicit.
+- Cause: Structural output invariants and human interaction evidence answer
+  different questions and require different methods.
+- Resolution: Check stable lowercase labels, newline structure, and sanitized
+  control characters over a representative output/error transcript, while
+  leaving the existing stdin/stdout adapter unchanged and deferring only
+  terminal-specific prompts/focus plus human keyboard/screen-reader inspection.
+- Prevention: Name machine-checkable text shape separately from accessibility
+  validation in roadmap, QA, and handoff documents.

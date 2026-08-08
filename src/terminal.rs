@@ -411,9 +411,11 @@ fn window_name(window: ScenarioWindow) -> &'static str {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::command_loop::CliCommandLoop;
   use crate::host::CliScenarioHost;
   use crate::kernel::{DrawId, InputTrace, StreamId};
   use crate::lane::{LaneDamage, LaneExecutionInputs, LaneResolvedInputs, LaneWaveResult};
+  use std::io::Cursor;
 
   #[test]
   fn output_is_plain_labeled_text_for_empty_and_complete_states() {
@@ -489,6 +491,35 @@ mod tests {
   }
 
   #[test]
+  fn representative_transcript_has_plain_labeled_lines() {
+    let mut host = CliScenarioHost::fixture();
+    for command in [
+      "help",
+      "observe",
+      "message ping ally",
+      "contingency retreat if threat",
+      "plan contest",
+      "commit",
+      "advance",
+      "plan stabilize",
+      "commit",
+      "advance",
+      "debrief",
+      "quit",
+    ] {
+      let output = host.apply_line(command).expect("representative output");
+      assert_plain_labeled_lines(&render_output(&output));
+    }
+
+    let mut command_loop = CliCommandLoop::fixture();
+    let mut output = Vec::new();
+    command_loop
+      .run(Cursor::new("\nquit\n"), &mut output)
+      .expect("command-loop error transcript");
+    assert_plain_labeled_lines(&String::from_utf8(output).expect("plain UTF-8 transcript"));
+  }
+
+  #[test]
   fn errors_are_actionable_and_control_characters_are_sanitized() {
     let mut host = CliScenarioHost::fixture();
     let error = host
@@ -535,5 +566,28 @@ mod tests {
         LaneWaveResult::Advanced,
       ),
     )
+  }
+
+  fn assert_plain_labeled_lines(rendered: &str) {
+    assert!(!rendered.is_empty());
+    assert!(rendered.ends_with('\n'));
+    assert!(!rendered.contains('\u{1b}'));
+    assert!(
+      rendered
+        .chars()
+        .all(|character| !character.is_control() || character == '\n')
+    );
+    for line in rendered.lines() {
+      let (label, _) = line.split_once(": ").expect("stable line label");
+      let mut characters = label.chars();
+      assert!(
+        characters
+          .next()
+          .is_some_and(|character| character.is_ascii_lowercase())
+      );
+      assert!(characters.all(|character| {
+        character.is_ascii_lowercase() || character.is_ascii_digit() || character == '_'
+      }));
+    }
   }
 }

@@ -360,9 +360,9 @@ and an architecture update or ADR when it changes a consequential boundary.
 - M3 has typed command contracts, a bounded host fixture, replay-validated
   artifacts, an injected file store, a pure terminal-text projection, and a
   thin line-oriented fixture loop with explicit versioned fixture selection,
-  `--run-dir` wiring, and a matched-parent host branch projection; broader
-  scenario selection, regenerated/graph branching, and complete accessibility
-  evidence remain open.
+  `--run-dir` wiring, a matched-parent host branch projection, and
+  machine-checked labeled plain text; broader scenario selection,
+  regenerated/graph branching, and human accessibility evidence remain open.
 - M2 still lacks a communication system, full vision geometry, memory decay,
   automatic threat damage, no-choice host scheduling, adaptive pacing, a complete item/resource economy,
   external scenario serialization, a branch tree, and a broader debrief
