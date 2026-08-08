@@ -74,6 +74,13 @@ pub const MAX_SCRIPTED_AGENT_BATCH_RUN_BYTES: usize = 4096;
 /// Versioned identity for the bounded matched-observation sample report.
 pub const SCRIPTED_AGENT_MATCHED_SAMPLE_SCHEMA: &str = "m6-scripted-agent-matched-sample-v1";
 
+/// Versioned identity for the bounded matched-scenario sample set.
+pub const SCRIPTED_AGENT_MATCHED_SCENARIO_SAMPLE_SCHEMA: &str =
+  "m6-scripted-agent-matched-scenarios-v1";
+
+/// Maximum number of caller-supplied matched pairs in one sample set.
+pub const MAX_SCRIPTED_AGENT_MATCHED_SCENARIO_SAMPLES: usize = 4;
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum ScriptedAgentEvaluationRule {
   Threat,
@@ -575,6 +582,79 @@ impl ScriptedAgentMatchedSample {
 
   pub fn entries(&self) -> &[ScriptedAgentMatchedSampleEntry] {
     &self.entries
+  }
+}
+
+/// Bounded failures from matched-scenario sample-set composition.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentMatchedScenarioSampleError {
+  EmptySample,
+  SampleTooLarge { max: usize, actual: usize },
+  MismatchedObserver,
+  DuplicateObservationId,
+  Matched(ScriptedAgentMatchedSampleError),
+}
+
+/// Ordered actor-safe matched samples over caller-supplied observation pairs.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentMatchedScenarioSample {
+  schema: &'static str,
+  observer: ActorId,
+  samples: Vec<ScriptedAgentMatchedSample>,
+}
+
+impl ScriptedAgentMatchedScenarioSample {
+  /// Build a bounded sample set without generating scenarios or populations.
+  pub fn from_observations(
+    observations: &[[LanerObservation; 2]],
+    manifests: &[ScriptedAgentExperimentManifest],
+  ) -> Result<Self, ScriptedAgentMatchedScenarioSampleError> {
+    if observations.is_empty() {
+      return Err(ScriptedAgentMatchedScenarioSampleError::EmptySample);
+    }
+    if observations.len() > MAX_SCRIPTED_AGENT_MATCHED_SCENARIO_SAMPLES {
+      return Err(ScriptedAgentMatchedScenarioSampleError::SampleTooLarge {
+        max: MAX_SCRIPTED_AGENT_MATCHED_SCENARIO_SAMPLES,
+        actual: observations.len(),
+      });
+    }
+    let observer = observations[0][0].observer();
+    let mut observation_ids = Vec::with_capacity(observations.len() * 2);
+    for pair in observations {
+      if pair[0].observer() != pair[1].observer() || pair[0].observer() != observer {
+        return Err(ScriptedAgentMatchedScenarioSampleError::MismatchedObserver);
+      }
+      for observation in pair {
+        let observation_id = observation.observation_id();
+        if observation_ids.contains(&observation_id) {
+          return Err(ScriptedAgentMatchedScenarioSampleError::DuplicateObservationId);
+        }
+        observation_ids.push(observation_id);
+      }
+    }
+    let samples = observations
+      .iter()
+      .copied()
+      .map(|pair| ScriptedAgentMatchedSample::from_observations(pair, manifests))
+      .collect::<Result<Vec<_>, _>>()
+      .map_err(ScriptedAgentMatchedScenarioSampleError::Matched)?;
+    Ok(Self {
+      schema: SCRIPTED_AGENT_MATCHED_SCENARIO_SAMPLE_SCHEMA,
+      observer,
+      samples,
+    })
+  }
+
+  pub const fn schema(&self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn observer(&self) -> ActorId {
+    self.observer
+  }
+
+  pub fn samples(&self) -> &[ScriptedAgentMatchedSample] {
+    &self.samples
   }
 }
 
@@ -2158,6 +2238,135 @@ mod tests {
           actual: MAX_SCRIPTED_AGENT_BATCH_MANIFESTS + 1,
         }
       ))
+    );
+  }
+
+  #[test]
+  fn matched_scenario_sample_set_preserves_order_and_bounds() {
+    let initial = LaneSnapshot::initial();
+    let threat = LaneSnapshot::new(
+      initial.ruleset(),
+      initial.turn(),
+      LaneStatus::Open,
+      initial.player(),
+      initial.opponent(),
+      initial.wave(),
+      JungleThreatTruth::RiverSide,
+    );
+    let manifests = [
+      ScriptedAgentExperimentManifest::new(
+        ScriptedAgentProfile::cautious_v1(),
+        ScriptedAgentSeedBundle::new(19, StreamId::new(20), DrawId::new(21)),
+      ),
+      ScriptedAgentExperimentManifest::new(
+        ScriptedAgentProfile::yielding_v1(),
+        ScriptedAgentSeedBundle::new(22, StreamId::new(23), DrawId::new(24)),
+      ),
+    ];
+    let pairs = [
+      [
+        observe_player(&initial, ObservationId::new(70)).observation(),
+        observe_player(&threat, ObservationId::new(71)).observation(),
+      ],
+      [
+        observe_player(&initial, ObservationId::new(72)).observation(),
+        observe_player(&threat, ObservationId::new(73)).observation(),
+      ],
+    ];
+    let sample = ScriptedAgentMatchedScenarioSample::from_observations(&pairs, &manifests)
+      .expect("matched scenario sample builds");
+    assert_eq!(sample.schema(), "m6-scripted-agent-matched-scenarios-v1");
+    assert_eq!(sample.observer(), pairs[0][0].observer());
+    assert_eq!(sample.samples().len(), 2);
+    assert_eq!(sample.samples()[0].entries().len(), 2);
+    assert_eq!(
+      sample.samples()[0].entries()[0].profile_id(),
+      SCRIPTED_AGENT_PROFILE_ID
+    );
+    assert_eq!(
+      sample.samples()[0].entries()[1].profile_id(),
+      YIELDING_SCRIPTED_AGENT_PROFILE_ID
+    );
+    assert_eq!(
+      sample.samples()[0].entries()[0].seed_bundle(),
+      manifests[0].seed_bundle()
+    );
+    assert_eq!(
+      sample.samples()[0].entries()[1].seed_bundle(),
+      manifests[1].seed_bundle()
+    );
+    assert_eq!(
+      sample.samples()[0].observation_ids(),
+      &[ObservationId::new(70), ObservationId::new(71)]
+    );
+    assert_eq!(
+      sample.samples()[1].observation_ids(),
+      &[ObservationId::new(72), ObservationId::new(73)]
+    );
+    assert_eq!(
+      sample,
+      ScriptedAgentMatchedScenarioSample::from_observations(&pairs, &manifests)
+        .expect("matched scenario sample repeats")
+    );
+
+    let at_capacity = [
+      [
+        observe_player(&initial, ObservationId::new(80)).observation(),
+        observe_player(&threat, ObservationId::new(81)).observation(),
+      ],
+      [
+        observe_player(&initial, ObservationId::new(82)).observation(),
+        observe_player(&threat, ObservationId::new(83)).observation(),
+      ],
+      [
+        observe_player(&initial, ObservationId::new(84)).observation(),
+        observe_player(&threat, ObservationId::new(85)).observation(),
+      ],
+      [
+        observe_player(&initial, ObservationId::new(86)).observation(),
+        observe_player(&threat, ObservationId::new(87)).observation(),
+      ],
+    ];
+    let capacity_sample =
+      ScriptedAgentMatchedScenarioSample::from_observations(&at_capacity, &manifests)
+        .expect("inclusive sample cap runs");
+    assert_eq!(
+      capacity_sample.samples().len(),
+      MAX_SCRIPTED_AGENT_MATCHED_SCENARIO_SAMPLES
+    );
+    assert_eq!(
+      capacity_sample.samples()[3].observation_ids(),
+      &[ObservationId::new(86), ObservationId::new(87)]
+    );
+
+    assert_eq!(
+      ScriptedAgentMatchedScenarioSample::from_observations(&[], &manifests),
+      Err(ScriptedAgentMatchedScenarioSampleError::EmptySample)
+    );
+    let too_many = [pairs[0]; MAX_SCRIPTED_AGENT_MATCHED_SCENARIO_SAMPLES + 1];
+    assert_eq!(
+      ScriptedAgentMatchedScenarioSample::from_observations(&too_many, &manifests),
+      Err(ScriptedAgentMatchedScenarioSampleError::SampleTooLarge {
+        max: MAX_SCRIPTED_AGENT_MATCHED_SCENARIO_SAMPLES,
+        actual: MAX_SCRIPTED_AGENT_MATCHED_SCENARIO_SAMPLES + 1,
+      })
+    );
+    let mut mixed = pairs;
+    mixed[1][1].observer = ALLIED_AUTONOMOUS_ACTOR;
+    assert_eq!(
+      ScriptedAgentMatchedScenarioSample::from_observations(&mixed, &manifests),
+      Err(ScriptedAgentMatchedScenarioSampleError::MismatchedObserver)
+    );
+    let duplicate = [
+      pairs[0],
+      [
+        pairs[1][0],
+        observe_player(&threat, ObservationId::new(70)).observation(),
+      ],
+    ];
+    assert_eq!(
+      ScriptedAgentMatchedScenarioSample::from_observations(&duplicate, &manifests),
+      Err(ScriptedAgentMatchedScenarioSampleError::DuplicateObservationId)
     );
   }
 

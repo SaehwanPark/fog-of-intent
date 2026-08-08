@@ -1165,6 +1165,13 @@ transport-integrated sessions and broader protocol compatibility remain open.
   this deterministic in-process slice. The catalog is fixed metadata only; it
   does not revise manifest codecs, run storage, policy execution, or provider
   compatibility.
+- `ScriptedAgentMatchedScenarioSample` defines
+  `m6-scripted-agent-matched-scenarios-v1` for one to four caller-supplied
+  matched observation pairs. It requires one shared actor and globally unique
+  observation IDs, then composes the existing matched-sample reports in pair
+  order. This is bounded sensitivity composition only; scenario generation,
+  population sampling, distributional metrics, outcomes, persistence, and
+  provider/calibration behavior remain open.
 
 ## Future
 

@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.131`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.132`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1375,7 +1375,9 @@ representative replays, and an evidence-limited report.
   storage are delivered; decision/result persistence remains open.
 - [x] Add bounded caller-supplied matched-observation evidence; this slice does
   not choose scenarios or generate populations.
-- [ ] Add population generation, matched-scenario sampling, and distributional
+- [x] Add bounded caller-supplied matched-scenario sample sets; this composes
+  matched observations without generating scenarios or populations.
+- [ ] Add population generation, scenario selection, and distributional
   sampling evidence.
 - [x] Record applicable ruleset, scenario, scripted-policy, and profile version
   identities in a metadata-only catalog; prompt, model, tool-schema, and
@@ -1394,9 +1396,9 @@ representative replays, and an evidence-limited report.
 ### Deliverables
 
 - Experiment manifest schema and batch runner.
-- Versioned bounded cursor artifacts, matched-observation selected-intent
-  evidence, and an applicable version catalog; decision/result artifacts and
-  representative replays remain open.
+- Versioned bounded cursor artifacts, matched-observation and matched-scenario
+  selected-intent evidence, and an applicable version catalog; decision/result
+  artifacts and representative replays remain open.
 - Regression report template and threshold rationale.
 - CI or scheduled entry point only after runtime cost is measured.
 

@@ -934,3 +934,15 @@ canonical policy instead of duplicating it.
   provider-edge fields.
 - Prevention: Keep version metadata pure and separate from manifest execution,
   persistence, population sampling, and provider contracts.
+
+## Compose matched scenarios without generating them
+
+- Context: M6 needed more than one matched observation pair while scenario and
+  population generation remained unauthorized.
+- Symptom: Letting the sample set create scenarios would turn a comparison
+  helper into a hidden sampler and make its distribution claims ambiguous.
+- Resolution: Accept one to four caller-supplied pairs, require one actor and
+  globally distinct observation IDs, and compose the existing matched reports.
+- Prevention: Keep pair order and explicit inputs visible, and defer scenario
+  generation, populations, distributions, outcomes, and metrics to separate
+  evidence contracts.
