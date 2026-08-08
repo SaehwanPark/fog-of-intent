@@ -3727,6 +3727,7 @@ impl ScriptedAgentTallyReplayReference {
     candidate: ScriptedAgentMatchedScenarioTallyOutlierCandidate,
     records: &[ScriptedAgentReplayRecord],
   ) -> Result<Self, ScriptedAgentTallyReplayReferenceError> {
+    let mut matching_mismatch = false;
     for record in records {
       if record.profile().profile_id() != candidate.profile_id()
         || record.profile().evaluation_rule() != candidate.evaluation_rule()
@@ -3734,22 +3735,28 @@ impl ScriptedAgentTallyReplayReference {
       {
         continue;
       }
-      record
-        .replay()
-        .map_err(|_| ScriptedAgentTallyReplayReferenceError::DecisionMismatch)?;
-      return Ok(Self {
-        schema: SCRIPTED_AGENT_TALLY_REPLAY_REFERENCE_SCHEMA,
-        selection_rule: SCRIPTED_AGENT_TALLY_REPLAY_REFERENCE_RULE,
-        row_index: candidate.row_index(),
-        profile_id: candidate.profile_id(),
-        evaluation_rule: candidate.evaluation_rule(),
-        intent: candidate.intent(),
-        delta: candidate.delta(),
-        magnitude: candidate.magnitude(),
-        observation_id: record.observation_id(),
-      });
+      match record.replay() {
+        Ok(_) => {
+          return Ok(Self {
+            schema: SCRIPTED_AGENT_TALLY_REPLAY_REFERENCE_SCHEMA,
+            selection_rule: SCRIPTED_AGENT_TALLY_REPLAY_REFERENCE_RULE,
+            row_index: candidate.row_index(),
+            profile_id: candidate.profile_id(),
+            evaluation_rule: candidate.evaluation_rule(),
+            intent: candidate.intent(),
+            delta: candidate.delta(),
+            magnitude: candidate.magnitude(),
+            observation_id: record.observation_id(),
+          });
+        }
+        Err(ScriptedAgentReplayError::DecisionMismatch) => matching_mismatch = true,
+      }
     }
-    Err(ScriptedAgentTallyReplayReferenceError::NoMatchingReplay)
+    Err(if matching_mismatch {
+      ScriptedAgentTallyReplayReferenceError::DecisionMismatch
+    } else {
+      ScriptedAgentTallyReplayReferenceError::NoMatchingReplay
+    })
   }
 
   pub const fn schema(self) -> &'static str {
@@ -6836,6 +6843,12 @@ mod tests {
       .find(|candidate| candidate.intent() == LaneIntent::Stabilize)
       .expect("selected candidate exists")
       .score += 1;
+    let later_reference = ScriptedAgentTallyReplayReference::from_candidate_and_records(
+      candidate,
+      &[mismatched.clone(), first_match.clone()],
+    )
+    .expect("later verified matching replay is selected");
+    assert_eq!(later_reference.observation_id(), ObservationId::new(601));
     assert_eq!(
       ScriptedAgentTallyReplayReference::from_candidate_and_records(candidate, &[mismatched]),
       Err(ScriptedAgentTallyReplayReferenceError::DecisionMismatch)
