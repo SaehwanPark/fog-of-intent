@@ -20,6 +20,9 @@ pub const ACTOR_ACTION_SCHEMA: &str = "m5-actor-action-v1";
 /// Versioned line-oriented codec identity for the bounded DTOs.
 pub const ACTOR_PROTOCOL_CODEC_SCHEMA: &str = "m5-actor-codec-v1";
 
+/// Versioned actor-facing validation-error identity.
+pub const ACTOR_PROTOCOL_ERROR_SCHEMA: &str = "m5-actor-error-v1";
+
 /// Maximum encoded DTO size accepted by the bounded parser.
 pub const MAX_ACTOR_PROTOCOL_BYTES: usize = 4096;
 
@@ -348,6 +351,144 @@ pub enum ActorProtocolCodecError {
   InvalidValue,
 }
 
+/// Closed actor-facing validation-error categories.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ActorProtocolErrorCode {
+  OversizedInput,
+  UnexpectedLineCount,
+  UnknownField,
+  DuplicateField,
+  MissingField,
+  UnsupportedSchema,
+  InvalidValue,
+  ActorMismatch,
+  ObservationAlreadyOpen,
+  NoObservation,
+  StaleObservation,
+  DuplicateSubmission,
+  ClosedSession,
+}
+
+impl ActorProtocolErrorCode {
+  pub const fn id(self) -> &'static str {
+    match self {
+      Self::OversizedInput => "oversized_input",
+      Self::UnexpectedLineCount => "unexpected_line_count",
+      Self::UnknownField => "unknown_field",
+      Self::DuplicateField => "duplicate_field",
+      Self::MissingField => "missing_field",
+      Self::UnsupportedSchema => "unsupported_schema",
+      Self::InvalidValue => "invalid_value",
+      Self::ActorMismatch => "actor_mismatch",
+      Self::ObservationAlreadyOpen => "observation_already_open",
+      Self::NoObservation => "no_observation",
+      Self::StaleObservation => "stale_observation",
+      Self::DuplicateSubmission => "duplicate_submission",
+      Self::ClosedSession => "closed_session",
+    }
+  }
+}
+
+/// Deterministic caller guidance for one actor-facing validation failure.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ActorProtocolRepairHint {
+  RetryWithinSizeBound,
+  ResendExactPayload,
+  ResendCompletePayload,
+  UseSupportedSchema,
+  ResendValidPayload,
+  UseBoundActor,
+  SubmitCurrentAction,
+  RequestObservation,
+  RequestFreshObservation,
+  AwaitNextObservation,
+  StartNewSession,
+}
+
+impl ActorProtocolRepairHint {
+  pub const fn id(self) -> &'static str {
+    match self {
+      Self::RetryWithinSizeBound => "retry_within_size_bound",
+      Self::ResendExactPayload => "resend_exact_payload",
+      Self::ResendCompletePayload => "resend_complete_payload",
+      Self::UseSupportedSchema => "use_supported_schema",
+      Self::ResendValidPayload => "resend_valid_payload",
+      Self::UseBoundActor => "use_bound_actor",
+      Self::SubmitCurrentAction => "submit_current_action",
+      Self::RequestObservation => "request_observation",
+      Self::RequestFreshObservation => "request_fresh_observation",
+      Self::AwaitNextObservation => "await_next_observation",
+      Self::StartNewSession => "start_new_session",
+    }
+  }
+}
+
+/// Bounded actor-facing validation error with a deterministic repair hint.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ActorProtocolError {
+  schema: &'static str,
+  code: ActorProtocolErrorCode,
+  repair: ActorProtocolRepairHint,
+}
+
+impl ActorProtocolError {
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn code(self) -> ActorProtocolErrorCode {
+    self.code
+  }
+
+  pub const fn repair(self) -> ActorProtocolRepairHint {
+    self.repair
+  }
+
+  pub(crate) const fn new(code: ActorProtocolErrorCode, repair: ActorProtocolRepairHint) -> Self {
+    Self {
+      schema: ACTOR_PROTOCOL_ERROR_SCHEMA,
+      code,
+      repair,
+    }
+  }
+}
+
+impl ActorProtocolCodecError {
+  /// Project a codec failure without retaining input or parser details.
+  pub const fn to_actor_error(self) -> ActorProtocolError {
+    match self {
+      Self::Oversized => ActorProtocolError::new(
+        ActorProtocolErrorCode::OversizedInput,
+        ActorProtocolRepairHint::RetryWithinSizeBound,
+      ),
+      Self::UnexpectedLineCount { .. } => ActorProtocolError::new(
+        ActorProtocolErrorCode::UnexpectedLineCount,
+        ActorProtocolRepairHint::ResendExactPayload,
+      ),
+      Self::UnknownField => ActorProtocolError::new(
+        ActorProtocolErrorCode::UnknownField,
+        ActorProtocolRepairHint::ResendExactPayload,
+      ),
+      Self::DuplicateField => ActorProtocolError::new(
+        ActorProtocolErrorCode::DuplicateField,
+        ActorProtocolRepairHint::ResendExactPayload,
+      ),
+      Self::MissingField => ActorProtocolError::new(
+        ActorProtocolErrorCode::MissingField,
+        ActorProtocolRepairHint::ResendCompletePayload,
+      ),
+      Self::UnsupportedSchema => ActorProtocolError::new(
+        ActorProtocolErrorCode::UnsupportedSchema,
+        ActorProtocolRepairHint::UseSupportedSchema,
+      ),
+      Self::InvalidValue => ActorProtocolError::new(
+        ActorProtocolErrorCode::InvalidValue,
+        ActorProtocolRepairHint::ResendValidPayload,
+      ),
+    }
+  }
+}
+
 impl ActorProtocolIntent {
   fn parse_id(value: &str) -> Result<Self, ActorProtocolCodecError> {
     match value {
@@ -554,6 +695,58 @@ mod tests {
         actual: 6
       })
     );
+  }
+
+  #[test]
+  fn codec_errors_project_to_bounded_repair_hints() {
+    let cases = [
+      (
+        ActorProtocolCodecError::Oversized,
+        "oversized_input",
+        "retry_within_size_bound",
+      ),
+      (
+        ActorProtocolCodecError::UnexpectedLineCount {
+          expected: 4,
+          actual: 6,
+        },
+        "unexpected_line_count",
+        "resend_exact_payload",
+      ),
+      (
+        ActorProtocolCodecError::UnknownField,
+        "unknown_field",
+        "resend_exact_payload",
+      ),
+      (
+        ActorProtocolCodecError::DuplicateField,
+        "duplicate_field",
+        "resend_exact_payload",
+      ),
+      (
+        ActorProtocolCodecError::MissingField,
+        "missing_field",
+        "resend_complete_payload",
+      ),
+      (
+        ActorProtocolCodecError::UnsupportedSchema,
+        "unsupported_schema",
+        "use_supported_schema",
+      ),
+      (
+        ActorProtocolCodecError::InvalidValue,
+        "invalid_value",
+        "resend_valid_payload",
+      ),
+    ];
+    for (error, code, repair) in cases {
+      let projected = error.to_actor_error();
+      assert_eq!(projected.schema(), "m5-actor-error-v1");
+      assert_eq!(projected.code().id(), code);
+      assert_eq!(projected.repair().id(), repair);
+      let debug = format!("{projected:?}");
+      assert!(!debug.contains("input=") && !debug.contains("hash"));
+    }
   }
 
   #[test]
