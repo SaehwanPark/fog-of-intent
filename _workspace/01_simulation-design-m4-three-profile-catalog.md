@@ -25,4 +25,5 @@ matched initial observation exposes their distinct fixed preference.
 The test compares all three profiles on one identical initial observation,
 asserts shared candidates and rule identities, repeats each decision, and
 validates every request. This is a profile-plumbing comparison, not a claim
-about outcomes, balance, role realism, or human behavior.
+about outcomes, balance, role realism, or human behavior. Broader population
+and scenario metrics remain open.

@@ -872,6 +872,11 @@ open.
   profiles. Each row contains only profile/rule identity, selected intent and
   score, and a bounded candidate count tied to the same observer and
   observation ID; it does not expose state, hashes, or execution inputs.
+- `ScriptedAgentActionTallyReport` provides the versioned
+  `m4-scripted-agent-action-tally-v1` actor-safe aggregate over exactly two
+  observations. It exposes only profile/rule IDs, the shared observer, the
+  bounded observation count, and selected-intent counts; mixed observers are
+  rejected before report construction.
 - A matched initial observation selects `Stabilize`, `Contest`, and `Yield`
   for the cautious, risk-taking, and yielding profiles respectively, while all
   requests pass the existing lane validator. This demonstrates a reproducible
@@ -885,6 +890,11 @@ open.
   pressure as a bounded utility feature: it increases from 80 at pressure 0 to
   83 at pressure 3, while the selected intent and host-validation boundary are
   unchanged. This is one monotonic score check, not an outcome or balance claim.
+- Over the safe and RiverSide fixture observations, the tally records cautious
+  `Stabilize` once and `Withdraw` once, risk-taking `Contest` twice, and
+  yielding `Yield` twice. All six requests still pass the lane validator. This
+  is a two-observation action tally, not a population distribution or outcome
+  metric.
 - Focused tests cover the initial candidate set, visible-threat prioritization,
   host validation, repeated identical-observation reproducibility, the
   matched profile difference plus unavailable-intent rejection, and the

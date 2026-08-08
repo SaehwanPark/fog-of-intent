@@ -22,6 +22,9 @@ pub const YIELDING_SCRIPTED_AGENT_PROFILE_ID: &str = "yielding-laner-v1";
 /// Versioned actor-safe profile-comparison metric schema.
 pub const SCRIPTED_AGENT_METRICS_SCHEMA: &str = "m4-scripted-agent-metrics-v1";
 
+/// Versioned bounded selected-action tally schema.
+pub const SCRIPTED_AGENT_ACTION_TALLY_SCHEMA: &str = "m4-scripted-agent-action-tally-v1";
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum ScriptedAgentEvaluationRule {
   Threat,
@@ -286,6 +289,123 @@ impl ScriptedAgentComparisonReport {
   }
 }
 
+/// Bounded error returned when a tally mixes observations from different
+/// actor identities.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentActionTallyError {
+  MismatchedObserver,
+}
+
+/// One actor-safe selected-action tally for a catalog profile.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentActionTally {
+  profile_id: &'static str,
+  evaluation_rule: &'static str,
+  observation_count: u8,
+  stabilize_count: u8,
+  contest_count: u8,
+  yield_count: u8,
+  recall_count: u8,
+  withdraw_count: u8,
+}
+
+impl ScriptedAgentActionTally {
+  pub const fn profile_id(self) -> &'static str {
+    self.profile_id
+  }
+
+  pub const fn evaluation_rule(self) -> &'static str {
+    self.evaluation_rule
+  }
+
+  pub const fn observation_count(self) -> u8 {
+    self.observation_count
+  }
+
+  pub const fn stabilize_count(self) -> u8 {
+    self.stabilize_count
+  }
+
+  pub const fn contest_count(self) -> u8 {
+    self.contest_count
+  }
+
+  pub const fn yield_count(self) -> u8 {
+    self.yield_count
+  }
+
+  pub const fn recall_count(self) -> u8 {
+    self.recall_count
+  }
+
+  pub const fn withdraw_count(self) -> u8 {
+    self.withdraw_count
+  }
+}
+
+/// Bounded actor-safe selected-action counts over exactly two observations.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentActionTallyReport {
+  schema: &'static str,
+  observer: crate::kernel::ActorId,
+  entries: [ScriptedAgentActionTally; 3],
+}
+
+impl ScriptedAgentActionTallyReport {
+  /// Build a tally from two observations belonging to the same actor.
+  pub fn from_observations(
+    observations: [LanerObservation; 2],
+  ) -> Result<Self, ScriptedAgentActionTallyError> {
+    if observations[0].observer() != observations[1].observer() {
+      return Err(ScriptedAgentActionTallyError::MismatchedObserver);
+    }
+    Ok(Self {
+      schema: SCRIPTED_AGENT_ACTION_TALLY_SCHEMA,
+      observer: observations[0].observer(),
+      entries: [
+        Self::entry(ScriptedAgent::cautious_v1(), observations),
+        Self::entry(ScriptedAgent::risk_taking_v1(), observations),
+        Self::entry(ScriptedAgent::yielding_v1(), observations),
+      ],
+    })
+  }
+
+  pub const fn schema(&self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn observer(&self) -> crate::kernel::ActorId {
+    self.observer
+  }
+
+  pub const fn entries(&self) -> &[ScriptedAgentActionTally; 3] {
+    &self.entries
+  }
+
+  fn entry(agent: ScriptedAgent, observations: [LanerObservation; 2]) -> ScriptedAgentActionTally {
+    let mut tally = ScriptedAgentActionTally {
+      profile_id: agent.profile().profile_id(),
+      evaluation_rule: agent.profile().evaluation_rule(),
+      observation_count: 2,
+      stabilize_count: 0,
+      contest_count: 0,
+      yield_count: 0,
+      recall_count: 0,
+      withdraw_count: 0,
+    };
+    for observation in observations {
+      match agent.choose(observation).selected_intent() {
+        LaneIntent::Stabilize => tally.stabilize_count += 1,
+        LaneIntent::Contest => tally.contest_count += 1,
+        LaneIntent::Yield => tally.yield_count += 1,
+        LaneIntent::Recall => tally.recall_count += 1,
+        LaneIntent::Withdraw => tally.withdraw_count += 1,
+      }
+    }
+    tally
+  }
+}
+
 /// Deterministic scripted-agent policy with no random stream or hidden input.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub struct ScriptedAgent {
@@ -442,8 +562,8 @@ impl ScriptedAgent {
 mod tests {
   use super::*;
   use crate::lane::{
-    JungleThreatTruth, LaneIntent, LaneSnapshot, LaneStatus, ObservationId, WavePressure,
-    WaveState, observe_player, validate_lane_request,
+    ALLIED_AUTONOMOUS_ACTOR, JungleThreatTruth, LaneIntent, LaneSnapshot, LaneStatus,
+    ObservationId, WavePressure, WaveState, observe_player, validate_lane_request,
   };
 
   #[test]
@@ -740,6 +860,113 @@ mod tests {
     assert_eq!(
       report,
       ScriptedAgentComparisonReport::from_observation(observation)
+    );
+  }
+
+  #[test]
+  fn action_tally_reports_bounded_profile_counts_and_rejects_mixed_observers() {
+    let initial = LaneSnapshot::initial();
+    let threat_state = LaneSnapshot::new(
+      initial.ruleset(),
+      initial.turn(),
+      LaneStatus::Open,
+      initial.player(),
+      initial.opponent(),
+      initial.wave(),
+      JungleThreatTruth::RiverSide,
+    );
+    let safe_receipt = observe_player(&initial, ObservationId::new(14));
+    let threat_receipt = observe_player(&threat_state, ObservationId::new(14));
+    let report = ScriptedAgentActionTallyReport::from_observations([
+      safe_receipt.observation(),
+      threat_receipt.observation(),
+    ])
+    .expect("matched player observations tally");
+    assert_eq!(
+      report,
+      ScriptedAgentActionTallyReport::from_observations([
+        safe_receipt.observation(),
+        threat_receipt.observation(),
+      ])
+      .expect("repeated matched observations tally")
+    );
+
+    assert_eq!(
+      SCRIPTED_AGENT_ACTION_TALLY_SCHEMA,
+      "m4-scripted-agent-action-tally-v1"
+    );
+    assert_eq!(report.schema(), SCRIPTED_AGENT_ACTION_TALLY_SCHEMA);
+    assert_eq!(report.observer(), safe_receipt.observation().observer());
+    assert_eq!(report.entries().len(), 3);
+    assert_eq!(
+      report
+        .entries()
+        .iter()
+        .map(|entry| entry.profile_id())
+        .collect::<Vec<_>>(),
+      vec![
+        SCRIPTED_AGENT_PROFILE_ID,
+        RISK_TAKING_SCRIPTED_AGENT_PROFILE_ID,
+        YIELDING_SCRIPTED_AGENT_PROFILE_ID
+      ]
+    );
+    assert_eq!(
+      report
+        .entries()
+        .iter()
+        .map(|entry| entry.evaluation_rule())
+        .collect::<Vec<_>>(),
+      vec![
+        "threat-first-pressure-aware-fixed-score-v1",
+        "contest-first-fixed-score-v1",
+        "yield-first-fixed-score-v1"
+      ]
+    );
+    let cautious = report.entries()[0];
+    assert_eq!(cautious.observation_count(), 2);
+    assert_eq!(cautious.stabilize_count(), 1);
+    assert_eq!(cautious.withdraw_count(), 1);
+    assert_eq!(cautious.contest_count(), 0);
+    assert_eq!(cautious.yield_count(), 0);
+    assert_eq!(cautious.recall_count(), 0);
+    let risk_taking = report.entries()[1];
+    assert_eq!(risk_taking.contest_count(), 2);
+    assert_eq!(risk_taking.stabilize_count(), 0);
+    assert_eq!(risk_taking.withdraw_count(), 0);
+    let yielding = report.entries()[2];
+    assert_eq!(yielding.yield_count(), 2);
+    assert_eq!(yielding.stabilize_count(), 0);
+    assert_eq!(yielding.withdraw_count(), 0);
+
+    for agent in [
+      ScriptedAgent::cautious_v1(),
+      ScriptedAgent::risk_taking_v1(),
+      ScriptedAgent::yielding_v1(),
+    ] {
+      validate_lane_request(
+        &initial,
+        &safe_receipt,
+        &agent.choose(safe_receipt.observation()).request(),
+      )
+      .expect("safe tally request is legal");
+      validate_lane_request(
+        &threat_state,
+        &threat_receipt,
+        &agent.choose(threat_receipt.observation()).request(),
+      )
+      .expect("threat tally request is legal");
+    }
+
+    let mixed_observer = LanerObservation {
+      observer: ALLIED_AUTONOMOUS_ACTOR,
+      ..safe_receipt.observation()
+    };
+    assert_eq!(
+      ScriptedAgentActionTallyReport::from_observations([
+        safe_receipt.observation(),
+        mixed_observer,
+      ]),
+      Err(ScriptedAgentActionTallyError::MismatchedObserver)
     );
   }
 

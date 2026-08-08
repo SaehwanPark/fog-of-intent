@@ -24,5 +24,5 @@ same stable candidate order and alternative scores.
 The matched initial observation proves that profile rule identity can change a
 decision while information and host validation remain constant. It does not
 prove that either preference improves outcomes, models people, or generalizes
-to other scenarios. Population comparisons, metrics, memory, communication,
-random streams, and external adapters remain deferred.
+to other scenarios. Population comparisons, outcome metrics, memory,
+communication, random streams, and external adapters remain deferred.
