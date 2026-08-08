@@ -132,6 +132,9 @@ outside transition, host history, and durable persistence authority.
 `ScriptedAgentExperimentManifest` records the bounded fixture, profile/rule
 identities, and explicit policy seed for M6 reproducibility; it does not run
 agents, sample populations, or own experiment execution.
+`ScriptedAgentBatchRunner` sequences at most 16 such seeded decisions over one
+actor-visible observation in process; it does not persist runs or own
+transition/history authority.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

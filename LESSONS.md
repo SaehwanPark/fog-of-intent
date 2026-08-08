@@ -31,6 +31,17 @@ canonical policy instead of duplicating it.
   separate contracts with their own evidence rather than expanding metadata
   into execution authority.
 
+## Cap local batches before policy evaluation
+
+- Context: M6 needed a deterministic runner before resumable storage or
+  population sampling was authorized.
+- Symptom: An unbounded manifest list would turn a convenience helper into an
+  accidental batch scheduler and make resource behavior uninspectable.
+- Resolution: `ScriptedAgentBatchRunner` rejects empty input and caps one
+  synchronous ordered batch at 16 manifests before constructing decisions.
+- Prevention: Keep batch bounds explicit and add persistence, sampling, and
+  scheduling as separate contracts with separate evidence.
+
 ## Formatter defaults do not establish project policy
 
 - Context: The repository had a passing `cargo fmt --check` but no formatter or
