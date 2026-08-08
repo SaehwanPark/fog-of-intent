@@ -95,6 +95,22 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.72 — 2026-08-08
+
+### Added
+
+- Added the injected dependency-free `CliRunStore` for bounded host artifacts.
+  It validates run IDs, bounds reads/writes, and replaces final files through a
+  same-directory temporary write plus rename.
+- Added fresh-host file round-trip, replacement, missing/malformed/oversized,
+  and bounded host-error evidence while retaining an in-memory default fixture.
+
+### Known limits
+
+- The binary does not yet select a run directory; locking, fsync/crash
+  recovery, scenario selection, branch execution, and accessibility evidence
+  remain open.
+
 ## 0.1.71 — 2026-08-08
 
 ### Added

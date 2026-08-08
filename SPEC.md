@@ -733,9 +733,10 @@ playability, or human-experience evidence.
 
 ### M3 — CLI grammar foundation — 2026-08-06
 
-**Status:** Bounded grammar, replay-validated host artifacts, pure terminal
-text, and a thin fixture command loop delivered; durable file storage, scenario
-selection, and complete accessibility evidence remain open.
+**Status:** Bounded grammar, replay-validated host artifacts, injected file
+storage, pure terminal text, and a thin fixture command loop delivered; binary
+store wiring, scenario selection, and complete accessibility evidence remain
+open.
 
 - `src/cli.rs` defines stable lowercase command identities and borrowed
   payloads for the planned in-session verbs.
@@ -804,7 +805,8 @@ selection, and complete accessibility evidence remain open.
   two-window scenario, and returns actor-valid observation/history, outcome,
   replay, and debrief projections while keeping true-state snapshots and hashes
   private. `src/host_artifact.rs` gives save/load a versioned, replay-validated
-  in-process text artifact; durable file storage is not implemented.
+  in-process text artifact and an injected `CliRunStore` from
+  `src/run_store.rs`; the binary does not yet select a run directory.
 - Host tests cover staged message/plan/contingency text, pre-commit undo,
   commit/advance, artifact save/load and divergent-input rejection, replay
   verification, debrief, quit, malformed plans, unsupported branches, and
@@ -812,7 +814,8 @@ selection, and complete accessibility evidence remain open.
   output/error variant, control character sanitization, and bounded labels. The
   fixture command loop covers stdin/stdout recovery and quit/end-of-input
   behavior. Durable backend, scenario selection, branch execution, and human
-  keyboard/screen-reader evidence remain unimplemented.
+  keyboard/screen-reader evidence remain unimplemented. Store locking,
+  fsync/crash recovery, and binary store wiring remain open.
 
 ## Future
 

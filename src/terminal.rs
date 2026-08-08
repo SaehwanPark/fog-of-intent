@@ -228,6 +228,9 @@ pub fn render_error(error: &CliHostError<'_>) -> String {
     CliHostError::ScenarioComplete => {
       "scenario is complete; load a saved run or start a new one".to_owned()
     }
+    CliHostError::StorageUnavailable => {
+      "saved run storage is unavailable; check the configured run directory".to_owned()
+    }
   };
   format!("error: {message}")
 }
@@ -449,6 +452,8 @@ mod tests {
     assert!(empty.contains("enter a command"));
     let boundary = render_error(&CliHostError::CommittedBoundary { verb: "plan" });
     assert!(boundary.contains("advance first"));
+    let storage = render_error(&CliHostError::StorageUnavailable);
+    assert!(storage.contains("configured run directory"));
 
     let mut malformed_host = CliScenarioHost::new([malformed_inputs(), malformed_inputs()]);
     malformed_host

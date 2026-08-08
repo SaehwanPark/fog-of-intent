@@ -17,6 +17,7 @@ use crate::lane::{
   LaneWaveResult, ObservationId, PLAYER_LANER, ScenarioDebriefReport, ScenarioWindow,
   build_scenario_debrief, observe_player,
 };
+use crate::run_store::{CliRunStore, CliRunStoreError};
 
 /// Versioned contract for the bounded synchronous host fixture.
 pub const CLI_HOST_SCHEMA: &str = "m3-cli-host-v1";
@@ -100,6 +101,7 @@ pub enum CliHostError<'a> {
   ReplayRejected,
   DebriefUnavailable,
   ScenarioComplete,
+  StorageUnavailable,
 }
 
 /// A bounded host for the existing deterministic two-window lane scenario.
@@ -112,6 +114,7 @@ pub struct CliScenarioHost {
   draft: HostDraft,
   committed_intent: Option<LaneIntent>,
   saved: Option<SavedRun>,
+  store: Option<CliRunStore>,
   closed: bool,
 }
 
@@ -129,6 +132,7 @@ impl CliScenarioHost {
       },
       committed_intent: None,
       saved: None,
+      store: None,
       closed: false,
     }
   }
@@ -139,6 +143,24 @@ impl CliScenarioHost {
       fixture_inputs(1, LaneWaveResult::Advanced, 1),
       fixture_inputs(0, LaneWaveResult::Held, 2),
     ])
+  }
+
+  /// Build a deterministic fixture host backed by an explicit artifact store.
+  pub fn fixture_with_store(store: CliRunStore) -> Self {
+    Self::with_store(
+      [
+        fixture_inputs(1, LaneWaveResult::Advanced, 1),
+        fixture_inputs(0, LaneWaveResult::Held, 2),
+      ],
+      store,
+    )
+  }
+
+  /// Build a host with explicit inputs and an injected artifact store.
+  pub fn with_store(execution_inputs: [LaneResolvedInputs; 2], store: CliRunStore) -> Self {
+    let mut host = Self::new(execution_inputs);
+    host.store = Some(store);
+    host
   }
 
   /// Return the stable host schema identifier.
@@ -276,15 +298,8 @@ impl CliScenarioHost {
       CliProcessRequest::Replay { run_id } => {
         let (run_id, records) = if let Some(run_id) = run_id {
           let requested = run_id.as_str();
-          let saved = self
-            .saved
-            .as_ref()
-            .filter(|saved| saved.run_id == requested)
-            .ok_or_else(|| CliHostError::RunNotFound {
-              run_id: requested.to_owned(),
-            })?;
-          let artifact =
-            CliHostArtifact::decode(&saved.artifact).map_err(|_| CliHostError::ReplayRejected)?;
+          let artifact = CliHostArtifact::decode(&self.load_artifact(requested)?)
+            .map_err(|_| CliHostError::ReplayRejected)?;
           if artifact.run_id() != requested {
             return Err(CliHostError::ReplayRejected);
           }
@@ -315,6 +330,11 @@ impl CliScenarioHost {
         let run_id = run_id.as_str().to_owned();
         let artifact = CliHostArtifact::encode(&run_id, &self.history)
           .map_err(|_| CliHostError::ReplayRejected)?;
+        if let Some(store) = self.store.as_ref() {
+          store
+            .save(&run_id, &artifact)
+            .map_err(|_| CliHostError::StorageUnavailable)?;
+        }
         self.saved = Some(SavedRun {
           run_id: run_id.clone(),
           artifact,
@@ -326,15 +346,8 @@ impl CliScenarioHost {
       }
       CliSessionRequest::Load { run_id } => {
         let requested = run_id.as_str();
-        let saved = self
-          .saved
-          .as_ref()
-          .filter(|saved| saved.run_id == requested)
-          .ok_or_else(|| CliHostError::RunNotFound {
-            run_id: requested.to_owned(),
-          })?;
-        let artifact =
-          CliHostArtifact::decode(&saved.artifact).map_err(|_| CliHostError::ReplayRejected)?;
+        let artifact = CliHostArtifact::decode(&self.load_artifact(requested)?)
+          .map_err(|_| CliHostError::ReplayRejected)?;
         if artifact.run_id() != requested {
           return Err(CliHostError::ReplayRejected);
         }
@@ -369,6 +382,27 @@ impl CliScenarioHost {
         Ok(CliHostOutput::Quit)
       }
     }
+  }
+
+  fn load_artifact(&self, run_id: &str) -> Result<String, CliHostError<'static>> {
+    if let Some(store) = self.store.as_ref() {
+      return store.load(run_id).map_err(|error| match error {
+        CliRunStoreError::Read {
+          kind: std::io::ErrorKind::NotFound,
+        } => CliHostError::RunNotFound {
+          run_id: run_id.to_owned(),
+        },
+        _ => CliHostError::StorageUnavailable,
+      });
+    }
+    self
+      .saved
+      .as_ref()
+      .filter(|saved| saved.run_id == run_id)
+      .map(|saved| saved.artifact.clone())
+      .ok_or_else(|| CliHostError::RunNotFound {
+        run_id: run_id.to_owned(),
+      })
   }
 
   fn restore_artifact(
@@ -500,6 +534,17 @@ fn fixture_inputs(
 #[cfg(test)]
 mod tests {
   use super::*;
+  use std::sync::atomic::{AtomicU64, Ordering};
+
+  static NEXT_STORE_ROOT: AtomicU64 = AtomicU64::new(0);
+
+  fn temporary_store_root() -> std::path::PathBuf {
+    let id = NEXT_STORE_ROOT.fetch_add(1, Ordering::Relaxed);
+    std::env::temp_dir().join(format!(
+      "fog-of-intent-host-store-{}-{id}",
+      std::process::id()
+    ))
+  }
 
   #[test]
   fn fixture_transcript_completes_save_load_replay_and_debrief() {
@@ -654,6 +699,69 @@ mod tests {
         "tampered {field} must fail closed"
       );
     }
+  }
+
+  #[test]
+  fn file_store_round_trip_survives_a_fresh_host() {
+    let root = temporary_store_root();
+    let store = CliRunStore::new(&root);
+    let mut source = CliScenarioHost::fixture_with_store(store.clone());
+    for command in ["plan contest", "commit", "advance", "save first-window"] {
+      source.apply_line(command).expect("source store command");
+    }
+    source
+      .apply_line("plan stabilize")
+      .expect("second-window draft");
+    source.apply_line("commit").expect("second-window commit");
+    source.apply_line("advance").expect("second-window advance");
+
+    let mut fresh = CliScenarioHost::fixture_with_store(store);
+    assert_eq!(
+      fresh.apply_line("load first-window"),
+      Ok(CliHostOutput::Loaded {
+        run_id: "first-window".to_owned(),
+        records: 1
+      })
+    );
+    assert_eq!(fresh.record_count(), 1);
+    assert_eq!(
+      fresh.apply_line("replay first-window"),
+      Ok(CliHostOutput::ReplayVerified {
+        run_id: Some("first-window".to_owned()),
+        records: 1
+      })
+    );
+    let _ = std::fs::remove_dir_all(root);
+  }
+
+  #[test]
+  fn file_store_failure_is_bounded_at_the_host_boundary() {
+    let root = temporary_store_root();
+    std::fs::write(&root, "not a directory").expect("root fixture");
+    let mut host = CliScenarioHost::fixture_with_store(CliRunStore::new(&root));
+    assert_eq!(
+      host.apply_line("save run"),
+      Err(CliHostError::StorageUnavailable)
+    );
+    let _ = std::fs::remove_file(root);
+  }
+
+  #[test]
+  fn file_store_tampering_is_rejected_before_history_replacement() {
+    let root = temporary_store_root();
+    let store = CliRunStore::new(&root);
+    let mut source = CliScenarioHost::fixture_with_store(store.clone());
+    source.apply_line("save run").expect("save fixture");
+    std::fs::write(root.join("run.foi-artifact"), "malformed").expect("tampered artifact");
+
+    let mut fresh = CliScenarioHost::fixture_with_store(store);
+    assert_eq!(fresh.record_count(), 0);
+    assert_eq!(
+      fresh.apply_line("load run"),
+      Err(CliHostError::ReplayRejected)
+    );
+    assert_eq!(fresh.record_count(), 0);
+    let _ = std::fs::remove_dir_all(root);
   }
 
   #[test]

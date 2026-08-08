@@ -155,3 +155,17 @@ canonical policy instead of duplicating it.
 - Prevention: Treat artifacts as compatibility contracts, validate them before
   replacing host history, and keep filesystem placement/atomicity as a separate
   outer-edge concern.
+
+## Inject file storage instead of hiding a default directory
+
+- Context: The host needed durable artifact support without making the fixture
+  binary choose a user directory or changing command-loop determinism.
+- Symptom: A global or implicit path would make tests environment-dependent and
+  turn an adapter convenience into an unreviewed deployment policy.
+- Cause: Persistence configuration was being conflated with the host's
+  simulation and command contracts.
+- Resolution: Inject `CliRunStore` explicitly, validate IDs before path joins,
+  bound file size, and replace artifacts through a same-directory temporary
+  rename while retaining an in-memory default.
+- Prevention: Keep directory selection at the application edge and document
+  locking, fsync/crash recovery, and binary wiring as separate evidence gates.
