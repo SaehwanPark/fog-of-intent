@@ -898,3 +898,15 @@ canonical policy instead of duplicating it.
   `ActorDebriefDto` projection.
 - Prevention: Keep saved summary retrieval as a thin verified adapter and leave
   detailed causal review and durable replay records behind separate contracts.
+
+## Bind resumable cursors to the complete visible input
+
+- Context: A deterministic batch can be split across a persisted cursor, but
+  the caller supplies the observation and manifests again when resuming.
+- Symptom: Storing only a completed count allows a changed observation or
+  reordered/retuned manifest list to continue under an apparently valid cursor.
+- Resolution: Fingerprint the actor-visible observation and ordered manifest
+  metadata in a versioned bounded checkpoint; reject mismatches before policy
+  evaluation and persist only the cursor through the existing file-store edge.
+- Prevention: Keep decision/result persistence and crash recovery separate, and
+  never use a cursor as a substitute for authoritative simulation history.

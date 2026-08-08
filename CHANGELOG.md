@@ -98,6 +98,22 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.129 — 2026-08-08
+
+### Added
+
+- Added `m6-scripted-agent-batch-run-v1`, a bounded checkpoint codec that binds
+  an ordered manifest batch and actor-visible observation to a resumable cursor.
+- Added `ScriptedAgentBatchRunner::run_next` and the injected
+  `ScriptedAgentBatchRunStore` for deterministic chunk resume without storing
+  decisions or acquiring simulation authority.
+- Added focused codec, mismatch, completion, and save/load cursor evidence.
+
+### Known limits
+
+- Decision/result persistence, crash diagnostics, populations, sampling,
+  metrics, report export, providers, and calibration remain open.
+
 ## 0.1.128 — 2026-08-08
 
 ### Added

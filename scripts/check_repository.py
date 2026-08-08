@@ -64,6 +64,7 @@ CORE_RUST_FILES = (
 CORE_EDGE_RUST_FILES = frozenset(
   {
     "src/cli.rs",
+    "src/agent_batch_store.rs",
     "src/command_loop.rs",
     "src/host.rs",
     "src/host_artifact.rs",

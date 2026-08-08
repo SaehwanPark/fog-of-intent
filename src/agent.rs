@@ -7,8 +7,14 @@
 //! ties from an explicit policy bundle. It never reads true state, resolves
 //! execution inputs, or owns a transition.
 
-use crate::kernel::{DrawId, InputTrace, StreamId};
-use crate::lane::{LaneIntent, LaneIntentRequest, LanerObservation};
+use std::hash::Hasher;
+
+use crate::kernel::{ActorId, DrawId, InputTrace, StreamId};
+use crate::lane::{
+  HiddenValue, JungleThreatRegion, LaneAbortCondition, LaneActorRole, LaneCommitment,
+  LaneFallbackBehavior, LaneIntent, LaneIntentRequest, LanePingSignal, LanePosition,
+  LaneTargetFocus, LanerObservation, ObservationId,
+};
 
 /// Versioned identity for the first scripted-agent policy boundary.
 pub const SCRIPTED_AGENT_SCHEMA: &str = "m4-scripted-agent-v1";
@@ -48,6 +54,12 @@ pub const MAX_SCRIPTED_AGENT_MANIFEST_BYTES: usize = 4096;
 
 /// Maximum number of manifests evaluated by one in-process batch.
 pub const MAX_SCRIPTED_AGENT_BATCH_MANIFESTS: usize = 16;
+
+/// Versioned identity for a bounded resumable batch cursor.
+pub const SCRIPTED_AGENT_BATCH_RUN_SCHEMA: &str = "m6-scripted-agent-batch-run-v1";
+
+/// Maximum encoded checkpoint size before parsing or allocation.
+pub const MAX_SCRIPTED_AGENT_BATCH_RUN_BYTES: usize = 4096;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum ScriptedAgentEvaluationRule {
@@ -361,6 +373,196 @@ pub enum ScriptedAgentBatchError {
   BatchTooLarge { max: usize, actual: usize },
 }
 
+/// Bounded failures from checkpoint encoding and decoding.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentBatchCheckpointError {
+  Oversized,
+  UnexpectedLineCount { expected: usize, actual: usize },
+  UnknownField,
+  DuplicateField,
+  MissingField,
+  UnsupportedSchema,
+  InvalidValue,
+}
+
+/// Bounded failures from chunked batch execution and checkpoint matching.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentBatchRunError {
+  Batch(ScriptedAgentBatchError),
+  InputMismatch,
+  ChunkSizeZero,
+}
+
+/// A versioned cursor for resuming one bounded manifest batch.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentBatchCheckpoint {
+  schema: &'static str,
+  observer: ActorId,
+  observation_id: ObservationId,
+  manifest_count: u8,
+  completed_count: u8,
+  input_fingerprint: u64,
+}
+
+impl ScriptedAgentBatchCheckpoint {
+  /// Start a cursor for one actor-visible observation and ordered manifest list.
+  pub fn new(
+    observation: LanerObservation,
+    manifests: &[ScriptedAgentExperimentManifest],
+  ) -> Result<Self, ScriptedAgentBatchError> {
+    validate_batch(manifests)?;
+    Ok(Self {
+      schema: SCRIPTED_AGENT_BATCH_RUN_SCHEMA,
+      observer: observation.observer(),
+      observation_id: observation.observation_id(),
+      manifest_count: u8::try_from(manifests.len()).expect("batch cap fits in u8"),
+      completed_count: 0,
+      input_fingerprint: batch_input_fingerprint(observation, manifests),
+    })
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn observer(self) -> ActorId {
+    self.observer
+  }
+
+  pub const fn observation_id(self) -> ObservationId {
+    self.observation_id
+  }
+
+  pub const fn manifest_count(self) -> u8 {
+    self.manifest_count
+  }
+
+  pub const fn completed_count(self) -> u8 {
+    self.completed_count
+  }
+
+  pub const fn input_fingerprint(self) -> u64 {
+    self.input_fingerprint
+  }
+
+  pub const fn is_complete(self) -> bool {
+    self.completed_count == self.manifest_count
+  }
+
+  /// Encode only bounded cursor and input-binding metadata.
+  pub fn encode(self) -> String {
+    format!(
+      "schema={}\nobserver={}\nobservation_id={}\nmanifest_count={}\ncompleted_count={}\ninput_fingerprint={}\n",
+      self.schema,
+      self.observer.value(),
+      self.observation_id.value(),
+      self.manifest_count,
+      self.completed_count,
+      self.input_fingerprint,
+    )
+  }
+
+  /// Decode a cursor without executing policy or touching the filesystem.
+  pub fn decode(input: &str) -> Result<Self, ScriptedAgentBatchCheckpointError> {
+    if input.len() > MAX_SCRIPTED_AGENT_BATCH_RUN_BYTES {
+      return Err(ScriptedAgentBatchCheckpointError::Oversized);
+    }
+    let lines = input.lines().collect::<Vec<_>>();
+    if lines.len() > 6 {
+      return Err(ScriptedAgentBatchCheckpointError::UnexpectedLineCount {
+        expected: 6,
+        actual: lines.len(),
+      });
+    }
+    let mut fields = Vec::with_capacity(6);
+    for line in lines {
+      let (key, value) = line
+        .split_once('=')
+        .ok_or(ScriptedAgentBatchCheckpointError::InvalidValue)?;
+      if key.is_empty() || value.is_empty() {
+        return Err(ScriptedAgentBatchCheckpointError::InvalidValue);
+      }
+      fields.push((key, value));
+    }
+    let mut schema = None;
+    let mut observer = None;
+    let mut observation_id = None;
+    let mut manifest_count = None;
+    let mut completed_count = None;
+    let mut input_fingerprint = None;
+    for (key, value) in fields {
+      let slot = match key {
+        "schema" => &mut schema,
+        "observer" => &mut observer,
+        "observation_id" => &mut observation_id,
+        "manifest_count" => &mut manifest_count,
+        "completed_count" => &mut completed_count,
+        "input_fingerprint" => &mut input_fingerprint,
+        _ => return Err(ScriptedAgentBatchCheckpointError::UnknownField),
+      };
+      if slot.is_some() {
+        return Err(ScriptedAgentBatchCheckpointError::DuplicateField);
+      }
+      *slot = Some(value);
+    }
+    if schema != Some(SCRIPTED_AGENT_BATCH_RUN_SCHEMA) {
+      return Err(ScriptedAgentBatchCheckpointError::UnsupportedSchema);
+    }
+    let observer = observer
+      .ok_or(ScriptedAgentBatchCheckpointError::MissingField)?
+      .parse::<u8>()
+      .map_err(|_| ScriptedAgentBatchCheckpointError::InvalidValue)?;
+    let observation_id = observation_id
+      .ok_or(ScriptedAgentBatchCheckpointError::MissingField)?
+      .parse::<u64>()
+      .map_err(|_| ScriptedAgentBatchCheckpointError::InvalidValue)?;
+    let manifest_count = manifest_count
+      .ok_or(ScriptedAgentBatchCheckpointError::MissingField)?
+      .parse::<u8>()
+      .map_err(|_| ScriptedAgentBatchCheckpointError::InvalidValue)?;
+    let completed_count = completed_count
+      .ok_or(ScriptedAgentBatchCheckpointError::MissingField)?
+      .parse::<u8>()
+      .map_err(|_| ScriptedAgentBatchCheckpointError::InvalidValue)?;
+    let input_fingerprint = input_fingerprint
+      .ok_or(ScriptedAgentBatchCheckpointError::MissingField)?
+      .parse::<u64>()
+      .map_err(|_| ScriptedAgentBatchCheckpointError::InvalidValue)?;
+    if !(1..=MAX_SCRIPTED_AGENT_BATCH_MANIFESTS).contains(&usize::from(manifest_count))
+      || completed_count > manifest_count
+    {
+      return Err(ScriptedAgentBatchCheckpointError::InvalidValue);
+    }
+    Ok(Self {
+      schema: SCRIPTED_AGENT_BATCH_RUN_SCHEMA,
+      observer: ActorId::new(observer),
+      observation_id: ObservationId::new(observation_id),
+      manifest_count,
+      completed_count,
+      input_fingerprint,
+    })
+  }
+
+  fn matches(
+    self,
+    observation: LanerObservation,
+    manifests: &[ScriptedAgentExperimentManifest],
+  ) -> bool {
+    self.schema == SCRIPTED_AGENT_BATCH_RUN_SCHEMA
+      && self.observer == observation.observer()
+      && self.observation_id == observation.observation_id()
+      && usize::from(self.manifest_count) == manifests.len()
+      && self.input_fingerprint == batch_input_fingerprint(observation, manifests)
+  }
+
+  fn with_completed_count(self, completed_count: usize) -> Self {
+    Self {
+      completed_count: u8::try_from(completed_count).expect("batch cap fits in u8"),
+      ..self
+    }
+  }
+}
+
 /// Deterministic in-process evaluation of declared scripted-agent manifests.
 pub struct ScriptedAgentBatchRunner;
 
@@ -370,15 +572,35 @@ impl ScriptedAgentBatchRunner {
     observation: LanerObservation,
     manifests: &[ScriptedAgentExperimentManifest],
   ) -> Result<Vec<ScriptedAgentDecision>, ScriptedAgentBatchError> {
-    if manifests.is_empty() {
-      return Err(ScriptedAgentBatchError::EmptyBatch);
+    validate_batch(manifests)?;
+    Ok(Self::evaluate_range(observation, manifests))
+  }
+
+  /// Evaluate one bounded remaining chunk and return its advanced cursor.
+  pub fn run_next(
+    observation: LanerObservation,
+    manifests: &[ScriptedAgentExperimentManifest],
+    checkpoint: ScriptedAgentBatchCheckpoint,
+    chunk_size: usize,
+  ) -> Result<(Vec<ScriptedAgentDecision>, ScriptedAgentBatchCheckpoint), ScriptedAgentBatchRunError>
+  {
+    if chunk_size == 0 {
+      return Err(ScriptedAgentBatchRunError::ChunkSizeZero);
     }
-    if manifests.len() > MAX_SCRIPTED_AGENT_BATCH_MANIFESTS {
-      return Err(ScriptedAgentBatchError::BatchTooLarge {
-        max: MAX_SCRIPTED_AGENT_BATCH_MANIFESTS,
-        actual: manifests.len(),
-      });
+    validate_batch(manifests).map_err(ScriptedAgentBatchRunError::Batch)?;
+    if !checkpoint.matches(observation, manifests) {
+      return Err(ScriptedAgentBatchRunError::InputMismatch);
     }
+    let start = usize::from(checkpoint.completed_count);
+    let end = start.saturating_add(chunk_size).min(manifests.len());
+    let decisions = Self::evaluate_range(observation, &manifests[start..end]);
+    Ok((decisions, checkpoint.with_completed_count(end)))
+  }
+
+  fn evaluate_range(
+    observation: LanerObservation,
+    manifests: &[ScriptedAgentExperimentManifest],
+  ) -> Vec<ScriptedAgentDecision> {
     let mut decisions = Vec::with_capacity(manifests.len());
     for manifest in manifests {
       let agent = ScriptedAgent {
@@ -386,7 +608,281 @@ impl ScriptedAgentBatchRunner {
       };
       decisions.push(agent.choose_with_seed(observation, manifest.seed_bundle()));
     }
-    Ok(decisions)
+    decisions
+  }
+}
+
+fn validate_batch(
+  manifests: &[ScriptedAgentExperimentManifest],
+) -> Result<(), ScriptedAgentBatchError> {
+  if manifests.is_empty() {
+    return Err(ScriptedAgentBatchError::EmptyBatch);
+  }
+  if manifests.len() > MAX_SCRIPTED_AGENT_BATCH_MANIFESTS {
+    return Err(ScriptedAgentBatchError::BatchTooLarge {
+      max: MAX_SCRIPTED_AGENT_BATCH_MANIFESTS,
+      actual: manifests.len(),
+    });
+  }
+  Ok(())
+}
+
+fn batch_input_fingerprint(
+  observation: LanerObservation,
+  manifests: &[ScriptedAgentExperimentManifest],
+) -> u64 {
+  let mut hasher = FnvHasher::default();
+  write_str(&mut hasher, SCRIPTED_AGENT_BATCH_RUN_SCHEMA);
+  write_observation(&mut hasher, observation);
+  write_u8(
+    &mut hasher,
+    u8::try_from(manifests.len()).expect("batch cap fits in u8"),
+  );
+  for manifest in manifests {
+    write_str(&mut hasher, manifest.schema());
+    write_str(&mut hasher, manifest.scenario_id());
+    write_str(&mut hasher, manifest.profile().profile_id());
+    write_str(&mut hasher, manifest.profile().evaluation_rule());
+    write_str(&mut hasher, manifest.selection_rule());
+    write_u64(&mut hasher, manifest.seed_bundle().seed());
+    write_u8(
+      &mut hasher,
+      manifest.seed_bundle().policy_trace().stream().value(),
+    );
+    write_u16(
+      &mut hasher,
+      manifest.seed_bundle().policy_trace().draw().value(),
+    );
+  }
+  hasher.finish()
+}
+
+fn write_observation(hasher: &mut FnvHasher, observation: LanerObservation) {
+  write_str(hasher, observation.schema());
+  write_u8(hasher, observation.observer().value());
+  for role in LaneActorRole::roster() {
+    write_u8(hasher, observation.actors().actor(role).value());
+  }
+  write_u32(hasher, observation.turn().value());
+  write_u64(hasher, observation.observation_id().value());
+  write_u8(hasher, observation.self_health().value());
+  write_u8(hasher, observation.self_mana().value());
+  write_u8(hasher, observation.self_gold().value());
+  write_u8(hasher, observation.self_experience().value());
+  write_u8(hasher, observation.self_cooldown().value());
+  write_position(hasher, observation.self_position());
+  write_u8(hasher, observation.wave_pressure().value());
+
+  let opponent = observation.opponent();
+  write_optional_position(hasher, opponent.last_known_position());
+  write_optional_u32(hasher, opponent.last_seen_turn().map(|turn| turn.value()));
+  write_hidden_value(hasher, opponent.health());
+  write_hidden_value(hasher, opponent.posture());
+
+  let threat = observation.jungle_threat();
+  match threat.last_known_region() {
+    None => write_u8(hasher, 0),
+    Some(region) => {
+      write_u8(hasher, 1);
+      write_threat_region(hasher, region);
+      write_u32(
+        hasher,
+        threat
+          .last_seen_turn()
+          .expect("known threat has a last-seen turn")
+          .value(),
+      );
+    }
+  }
+  for intent in observation.available_intents() {
+    write_intent(hasher, intent);
+  }
+  write_optional_intent(hasher, observation.available_threat_response());
+  for focus in observation.available_target_focuses() {
+    write_target_focus(hasher, focus);
+  }
+  for commitment in observation.available_commitments() {
+    write_commitment(hasher, commitment);
+  }
+  for signal in observation.available_ping_signals() {
+    write_ping_signal(hasher, signal);
+  }
+  for condition in observation.available_abort_conditions() {
+    write_abort_condition(hasher, condition);
+  }
+  for behavior in observation.available_fallback_behaviors() {
+    write_fallback_behavior(hasher, behavior);
+  }
+  write_u32(hasher, observation.window().beats());
+}
+
+fn write_str(hasher: &mut FnvHasher, value: &str) {
+  write_u64(
+    hasher,
+    u64::try_from(value.len()).expect("string length fits in u64"),
+  );
+  hasher.write(value.as_bytes());
+}
+
+fn write_u8(hasher: &mut FnvHasher, value: u8) {
+  hasher.write(&[value]);
+}
+
+fn write_u16(hasher: &mut FnvHasher, value: u16) {
+  hasher.write(&value.to_le_bytes());
+}
+
+fn write_u32(hasher: &mut FnvHasher, value: u32) {
+  hasher.write(&value.to_le_bytes());
+}
+
+fn write_u64(hasher: &mut FnvHasher, value: u64) {
+  hasher.write(&value.to_le_bytes());
+}
+
+fn write_optional_u32(hasher: &mut FnvHasher, value: Option<u32>) {
+  match value {
+    Some(value) => {
+      write_u8(hasher, 1);
+      write_u32(hasher, value);
+    }
+    None => write_u8(hasher, 0),
+  }
+}
+
+fn write_hidden_value(hasher: &mut FnvHasher, value: HiddenValue) {
+  match value {
+    HiddenValue::Unknown => write_u8(hasher, 0),
+  }
+}
+
+fn write_position(hasher: &mut FnvHasher, value: LanePosition) {
+  write_u8(
+    hasher,
+    match value {
+      LanePosition::NearTower => 0,
+      LanePosition::Center => 1,
+      LanePosition::FarSide => 2,
+    },
+  );
+}
+
+fn write_optional_position(hasher: &mut FnvHasher, value: Option<LanePosition>) {
+  match value {
+    Some(value) => {
+      write_u8(hasher, 1);
+      write_position(hasher, value);
+    }
+    None => write_u8(hasher, 0),
+  }
+}
+
+fn write_threat_region(hasher: &mut FnvHasher, value: JungleThreatRegion) {
+  match value {
+    JungleThreatRegion::RiverSide => write_u8(hasher, 0),
+  }
+}
+
+fn write_intent(hasher: &mut FnvHasher, value: LaneIntent) {
+  write_u8(
+    hasher,
+    match value {
+      LaneIntent::Stabilize => 0,
+      LaneIntent::Contest => 1,
+      LaneIntent::Yield => 2,
+      LaneIntent::Recall => 3,
+      LaneIntent::Withdraw => 4,
+    },
+  );
+}
+
+fn write_optional_intent(hasher: &mut FnvHasher, value: Option<LaneIntent>) {
+  match value {
+    Some(value) => {
+      write_u8(hasher, 1);
+      write_intent(hasher, value);
+    }
+    None => write_u8(hasher, 0),
+  }
+}
+
+fn write_target_focus(hasher: &mut FnvHasher, value: LaneTargetFocus) {
+  write_u8(
+    hasher,
+    match value {
+      LaneTargetFocus::Minions => 0,
+      LaneTargetFocus::OpposingLaner => 1,
+      LaneTargetFocus::Tower => 2,
+    },
+  );
+}
+
+fn write_commitment(hasher: &mut FnvHasher, value: LaneCommitment) {
+  write_u8(
+    hasher,
+    match value {
+      LaneCommitment::Standard => 0,
+      LaneCommitment::Cautious => 1,
+      LaneCommitment::Aggressive => 2,
+    },
+  );
+}
+
+fn write_ping_signal(hasher: &mut FnvHasher, value: LanePingSignal) {
+  write_u8(
+    hasher,
+    match value {
+      LanePingSignal::None => 0,
+      LanePingSignal::Danger => 1,
+      LanePingSignal::OnMyWay => 2,
+      LanePingSignal::Assist => 3,
+      LanePingSignal::EnemyMissing => 4,
+    },
+  );
+}
+
+fn write_abort_condition(hasher: &mut FnvHasher, value: LaneAbortCondition) {
+  write_u8(
+    hasher,
+    match value {
+      LaneAbortCondition::None => 0,
+      LaneAbortCondition::HealthThreshold => 1,
+      LaneAbortCondition::ThreatSpotted => 2,
+      LaneAbortCondition::ResourceDepleted => 3,
+    },
+  );
+}
+
+fn write_fallback_behavior(hasher: &mut FnvHasher, value: LaneFallbackBehavior) {
+  write_u8(
+    hasher,
+    match value {
+      LaneFallbackBehavior::MaintainPlan => 0,
+      LaneFallbackBehavior::RetreatToTower => 1,
+      LaneFallbackBehavior::SafeFarm => 2,
+      LaneFallbackBehavior::ConserveResources => 3,
+    },
+  );
+}
+
+struct FnvHasher(u64);
+
+impl Default for FnvHasher {
+  fn default() -> Self {
+    Self(0xcbf29ce484222325)
+  }
+}
+
+impl Hasher for FnvHasher {
+  fn finish(&self) -> u64 {
+    self.0
+  }
+
+  fn write(&mut self, bytes: &[u8]) {
+    for byte in bytes {
+      self.0 ^= u64::from(*byte);
+      self.0 = self.0.wrapping_mul(0x100000001b3);
+    }
   }
 }
 
@@ -1223,6 +1719,131 @@ mod tests {
         actual: MAX_SCRIPTED_AGENT_BATCH_MANIFESTS + 1,
       })
     );
+  }
+
+  #[test]
+  fn batch_checkpoint_codec_and_store_resume_one_chunk() {
+    let state = LaneSnapshot::initial();
+    let observation = observe_player(&state, ObservationId::new(45)).observation();
+    let manifests = [
+      ScriptedAgentExperimentManifest::new(
+        ScriptedAgentProfile::cautious_v1(),
+        ScriptedAgentSeedBundle::new(7, StreamId::new(8), DrawId::new(9)),
+      ),
+      ScriptedAgentExperimentManifest::new(
+        ScriptedAgentProfile::yielding_v1(),
+        ScriptedAgentSeedBundle::new(10, StreamId::new(11), DrawId::new(12)),
+      ),
+    ];
+    let checkpoint =
+      ScriptedAgentBatchCheckpoint::new(observation, &manifests).expect("checkpoint starts");
+    assert_eq!(checkpoint.schema(), SCRIPTED_AGENT_BATCH_RUN_SCHEMA);
+    assert_eq!(
+      SCRIPTED_AGENT_BATCH_RUN_SCHEMA,
+      "m6-scripted-agent-batch-run-v1"
+    );
+    let encoded = checkpoint.encode();
+    assert_eq!(
+      encoded,
+      format!(
+        "schema=m6-scripted-agent-batch-run-v1\nobserver={}\nobservation_id=45\nmanifest_count=2\ncompleted_count=0\ninput_fingerprint={}\n",
+        observation.observer().value(),
+        12216804097755993549u64,
+      )
+    );
+    assert_eq!(
+      ScriptedAgentBatchCheckpoint::decode(&encoded),
+      Ok(checkpoint)
+    );
+    let valid = encoded;
+    for (malformed, expected) in [
+      (
+        valid.replacen("schema=m6-scripted-agent-batch-run-v1", "schema=other", 1),
+        ScriptedAgentBatchCheckpointError::UnsupportedSchema,
+      ),
+      (
+        valid.replacen("observer=", "unknown=", 1),
+        ScriptedAgentBatchCheckpointError::UnknownField,
+      ),
+      (
+        valid.replacen("observer=", "schema=", 1),
+        ScriptedAgentBatchCheckpointError::DuplicateField,
+      ),
+      (
+        valid.replacen("completed_count=0\n", "", 1),
+        ScriptedAgentBatchCheckpointError::MissingField,
+      ),
+      (
+        format!("{valid}extra=value\n"),
+        ScriptedAgentBatchCheckpointError::UnexpectedLineCount {
+          expected: 6,
+          actual: 7,
+        },
+      ),
+      (
+        valid.replacen("completed_count=0", "completed_count=3", 1),
+        ScriptedAgentBatchCheckpointError::InvalidValue,
+      ),
+    ] {
+      assert_eq!(
+        ScriptedAgentBatchCheckpoint::decode(&malformed),
+        Err(expected)
+      );
+    }
+    assert_eq!(
+      ScriptedAgentBatchCheckpoint::decode(&"x".repeat(MAX_SCRIPTED_AGENT_BATCH_RUN_BYTES + 1)),
+      Err(ScriptedAgentBatchCheckpointError::Oversized)
+    );
+
+    let root =
+      std::env::temp_dir().join(format!("fog-of-intent-agent-batch-{}", std::process::id()));
+    let store = crate::agent_batch_store::ScriptedAgentBatchRunStore::new(&root);
+    let host_store = crate::run_store::CliRunStore::new(&root);
+    let host_artifact = "artifact schema=m3-cli-host-artifact-v1 replay_id=m2-two-window-scenario-v3 run_id=resume records=0";
+    host_store
+      .save("resume", host_artifact)
+      .expect("host artifact saves");
+    store.save("resume", checkpoint).expect("checkpoint saves");
+    assert_eq!(
+      host_store.load("resume").expect("host artifact loads"),
+      host_artifact
+    );
+    let loaded = store.load("resume").expect("checkpoint loads");
+    let (first, advanced) = ScriptedAgentBatchRunner::run_next(observation, &manifests, loaded, 1)
+      .expect("first chunk runs");
+    assert_eq!(first.len(), 1);
+    assert_eq!(advanced.completed_count(), 1);
+    store
+      .save("resume", advanced)
+      .expect("advanced checkpoint saves");
+    let (remaining, complete) = ScriptedAgentBatchRunner::run_next(
+      observation,
+      &manifests,
+      store.load("resume").expect("advanced checkpoint loads"),
+      16,
+    )
+    .expect("remaining chunk runs");
+    let full = ScriptedAgentBatchRunner::run(observation, &manifests).expect("full batch runs");
+    assert_eq!(remaining, full[1..]);
+    assert!(complete.is_complete());
+    assert_eq!(complete.completed_count(), 2);
+    assert_eq!(
+      ScriptedAgentBatchRunner::run_next(observation, &manifests, complete, 1,)
+        .expect("completed run is idempotent")
+        .0,
+      Vec::<ScriptedAgentDecision>::new()
+    );
+    let mismatched_observation = observe_player(&state, ObservationId::new(46)).observation();
+    assert_eq!(
+      ScriptedAgentBatchRunner::run_next(mismatched_observation, &manifests, complete, 1),
+      Err(ScriptedAgentBatchRunError::InputMismatch)
+    );
+    let reordered = [manifests[1], manifests[0]];
+    assert_eq!(
+      ScriptedAgentBatchRunner::run_next(observation, &reordered, complete, 1),
+      Err(ScriptedAgentBatchRunError::InputMismatch)
+    );
+    let _ = std::fs::remove_dir_all(root);
   }
 
   #[test]
