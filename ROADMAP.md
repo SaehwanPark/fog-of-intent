@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.89`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.91`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1039,8 +1039,10 @@ strategy while remaining bound to actor-visible information.
 - [x] Separate candidate generation, evaluation errors, and stable selection
   for the fixture; top-k/nucleus selection, coordination, and execution remain
   open.
-- [ ] Define risk preference, loss aversion, planning horizon, attention, trust,
-  communication response, confidence, and pressure/tilt only as required.
+- [x] Define bounded baseline preferences (`Stabilize`, `Contest`, `Yield`) and
+  the observed-pressure effect for the fixture; loss aversion, planning
+  horizon, attention, trust, communication response, confidence, and tilt
+  remain open.
 - [x] Define bounded creativity evidence as candidate breadth from actor-visible
   advertisements rather than random inferior-action selection; broader
   candidate transformation remains open.
@@ -1072,6 +1074,8 @@ strategy while remaining bound to actor-visible information.
 - [x] Evaluate candidates with the profile-specific fixed, inspectable
   `threat-first-pressure-aware-fixed-score-v1`, `contest-first-fixed-score-v1`, or
   `yield-first-fixed-score-v1` rule and select by stable maximum score.
+- [x] Expose each profile's baseline preferred intent separately from a
+  visible-threat `Withdraw` override.
 - [x] Bind `max-score-stable-order-v1` to every profile and prove equal-score
   ties retain the first advertised candidate; top-k/nucleus selection remains
   open.

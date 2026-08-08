@@ -401,3 +401,14 @@ canonical policy instead of duplicating it.
 - Prevention: Keep provenance fields actor-visible and bounded; defer broader
   scenario/replay provenance and population sampling until their contracts are
   separately defined.
+
+## Separate baseline preference from visible-threat override
+
+- Context: M4 profiles had fixed evaluation rules and a visible `Withdraw`
+  response, but their baseline choices were only implicit in scoring tables.
+- Symptom: Treating the threat override as the profile's whole preference can
+  obscure the distinction between normal posture and information-driven action.
+- Resolution: Expose `preferred_intent()` as bounded profile metadata while
+  leaving threat-response selection and host validation unchanged.
+- Prevention: Keep preference labels descriptive and actor-safe; defer richer
+  risk, planning, memory, communication, and human-behavior parameters.

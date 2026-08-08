@@ -853,6 +853,10 @@ open.
   `Pacer` with stable IDs `anchor-v1`, `duelist-v1`, and `pacer-v1`. These are
   transparent policy metadata, not the M2 `LaneActorRole` roster and not claims
   about human or scenario role behavior.
+- `ScriptedAgentProfile::preferred_intent()` exposes the fixed baseline
+  preference (`Stabilize`, `Contest`, or `Yield`) before an actor-visible
+  threat response is considered; it is metadata, not a legality or transition
+  decision.
 - `ScriptedAgent` consumes only a `LanerObservation`, copies its advertised
   legal intents, adds the observation's optional visible threat response, and
   evaluates candidates with the profile-specific fixed
