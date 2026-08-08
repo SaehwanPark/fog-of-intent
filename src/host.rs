@@ -189,6 +189,12 @@ impl CliScenarioHost {
 
   /// Validate one actor action without mutating host state or history.
   pub fn validate_actor_action(&self, action: ActorActionDto) -> Result<(), ActorProtocolError> {
+    if self.closed {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ));
+    }
     let receipt = observe_player(&self.history.current_state(), self.next_observation_id());
     if action.observer() != receipt.observation().observer().value() {
       return Err(ActorProtocolError::new(
@@ -219,6 +225,25 @@ impl CliScenarioHost {
         ActorProtocolErrorCode::HostValidationRejected,
         ActorProtocolRepairHint::ResendAdvertisedAction,
       )
+    })
+  }
+
+  /// Validate and submit one actor action, then close the host-owned window.
+  pub fn submit_actor_action(
+    &mut self,
+    action: ActorActionDto,
+  ) -> Result<CliHostOutput, ActorProtocolError> {
+    self.validate_actor_action(action)?;
+    self.committed_intent = Some(action.to_lane_request().intent());
+    self.advance().map_err(|error| match error {
+      CliHostError::ScenarioComplete => ActorProtocolError::new(
+        ActorProtocolErrorCode::WindowClosed,
+        ActorProtocolRepairHint::StartNewSession,
+      ),
+      _ => ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      ),
     })
   }
 
@@ -782,6 +807,80 @@ mod tests {
     assert_eq!(error.code().id(), "window_closed");
     assert_eq!(error.repair().id(), "start_new_session");
     assert_eq!(host.record_count(), 2);
+  }
+
+  #[test]
+  fn actor_action_submission_is_host_owned_and_closes_each_window() {
+    let mut host = CliScenarioHost::fixture();
+    let first = host.observation();
+    let first_action = ActorActionDto::new(
+      first.observer().value(),
+      first.observation_id().value(),
+      crate::protocol::ActorProtocolIntent::Contest,
+    );
+    assert!(matches!(
+      host
+        .submit_actor_action(first_action)
+        .expect("first actor action submits"),
+      CliHostOutput::Advanced {
+        window: ScenarioWindow::First,
+        ..
+      }
+    ));
+    assert_eq!(host.record_count(), 1);
+    assert_eq!(
+      host.submit_actor_action(first_action),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::StaleObservation,
+        ActorProtocolRepairHint::RequestFreshObservation,
+      ))
+    );
+
+    let second = host.observation();
+    let second_action = ActorActionDto::new(
+      second.observer().value(),
+      second.observation_id().value(),
+      crate::protocol::ActorProtocolIntent::Stabilize,
+    );
+    assert!(matches!(
+      host
+        .submit_actor_action(second_action)
+        .expect("second actor action submits"),
+      CliHostOutput::Advanced {
+        window: ScenarioWindow::Second,
+        ..
+      }
+    ));
+    assert!(host.is_complete());
+    let closed = host.observation();
+    assert_eq!(
+      host.submit_actor_action(ActorActionDto::new(
+        closed.observer().value(),
+        closed.observation_id().value(),
+        crate::protocol::ActorProtocolIntent::Contest,
+      )),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::WindowClosed,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
+    );
+
+    let mut malformed = CliScenarioHost::new([
+      fixture_inputs(8, LaneWaveResult::Advanced, 1),
+      fixture_inputs(0, LaneWaveResult::Held, 2),
+    ]);
+    let malformed_observation = malformed.observation();
+    let transition_error = malformed
+      .submit_actor_action(ActorActionDto::new(
+        malformed_observation.observer().value(),
+        malformed_observation.observation_id().value(),
+        crate::protocol::ActorProtocolIntent::Contest,
+      ))
+      .expect_err("malformed execution is redacted");
+    assert_eq!(transition_error.code().id(), "host_transition_rejected");
+    assert_eq!(transition_error.repair().id(), "start_new_session");
+    assert_eq!(malformed.record_count(), 0);
+    assert!(!format!("{transition_error:?}").contains("health"));
   }
 
   #[test]

@@ -95,6 +95,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.99 — 2026-08-08
+
+### Added
+
+- Added host-owned actor action submission for the bounded fixture: validated
+  DTOs append through the existing lane/history path and close one window,
+  while stale/duplicate/closed actions fail before mutation.
+- Added actor-safe transition-rejection mapping for malformed execution input;
+  raw transition errors and authoritative values remain private.
+
+### Known limits
+
+- Transport-integrated submission, reconnect, simultaneous decisions,
+  privileged tools, and broader scenario/session closure remain open.
+
 ## 0.1.98 — 2026-08-08
 
 ### Added

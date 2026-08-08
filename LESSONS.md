@@ -505,3 +505,16 @@ canonical policy instead of duplicating it.
 - Prevention: Keep action submission, execution resolution, window closure,
   and detailed host-error projections behind separate authority and evidence
   contracts.
+
+## Let the host close only validated actor windows
+
+- Context: M5 needed an action-submission path after the host-bound validation
+  adapter was proven read-only.
+- Symptom: Committing or advancing before current-receipt and lane validation
+  would allow stale or duplicate actor actions to mutate authoritative history.
+- Resolution: Reuse the read-only validation gate, then let the host append the
+  request and clear/close the fixture window through its existing deterministic
+  transition path; failed validation or execution leaves history unchanged.
+- Prevention: Keep transport retry, simultaneous submissions, and reconnect
+  outside the synchronous host method until their ordering and authority are
+  separately specified.

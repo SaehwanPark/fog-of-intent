@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.98`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.99`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1169,17 +1169,22 @@ control over simulation resolution.
   automatic repair and host-legality error projection remain open.
 - [x] Add a read-only host adapter that validates an actor action against the
   current receipt and maps mismatch, stale, closed-window, and generic lane
-  rejection to actor-safe codes; submission and window closure remain open.
+  rejection to actor-safe codes.
+- [x] Implement bounded host-owned actor action submission and window closure
+  through the existing lane/history path; transport-integrated submission and
+  simultaneous decisions remain open.
 
 This is a pure library adapter boundary with no MCP transport, async runtime,
 or provider-specific behavior. The DTOs expose only four advertised intents
 plus an optional visible threat response and do not replace host legality. The
 session state machine is immutable metadata and does not submit or commit a
 transition. The `m5-actor-error-v1` projection exposes only stable error and
-repair IDs for codec/session failures and read-only host action rejection;
-repair is advisory and does not rewrite payloads or retry host work. Focused
-evidence is 9 protocol tests, 5 session tests, and 14 host tests within the
-184-unit, 7-binary, and 1-Rustdoc suite.
+repair IDs for codec/session failures and host action rejection; repair is
+advisory and does not rewrite payloads or retry host work. The host-owned
+submission path appends only after current-receipt and lane validation, then
+closes the fixture window through the existing deterministic transition.
+Focused evidence is 9 protocol tests, 5 session tests, and 15 host tests
+within the 185-unit, 7-binary, and 1-Rustdoc suite.
 
 ### Scope
 
@@ -1188,7 +1193,8 @@ evidence is 9 protocol tests, 5 session tests, and 14 host tests within the
 - [ ] Define versioned DTOs for observations, legal actions, messages, plans,
   contingencies, commit, outcome review, history, replay, and debrief.
 - [ ] Keep internal domain types private from public protocol compatibility.
-- [ ] Implement private action submission and host-owned window closure.
+- [x] Implement private action submission and host-owned window closure for the
+  bounded fixture; transport and simultaneous-decision integration remain open.
 - [ ] Implement simultaneous-decision semantics where the scenario requires it.
 - [x] Define protocol-edge validation-error and bounded-repair behavior for
   codec/session failures and bounded read-only host action rejection;
