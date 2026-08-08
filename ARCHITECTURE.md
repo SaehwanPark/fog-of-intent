@@ -131,21 +131,23 @@ policy seed bundle, and the library-only decision replay record remains
 outside transition, host history, and durable persistence authority.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft-receipt/
-draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO
+draft-status/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO
 projection. It
 maps primitive actor-visible fields and closed intent IDs without exposing
 internal observation/request types as a transport contract; host validation
 still owns legality. It also maps codec failures to the versioned,
 actor-safe `m5-actor-error-v2` code/repair vocabulary and its bounded codec
 without retaining raw input or parser details. `src/host.rs` owns the
-actor-observation, actor-commit, history-status, replay-status, replay-record,
-action-result, and completion-gated debrief
+actor-observation, actor-commit, draft-status, history-status, replay-status,
+replay-record, action-result, and completion-gated debrief
 projections plus actor-action validation and submission entry points: it delegates legality to the lane
 validator and closes a fixture window only after successful validation and
 history append.
 `ActorDraftDto` remains a bounded metadata envelope in the protocol edge, while
 `src/host.rs` owns its observation-bound pre-commit staging and its
-`ActorDraftReceiptDto` acknowledgement. The receipt contains no draft value;
+`ActorDraftReceiptDto` acknowledgement. `ActorDraftStatusDto` adds only the
+active binding and aggregate field-presence bits; neither DTO contains draft
+values. The receipt contains no draft value;
 staging replaces one internal draft field but does not add communication
 authority or transition authority. `ActorDraftCommitReceiptDto` reports only the
 committed intent and `present`/`absent` status of each staged field after a

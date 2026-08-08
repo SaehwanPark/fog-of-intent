@@ -57,6 +57,9 @@ pub const ACTOR_DRAFT_SCHEMA: &str = "m5-actor-draft-v1";
 /// Versioned actor draft-staging acknowledgement identity.
 pub const ACTOR_DRAFT_RECEIPT_SCHEMA: &str = "m5-actor-draft-receipt-v1";
 
+/// Versioned actor draft-status projection identity.
+pub const ACTOR_DRAFT_STATUS_SCHEMA: &str = "m5-actor-draft-status-v1";
+
 /// Versioned actor draft-commit field-presence acknowledgement identity.
 pub const ACTOR_DRAFT_COMMIT_RECEIPT_SCHEMA: &str = "m5-actor-draft-commit-receipt-v1";
 
@@ -1276,6 +1279,115 @@ impl ActorDraftReceiptDto {
         .parse::<u64>()
         .map_err(|_| ActorProtocolCodecError::InvalidValue)?,
       ActorDraftField::parse_id(field.ok_or(ActorProtocolCodecError::MissingField)?)?,
+    ))
+  }
+}
+
+/// Bounded actor-visible aggregate status for the active host draft.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ActorDraftStatusDto {
+  schema: &'static str,
+  observer: u8,
+  observation_id: u64,
+  message: ActorDraftPresence,
+  plan: ActorDraftPresence,
+  contingency: ActorDraftPresence,
+}
+
+impl ActorDraftStatusDto {
+  pub const fn new(
+    observer: u8,
+    observation_id: u64,
+    message: ActorDraftPresence,
+    plan: ActorDraftPresence,
+    contingency: ActorDraftPresence,
+  ) -> Self {
+    Self {
+      schema: ACTOR_DRAFT_STATUS_SCHEMA,
+      observer,
+      observation_id,
+      message,
+      plan,
+      contingency,
+    }
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn observer(self) -> u8 {
+    self.observer
+  }
+
+  pub const fn observation_id(self) -> u64 {
+    self.observation_id
+  }
+
+  pub const fn message(self) -> ActorDraftPresence {
+    self.message
+  }
+
+  pub const fn plan(self) -> ActorDraftPresence {
+    self.plan
+  }
+
+  pub const fn contingency(self) -> ActorDraftPresence {
+    self.contingency
+  }
+
+  /// Encode aggregate draft presence without returning any payload values.
+  pub fn encode(self) -> String {
+    format!(
+      "schema={}\nobserver={}\nobservation_id={}\nmessage={}\nplan={}\ncontingency={}\n",
+      self.schema,
+      self.observer,
+      self.observation_id,
+      self.message.id(),
+      self.plan.id(),
+      self.contingency.id(),
+    )
+  }
+
+  /// Decode aggregate draft presence without host or delivery authority.
+  pub fn decode(input: &str) -> Result<Self, ActorProtocolCodecError> {
+    let fields = parse_fields(input, 6)?;
+    let mut schema = None;
+    let mut observer = None;
+    let mut observation_id = None;
+    let mut message = None;
+    let mut plan = None;
+    let mut contingency = None;
+    for (key, value) in fields {
+      let slot = match key {
+        "schema" => &mut schema,
+        "observer" => &mut observer,
+        "observation_id" => &mut observation_id,
+        "message" => &mut message,
+        "plan" => &mut plan,
+        "contingency" => &mut contingency,
+        _ => return Err(ActorProtocolCodecError::UnknownField),
+      };
+      if slot.is_some() {
+        return Err(ActorProtocolCodecError::DuplicateField);
+      }
+      *slot = Some(value);
+    }
+    if schema != Some(ACTOR_DRAFT_STATUS_SCHEMA) {
+      return Err(ActorProtocolCodecError::UnsupportedSchema);
+    }
+    Ok(Self::new(
+      observer
+        .ok_or(ActorProtocolCodecError::MissingField)?
+        .parse::<u8>()
+        .map_err(|_| ActorProtocolCodecError::InvalidValue)?,
+      observation_id
+        .ok_or(ActorProtocolCodecError::MissingField)?
+        .parse::<u64>()
+        .map_err(|_| ActorProtocolCodecError::InvalidValue)?,
+      ActorDraftPresence::parse_id(message.ok_or(ActorProtocolCodecError::MissingField)?)?,
+      ActorDraftPresence::parse_id(plan.ok_or(ActorProtocolCodecError::MissingField)?)?,
+      ActorDraftPresence::parse_id(contingency.ok_or(ActorProtocolCodecError::MissingField)?)?,
     ))
   }
 }
@@ -2742,6 +2854,76 @@ mod tests {
       Err(ActorProtocolCodecError::UnexpectedLineCount {
         expected: 4,
         actual: 5,
+      })
+    );
+  }
+
+  #[test]
+  fn actor_draft_status_codec_is_bounded_and_payload_free() {
+    let status = ActorDraftStatusDto::new(
+      1,
+      36,
+      ActorDraftPresence::Present,
+      ActorDraftPresence::Absent,
+      ActorDraftPresence::Present,
+    );
+    assert_eq!(status.schema(), "m5-actor-draft-status-v1");
+    assert_eq!(status.observer(), 1);
+    assert_eq!(status.observation_id(), 36);
+    assert_eq!(status.message(), ActorDraftPresence::Present);
+    assert_eq!(status.plan(), ActorDraftPresence::Absent);
+    assert_eq!(status.contingency(), ActorDraftPresence::Present);
+    assert_eq!(
+      status.encode(),
+      "schema=m5-actor-draft-status-v1\nobserver=1\nobservation_id=36\nmessage=present\nplan=absent\ncontingency=present\n"
+    );
+    assert_eq!(ActorDraftStatusDto::decode(&status.encode()), Ok(status));
+    assert!(!format!("{status:?}").contains("ping ally"));
+    assert!(!status.encode().contains("ping ally"));
+
+    assert_eq!(
+      ActorDraftStatusDto::decode(
+        "schema=m5-actor-draft-status-v1\nobserver=1\nobservation_id=36\nmessage=present\nplan=absent\nunknown=present\n"
+      ),
+      Err(ActorProtocolCodecError::UnknownField)
+    );
+    assert_eq!(
+      ActorDraftStatusDto::decode(
+        "schema=m5-actor-draft-status-v1\nobserver=1\nobservation_id=36\nmessage=present\nmessage=absent\ncontingency=present\n"
+      ),
+      Err(ActorProtocolCodecError::DuplicateField)
+    );
+    assert_eq!(
+      ActorDraftStatusDto::decode(
+        "schema=m5-actor-draft-status-v1\nobserver=1\nobservation_id=36\nmessage=present\nplan=absent\n"
+      ),
+      Err(ActorProtocolCodecError::MissingField)
+    );
+    assert_eq!(
+      ActorDraftStatusDto::decode(
+        "schema=m5-actor-draft-status-v0\nobserver=1\nobservation_id=36\nmessage=present\nplan=absent\ncontingency=present\n"
+      ),
+      Err(ActorProtocolCodecError::UnsupportedSchema)
+    );
+    assert_eq!(
+      ActorDraftStatusDto::decode(
+        "schema=m5-actor-draft-status-v1\nobserver=nope\nobservation_id=36\nmessage=present\nplan=absent\ncontingency=present\n"
+      ),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ActorDraftStatusDto::decode(
+        "schema=m5-actor-draft-status-v1\nobserver=1\nobservation_id=36\nmessage=unknown\nplan=absent\ncontingency=present\n"
+      ),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ActorDraftStatusDto::decode(
+        "schema=m5-actor-draft-status-v1\nobserver=1\nobservation_id=36\nmessage=present\nplan=absent\ncontingency=present\nextra=x\n"
+      ),
+      Err(ActorProtocolCodecError::UnexpectedLineCount {
+        expected: 6,
+        actual: 7,
       })
     );
   }

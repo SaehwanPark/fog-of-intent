@@ -22,9 +22,9 @@ use crate::protocol::{
   ActorActionDto, ActorActionResultDto, ActorActionResultOutcome, ActorActionResultWindow,
   ActorCommitDto, ActorCommitResultDto, ActorDebriefDto, ActorDebriefObjective,
   ActorDraftCommitReceiptDto, ActorDraftDto, ActorDraftField, ActorDraftPresence,
-  ActorDraftReceiptDto, ActorHistoryDto, ActorHistoryStatus, ActorObservationDto,
-  ActorProtocolError, ActorProtocolErrorCode, ActorProtocolRepairHint, ActorReplayDebriefRecordDto,
-  ActorReplayDto, ActorReplayRecordDto,
+  ActorDraftReceiptDto, ActorDraftStatusDto, ActorHistoryDto, ActorHistoryStatus,
+  ActorObservationDto, ActorProtocolError, ActorProtocolErrorCode, ActorProtocolRepairHint,
+  ActorReplayDebriefRecordDto, ActorReplayDto, ActorReplayRecordDto,
 };
 use crate::run_store::{CliRunStore, CliRunStoreError};
 
@@ -441,6 +441,43 @@ impl CliScenarioHost {
     let field = draft.field();
     self.stage_actor_draft(draft)?;
     Ok(ActorDraftReceiptDto::new(observer, observation_id, field))
+  }
+
+  /// Return aggregate presence for the active actor draft without payloads.
+  pub fn actor_draft_status(&self) -> Result<ActorDraftStatusDto, ActorProtocolError> {
+    if self.closed {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ));
+    }
+    let receipt = observe_player(&self.history.current_state(), self.next_observation_id());
+    if self.is_complete() {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::WindowClosed,
+        ActorProtocolRepairHint::StartNewSession,
+      ));
+    }
+    if self.committed_intent.is_some() {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::DraftBoundary,
+        ActorProtocolRepairHint::AwaitNextObservation,
+      ));
+    }
+    let presence = |value: &Option<String>| {
+      if value.is_some() {
+        ActorDraftPresence::Present
+      } else {
+        ActorDraftPresence::Absent
+      }
+    };
+    Ok(ActorDraftStatusDto::new(
+      receipt.observation().observer().value(),
+      receipt.observation().observation_id().value(),
+      presence(&self.draft.message),
+      presence(&self.draft.plan),
+      presence(&self.draft.contingency),
+    ))
   }
 
   /// Commit one observation-bound actor intent without advancing the host.
@@ -2073,6 +2110,93 @@ mod tests {
     .expect("draft value is bounded");
     assert_eq!(
       closed.stage_actor_draft(closed_draft),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
+    );
+  }
+
+  #[test]
+  fn actor_draft_status_reports_presence_without_payload_or_mutation() {
+    let mut host = CliScenarioHost::fixture();
+    let observation = host.observation();
+    let absent = ActorDraftStatusDto::new(
+      observation.observer().value(),
+      observation.observation_id().value(),
+      ActorDraftPresence::Absent,
+      ActorDraftPresence::Absent,
+      ActorDraftPresence::Absent,
+    );
+    assert_eq!(host.actor_draft_status(), Ok(absent));
+    for (field, value) in [
+      (ActorDraftField::Message, "ping ally"),
+      (ActorDraftField::Plan, "contest"),
+      (ActorDraftField::Contingency, "retreat if threat"),
+    ] {
+      host
+        .stage_actor_draft(
+          ActorDraftDto::new(
+            observation.observer().value(),
+            observation.observation_id().value(),
+            field,
+            value,
+          )
+          .expect("draft value is bounded"),
+        )
+        .expect("draft stages");
+    }
+    let present = host
+      .actor_draft_status()
+      .expect("active draft status is available");
+    assert_eq!(present.schema(), "m5-actor-draft-status-v1");
+    assert_eq!(present.observer(), observation.observer().value());
+    assert_eq!(
+      present.observation_id(),
+      observation.observation_id().value()
+    );
+    assert_eq!(present.message(), ActorDraftPresence::Present);
+    assert_eq!(present.plan(), ActorDraftPresence::Present);
+    assert_eq!(present.contingency(), ActorDraftPresence::Present);
+    assert_eq!(
+      present.encode(),
+      "schema=m5-actor-draft-status-v1\nobserver=1\nobservation_id=1\nmessage=present\nplan=present\ncontingency=present\n"
+    );
+    assert!(!format!("{present:?}").contains("ping ally"));
+    assert!(!present.encode().contains("retreat if threat"));
+    assert_eq!(host.record_count(), 0);
+    assert_eq!(host.observation(), observation);
+
+    host
+      .commit_actor_draft(ActorCommitDto::new(
+        observation.observer().value(),
+        observation.observation_id().value(),
+        crate::protocol::ActorProtocolIntent::Contest,
+      ))
+      .expect("matching commit succeeds");
+    assert_eq!(
+      host.actor_draft_status(),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::DraftBoundary,
+        ActorProtocolRepairHint::AwaitNextObservation,
+      ))
+    );
+    host.apply_line("advance").expect("first window advances");
+    host
+      .apply_line("plan stabilize")
+      .expect("second plan stages");
+    host.apply_line("commit").expect("second commit succeeds");
+    host.apply_line("advance").expect("second window advances");
+    assert_eq!(
+      host.actor_draft_status(),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::WindowClosed,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
+    );
+    host.apply_line("quit").expect("complete host closes");
+    assert_eq!(
+      host.actor_draft_status(),
       Err(ActorProtocolError::new(
         ActorProtocolErrorCode::ClosedSession,
         ActorProtocolRepairHint::StartNewSession,
