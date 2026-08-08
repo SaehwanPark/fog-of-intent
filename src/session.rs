@@ -4,7 +4,10 @@
 //! observation at a time. It checks session freshness and duplicate submission
 //! only; host legality, transition, history, and replay remain outside it.
 
-use crate::protocol::{ActorActionDto, ActorObservationDto};
+use crate::protocol::{
+  ActorActionDto, ActorObservationDto, ActorProtocolError, ActorProtocolErrorCode,
+  ActorProtocolRepairHint,
+};
 
 /// Versioned actor-session contract identity.
 pub const ACTOR_SESSION_SCHEMA: &str = "m5-actor-session-v1";
@@ -38,6 +41,39 @@ pub enum ActorSessionError {
   StaleObservation,
   DuplicateSubmission,
   Closed,
+}
+
+impl ActorSessionError {
+  /// Project a freshness failure without exposing session or actor values.
+  pub const fn to_actor_error(self) -> ActorProtocolError {
+    let (code, repair) = match self {
+      Self::ActorMismatch => (
+        ActorProtocolErrorCode::ActorMismatch,
+        ActorProtocolRepairHint::UseBoundActor,
+      ),
+      Self::ObservationAlreadyOpen => (
+        ActorProtocolErrorCode::ObservationAlreadyOpen,
+        ActorProtocolRepairHint::SubmitCurrentAction,
+      ),
+      Self::NoObservation => (
+        ActorProtocolErrorCode::NoObservation,
+        ActorProtocolRepairHint::RequestObservation,
+      ),
+      Self::StaleObservation => (
+        ActorProtocolErrorCode::StaleObservation,
+        ActorProtocolRepairHint::RequestFreshObservation,
+      ),
+      Self::DuplicateSubmission => (
+        ActorProtocolErrorCode::DuplicateSubmission,
+        ActorProtocolRepairHint::AwaitNextObservation,
+      ),
+      Self::Closed => (
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ),
+    };
+    ActorProtocolError::new(code, repair)
+  }
 }
 
 /// Immutable ordinary-actor session state.
@@ -243,5 +279,49 @@ mod tests {
       awaiting.accept_observation(&waiting_observation),
       Err(ActorSessionError::ObservationAlreadyOpen)
     );
+  }
+
+  #[test]
+  fn session_errors_project_to_bounded_repair_hints() {
+    let cases = [
+      (
+        ActorSessionError::ActorMismatch,
+        "actor_mismatch",
+        "use_bound_actor",
+      ),
+      (
+        ActorSessionError::ObservationAlreadyOpen,
+        "observation_already_open",
+        "submit_current_action",
+      ),
+      (
+        ActorSessionError::NoObservation,
+        "no_observation",
+        "request_observation",
+      ),
+      (
+        ActorSessionError::StaleObservation,
+        "stale_observation",
+        "request_fresh_observation",
+      ),
+      (
+        ActorSessionError::DuplicateSubmission,
+        "duplicate_submission",
+        "await_next_observation",
+      ),
+      (
+        ActorSessionError::Closed,
+        "closed_session",
+        "start_new_session",
+      ),
+    ];
+    for (error, code, repair) in cases {
+      let projected = error.to_actor_error();
+      assert_eq!(projected.schema(), "m5-actor-error-v1");
+      assert_eq!(projected.code().id(), code);
+      assert_eq!(projected.repair().id(), repair);
+      let debug = format!("{projected:?}");
+      assert!(!debug.contains("actor=") && !debug.contains("observation_id="));
+    }
   }
 }

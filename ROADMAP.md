@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.96`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.97`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1164,12 +1164,18 @@ control over simulation resolution.
 - [x] Add the bounded `m5-actor-codec-v1` line-oriented encode/decode contract
   for observation and intent-action DTOs, with size, field, line-count, and
   closed-intent checks; transport I/O and persistence remain open.
+- [x] Define the versioned `m5-actor-error-v1` actor-safe validation-error
+  categories and deterministic repair hints for codec/session failures;
+  automatic repair and host-legality error projection remain open.
 
 This is a pure library adapter boundary with no MCP transport, async runtime,
 or provider-specific behavior. The DTOs expose only four advertised intents
 plus an optional visible threat response and do not replace host legality. The
 session state machine is immutable metadata and does not submit or commit a
-transition.
+transition. The `m5-actor-error-v1` projection exposes only stable error and
+repair IDs for codec/session failures; repair is advisory and does not rewrite
+payloads or retry host work. Focused evidence is 9 protocol tests and 5
+session tests within the 183-unit, 7-binary, and 1-Rustdoc suite.
 
 ### Scope
 
@@ -1180,7 +1186,8 @@ transition.
 - [ ] Keep internal domain types private from public protocol compatibility.
 - [ ] Implement private action submission and host-owned window closure.
 - [ ] Implement simultaneous-decision semantics where the scenario requires it.
-- [ ] Define validation-error and bounded-repair behavior.
+- [x] Define protocol-edge validation-error and bounded-repair behavior for
+  codec/session failures; host-legality error projection remains open.
 - [ ] Separate ordinary actor tools from privileged experiment-controller tools.
 - [ ] Capture provider-neutral transcripts and tool-schema versions.
 - [ ] Add authorization and hidden-state leakage tests.

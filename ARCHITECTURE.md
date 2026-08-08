@@ -133,11 +133,14 @@ outside transition, host history, and durable persistence authority.
 `src/protocol.rs` owns the bounded actor observation/action DTO projection. It
 maps primitive actor-visible fields and closed intent IDs without exposing
 internal observation/request types as a transport contract; host validation
-still owns legality.
+still owns legality. It also maps codec failures to the versioned,
+actor-safe `m5-actor-error-v1` code/repair vocabulary without retaining raw
+input or parser details.
 
 `src/session.rs` owns immutable ordinary-actor session freshness and lifecycle
 metadata only. It cannot validate an intent, submit a transition, or mutate
-history.
+history; its freshness failures use the same bounded protocol error
+vocabulary.
 
 ## Target Components
 

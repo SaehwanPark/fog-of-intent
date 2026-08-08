@@ -95,6 +95,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.97 — 2026-08-08
+
+### Added
+
+- Added the versioned `m5-actor-error-v1` projection for codec and immutable
+  session-freshness failures, with closed actor-safe codes and deterministic
+  repair hints.
+- Kept repair advisory-only: no payload rewriting, retry loop, host legality,
+  transition, history, transport, or provider authority was added.
+
+### Known limits
+
+- Host-legality error projection, automatic repair, transport retry/framing,
+  reconnect, and provider-neutral transcripts remain open.
+
 ## 0.1.96 — 2026-08-08
 
 ### Added

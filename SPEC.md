@@ -932,9 +932,9 @@ open.
 
 ### M5 — First actor-protocol DTO boundary — 2026-08-08
 
-**Status:** Bounded observation/action DTO projection and immutable library
-session lifecycle delivered; transport-integrated sessions and broader protocol
-compatibility remain open.
+**Status:** Bounded observation/action DTO projection, immutable library session
+lifecycle, and actor-safe protocol-edge validation errors delivered;
+transport-integrated sessions and broader protocol compatibility remain open.
 
 - `src/protocol.rs` defines the versioned `m5-actor-protocol-v1`,
   `m5-actor-observation-v1`, and `m5-actor-action-v1` identities with a closed
@@ -959,11 +959,18 @@ compatibility remain open.
   use the versioned `m5-actor-codec-v1` line format with a 4096-byte cap,
   exact bounded fields, and closed intent IDs. Parsing is pure and fail-closed;
   decoded actions still require host validation.
+- `m5-actor-error-v1` projects every codec and immutable-session freshness
+  failure into a closed actor-safe code and deterministic repair hint. The
+  projection contains no raw payload, actor ID, state hash, domain error, or
+  transport detail; hints are advisory and do not rewrite, retry, or submit.
 - Focused tests cover stable IDs, safe/threat action breadth, DTO-to-request
   conversion through the existing validator, absence of state-hash or
-  snapshot fields, session lifecycle/error cases, and codec round-trips and
-  malformed-input rejection. This is a pure library boundary, not an MCP
-  transport or complete-session claim.
+  snapshot fields, session lifecycle/error cases, codec round-trips and
+  malformed-input rejection, and exhaustive codec/session error projections.
+  The focused evidence is 9 protocol tests and 5 session tests within the
+  183-unit, 7-binary, and 1-Rustdoc suite. This is a pure library boundary,
+  not an MCP transport or complete-session claim; host-legality error
+  projection remains a separate boundary.
 
 ## Future
 
