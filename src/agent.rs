@@ -1778,6 +1778,7 @@ impl ScriptedAgentMatchedScenarioTallyComparisonEntry {
     self.evaluation_rule
   }
 
+  /// Return counts in `[Stabilize, Contest, Yield, Recall, Withdraw]` order.
   pub const fn baseline_counts(self) -> [u8; 5] {
     [
       self.baseline_stabilize_count,
@@ -1788,6 +1789,7 @@ impl ScriptedAgentMatchedScenarioTallyComparisonEntry {
     ]
   }
 
+  /// Return counts in `[Stabilize, Contest, Yield, Recall, Withdraw]` order.
   pub const fn candidate_counts(self) -> [u8; 5] {
     [
       self.candidate_stabilize_count,
@@ -1798,6 +1800,8 @@ impl ScriptedAgentMatchedScenarioTallyComparisonEntry {
     ]
   }
 
+  /// Return candidate-minus-baseline deltas in
+  /// `[Stabilize, Contest, Yield, Recall, Withdraw]` order.
   pub fn deltas(self) -> [i16; 5] {
     let baseline = self.baseline_counts();
     let candidate = self.candidate_counts();
