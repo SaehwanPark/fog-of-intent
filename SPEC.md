@@ -1216,6 +1216,14 @@ transport-integrated sessions and broader protocol compatibility remain open.
   when both totals and both ordered rows are identical. Its rationale is a
   deterministic fixed-fixture baseline mismatch check, not a build, balance, or
   causal claim.
+- `ScriptedAgentRunDispositionRecord` defines
+  `m6-scripted-agent-run-disposition-v1` as a two-line, payload-free envelope
+  for the closed caller-declared statuses `completed`, `crashed`, `timed_out`,
+  `missing_branch`, and `inconclusive`. Its codec is bounded and rejects
+  unknown fields/statuses, duplicate or missing fields, wrong schema, extra
+  lines, and oversized input. It preserves categorical status metadata only;
+  automatic runtime failure detection, diagnostics, result attachment, and
+  durable experiment records remain open.
 
 ## Future
 

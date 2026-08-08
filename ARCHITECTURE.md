@@ -173,6 +173,11 @@ renders the same verified fields without I/O or additional authority.
 verified reports with bounded ordered deltas; it is caller-declared evidence,
 not independent build provenance or causal attribution. Its fixed no-change
 gate is a pure equality check over those fields and adds no threshold authority.
+`ScriptedAgentRunDispositionRecord` is a caller-declared, payload-free status
+envelope for completed, crashed, timed-out, missing-branch, and inconclusive
+runs. Its closed codec preserves only categorical status metadata; it does not
+detect process failures, retain diagnostics, attach decisions or results, or
+own execution, persistence, provider, or experiment authority.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO
