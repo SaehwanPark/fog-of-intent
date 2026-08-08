@@ -902,6 +902,13 @@ pub enum ScriptedAgentOperationalLogError {
   CapacityExceeded { max: usize },
 }
 
+/// Bounded failures from producing one complete batch lifecycle trace.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentOperationalBatchRunError {
+  Batch(ScriptedAgentBatchError),
+  LogCapacityExceeded { max: usize },
+}
+
 /// Ordered, non-authoritative operational metadata kept outside history.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct ScriptedAgentOperationalLog {
@@ -1931,6 +1938,32 @@ impl ScriptedAgentBatchRunner {
   ) -> Result<Vec<ScriptedAgentDecision>, ScriptedAgentBatchError> {
     validate_batch(manifests)?;
     Ok(Self::evaluate_range(observation, manifests))
+  }
+
+  /// Evaluate one complete batch while appending a caller-owned lifecycle trace.
+  pub fn run_with_operational_log(
+    observation: LanerObservation,
+    manifests: &[ScriptedAgentExperimentManifest],
+    log: &mut ScriptedAgentOperationalLog,
+  ) -> Result<Vec<ScriptedAgentDecision>, ScriptedAgentOperationalBatchRunError> {
+    validate_batch(manifests).map_err(ScriptedAgentOperationalBatchRunError::Batch)?;
+    const EVENTS_PER_COMPLETE_BATCH: usize = 3;
+    if log.len().saturating_add(EVENTS_PER_COMPLETE_BATCH) > MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS {
+      return Err(ScriptedAgentOperationalBatchRunError::LogCapacityExceeded {
+        max: MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS,
+      });
+    }
+    log
+      .append(ScriptedAgentOperationalEvent::BatchStarted)
+      .expect("operational log capacity was preflighted");
+    let decisions = Self::evaluate_range(observation, manifests);
+    log
+      .append(ScriptedAgentOperationalEvent::ChunkCompleted)
+      .expect("operational log capacity was preflighted");
+    log
+      .append(ScriptedAgentOperationalEvent::BatchFinished)
+      .expect("operational log capacity was preflighted");
+    Ok(decisions)
   }
 
   /// Evaluate one bounded remaining chunk and return its advanced cursor.
@@ -3244,6 +3277,64 @@ mod tests {
     );
     assert_eq!(log.len(), MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS);
     assert_eq!(log.entries(), entries_before_overflow.as_slice());
+  }
+
+  #[test]
+  fn batch_runner_operational_log_producer_is_ordered_and_preflights_capacity() {
+    let state = LaneSnapshot::initial();
+    let observation = observe_player(&state, ObservationId::new(47)).observation();
+    let manifests = [
+      ScriptedAgentExperimentManifest::new(
+        ScriptedAgentProfile::cautious_v1(),
+        ScriptedAgentSeedBundle::new(1, StreamId::new(2), DrawId::new(3)),
+      ),
+      ScriptedAgentExperimentManifest::new(
+        ScriptedAgentProfile::yielding_v1(),
+        ScriptedAgentSeedBundle::new(4, StreamId::new(5), DrawId::new(6)),
+      ),
+    ];
+    let expected = ScriptedAgentBatchRunner::run(observation, &manifests)
+      .expect("the direct batch remains the parity reference");
+    let mut log = ScriptedAgentOperationalLog::new();
+    let produced =
+      ScriptedAgentBatchRunner::run_with_operational_log(observation, &manifests, &mut log)
+        .expect("the complete batch fits in the operational log");
+    assert_eq!(produced, expected);
+    assert_eq!(
+      log
+        .entries()
+        .iter()
+        .map(|entry| entry.event().id())
+        .collect::<Vec<_>>(),
+      ["batch_started", "chunk_completed", "batch_finished"]
+    );
+
+    let mut invalid_log = ScriptedAgentOperationalLog::new();
+    invalid_log
+      .append(ScriptedAgentOperationalEvent::CheckpointSaved)
+      .expect("one event fits");
+    let invalid_before = invalid_log.entries().to_vec();
+    assert_eq!(
+      ScriptedAgentBatchRunner::run_with_operational_log(observation, &[], &mut invalid_log),
+      Err(ScriptedAgentOperationalBatchRunError::Batch(
+        ScriptedAgentBatchError::EmptyBatch,
+      ))
+    );
+    assert_eq!(invalid_log.entries(), invalid_before.as_slice());
+
+    assert_eq!(MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS, 16);
+    let mut full_log = ScriptedAgentOperationalLog::new();
+    for _ in 0..MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS - 2 {
+      full_log
+        .append(ScriptedAgentOperationalEvent::BatchStarted)
+        .expect("preflight fixture fits");
+    }
+    let full_before = full_log.entries().to_vec();
+    assert_eq!(
+      ScriptedAgentBatchRunner::run_with_operational_log(observation, &manifests, &mut full_log),
+      Err(ScriptedAgentOperationalBatchRunError::LogCapacityExceeded { max: 16 })
+    );
+    assert_eq!(full_log.entries(), full_before.as_slice());
   }
 
   #[test]

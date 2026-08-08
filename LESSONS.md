@@ -1079,3 +1079,14 @@ canonical policy instead of duplicating it.
 - Prevention: Add runtime producers, tracing, persistence, and diagnostics only
   at an explicit edge; never reconstruct committed history from operational
   events.
+
+## Preflight lifecycle-event capacity before evaluation
+
+- Context: A deterministic batch can expose a small caller-driven lifecycle
+  trace without making the event log authoritative.
+- Symptom: Appending a start event before discovering that the log cannot fit
+  the completion markers leaves a partial operational trace on a failed call.
+- Resolution: Validate inputs and reserve the complete fixed event count before
+  evaluating policy or mutating the caller-owned log.
+- Prevention: Treat lifecycle production as an all-or-nothing edge adapter;
+  checkpoint/resume and runtime failure events require separate contracts.

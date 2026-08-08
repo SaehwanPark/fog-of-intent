@@ -185,6 +185,10 @@ own execution, persistence, provider, or experiment authority.
 ordered payload-free batch lifecycle event labels. It is non-authoritative and
 does not reconstruct history, emit runtime logs, inspect time/process state, or
 persist operational data.
+The batch runner can append a caller-driven start/chunk/finish trio only after
+validation and capacity preflight; this producer preserves batch decision
+parity and does not provide checkpoint, failure-detection, or transport
+authority.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

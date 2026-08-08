@@ -98,6 +98,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.144 — 2026-08-08
+
+### Added
+
+- Added caller-driven lifecycle production around one deterministic in-process
+  batch: `batch_started`, `chunk_completed`, and `batch_finished` are appended
+  only after batch validation and capacity preflight, preserving decision parity
+  and leaving failed calls non-mutating.
+
+### Known limits
+
+- Checkpoint/resume event production, runtime failure detection, diagnostics,
+  tracing/transport, persistence, scheduling, and result attachment remain
+  open.
+
 ## 0.1.143 — 2026-08-08
 
 ### Added
