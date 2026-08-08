@@ -98,6 +98,24 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.117 — 2026-08-08
+
+### Added
+
+- Added `m5-actor-draft-commit-receipt-v1`, a bounded actor-safe acknowledgement
+  reporting the committed intent and only `present`/`absent` metadata for the
+  message, plan, and contingency draft fields.
+- Added focused protocol and host regressions proving exact seven-line codec
+  behavior, payload-free output, successful field-presence reporting, and
+  unchanged draft/observation/history boundaries on failed and successful
+  commits.
+
+### Known limits
+
+- The receipt confirms host acceptance metadata only; communication delivery,
+  free-form plan semantics, transport, persistence, and simultaneous drafts
+  remain open.
+
 ## 0.1.116 — 2026-08-08
 
 ### Added

@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.116`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.117`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1179,6 +1179,9 @@ control over simulation resolution.
 - [x] Define `m5-actor-draft-receipt-v1` as a payload-free acknowledgement for
   accepted observation-bound message, plan, or contingency staging; metadata
   delivery and communication semantics remain open.
+- [x] Define `m5-actor-draft-commit-receipt-v1` as a payload-free acknowledgement
+  of the committed intent and accepted message/plan/contingency field presence;
+  metadata delivery and communication semantics remain open.
 - [x] Add a read-only host adapter that validates an actor action against the
   current receipt and maps mismatch, stale, closed-window, and generic lane
   rejection to actor-safe codes.
@@ -1219,11 +1222,14 @@ metadata without communication authority. The host stages those DTOs only
 before commit and never turns them into a transition by itself. The
 `m5-actor-draft-receipt-v1` DTO acknowledges accepted staging with only the
 bound actor, observation, and closed field identity; it does not echo draft
-values or deliver them to another actor. The provider-neutral
+values or deliver them to another actor. The `m5-actor-draft-commit-receipt-v1`
+DTO acknowledges a successful commit with the bound actor, observation,
+committed intent, and `present`/`absent` bits for each draft field; it never
+echoes values or claims communication delivery. The provider-neutral
 `m5-actor-transcript-v1` record captures only closed tool/schema IDs and an
 accepted/rejected result for an actor receipt; it is not a runtime log or
-replay record. Focused evidence is 20 protocol tests,
-12 session tests, and 25 host tests within the 213-unit, 7-binary, and
+replay record. Focused evidence is 21 protocol tests,
+12 session tests, and 26 host tests within the 215-unit, 7-binary, and
 3-Rustdoc suite. The host observation projection is a
 pure actor-visible DTO mapping, rejects inactive lifecycle states, and leaves
 the internal receipt private. The history DTO is a bounded status summary,
