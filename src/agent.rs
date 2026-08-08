@@ -4870,6 +4870,55 @@ mod tests {
   }
 
   #[test]
+  fn profile_aware_population_tally_codec_round_trips_verified_rows() {
+    let population = ScriptedAgentFixtureScenarioPopulation::generate_from_scenario_ids(
+      &[
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+      ],
+      240,
+    )
+    .expect("codec population builds");
+    let manifests = [
+      ScriptedAgentExperimentManifest::new(
+        ScriptedAgentProfile::cautious_v1(),
+        ScriptedAgentSeedBundle::new(61, StreamId::new(62), DrawId::new(63)),
+      ),
+      ScriptedAgentExperimentManifest::new(
+        ScriptedAgentProfile::risk_taking_v1(),
+        ScriptedAgentSeedBundle::new(64, StreamId::new(65), DrawId::new(66)),
+      ),
+      ScriptedAgentExperimentManifest::new(
+        ScriptedAgentProfile::yielding_v1(),
+        ScriptedAgentSeedBundle::new(67, StreamId::new(68), DrawId::new(69)),
+      ),
+    ];
+    let tally = population
+      .matched_tally(&manifests)
+      .expect("codec tally builds");
+    let encoded = tally.encode();
+    assert!(encoded.starts_with("schema=m6-scripted-agent-matched-scenario-tally-v1\n"));
+    assert!(encoded.contains("entries=3\n"));
+    assert!(
+      encoded
+        .contains("row=cautious-laner-v1|threat-first-pressure-aware-fixed-score-v1|7|0|0|0|1\n")
+    );
+    assert!(encoded.contains("row=risk-taking-laner-v1|contest-first-fixed-score-v1|0|8|0|0|0\n"));
+    assert!(encoded.contains("row=yielding-laner-v1|yield-first-fixed-score-v1|0|0|8|0|0\n"));
+    assert_eq!(
+      ScriptedAgentMatchedScenarioTallyReport::decode(&encoded, &tally),
+      Ok(tally.clone())
+    );
+    let tampered = encoded.replace("|7|0|0|0|1\n", "|6|0|0|0|2\n");
+    assert_eq!(
+      ScriptedAgentMatchedScenarioTallyReport::decode(&tampered, &tally),
+      Err(ScriptedAgentMatchedScenarioTallyCodecError::InputMismatch)
+    );
+  }
+
+  #[test]
   fn fixture_scenario_frequency_report_counts_ordered_selection() {
     let selection = ScriptedAgentFixtureScenarioSelection::from_ids(
       &[

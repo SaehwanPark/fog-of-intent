@@ -1395,6 +1395,8 @@ representative replays, and an evidence-limited report.
 - [x] Preserve ordered cautious/risk-taking/yielding rows when composing a
   fixed-fixture population tally; broader profile-population metrics remain
   open.
+- [x] Round-trip the profile-aware fixed-fixture tally through its verified
+  bounded codec and reject a tampered row; durable export remains open.
 - [ ] Add broader scenario selection and distributional sampling evidence;
   population diversity and representative sampling remain open.
 - [x] Emit bounded selected-intent tallies over caller-supplied sample sets;

@@ -98,6 +98,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.153 — 2026-08-08
+
+### Added
+
+- Added direct codec evidence for the three-profile fixed-fixture population
+  tally, including canonical row identities/counts, verified round-trip, and
+  tampered-row rejection.
+
+### Known limits
+
+- The codec remains bounded evidence transport; durable export, broader
+  population metrics/distributions, outcomes, persistence, providers,
+  calibration, and human evidence remain open.
+
 ## 0.1.152 — 2026-08-08
 
 ### Added
