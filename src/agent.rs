@@ -3744,6 +3744,29 @@ mod tests {
     let unchanged =
       ScriptedAgentFixtureScenarioFrequencyComparisonReport::from_reports(&baseline, &baseline);
     assert!(unchanged.passes_no_change_gate());
+    let redistributed_selection = ScriptedAgentFixtureScenarioSelection::from_ids(
+      &[
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+      ],
+      &[
+        [ObservationId::new(162), ObservationId::new(163)],
+        [ObservationId::new(164), ObservationId::new(165)],
+      ],
+    )
+    .expect("redistributed selection builds");
+    let redistributed =
+      ScriptedAgentFixtureScenarioFrequencyReport::from_selection(&redistributed_selection);
+    let same_total_redistribution =
+      ScriptedAgentFixtureScenarioFrequencyComparisonReport::from_reports(
+        &baseline,
+        &redistributed,
+      );
+    assert_eq!(same_total_redistribution.baseline_selection_count(), 2);
+    assert_eq!(same_total_redistribution.candidate_selection_count(), 2);
+    assert_eq!(same_total_redistribution.entries()[0].candidate_count(), 2);
+    assert_eq!(same_total_redistribution.entries()[1].candidate_count(), 0);
+    assert!(!same_total_redistribution.passes_no_change_gate());
   }
 
   #[test]

@@ -1407,9 +1407,6 @@ representative replays, and an evidence-limited report.
 - [x] Compare caller-declared verified fixed-fixture frequency reports with
   bounded ordered row deltas; independent build provenance and causal
   attribution remain open.
-- [x] Define one written-rationale fixed-fixture no-change regression gate;
-  broader thresholds, independent build provenance, and causal attribution
-  remain open.
 - [ ] Preserve crashes, timeouts, missing branches, and inconclusive results.
 - [ ] Compare build-to-build behavior against a declared baseline.
 
