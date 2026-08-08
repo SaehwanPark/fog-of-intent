@@ -99,9 +99,10 @@ not increment the package version.
 
 ### Added
 
-- Added a host-owned `actor_observation` projection that returns the current
+- Added a host-owned `actor_observation` projection that returns the active
   actor-visible receipt through `m5-actor-observation-v1` without exposing
-  internal lane types or mutating history.
+  internal lane types or mutating history; closed and complete hosts return
+  actor-safe lifecycle errors.
 - Added parity and non-mutation coverage across the initial and next fixture
   observations.
 

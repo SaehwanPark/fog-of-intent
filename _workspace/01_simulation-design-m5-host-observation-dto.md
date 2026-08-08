@@ -2,9 +2,10 @@
 
 ## Contract
 
-`CliScenarioHost::actor_observation` returns the current host receipt through
-`ActorObservationDto::from_observation`. It is read-only and preserves the
-existing observation identity used by actor action and draft DTOs.
+`CliScenarioHost::actor_observation` returns the active host receipt through
+`ActorObservationDto::from_observation`. It is read-only, preserves the
+existing observation identity used by actor action and draft DTOs, and fails
+closed after completion or quit.
 
 ## Boundary
 
@@ -17,8 +18,8 @@ execution, or transition authority.
 
 The focused regression compares host projection with the pure DTO mapper before
 and after the first fixture advance, asserts the expected schema and advertised
-intent, rejects hidden hash text, and checks record count remains unchanged by
-projection.
+intent, rejects hidden hash text, checks record count remains unchanged by
+projection, and covers complete/closed errors.
 
 ## Deferred Work
 

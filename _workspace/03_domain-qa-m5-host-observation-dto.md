@@ -2,8 +2,8 @@
 
 ## Acceptance Checks
 
-- [x] The host exposes the current receipt through the exact
-  `m5-actor-observation-v1` DTO projection.
+- [x] The host exposes the active receipt through the exact
+  `m5-actor-observation-v1` DTO projection and rejects complete/closed hosts.
 - [x] Projection is parity-checked before and after a fixture transition and
   preserves the observation ID used by later actor requests.
 - [x] Projection leaves record count/history unchanged and exposes no hash or

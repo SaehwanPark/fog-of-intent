@@ -1179,9 +1179,9 @@ control over simulation resolution.
 - [x] Stage observation-bound actor draft metadata through the host-owned draft
   boundary with replacement and committed-window checks; communication
   delivery remains open.
-- [x] Expose the current actor-visible receipt through the versioned observation
-  DTO without mutating host history; transport and simultaneous actors remain
-  open.
+- [x] Expose the active actor-visible receipt through the versioned observation
+  DTO, rejecting closed/complete hosts without mutating history; transport and
+  simultaneous actors remain open.
 
 This is a pure library adapter boundary with no MCP transport, async runtime,
 or provider-specific behavior. The DTOs expose only four advertised intents
@@ -1197,7 +1197,8 @@ metadata without communication authority. The host stages those DTOs only
 before commit and never turns them into a transition by itself. Focused
 evidence is 11 protocol tests, 5 session tests, and 17 host tests within the
 189-unit, 7-binary, and 1-Rustdoc suite. The host observation projection is a
-pure actor-visible DTO mapping and leaves the internal receipt private.
+pure actor-visible DTO mapping, rejects inactive lifecycle states, and leaves
+the internal receipt private.
 
 ### Scope
 

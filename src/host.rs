@@ -188,9 +188,21 @@ impl CliScenarioHost {
     observe_player(&self.history.current_state(), self.next_observation_id()).observation()
   }
 
-  /// Return the current observation through the bounded actor protocol DTO.
-  pub fn actor_observation(&self) -> ActorObservationDto {
-    ActorObservationDto::from_observation(self.observation())
+  /// Return the active observation through the bounded actor protocol DTO.
+  pub fn actor_observation(&self) -> Result<ActorObservationDto, ActorProtocolError> {
+    if self.closed {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ));
+    }
+    if self.is_complete() {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::WindowClosed,
+        ActorProtocolRepairHint::StartNewSession,
+      ));
+    }
+    Ok(ActorObservationDto::from_observation(self.observation()))
   }
 
   /// Validate one actor action without mutating host state or history.
@@ -801,7 +813,9 @@ mod tests {
   #[test]
   fn actor_observation_projection_matches_host_receipt_without_mutation() {
     let mut host = CliScenarioHost::fixture();
-    let initial = host.actor_observation();
+    let initial = host
+      .actor_observation()
+      .expect("active observation projects");
     assert_eq!(
       initial,
       ActorObservationDto::from_observation(host.observation())
@@ -809,19 +823,44 @@ mod tests {
     assert_eq!(initial.schema(), "m5-actor-observation-v1");
     assert!(initial.advertises(crate::protocol::ActorProtocolIntent::Contest));
     assert_eq!(host.record_count(), 0);
-    assert_eq!(host.actor_observation(), initial);
+    assert_eq!(host.actor_observation(), Ok(initial.clone()));
     assert!(!format!("{initial:?}").contains("hash"));
 
     host.apply_line("plan contest").expect("plan is staged");
     host.apply_line("commit").expect("plan is committed");
     host.apply_line("advance").expect("first window advances");
-    let next = host.actor_observation();
+    let next = host
+      .actor_observation()
+      .expect("next active observation projects");
     assert_eq!(
       next,
       ActorObservationDto::from_observation(host.observation())
     );
     assert_ne!(next.observation_id(), initial.observation_id());
     assert_eq!(host.record_count(), 1);
+
+    host
+      .apply_line("plan stabilize")
+      .expect("second plan is staged");
+    host.apply_line("commit").expect("second plan is committed");
+    host.apply_line("advance").expect("second window advances");
+    assert_eq!(
+      host.actor_observation(),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::WindowClosed,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
+    );
+
+    let mut closed = CliScenarioHost::fixture();
+    closed.apply_line("quit").expect("host closes");
+    assert_eq!(
+      closed.actor_observation(),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
+    );
   }
 
   #[test]

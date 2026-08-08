@@ -2,7 +2,7 @@
 
 ## Requested Outcome
 
-Expose the current host receipt through the existing bounded
+Expose the active host receipt through the existing bounded
 `m5-actor-observation-v1` DTO so actor action and draft callers can obtain the
 same observation binding without reaching into internal lane types.
 
@@ -12,6 +12,7 @@ same observation binding without reaching into internal lane types.
 - Parity with `ActorObservationDto::from_observation` before and after one
   fixture transition.
 - Non-mutation and hidden-field regression coverage plus canonical updates.
+- Closed and complete lifecycle states fail through existing actor-safe errors.
 
 ## Non-Goals
 
@@ -27,4 +28,5 @@ remain unchanged.
 ## Verification
 
 One focused host test covers exact projection parity, actor-visible fields,
-absence of hash text, observation change after advance, and unchanged history.
+absence of hash text, observation change after advance, unchanged history, and
+complete/closed lifecycle errors.

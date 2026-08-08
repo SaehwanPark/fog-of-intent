@@ -988,10 +988,10 @@ transport-integrated sessions and broader protocol compatibility remain open.
   observation and replaces one internal draft field before commit. It rejects
   stale, wrong-actor, committed, complete, and closed edits without changing
   history; commit/advance remain the existing host-owned boundary.
-- `CliScenarioHost::actor_observation` projects the current host receipt through
+- `CliScenarioHost::actor_observation` projects the active host receipt through
   `m5-actor-observation-v1` without exposing the internal lane observation or
-  mutating history. The projection remains actor-visible and observation-bound;
-  transport and simultaneous-actor coordination remain open.
+  mutating history. Closed and complete hosts return the existing actor-safe
+  lifecycle errors; transport and simultaneous-actor coordination remain open.
   This is a pure library boundary, not an MCP transport or complete-session
   claim; communication delivery, transport, simultaneity, and broader
   host-error projection remain open.
