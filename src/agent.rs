@@ -294,6 +294,8 @@ pub enum ScriptedAgentReplayError {
 pub struct ScriptedAgentReplayRecord {
   schema: &'static str,
   observation: LanerObservation,
+  profile: ScriptedAgentProfile,
+  seed_bundle: Option<ScriptedAgentSeedBundle>,
   decision: ScriptedAgentDecision,
   expected_intent: LaneIntent,
   disposition: ScriptedAgentReplayDisposition,
@@ -319,6 +321,8 @@ impl ScriptedAgentReplayRecord {
     Self {
       schema: SCRIPTED_AGENT_REPLAY_SCHEMA,
       observation,
+      profile: agent.profile(),
+      seed_bundle,
       decision,
       expected_intent,
       disposition,
@@ -330,7 +334,7 @@ impl ScriptedAgentReplayRecord {
   }
 
   pub const fn profile(&self) -> ScriptedAgentProfile {
-    self.decision.profile()
+    self.profile
   }
 
   pub const fn observation_id(&self) -> crate::lane::ObservationId {
@@ -350,7 +354,7 @@ impl ScriptedAgentReplayRecord {
   }
 
   pub const fn seed_bundle(&self) -> Option<ScriptedAgentSeedBundle> {
-    self.decision.seed_bundle()
+    self.seed_bundle
   }
 
   pub fn decision(&self) -> &ScriptedAgentDecision {
@@ -360,7 +364,7 @@ impl ScriptedAgentReplayRecord {
   /// Re-evaluate the actor-visible policy input and verify the recorded result.
   pub fn replay(&self) -> Result<ScriptedAgentDecision, ScriptedAgentReplayError> {
     let agent = ScriptedAgent {
-      profile: self.decision.profile(),
+      profile: self.profile,
     };
     let decision = match self.seed_bundle() {
       Some(seed_bundle) => agent.choose_with_seed(self.observation, seed_bundle),
@@ -1039,6 +1043,27 @@ mod tests {
 
     assert_eq!(
       record.replay(),
+      Err(ScriptedAgentReplayError::DecisionMismatch)
+    );
+
+    let mut seeded_record = ScriptedAgentReplayRecord::capture(
+      ScriptedAgent::cautious_v1(),
+      observation,
+      LaneIntent::Stabilize,
+      Some(ScriptedAgentSeedBundle::new(
+        42,
+        StreamId::new(21),
+        DrawId::new(3),
+      )),
+    );
+    seeded_record.decision.seed_bundle = Some(ScriptedAgentSeedBundle::new(
+      99,
+      StreamId::new(22),
+      DrawId::new(4),
+    ));
+
+    assert_eq!(
+      seeded_record.replay(),
       Err(ScriptedAgentReplayError::DecisionMismatch)
     );
   }

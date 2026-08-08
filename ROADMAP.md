@@ -1107,8 +1107,9 @@ strategy while remaining bound to actor-visible information.
   expected versus declared-anomalous intent, and reject a tampered decision;
   durable persistence and degenerate-policy populations remain open.
 
-This is a three-profile library-only comparison with bounded score,
-selected-action, seed, and decision-replay reports. It does not establish a
+This is a three-profile library-only comparison with bounded score and
+selected-action reports, an explicit seed bundle, and decision-replay records.
+It does not establish a
 population, broader role heuristics, memory, communication, broad random
 sampling, durable replay persistence, matched-scenario metrics, strategic
 quality, human realism, or an executable agent adapter.
