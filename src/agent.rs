@@ -6577,6 +6577,13 @@ mod tests {
     let below =
       ScriptedAgentMatchedScenarioTallyComparisonReport::from_reports(&baseline, &candidate)
         .expect("verified tallies compare");
+    assert_eq!(
+      below
+        .largest_delta_candidate()
+        .expect("magnitude-one candidate exists")
+        .magnitude(),
+      1
+    );
     let below_report = ScriptedAgentTallyOutlierThresholdReport::from_comparison(&below);
     assert_eq!(
       below_report.schema(),
@@ -6620,6 +6627,13 @@ mod tests {
     let above_comparison =
       ScriptedAgentMatchedScenarioTallyComparisonReport::from_reports(&baseline_four, &above)
         .expect("above-threshold tallies compare");
+    assert_eq!(
+      above_comparison
+        .largest_delta_candidate()
+        .expect("magnitude-two candidate exists")
+        .magnitude(),
+      SCRIPTED_AGENT_TALLY_OUTLIER_THRESHOLD_MAGNITUDE
+    );
     let above_report = ScriptedAgentTallyOutlierThresholdReport::from_comparison(&above_comparison);
     assert_eq!(
       above_report.status(),
