@@ -425,3 +425,18 @@ canonical policy instead of duplicating it.
 - Prevention: Record the bundle with seeded decisions, resolve randomness at
   the policy edge, and defer broad sampling until seed/version and replay
   contracts cover the larger experiment surface.
+
+## Keep policy replay separate from host history
+
+- Context: M4 needed representative expected and anomalous scripted decisions
+  to remain inspectable without turning policy diagnostics into simulation
+  history.
+- Symptom: Reusing host replay or persistence for a policy-only decision can
+  accidentally grant an agent authority over transitions or imply durable
+  experiment support that does not exist.
+- Resolution: Store the actor-visible observation, decision, expected intent,
+  disposition, and optional seed in a versioned library record; re-evaluate it
+  through the same policy and return a bounded mismatch error.
+- Prevention: Keep policy replay records separate from authoritative history,
+  state hashes, execution inputs, and durable stores until those integrations
+  have their own contracts and evidence.

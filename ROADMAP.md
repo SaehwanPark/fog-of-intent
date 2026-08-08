@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.92`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.93`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1102,11 +1102,16 @@ strategy while remaining bound to actor-visible information.
   two uniquely identified fixture observations, reject mixed observers and
   duplicate IDs, and retain only the shared observer, bounded observation,
   profile, and rule IDs, observation count, and selected-intent counts.
+- [x] Capture `m4-scripted-agent-replay-v1` records that re-evaluate the same
+  actor-visible observation with default or seeded provenance, classify an
+  expected versus declared-anomalous intent, and reject a tampered decision;
+  durable persistence and degenerate-policy populations remain open.
 
-This is a three-profile library-only comparison with bounded score and
-selected-action reports. It does not establish a population, broader role
-heuristics, memory, communication, broad random sampling, matched-scenario
-metrics, strategic quality, human realism, or an executable agent adapter.
+This is a three-profile library-only comparison with bounded score,
+selected-action, seed, and decision-replay reports. It does not establish a
+population, broader role heuristics, memory, communication, broad random
+sampling, durable replay persistence, matched-scenario metrics, strategic
+quality, human realism, or an executable agent adapter.
 
 ### Deliverables
 
@@ -1122,7 +1127,8 @@ metrics, strategic quality, human realism, or an executable agent adapter.
   with evidence.
 - No agent reads hidden state or owns transition semantics.
 - Diversity measures distinguish candidate breadth from execution randomness.
-- Anomalous and degenerate policies remain inspectable through replay.
+- Bounded expected and declared-anomalous policy decisions are inspectable
+  through library replay records; degenerate-policy populations remain open.
 
 ### Explicit deferrals
 

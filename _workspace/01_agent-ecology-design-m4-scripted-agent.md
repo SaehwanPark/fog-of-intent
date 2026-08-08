@@ -72,8 +72,10 @@ The policies are tested against the existing initial and visible-RiverSide lane
 fixtures. Metrics are limited to candidate count, selected intent, score and
 reason inspection, legality validation, repeated-decision equality, one
 matched initial-observation comparison, and a two-observation selected-action
-tally. No population distribution, outcome, communication, diversity, or
-scenario-level outcome report is produced.
+tally. The `m4-scripted-agent-replay-v1` record re-evaluates expected and
+declared-anomalous decisions from actor-visible input, but it is not host
+history or durable persistence. No population distribution, outcome,
+communication, diversity, or scenario-level outcome report is produced.
 
 ## Calibration or Regression Protocol
 
@@ -111,6 +113,9 @@ hidden state to explain.
   bounded sensitivity regression; all profile requests remain host-valid.
 - The `m4-scripted-agent-metrics-v1` report records only bounded profile/rule
   IDs, selected intent/score, candidate count, and observation identity.
+- The `m4-scripted-agent-replay-v1` record retains only actor-visible policy
+  input, decision, expected intent, disposition, and optional seed provenance;
+  replay rejects a tampered decision with a bounded mismatch error.
 - `ScriptedAgentRole` provides `Anchor`, `Duelist`, and `Pacer` policy labels;
   they are not the M2 scenario actor roles.
 - No policy method accepts true state or resolved execution inputs.
