@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Line-oriented bounded fixture loop; no scenario selection or persistence |
-| Package | `Cargo.toml` | Version `0.1.70`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.71`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -864,8 +864,8 @@ API access.
   `branch`; branch execution remains open while replay/debrief are covered by
   the bounded host fixture.
 - [x] Define typed adapter requests for `save`, `load`, `undo`, and `quit`; the
-  host fixture provides in-memory snapshots while persistent storage remains
-  open.
+  host fixture provides versioned, replay-validated in-process artifacts while
+  durable file storage remains open.
 - [x] Add guided mode with numbered choices and explanations.
 - [x] Add expert mode with concise, scriptable commands.
 - [x] Add research inspection only behind an explicit privileged context.
@@ -875,7 +875,8 @@ API access.
 - [x] Support edit/undo before commitment without rewriting committed history
   through a typed local draft boundary.
 - [x] Add validated human-readable run identifiers to save/load/replay/export
-  adapter requests; persistence execution remains open.
+  adapter requests; the host artifact binds them to replay identity and state
+  hashes without exposing authoritative history.
 - [x] Keep terminal rendering outside the authoritative domain; the pure
   `src/terminal.rs` projection consumes actor-valid host values and performs no
   terminal I/O.
@@ -922,8 +923,8 @@ persist a session, or rewrite authoritative lane history.
 
 This verifies a structural boundary, bounded library-only host flow, pure text
 projection, and the thin line-oriented fixture I/O loop. Complete reference-
-client behavior, persistent backend, scenario selection, branch execution, and
-keyboard/screen-reader inspection remain open.
+client behavior, durable file backend, scenario selection, branch execution,
+and keyboard/screen-reader inspection remain open.
 
 ### Current bounded run-identifier evidence
 
@@ -931,11 +932,12 @@ keyboard/screen-reader inspection remain open.
 - [x] Accept bounded readable IDs (alphanumerics with `.`, `_`, and `-`) and
   reject empty, overlong, non-ASCII, and malformed values.
 - [x] Carry validated `CliRunId` values through session save/load, in-session
-  replay, and top-level replay/export requests without touching persistence or
-  authoritative history.
+  replay, and top-level replay/export requests with versioned host-artifact
+  validation while keeping authoritative history private.
 
-This establishes adapter syntax and typing only. Run generation, collision
-handling, storage, resume behavior, and human discoverability remain open.
+This establishes bounded adapter syntax plus in-process artifact validation.
+Run generation, collision handling, durable storage, cross-process resume, and
+human discoverability remain open.
 
 ### Current bounded grammar-transcript evidence
 
@@ -955,11 +957,11 @@ exit evidence.
 - [x] Map the existing CLI grammar to an explicit-input, synchronous
   two-window host fixture without exposing true-state snapshots or hashes.
 - [x] Complete a library-only transcript with observe, staged
-  message/plan/contingency text, commit, advance, in-memory save/load, replay,
+  message/plan/contingency text, commit, advance, versioned artifact save/load, replay,
   debrief, and quit.
 - [x] Add line-oriented terminal I/O/command-loop integration around the host
-  contract; persistent storage remains open.
-  keyboard-only and screen-reader inspection remain open.
+  contract; durable file storage remains open.
+- [ ] Check keyboard-only flow and screen-reader-oriented text structure.
 
 This is host-backed scenario and text-projection evidence plus a fixture
 command loop, but not the complete M3 reference client or accessibility

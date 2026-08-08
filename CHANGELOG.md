@@ -95,6 +95,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.71 — 2026-08-08
+
+### Added
+
+- Added the versioned `m3-cli-host-artifact-v1` pure text artifact for bounded
+  host save/load. It records validated run IDs, replay identity, committed
+  intents, and state hashes, then restores only after deterministic replay
+  validation.
+
+### Known limits
+
+- Artifacts remain in-process; durable file storage, scenario selection, branch
+  execution, and keyboard/screen-reader evidence remain open.
+
 ## 0.1.70 — 2026-08-08
 
 ### Added

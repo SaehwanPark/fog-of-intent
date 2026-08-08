@@ -77,11 +77,11 @@ players?
 | --- | --- |
 | Current roadmap milestone | M2 — One-Lane Vertical Slice (Active) |
 | Repository governance and canonical docs | Complete — M0 |
-| Rust package | `0.1.70`, edition 2024, Rust `1.96`, no dependencies, single package |
-| Executable behavior | Runs a line-oriented deterministic two-window fixture loop; no persistence or scenario selection |
+| Rust package | `0.1.71`, edition 2024, Rust `1.96`, no dependencies, single package |
+| Executable behavior | Runs a line-oriented deterministic two-window fixture loop; no durable file persistence or scenario selection |
 | Deterministic kernel | M1 fixture/codec complete; M2 v3 internal lane-window, explicit four-actor roster, retained-resource aggregate, intent, observation, branch, coordination, objective, strategy-fixture, scenario, replay, delayed-origin provenance, debrief, advance-condition, and belief/report contracts implemented |
 | One-lane scenario | Internal diagnostic windows and fixtures cover bounded intents, observations, coordination, resources, replay, and debrief projections — full scenario not complete |
-| CLI reference experience | Stable grammar plus typed requests, labels, draft/undo, run IDs, in-memory host transcript, pure text projection, and a fixture command loop; persistence, scenario selection, and accessibility evidence remain open |
+| CLI reference experience | Stable grammar plus typed requests, labels, draft/undo, run IDs, versioned in-process host artifacts, pure text projection, and a fixture command loop; durable file storage, scenario selection, and accessibility evidence remain open |
 | Agent ecology and MCP | One bounded M2 proposal baseline; full ecology/MCP not implemented — M4/M5 |
 | Behavioral experiments and calibration | Not implemented — M6/M7 |
 | Team play, full match, human alpha, optional GUI | Not implemented — M8-M11 |

@@ -140,3 +140,17 @@ canonical policy instead of duplicating it.
 - Prevention: Treat I/O as an outer adapter concern, keep the loop
   line-oriented and deterministic, and test recovery/exit behavior separately
   from terminal usability or accessibility claims.
+
+## Bind host artifacts to replay evidence
+
+- Context: In-process save/load needed a versioned artifact before a durable
+  file store could be justified.
+- Symptom: Storing only committed intents would let a different resolved-input
+  fixture load the same run with silently different outcomes and hashes.
+- Cause: Intent text is not sufficient to identify the deterministic execution
+  that produced a committed history.
+- Resolution: Encode the replay identity and each record's prior/result hashes,
+  then rebuild through the current explicit inputs and reject any mismatch.
+- Prevention: Treat artifacts as compatibility contracts, validate them before
+  replacing host history, and keep filesystem placement/atomicity as a separate
+  outer-edge concern.
