@@ -849,3 +849,15 @@ canonical policy instead of duplicating it.
 - Prevention: Treat draft readback as local metadata inspection; introduce
   recipients, transport, and simultaneous visibility only through a separate
   communication contract.
+
+## Reuse the existing debrief summary after saved-run verification
+
+- Context: Complete saved runs already have a bounded actor debrief summary;
+  reconstructing a second summary shape would duplicate categorical mapping.
+- Symptom: A saved-run adapter can accidentally project before replay or
+  completion checks, or widen the summary with artifact provenance.
+- Resolution: Restore and verify local history, require exactly two records,
+  invoke the existing debrief builder, and pass only its report to the existing
+  `ActorDebriefDto` projection.
+- Prevention: Keep saved summary retrieval as a thin verified adapter and leave
+  detailed causal review and durable replay records behind separate contracts.

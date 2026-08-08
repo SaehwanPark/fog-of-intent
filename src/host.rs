@@ -787,6 +787,58 @@ impl CliScenarioHost {
     Ok(ActorDebriefDto::from_report(report))
   }
 
+  /// Load a validated complete run before projecting the actor debrief summary.
+  pub fn actor_debrief_from_run(
+    &self,
+    run_id: CliRunId<'_>,
+  ) -> Result<ActorDebriefDto, ActorProtocolError> {
+    if self.closed {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ));
+    }
+    let artifact = CliHostArtifact::decode(&self.load_artifact(run_id.as_str()).map_err(|_| {
+      ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      )
+    })?)
+    .map_err(|_| {
+      ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      )
+    })?;
+    if artifact.run_id() != run_id.as_str() {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      ));
+    }
+    let history = self.restore_artifact(&artifact).map_err(|_| {
+      ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      )
+    })?;
+    if history.records().len() != 2 {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::DebriefUnavailable,
+        ActorProtocolRepairHint::AwaitCompletion,
+      ));
+    }
+    let report = build_scenario_debrief(&history)
+      .map_err(|_| {
+        ActorProtocolError::new(
+          ActorProtocolErrorCode::HostTransitionRejected,
+          ActorProtocolRepairHint::StartNewSession,
+        )
+      })?
+      .report();
+    Ok(ActorDebriefDto::from_report(report))
+  }
+
   /// Return the number of committed scenario windows.
   pub fn record_count(&self) -> u8 {
     u8::try_from(self.history.records().len()).expect("two-window history fits in u8")
@@ -1949,6 +2001,92 @@ mod tests {
         ActorProtocolRepairHint::StartNewSession,
       ))
     );
+  }
+
+  #[test]
+  fn actor_debrief_from_store_is_complete_and_does_not_mutate_current_host() {
+    let root = temporary_store_root();
+    let store = CliRunStore::new(&root);
+    let mut source = CliScenarioHost::fixture_with_store(store.clone());
+    for command in ["plan contest", "commit", "advance", "save first-window"] {
+      source
+        .apply_line(command)
+        .expect("source first-window command");
+    }
+    for command in ["plan stabilize", "commit", "advance", "save complete-run"] {
+      source
+        .apply_line(command)
+        .expect("source complete-run command");
+    }
+
+    let mut fresh = CliScenarioHost::fixture_with_store(store);
+    let before = fresh.observation();
+    let first_window = CliRunId::parse("first-window").expect("run ID is valid");
+    assert_eq!(
+      fresh.actor_debrief_from_run(first_window),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::DebriefUnavailable,
+        ActorProtocolRepairHint::AwaitCompletion,
+      ))
+    );
+    assert_eq!(fresh.record_count(), 0);
+    assert_eq!(fresh.observation(), before);
+
+    let complete_run = CliRunId::parse("complete-run").expect("run ID is valid");
+    let debrief = fresh
+      .actor_debrief_from_run(complete_run)
+      .expect("complete saved run has debrief");
+    assert_eq!(debrief.schema(), "m5-actor-debrief-v1");
+    assert_eq!(debrief.first().intent().id(), "contest");
+    assert_eq!(
+      debrief.first().outcome(),
+      ActorActionResultOutcome::HeldSpace
+    );
+    assert_eq!(
+      debrief.first().objective(),
+      ActorDebriefObjective::GoalAchieved
+    );
+    assert_eq!(debrief.second().intent().id(), "stabilize");
+    assert_eq!(
+      debrief.second().outcome(),
+      ActorActionResultOutcome::YieldedSpace
+    );
+    assert_eq!(
+      debrief.second().objective(),
+      ActorDebriefObjective::GoalMissed
+    );
+    assert_eq!(debrief.final_objective(), ActorDebriefObjective::GoalMissed);
+    assert_eq!(
+      debrief.attribution_limit(),
+      crate::protocol::ActorDebriefAttributionLimit::CommittedFactsOnly
+    );
+    assert_eq!(ActorDebriefDto::decode(&debrief.encode()), Ok(debrief));
+    assert_eq!(fresh.record_count(), 0);
+    assert_eq!(fresh.observation(), before);
+    assert!(!format!("{debrief:?}").contains("StateHash"));
+    assert!(!format!("{debrief:?}").contains("health"));
+    assert!(!format!("{debrief:?}").contains("trace"));
+
+    std::fs::write(root.join("complete-run.foi-artifact"), "malformed")
+      .expect("tamper complete artifact");
+    assert_eq!(
+      fresh.actor_debrief_from_run(complete_run),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::HostTransitionRejected,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
+    );
+    assert_eq!(fresh.record_count(), 0);
+    assert_eq!(fresh.observation(), before);
+    fresh.apply_line("quit").expect("fresh host closes");
+    assert_eq!(
+      fresh.actor_debrief_from_run(complete_run),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
+    );
+    let _ = std::fs::remove_dir_all(root);
   }
 
   #[test]

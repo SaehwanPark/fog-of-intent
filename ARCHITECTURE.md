@@ -139,7 +139,7 @@ still owns legality. It also maps codec failures to the versioned,
 actor-safe `m5-actor-error-v2` code/repair vocabulary and its bounded codec
 without retaining raw input or parser details. `src/host.rs` owns the
 actor-observation, actor-commit, draft-readback, draft-status, draft-clear, history-status, replay-status,
-replay-record, saved-replay-record, action-result, and completion-gated debrief
+replay-record, saved-replay-record, saved-debrief-summary, action-result, and completion-gated debrief
 projections plus actor-action validation and submission entry points: it delegates legality to the lane
 validator and closes a fixture window only after successful validation and
 history append.
@@ -161,6 +161,9 @@ successful commit; it never echoes values or claims delivery. `ActorDebriefDto`
 is a committed-facts summary only; the host derives
 it from the existing complete lane report and keeps detailed causal fields,
 replay identity, and persistence outside the protocol contract.
+`CliScenarioHost::actor_debrief_from_run` applies the same local restore and
+completion gate through the injected store and leaves the receiving host
+unchanged; it does not add durable or causal replay authority.
 `ActorTranscriptDto` is provider-neutral compatibility metadata only; runtime
 transport logging, prompt/model details, and durable retention remain outer
 adapter concerns.
