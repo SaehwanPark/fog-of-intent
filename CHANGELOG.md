@@ -98,6 +98,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.145 — 2026-08-08
+
+### Added
+
+- Added caller-driven `checkpoint_saved` and `batch_resumed` event production
+  around injected checkpoint save/load adapters. Events are appended only after
+  successful bounded storage operations, with one-slot preflight and no event
+  mutation on storage, decode, or capacity failure.
+
+### Known limits
+
+- Automatic runtime failure detection, diagnostics, event-log persistence,
+  tracing/transport, scheduling, decision/result attachment, and richer replay
+  remain open.
+
 ## 0.1.144 — 2026-08-08
 
 ### Added

@@ -189,6 +189,9 @@ The batch runner can append a caller-driven start/chunk/finish trio only after
 validation and capacity preflight; this producer preserves batch decision
 parity and does not provide checkpoint, failure-detection, or transport
 authority.
+The injected checkpoint store similarly appends save/resume labels only after
+successful bounded storage operations and one-slot preflight; it does not make
+filesystem activity a runtime diagnostic or persist the operational log.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

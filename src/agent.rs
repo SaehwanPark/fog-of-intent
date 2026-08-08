@@ -3447,12 +3447,60 @@ mod tests {
     host_store
       .save("resume", host_artifact)
       .expect("host artifact saves");
-    store.save("resume", checkpoint).expect("checkpoint saves");
+    let mut operational_log = ScriptedAgentOperationalLog::new();
+    store
+      .save_with_operational_log("resume", checkpoint, &mut operational_log)
+      .expect("checkpoint saves with an event");
+    assert_eq!(
+      operational_log.entries()[0].event(),
+      ScriptedAgentOperationalEvent::CheckpointSaved
+    );
     assert_eq!(
       host_store.load("resume").expect("host artifact loads"),
       host_artifact
     );
-    let loaded = store.load("resume").expect("checkpoint loads");
+    let loaded = store
+      .load_with_operational_log("resume", &mut operational_log)
+      .expect("checkpoint loads with an event");
+    assert_eq!(
+      operational_log.entries()[1].event(),
+      ScriptedAgentOperationalEvent::BatchResumed
+    );
+    std::fs::write(root.join("broken.foi-batch-run"), "bad")
+      .expect("malformed checkpoint fixture writes");
+    let log_before_decode_error = operational_log.entries().to_vec();
+    assert_eq!(
+      store.load_with_operational_log("broken", &mut operational_log),
+      Err(
+        crate::agent_batch_store::ScriptedAgentBatchStoreOperationalError::Store(
+          crate::agent_batch_store::ScriptedAgentBatchStoreError::InvalidCheckpoint {
+            error: ScriptedAgentBatchCheckpointError::InvalidValue,
+          },
+        )
+      )
+    );
+    assert_eq!(
+      operational_log.entries(),
+      log_before_decode_error.as_slice()
+    );
+    for _ in operational_log.len()..MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS {
+      operational_log
+        .append(ScriptedAgentOperationalEvent::BatchStarted)
+        .expect("event log reaches its cap");
+    }
+    let log_before_capacity_error = operational_log.entries().to_vec();
+    assert_eq!(
+      store.load_with_operational_log("resume", &mut operational_log),
+      Err(
+        crate::agent_batch_store::ScriptedAgentBatchStoreOperationalError::LogCapacityExceeded {
+          max: MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS,
+        }
+      )
+    );
+    assert_eq!(
+      operational_log.entries(),
+      log_before_capacity_error.as_slice()
+    );
     let (first, advanced) = ScriptedAgentBatchRunner::run_next(observation, &manifests, loaded, 1)
       .expect("first chunk runs");
     assert_eq!(first.len(), 1);
