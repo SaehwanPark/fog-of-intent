@@ -20,7 +20,7 @@ actor-visible projections, and no ANSI escape sequences.
 
 ## Accessibility boundary
 
-Plain labeled lines avoid color-only meaning and are structurally friendly to
-screen readers, but this slice does not test a real terminal, focus behavior,
-keyboard navigation, speech output, or users. Those remain explicit M3 exit
-evidence requirements.
+Plain labeled lines avoid color-only meaning and are intended for later
+screen-reader evaluation, but this slice does not test a real terminal, focus
+behavior, keyboard navigation, speech output, or users. Those remain explicit
+M3 exit evidence requirements.

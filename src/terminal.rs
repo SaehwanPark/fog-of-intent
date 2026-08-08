@@ -216,7 +216,8 @@ pub fn render_error(error: &CliHostError<'_>) -> String {
       )
     }
     CliHostError::AdvanceRejected => {
-      "advance was rejected; revise the plan or execution fixture and retry".to_owned()
+      "advance was rejected; load a saved run or start a new run with corrected resolved inputs"
+        .to_owned()
     }
     CliHostError::ReplayRejected => {
       "replay verification failed; return to a verified saved run".to_owned()
@@ -374,6 +375,8 @@ fn window_name(window: ScenarioWindow) -> &'static str {
 mod tests {
   use super::*;
   use crate::host::CliScenarioHost;
+  use crate::kernel::{DrawId, InputTrace, StreamId};
+  use crate::lane::{LaneDamage, LaneExecutionInputs, LaneResolvedInputs, LaneWaveResult};
 
   #[test]
   fn output_is_plain_labeled_text_for_empty_and_complete_states() {
@@ -446,5 +449,30 @@ mod tests {
     assert!(empty.contains("enter a command"));
     let boundary = render_error(&CliHostError::CommittedBoundary { verb: "plan" });
     assert!(boundary.contains("advance first"));
+
+    let mut malformed_host = CliScenarioHost::new([malformed_inputs(), malformed_inputs()]);
+    malformed_host
+      .apply_line("plan contest")
+      .expect("plan staging");
+    malformed_host.apply_line("commit").expect("commit");
+    let advance = malformed_host
+      .apply_line("advance")
+      .expect_err("malformed input");
+    assert!(render_error(&advance).contains("load a saved run"));
+  }
+
+  fn malformed_inputs() -> LaneResolvedInputs {
+    LaneResolvedInputs::new(
+      InputTrace::new(StreamId::new(7), DrawId::new(1)),
+      InputTrace::new(StreamId::new(7), DrawId::new(2)),
+      InputTrace::new(StreamId::new(7), DrawId::new(3)),
+      InputTrace::new(StreamId::new(7), DrawId::new(4)),
+      LaneExecutionInputs::new(
+        InputTrace::new(StreamId::new(7), DrawId::new(5)),
+        LaneDamage::zero(),
+        LaneDamage::new(8).expect("bounded malformed-input damage"),
+        LaneWaveResult::Advanced,
+      ),
+    )
   }
 }

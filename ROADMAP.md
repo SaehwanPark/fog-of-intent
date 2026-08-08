@@ -945,8 +945,9 @@ handling, storage, resume behavior, and human discoverability remain open.
 - [x] Complete a host-backed scenario transcript with save/resume, replay,
   debrief, and deterministic plain-text output.
 
-The checked items are grammar-level acceptance only and do not satisfy the M3
-complete-run exit evidence.
+The first two checked items are grammar-level acceptance. The third is
+library-only host/text evidence and still does not satisfy the M3 complete-run
+exit evidence.
 
 ### Current bounded host-transcript evidence
 
@@ -955,7 +956,8 @@ complete-run exit evidence.
 - [x] Complete a library-only transcript with observe, staged
   message/plan/contingency text, commit, advance, in-memory save/load, replay,
   debrief, and quit.
-- [ ] Add terminal rendering and persistent storage around the host contract;
+- [ ] Add terminal I/O/command-loop integration and persistent storage around
+  the host contract;
   keyboard-only and screen-reader inspection remain open.
 
 This is host-backed scenario and text-projection evidence, but not a
