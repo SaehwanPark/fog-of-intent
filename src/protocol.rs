@@ -1507,6 +1507,42 @@ mod tests {
     );
     assert_eq!(ActorCommitDto::decode(&commit.encode()), Ok(commit));
 
+    assert_eq!(
+      ActorCommitDto::decode(
+        "schema=m5-actor-commit-v1\nobserver=1\nobservation_id=41\nunknown=contest\n"
+      ),
+      Err(ActorProtocolCodecError::UnknownField)
+    );
+    assert_eq!(
+      ActorCommitDto::decode("schema=m5-actor-commit-v1\nobserver=1\nobserver=1\nintent=contest\n"),
+      Err(ActorProtocolCodecError::DuplicateField)
+    );
+    assert_eq!(
+      ActorCommitDto::decode("schema=m5-actor-commit-v1\nobserver=1\nobservation_id=41\n"),
+      Err(ActorProtocolCodecError::MissingField)
+    );
+    assert_eq!(
+      ActorCommitDto::decode(
+        "schema=m5-actor-commit-v0\nobserver=1\nobservation_id=41\nintent=contest\n"
+      ),
+      Err(ActorProtocolCodecError::UnsupportedSchema)
+    );
+    assert_eq!(
+      ActorCommitDto::decode(
+        "schema=m5-actor-commit-v1\nobserver=nope\nobservation_id=41\nintent=contest\n"
+      ),
+      Err(ActorProtocolCodecError::InvalidValue)
+    );
+    assert_eq!(
+      ActorCommitDto::decode(
+        "schema=m5-actor-commit-v1\nobserver=1\nobservation_id=41\nintent=contest\nextra=x\n"
+      ),
+      Err(ActorProtocolCodecError::UnexpectedLineCount {
+        expected: 4,
+        actual: 5,
+      })
+    );
+
     let result = ActorCommitResultDto::new(ActorProtocolIntent::Contest);
     assert_eq!(result.schema(), "m5-actor-commit-result-v1");
     assert_eq!(
@@ -1515,9 +1551,25 @@ mod tests {
     );
     assert_eq!(ActorCommitResultDto::decode(&result.encode()), Ok(result));
     assert_eq!(
-      ActorCommitDto::decode(
-        "schema=m5-actor-commit-v1\nobserver=1\nobservation_id=41\nintent=unknown\n"
+      ActorCommitResultDto::decode("schema=m5-actor-commit-result-v1\nunknown=contest\n"),
+      Err(ActorProtocolCodecError::UnknownField)
+    );
+    assert_eq!(
+      ActorCommitResultDto::decode(
+        "schema=m5-actor-commit-result-v1\nschema=m5-actor-commit-result-v1\n"
       ),
+      Err(ActorProtocolCodecError::DuplicateField)
+    );
+    assert_eq!(
+      ActorCommitResultDto::decode("schema=m5-actor-commit-result-v1\n"),
+      Err(ActorProtocolCodecError::MissingField)
+    );
+    assert_eq!(
+      ActorCommitResultDto::decode("schema=m5-actor-commit-result-v0\nintent=contest\n"),
+      Err(ActorProtocolCodecError::UnsupportedSchema)
+    );
+    assert_eq!(
+      ActorCommitResultDto::decode("schema=m5-actor-commit-result-v1\nintent=unknown\n"),
       Err(ActorProtocolCodecError::InvalidValue)
     );
     assert_eq!(

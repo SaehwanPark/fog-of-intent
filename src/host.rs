@@ -348,7 +348,7 @@ impl CliScenarioHost {
     {
       return Err(ActorProtocolError::new(
         ActorProtocolErrorCode::HostValidationRejected,
-        ActorProtocolRepairHint::ResendAdvertisedAction,
+        ActorProtocolRepairHint::ResendValidPayload,
       ));
     }
     self.committed_intent = Some(commit.to_lane_intent());
@@ -1387,6 +1387,7 @@ mod tests {
       ActorCommitResultDto::new(crate::protocol::ActorProtocolIntent::Contest)
     );
     assert_eq!(ActorCommitResultDto::decode(&result.encode()), Ok(result));
+    assert!(host.draft.is_empty());
     assert_eq!(host.record_count(), 0);
     assert_eq!(host.observation(), observation);
     assert_eq!(
@@ -1459,9 +1460,10 @@ mod tests {
       ))
       .expect_err("staged plan mismatch is rejected");
     assert_eq!(mismatch_error.code().id(), "host_validation_rejected");
-    assert_eq!(mismatch_error.repair().id(), "resend_advertised_action");
+    assert_eq!(mismatch_error.repair().id(), "resend_valid_payload");
     assert_eq!(mismatch.record_count(), 0);
     assert_eq!(mismatch.observation(), mismatch_observation);
+    assert_eq!(mismatch.draft.plan.as_deref(), Some("contest"));
 
     let wrong_actor = ActorCommitDto::new(
       mismatch_observation.observer().value().saturating_add(1),

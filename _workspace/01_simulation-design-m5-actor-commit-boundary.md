@@ -34,7 +34,7 @@ observation, so callers must await the existing host advance boundary.
 The host checks closed session, actor mismatch, complete history, already
 committed boundary, and stale observation in that order. If a staged plan is
 present but disagrees with the explicit commit intent, it returns the existing
-actor-safe `host_validation_rejected`/`resend_advertised_action` pair. The
+actor-safe `host_validation_rejected`/`resend_valid_payload` pair. The
 success result is a pure acknowledgement and cannot advance or retry work.
 
 ## Resolved Inputs and Random Streams
