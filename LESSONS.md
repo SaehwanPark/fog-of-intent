@@ -922,3 +922,15 @@ canonical policy instead of duplicating it.
 - Prevention: Keep matched samples fixture-sized and actor-visible; defer
   population distributions, outcomes, metrics, persistence, and calibration to
   separate contracts with separate evidence.
+
+## Record applicable versions without inventing provider support
+
+- Context: M6 requires reproducibility metadata while this repository still has
+  no prompt, model, transport-tool, or extractor integration.
+- Symptom: Omitting version fields hides the boundary, while fabricating
+  provider versions overclaims compatibility and calibration readiness.
+- Resolution: Publish one fixed catalog for the applicable ruleset, scenario,
+  policy, and profile IDs, and use an explicit `not-applicable` marker for
+  provider-edge fields.
+- Prevention: Keep version metadata pure and separate from manifest execution,
+  persistence, population sampling, and provider contracts.

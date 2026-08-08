@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.130`, no dependencies |
+| Package | `Cargo.toml` | Version `0.1.131`, no dependencies |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1377,8 +1377,9 @@ representative replays, and an evidence-limited report.
   not choose scenarios or generate populations.
 - [ ] Add population generation, matched-scenario sampling, and distributional
   sampling evidence.
-- [ ] Record ruleset, scenario, profile, prompt, tool-schema, model, and extractor
-  versions as applicable.
+- [x] Record applicable ruleset, scenario, scripted-policy, and profile version
+  identities in a metadata-only catalog; prompt, model, tool-schema, and
+  extractor versions are explicitly not applicable to this in-process slice.
 - [ ] Generate aggregate and distributional metrics, not only means.
 - [ ] Add illegal-command, exploit-seeking, communication-abuse, and degenerate
   policy populations.
@@ -1393,8 +1394,9 @@ representative replays, and an evidence-limited report.
 ### Deliverables
 
 - Experiment manifest schema and batch runner.
-- Versioned bounded cursor artifacts and matched-observation selected-intent
-  evidence; decision/result artifacts and representative replays remain open.
+- Versioned bounded cursor artifacts, matched-observation selected-intent
+  evidence, and an applicable version catalog; decision/result artifacts and
+  representative replays remain open.
 - Regression report template and threshold rationale.
 - CI or scheduled entry point only after runtime cost is measured.
 
