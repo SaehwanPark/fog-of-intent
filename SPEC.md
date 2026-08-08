@@ -1186,6 +1186,14 @@ transport-integrated sessions and broader protocol compatibility remain open.
   input before comparing the candidate with an already verified report.
   Mismatches are rejected before a trusted report is returned; this is
   machine-readable evidence, not durable export or a report pipeline.
+- `ScriptedAgentMatchedScenarioTallyComparisonReport` defines
+  `m6-scripted-agent-matched-scenario-tally-compare-v1` over two
+  constructor-verified tally reports. It requires one shared observer and
+  exact ordered profile/evaluation-rule rows, then retains baseline/candidate
+  pair and observation counts plus bounded signed candidate-minus-baseline
+  intent deltas. This is caller-declared selected-intent evidence only; it
+  does not establish build provenance, causality, population distributions,
+  outcomes, strategic quality, persistence, or provider behavior.
 - `ScriptedAgentFixtureScenarioSelection` defines
   `m6-scripted-agent-fixture-scenarios-v1` over the closed
   `safe-fixture-v1` and `river-side-threat-v1` IDs. It binds one or more

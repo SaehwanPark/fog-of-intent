@@ -1061,6 +1061,19 @@ canonical policy instead of duplicating it.
 - Prevention: Label this as declared-baseline evidence and keep build identity,
   causal analysis, outcomes, and strategic metrics behind separate contracts.
 
+## Pair profile-aware tallies only after identity checks
+
+- Context: M6 needed to compare selected-intent counts across two verified
+  fixed-fixture tally reports without adding build or population authority.
+- Symptom: Pairing rows by position alone can compare different profiles or
+  observers and make signed deltas look like evidence for the wrong policy.
+- Resolution: Require one shared observer and exact ordered profile/evaluation-
+  rule identities before retaining bounded baseline/candidate counts; compute
+  candidate-minus-baseline deltas in a wider signed type.
+- Prevention: Keep tally comparison caller-declared and fixture-sized; leave
+  build provenance, causality, distributions, outcomes, persistence, providers,
+  and calibration behind separate contracts.
+
 ## Keep provisional regression gates explicit and narrow
 
 - Context: M6 needed one useful regression signal before broad threshold or

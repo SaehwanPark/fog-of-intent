@@ -98,6 +98,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.154 — 2026-08-08
+
+### Added
+
+- Added `m6-scripted-agent-matched-scenario-tally-compare-v1`, a bounded
+  comparison of two caller-declared verified profile-aware tally reports with
+  shared-observer and ordered profile/rule checks plus signed intent deltas.
+
+### Known limits
+
+- The comparison is declared-baseline selected-intent evidence only; build
+  provenance, causal attribution, broader population metrics/distributions,
+  outcomes, persistence, providers, calibration, and human evidence remain
+  open.
+
 ## 0.1.153 — 2026-08-08
 
 ### Added

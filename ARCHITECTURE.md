@@ -158,6 +158,11 @@ Its line-oriented codec is bounded and closed-field validated for
 machine-readable evidence; decoding is accepted only when it matches an
 already verified report, and it is not durable export or an external report
 pipeline.
+`ScriptedAgentMatchedScenarioTallyComparisonReport` pairs two such verified
+reports only when their actor and ordered profile/rule identities match. It
+retains bounded baseline/candidate counts and signed intent deltas without
+rerunning policy evaluation or claiming build provenance, causality,
+population, outcome, persistence, or provider authority.
 `ScriptedAgentFixtureScenarioSelection` is a closed metadata catalog for the
 safe and RiverSide-threat fixture IDs. It binds caller-supplied observation IDs,
 projects deterministic actor-visible pairs, and composes the existing sample
