@@ -95,6 +95,22 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.79 — 2026-08-08
+
+### Added
+
+- Added the versioned `m4-scripted-agent-v1` policy boundary with the
+  actor-visible `cautious-laner-v1` deterministic baseline.
+- Added bounded candidate generation, fixed candidate evaluation, stable
+  selection, host-validatable requests, and reproducibility tests without
+  introducing agent-owned legality or transition behavior.
+
+### Known limits
+
+- This is one library-only scripted profile; broader agent populations, role
+  heuristics, memory, communication, randomness, metrics, and external agent
+  adapters remain deferred.
+
 ## 0.1.78 — 2026-08-08
 
 ### Added
