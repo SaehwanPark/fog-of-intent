@@ -98,6 +98,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.110 — 2026-08-08
+
+### Added
+
+- Added a closed five-entry ordinary-actor capability catalog covering the
+  versioned observation, draft, draft-receipt, commit, and action tools.
+- Reserved the `privileged_experiment_controller` authority label without
+  advertising or implementing privileged tools.
+
+### Known limits
+
+- Capability metadata does not authenticate callers or grant runtime
+  authority; privileged tools, transport registration, and experiment control
+  remain open.
+
 ## 0.1.109 — 2026-08-08
 
 ### Added

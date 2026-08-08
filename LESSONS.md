@@ -664,3 +664,14 @@ canonical policy instead of duplicating it.
   accepted/rejected status in a versioned pure DTO.
 - Prevention: Keep runtime retention, prompts, model metadata, transport, and
   replay integration behind separate contracts and evidence gates.
+
+## Publish capability scope before privileged tools
+
+- Context: Actor-facing tool catalogs can accidentally imply experiment control
+  merely by listing an operation.
+- Symptom: Ordinary actor and privileged controller concerns become coupled in
+  one schema before authentication and mutation authority exist.
+- Resolution: Publish a closed catalog that labels current tools as ordinary
+  actor scope and reserves, but does not advertise, the privileged label.
+- Prevention: Add privileged tools only through a separate capability,
+  authorization, and evidence contract.

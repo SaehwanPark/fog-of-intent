@@ -1149,6 +1149,69 @@ impl ActorTranscriptTool {
   }
 }
 
+/// Closed authority labels for actor-facing tool capabilities.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ActorToolAuthority {
+  OrdinaryActor,
+  PrivilegedExperimentController,
+}
+
+impl ActorToolAuthority {
+  pub const fn id(self) -> &'static str {
+    match self {
+      Self::OrdinaryActor => "ordinary_actor",
+      Self::PrivilegedExperimentController => "privileged_experiment_controller",
+    }
+  }
+}
+
+/// Pure capability metadata for one closed actor tool.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ActorToolCapability {
+  tool: ActorTranscriptTool,
+  authority: ActorToolAuthority,
+}
+
+impl ActorToolCapability {
+  pub const fn new(tool: ActorTranscriptTool, authority: ActorToolAuthority) -> Self {
+    Self { tool, authority }
+  }
+
+  pub const fn tool(self) -> ActorTranscriptTool {
+    self.tool
+  }
+
+  pub const fn authority(self) -> ActorToolAuthority {
+    self.authority
+  }
+}
+
+/// Return the stable ordinary-actor capability catalog.
+pub const fn actor_tool_capabilities() -> [ActorToolCapability; 5] {
+  [
+    ActorToolCapability::new(
+      ActorTranscriptTool::Observation,
+      ActorToolAuthority::OrdinaryActor,
+    ),
+    ActorToolCapability::new(
+      ActorTranscriptTool::Draft,
+      ActorToolAuthority::OrdinaryActor,
+    ),
+    ActorToolCapability::new(
+      ActorTranscriptTool::DraftReceipt,
+      ActorToolAuthority::OrdinaryActor,
+    ),
+    ActorToolCapability::new(
+      ActorTranscriptTool::Commit,
+      ActorToolAuthority::OrdinaryActor,
+    ),
+    ActorToolCapability::new(
+      ActorTranscriptTool::Action,
+      ActorToolAuthority::OrdinaryActor,
+    ),
+  ]
+}
+
 /// Closed provider-neutral actor operation result values.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ActorTranscriptResult {
@@ -2228,6 +2291,41 @@ mod tests {
         actual: 7,
       })
     );
+  }
+
+  #[test]
+  fn actor_tool_capability_catalog_is_stable_and_ordinary_only() {
+    let expected = [
+      (
+        ActorTranscriptTool::Observation,
+        "observation",
+        "m5-actor-observation-v1",
+      ),
+      (ActorTranscriptTool::Draft, "draft", "m5-actor-draft-v1"),
+      (
+        ActorTranscriptTool::DraftReceipt,
+        "draft_receipt",
+        "m5-actor-draft-receipt-v1",
+      ),
+      (ActorTranscriptTool::Commit, "commit", "m5-actor-commit-v1"),
+      (ActorTranscriptTool::Action, "action", "m5-actor-action-v1"),
+    ];
+    let catalog = actor_tool_capabilities();
+    assert_eq!(catalog.len(), expected.len());
+    for (capability, (tool, tool_id, schema)) in catalog.into_iter().zip(expected) {
+      assert_eq!(capability.tool(), tool);
+      assert_eq!(capability.tool().id(), tool_id);
+      assert_eq!(capability.tool().schema_id(), schema);
+      assert_eq!(capability.authority(), ActorToolAuthority::OrdinaryActor);
+      assert_eq!(capability.authority().id(), "ordinary_actor");
+    }
+    assert_eq!(
+      ActorToolAuthority::PrivilegedExperimentController.id(),
+      "privileged_experiment_controller"
+    );
+    assert!(actor_tool_capabilities().into_iter().all(
+      |capability| capability.authority() != ActorToolAuthority::PrivilegedExperimentController
+    ));
   }
 
   #[test]
