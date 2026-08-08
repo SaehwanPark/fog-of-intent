@@ -1414,6 +1414,9 @@ representative replays, and an evidence-limited report.
 - [x] Encode bounded payload-free operational logs and store them in a distinct
   injected namespace; crash recovery, rotation, external export, and runtime
   diagnostics remain open.
+- [x] Store caller-declared operational-log segments under bounded distinct
+  suffixes; automatic rotation, crash recovery, and durable scenario-wide
+  recovery remain open.
 - [x] Export bounded machine-readable data and a concise pure Markdown
   evidence report for the verified fixed-fixture frequency slice; durable
   export, arbitrary report pipelines, and broader metrics remain open.
