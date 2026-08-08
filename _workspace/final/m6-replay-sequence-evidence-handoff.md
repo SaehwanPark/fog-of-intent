@@ -2,16 +2,17 @@
 
 ## Outcome
 
-Pending independent review.
+PASS — no actionable findings remain after independent three-pass review at
+implementation/evidence head `a31374c`.
 
-## Verification target
+## Verification
 
-The focused agent regression should bind the exact report identities, prove
-verified and mismatched decision replay, classify complete and incomplete
-operational sequences, and preserve the sequence status under decision
-tampering. The expected full evidence is 35 focused agent tests within 248
-Rust unit tests, 7 binary tests, and 3 RustDoc tests, 15 Python tests,
-formatter, Clippy, repository, and diff gates.
+The focused agent regression binds the exact report identities, proves
+verified and mismatched decision replay, classifies complete and incomplete
+operational sequences, and preserves the sequence status under decision
+tampering. The full evidence is 35 focused agent tests within 248 Rust unit
+tests, 7 binary tests, and 3 RustDoc tests, 15 Python tests, formatter, Clippy,
+repository, and diff gates; all pass at `a31374c`.
 
 ## Limits
 
