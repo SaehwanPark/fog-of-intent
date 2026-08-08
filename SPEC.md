@@ -967,8 +967,8 @@ transport-integrated sessions and broader protocol compatibility remain open.
   conversion through the existing validator, absence of state-hash or
   snapshot fields, session lifecycle/error cases, codec round-trips and
   malformed-input rejection, and exhaustive codec/session error projections.
-  The focused evidence is 15 protocol tests and 5 session tests within the
-  196-unit, 7-binary, and 1-Rustdoc suite.
+  The focused evidence is 16 protocol tests and 5 session tests within the
+  198-unit, 7-binary, and 1-Rustdoc suite.
 - `CliScenarioHost::validate_actor_action` checks one DTO against the current
   actor-visible receipt and existing lane validator without mutating history,
   staging a plan, resolving execution, or closing a window. It projects only
@@ -988,6 +988,12 @@ transport-integrated sessions and broader protocol compatibility remain open.
   observation and replaces one internal draft field before commit. It rejects
   stale, wrong-actor, committed, complete, and closed edits without changing
   history; commit/advance remain the existing host-owned boundary.
+- `ActorCommitDto` and `ActorCommitResultDto` define `m5-actor-commit-v1` and
+  `m5-actor-commit-result-v1` for an observer/receipt-bound explicit intent and
+  bounded intent acknowledgement. `CliScenarioHost::commit_actor_draft`
+  checks lifecycle/freshness and staged-plan consistency, clears uncommitted
+  metadata, and sets the host's committed intent without advancing, resolving,
+  appending history, or refreshing the observation.
 - `CliScenarioHost::actor_observation` projects the active host receipt through
   `m5-actor-observation-v1` without exposing the internal lane observation or
   mutating history. Closed and complete hosts return the existing actor-safe

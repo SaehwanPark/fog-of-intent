@@ -614,3 +614,17 @@ canonical policy instead of duplicating it.
 - Prevention: Keep detailed causal debrief and replay-linked records behind
   separate contracts, and test completion, closure, codec bounds, and hidden
   fields before adding transport or persistence.
+
+## Keep actor commit separate from actor advance
+
+- Context: M5 needed a protocol command for committing an actor's intent after
+  draft metadata staging.
+- Symptom: Reusing the actor action DTO would conflate committing an intent with
+  legality validation, execution resolution, window closure, and history append.
+- Resolution: Define an observation-bound commit command/result pair; the host
+  checks receipt/lifecycle and optional staged-plan consistency, clears draft
+  metadata, and stores the committed intent while leaving advance and lane
+  authority unchanged.
+- Prevention: Test zero history mutation, unchanged observation, second-commit
+  rejection, stale/wrong-actor/complete/closed boundaries, and mismatch
+  redaction before adding transport or simultaneous ordering.

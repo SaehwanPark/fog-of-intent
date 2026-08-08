@@ -20,8 +20,9 @@ use crate::lane::{
 };
 use crate::protocol::{
   ActorActionDto, ActorActionResultDto, ActorActionResultOutcome, ActorActionResultWindow,
-  ActorDebriefDto, ActorDraftDto, ActorDraftField, ActorHistoryDto, ActorHistoryStatus,
-  ActorObservationDto, ActorProtocolError, ActorProtocolErrorCode, ActorProtocolRepairHint,
+  ActorCommitDto, ActorCommitResultDto, ActorDebriefDto, ActorDraftDto, ActorDraftField,
+  ActorHistoryDto, ActorHistoryStatus, ActorObservationDto, ActorProtocolError,
+  ActorProtocolErrorCode, ActorProtocolRepairHint,
 };
 use crate::run_store::{CliRunStore, CliRunStoreError};
 
@@ -304,6 +305,59 @@ impl CliScenarioHost {
     Ok(CliHostOutput::DraftStaged {
       field: draft.field().id(),
     })
+  }
+
+  /// Commit one observation-bound actor intent without advancing the host.
+  pub fn commit_actor_draft(
+    &mut self,
+    commit: ActorCommitDto,
+  ) -> Result<ActorCommitResultDto, ActorProtocolError> {
+    if self.closed {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ));
+    }
+    let receipt = observe_player(&self.history.current_state(), self.next_observation_id());
+    if commit.observer() != receipt.observation().observer().value() {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ActorMismatch,
+        ActorProtocolRepairHint::UseBoundActor,
+      ));
+    }
+    if self.is_complete() {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::WindowClosed,
+        ActorProtocolRepairHint::StartNewSession,
+      ));
+    }
+    if self.committed_intent.is_some() {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::DraftBoundary,
+        ActorProtocolRepairHint::AwaitNextObservation,
+      ));
+    }
+    if commit.observation_id() != receipt.observation().observation_id().value() {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::StaleObservation,
+        ActorProtocolRepairHint::RequestFreshObservation,
+      ));
+    }
+    if let Some(staged_plan) = self.draft.plan.as_deref()
+      && parse_plan_intent(staged_plan) != Some(commit.to_lane_intent())
+    {
+      return Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::HostValidationRejected,
+        ActorProtocolRepairHint::ResendAdvertisedAction,
+      ));
+    }
+    self.committed_intent = Some(commit.to_lane_intent());
+    self.draft = HostDraft {
+      message: None,
+      plan: None,
+      contingency: None,
+    };
+    Ok(ActorCommitResultDto::new(commit.intent()))
   }
 
   /// Validate and submit one actor action, then close the host-owned window.
@@ -1290,6 +1344,141 @@ mod tests {
     closed.apply_line("quit").expect("incomplete host closes");
     assert_eq!(
       closed.actor_debrief(),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ClosedSession,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
+    );
+  }
+
+  #[test]
+  fn actor_commit_is_observation_bound_and_does_not_advance_history() {
+    let mut host = CliScenarioHost::fixture();
+    let observation = host.observation();
+    let make_draft = |field, value| {
+      ActorDraftDto::new(
+        observation.observer().value(),
+        observation.observation_id().value(),
+        field,
+        value,
+      )
+      .expect("draft value is bounded")
+    };
+    for (field, value) in [
+      (ActorDraftField::Message, "ping ally"),
+      (ActorDraftField::Plan, "contest"),
+      (ActorDraftField::Contingency, "retreat if threat"),
+    ] {
+      host
+        .stage_actor_draft(make_draft(field, value))
+        .expect("draft stages before commit");
+    }
+
+    let first_commit = ActorCommitDto::new(
+      observation.observer().value(),
+      observation.observation_id().value(),
+      crate::protocol::ActorProtocolIntent::Contest,
+    );
+    let result = host
+      .commit_actor_draft(first_commit)
+      .expect("matching actor commit succeeds");
+    assert_eq!(
+      result,
+      ActorCommitResultDto::new(crate::protocol::ActorProtocolIntent::Contest)
+    );
+    assert_eq!(ActorCommitResultDto::decode(&result.encode()), Ok(result));
+    assert_eq!(host.record_count(), 0);
+    assert_eq!(host.observation(), observation);
+    assert_eq!(
+      host.stage_actor_draft(make_draft(ActorDraftField::Message, "too late")),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::DraftBoundary,
+        ActorProtocolRepairHint::AwaitNextObservation,
+      ))
+    );
+    assert_eq!(
+      host.commit_actor_draft(first_commit),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::DraftBoundary,
+        ActorProtocolRepairHint::AwaitNextObservation,
+      ))
+    );
+    host
+      .apply_line("advance")
+      .expect("host advances committed intent");
+
+    let second = host.observation();
+    assert_eq!(
+      host.commit_actor_draft(ActorCommitDto::new(
+        second.observer().value(),
+        observation.observation_id().value(),
+        crate::protocol::ActorProtocolIntent::Stabilize,
+      )),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::StaleObservation,
+        ActorProtocolRepairHint::RequestFreshObservation,
+      ))
+    );
+    let second_commit = ActorCommitDto::new(
+      second.observer().value(),
+      second.observation_id().value(),
+      crate::protocol::ActorProtocolIntent::Stabilize,
+    );
+    host
+      .commit_actor_draft(second_commit)
+      .expect("explicit second intent commits without metadata");
+    assert_eq!(host.record_count(), 1);
+    assert_eq!(host.observation(), second);
+    host.apply_line("advance").expect("second commit advances");
+    assert!(host.is_complete());
+    assert_eq!(
+      host.commit_actor_draft(second_commit),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::WindowClosed,
+        ActorProtocolRepairHint::StartNewSession,
+      ))
+    );
+
+    let mut mismatch = CliScenarioHost::fixture();
+    let mismatch_observation = mismatch.observation();
+    let staged = ActorDraftDto::new(
+      mismatch_observation.observer().value(),
+      mismatch_observation.observation_id().value(),
+      ActorDraftField::Plan,
+      "contest",
+    )
+    .expect("staged plan is bounded");
+    mismatch
+      .stage_actor_draft(staged)
+      .expect("plan stages for mismatch test");
+    let mismatch_error = mismatch
+      .commit_actor_draft(ActorCommitDto::new(
+        mismatch_observation.observer().value(),
+        mismatch_observation.observation_id().value(),
+        crate::protocol::ActorProtocolIntent::Stabilize,
+      ))
+      .expect_err("staged plan mismatch is rejected");
+    assert_eq!(mismatch_error.code().id(), "host_validation_rejected");
+    assert_eq!(mismatch_error.repair().id(), "resend_advertised_action");
+    assert_eq!(mismatch.record_count(), 0);
+    assert_eq!(mismatch.observation(), mismatch_observation);
+
+    let wrong_actor = ActorCommitDto::new(
+      mismatch_observation.observer().value().saturating_add(1),
+      mismatch_observation.observation_id().value(),
+      crate::protocol::ActorProtocolIntent::Contest,
+    );
+    assert_eq!(
+      mismatch.commit_actor_draft(wrong_actor),
+      Err(ActorProtocolError::new(
+        ActorProtocolErrorCode::ActorMismatch,
+        ActorProtocolRepairHint::UseBoundActor,
+      ))
+    );
+    let mut closed = CliScenarioHost::fixture();
+    closed.apply_line("quit").expect("host closes");
+    assert_eq!(
+      closed.commit_actor_draft(first_commit),
       Err(ActorProtocolError::new(
         ActorProtocolErrorCode::ClosedSession,
         ActorProtocolRepairHint::StartNewSession,

@@ -130,13 +130,13 @@ authoritative history. An opt-in seeded tie path accepts only an explicit
 policy seed bundle, and the library-only decision replay record remains
 outside transition, host history, and durable persistence authority.
 
-`src/protocol.rs` owns the bounded actor observation/action DTO projection. It
+`src/protocol.rs` owns the bounded actor observation/action/commit DTO projection. It
 maps primitive actor-visible fields and closed intent IDs without exposing
 internal observation/request types as a transport contract; host validation
 still owns legality. It also maps codec failures to the versioned,
 actor-safe `m5-actor-error-v2` code/repair vocabulary and its bounded codec
 without retaining raw input or parser details. `src/host.rs` owns the
-actor-observation, history-status, action-result, and completion-gated debrief
+actor-observation, actor-commit, history-status, action-result, and completion-gated debrief
 projections plus actor-action validation and submission entry points: it delegates legality to the lane
 validator and closes a fixture window only after successful validation and
 history append.
