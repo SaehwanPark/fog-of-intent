@@ -98,6 +98,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.167 — 2026-08-08
+
+### Added
+
+- Added `m6-scripted-agent-exploit-seeking-population-v1`, a bounded
+  fixed-fixture report over one to four actor-visible `Contest` selections by
+  the risk-taking policy.
+
+### Known limits
+
+- This is selected-intent evidence only; actual exploit search,
+  communication-abuse populations, prevalence, outcomes, strategy quality,
+  persistence, providers, and human evidence remain open.
+
 ## 0.1.166 — 2026-08-08
 
 ### Added

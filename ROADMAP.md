@@ -1423,9 +1423,12 @@ representative replays, and an evidence-limited report.
   validation, freshness, message-codec, and deterministic-policy boundaries;
   actual adversarial/degenerate populations and exploit search remain open.
 - [x] Add a bounded caller-declared illegal-command population over repeated
-  actor-visible host validation rejection; exploit-seeking and
+  actor-visible host validation rejection; actual exploit search and
   communication-abuse populations remain open.
-- [ ] Add exploit-seeking and communication-abuse policy populations.
+- [x] Add a bounded fixed-fixture risk-taking policy population over repeated
+  actor-visible `Contest` selections; actual exploit search, communication
+  abuse, prevalence, outcomes, and strategy-quality evidence remain open.
+- [ ] Add communication-abuse policy populations.
 - [x] Add a bounded caller-declared degenerate-policy population over repeated
   actor-visible `Stabilize` selections; broad adversarial populations,
   prevalence, and outcomes remain open.

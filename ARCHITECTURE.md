@@ -262,6 +262,12 @@ only the stable actor-safe `host_validation_rejected` category. It is read-only
 metadata over host validation and adds no lane transition, history, replay,
 transport, persistence, provider, exploit-search, communication, prevalence,
 or outcome authority.
+`ScriptedAgentExploitSeekingPopulationReport` is the corresponding fixed
+risk-taking policy boundary: it validates one to four same-actor observations
+and records only the `risk-taking-laner-v1`/`contest-first-fixed-score-v1`
+selection of `Contest`. It does not search for exploits or add population,
+prevalence, outcome, strategy-quality, transition, history, persistence,
+provider, or human-evidence authority.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO
