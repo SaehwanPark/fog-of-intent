@@ -2,29 +2,36 @@
 
 ## Disposition
 
-Pending independent three-pass review of the implementation and evidence.
+PASS: the independent three-pass code/API, domain-boundary, and
+docs/evidence review found no actionable findings. The implementation and
+evidence head is `6779a02`.
 
-## Scope to review
+## Scope reviewed
 
-- Does the report accept exactly one through four attempts and reject empty or
-  over-capacity input before host validation?
-- Does each attempt use the existing host validator and bind the exact
+- The report accepts one through four attempts and rejects empty or
+  over-capacity input before host validation, including on a closed-host
+  sentinel.
+- Each attempt uses the existing host validator and binds the exact
   `host_validation_rejected` actor-safe category without carrying payloads or
-  raw errors?
-- Does the borrowed path preserve observation, draft, committed intent, and
-  history state?
-- Do canonical docs keep exploit-seeking, communication abuse, prevalence,
-  outcomes, persistence, provider, and human-evidence claims open?
+  raw errors.
+- The borrowed path preserves a staged draft, a committed intent, observation,
+  and history state.
+- Canonical docs keep exploit-seeking, communication abuse, prevalence,
+  outcomes, persistence, provider, and human-evidence claims open.
 
-## Evidence target
+## Evidence
 
-One focused host regression should cover the exact schema/category,
-inclusive four-attempt success, deterministic repeatability, empty/five
-boundaries, and complete host read-only nonmutation. The expected full suite is
-252 Rust unit tests, 7 binary tests, 3 RustDoc tests, and 15 Python policy
-tests, plus formatter, Clippy with warnings denied, repository checker, and
-diff checks.
+One focused host regression covers the exact schema/category, one- and
+four-attempt inclusive success, deterministic repeatability, empty/five
+boundaries before closed-host lifecycle validation, and complete host
+read-only nonmutation across draft, committed intent, observation, and
+history. The full evidence is 35 host tests within 252 Rust unit tests, 7
+binary tests, and 3 RustDoc tests, plus 15 Python policy tests. Formatter,
+Clippy with warnings denied, repository checker, and diff checks pass at the
+reviewed head `6779a02`.
 
 ## Required fixes
 
-To be determined by the independent review.
+None. The report remains a bounded host-validation projection without
+exploit-search, communication, prevalence, runtime, outcome, persistence,
+provider, or human-evidence authority.

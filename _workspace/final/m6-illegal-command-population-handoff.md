@@ -2,21 +2,26 @@
 
 ## Status
 
-Pending independent review and final evidence recording.
+PASS: no actionable findings remain after the independent three-pass review.
+Implementation and evidence head: `6779a02`.
 
 ## Implementation
 
-The slice is intended to add
+The slice adds
 `m6-actor-illegal-command-population-v1`, a bounded actor-visible report over
 one to four repeated invalid commands validated by the host. It should retain
 only the stable `host_validation_rejected` category and binding metadata while
-leaving host observation and history unchanged.
+leaving a staged draft, committed intent, host observation, and history
+unchanged.
 
-## Verification target
+## Verification
 
-The expected full evidence is one focused host regression, 252 Rust unit
-tests, 7 binary tests, 3 RustDoc tests, and 15 Python policy tests, with
-formatter, Clippy warnings denied, repository checker, and diff checks passing.
+One focused host regression covers exact schema/category, one/four attempt
+success, deterministic repeatability, empty/five bound errors before closed
+host lifecycle validation, and draft/commit/observation/history nonmutation.
+The full evidence is 35 host tests within 252 Rust unit tests, 7 binary tests,
+3 RustDoc tests, and 15 Python policy tests. Formatter, Clippy warnings
+denied, repository checker, and diff checks pass at `6779a02`.
 
 ## Limits
 
