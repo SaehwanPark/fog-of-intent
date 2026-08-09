@@ -9,7 +9,7 @@ Implementation and evidence head: `6779a02`.
 
 The slice adds
 `m6-actor-illegal-command-population-v1`, a bounded actor-visible report over
-one to four repeated invalid commands validated by the host. It should retain
+one to four repeated invalid commands validated by the host. It retains
 only the stable `host_validation_rejected` category and binding metadata while
 leaving a staged draft, committed intent, host observation, and history
 unchanged.
