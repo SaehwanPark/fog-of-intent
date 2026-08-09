@@ -1193,6 +1193,14 @@ transport-integrated sessions and broader protocol compatibility remain open.
   over-capacity, observer, duplicate-ID, and unexpected-intent inputs fail
   closed. This is fixture-sized degenerate evidence, not adversarial search,
   prevalence, outcomes, persistence, providers, or human behavior.
+- `ActorIllegalCommandPopulationReport` defines
+  `m6-actor-illegal-command-population-v1` as a bounded caller-declared
+  population of one to four repeated, observation-bound invalid commands
+  validated by the host. It retains only the actor-safe
+  `host_validation_rejected` category plus observer, observation ID, and
+  attempt count; it does not search for exploits, model communication abuse,
+  infer prevalence, or own transition, history, persistence, provider, or
+  outcome authority.
 - Each tally row can expose ordered 10,000-point intent shares in
   `[Stabilize, Contest, Yield, Recall, Withdraw]` order. The first four shares
   use floor division and Withdraw receives the remainder, so each row sums to

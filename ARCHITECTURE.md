@@ -256,6 +256,12 @@ not representative replay proof or a scenario-wide replay authority.
 caller-declared actor-visible observations against the fixed cautious
 `Stabilize` selection. It adds no adversarial search, prevalence, outcome,
 history, persistence, provider, or human-behavior authority.
+`ActorIllegalCommandPopulationReport` remains at the host validation boundary:
+it repeats one observation-bound invalid command one to four times and retains
+only the stable actor-safe `host_validation_rejected` category. It is read-only
+metadata over host validation and adds no lane transition, history, replay,
+transport, persistence, provider, exploit-search, communication, prevalence,
+or outcome authority.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

@@ -31,6 +31,97 @@ use crate::run_store::{CliRunStore, CliRunStoreError};
 /// Versioned contract for the bounded synchronous host fixture.
 pub const CLI_HOST_SCHEMA: &str = "m3-cli-host-v1";
 
+/// Versioned actor-visible report for repeated invalid-command validation.
+pub const ACTOR_ILLEGAL_COMMAND_POPULATION_SCHEMA: &str = "m6-actor-illegal-command-population-v1";
+
+/// Maximum caller-declared invalid-command attempts in one bounded report.
+pub const MAX_ACTOR_ILLEGAL_COMMAND_POPULATION: usize = 4;
+
+/// Failures from constructing an illegal-command population report.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ActorIllegalCommandPopulationError {
+  EmptyPopulation,
+  PopulationTooLarge { max: usize, actual: usize },
+  UnexpectedCode { actual: ActorProtocolErrorCode },
+}
+
+/// Bounded actor-visible evidence over repeated host validation rejection.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ActorIllegalCommandPopulationReport {
+  schema: &'static str,
+  observer: u8,
+  observation_id: u64,
+  rejection_code: ActorProtocolErrorCode,
+  attempt_count: u8,
+}
+
+impl ActorIllegalCommandPopulationReport {
+  /// Validate one caller-declared invalid-command population without mutation.
+  ///
+  /// The host must be active and the bounded population repeats the same
+  /// observation-bound `Withdraw` request. Only the stable validation-error
+  /// category is retained; no command payload, lane state, or raw failure is
+  /// exposed.
+  pub fn from_host(
+    host: &CliScenarioHost,
+    attempt_count: usize,
+  ) -> Result<Self, ActorIllegalCommandPopulationError> {
+    if attempt_count == 0 {
+      return Err(ActorIllegalCommandPopulationError::EmptyPopulation);
+    }
+    if attempt_count > MAX_ACTOR_ILLEGAL_COMMAND_POPULATION {
+      return Err(ActorIllegalCommandPopulationError::PopulationTooLarge {
+        max: MAX_ACTOR_ILLEGAL_COMMAND_POPULATION,
+        actual: attempt_count,
+      });
+    }
+    let observation = host.observation();
+    let action = ActorActionDto::new(
+      observation.observer().value(),
+      observation.observation_id().value(),
+      crate::protocol::ActorProtocolIntent::Withdraw,
+    );
+    let rejection_code = ActorProtocolErrorCode::HostValidationRejected;
+    for _ in 0..attempt_count {
+      let error = host
+        .validate_actor_action(action)
+        .expect_err("withdraw is invalid in the active fixture observation");
+      if error.code() != rejection_code {
+        return Err(ActorIllegalCommandPopulationError::UnexpectedCode {
+          actual: error.code(),
+        });
+      }
+    }
+    Ok(Self {
+      schema: ACTOR_ILLEGAL_COMMAND_POPULATION_SCHEMA,
+      observer: observation.observer().value(),
+      observation_id: observation.observation_id().value(),
+      rejection_code,
+      attempt_count: u8::try_from(attempt_count).expect("population cap fits in u8"),
+    })
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn observer(self) -> u8 {
+    self.observer
+  }
+
+  pub const fn observation_id(self) -> u64 {
+    self.observation_id
+  }
+
+  pub const fn rejection_code(self) -> ActorProtocolErrorCode {
+    self.rejection_code
+  }
+
+  pub const fn attempt_count(self) -> u8 {
+    self.attempt_count
+  }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct HostDraft {
   message: Option<String>,
@@ -1771,6 +1862,87 @@ mod tests {
     assert_eq!(error.code().id(), "window_closed");
     assert_eq!(error.repair().id(), "start_new_session");
     assert_eq!(host.record_count(), 2);
+  }
+
+  #[test]
+  fn illegal_command_population_is_bounded_and_read_only() {
+    let mut host = CliScenarioHost::fixture();
+    let observation = host.observation();
+    assert_eq!(MAX_ACTOR_ILLEGAL_COMMAND_POPULATION, 4);
+    let draft = ActorDraftDto::new(
+      observation.observer().value(),
+      observation.observation_id().value(),
+      ActorDraftField::Message,
+      "keep this draft",
+    )
+    .expect("draft is bounded");
+    host
+      .stage_actor_draft(draft)
+      .expect("draft staging succeeds");
+    let draft_before = host.protocol_draft.clone();
+    let observation_before = host.observation();
+    let history_before = host.record_count();
+    let singleton = ActorIllegalCommandPopulationReport::from_host(&host, 1)
+      .expect("lower inclusive invalid-command population succeeds");
+    assert_eq!(singleton.attempt_count(), 1);
+    let report = ActorIllegalCommandPopulationReport::from_host(&host, 4)
+      .expect("bounded invalid-command population succeeds");
+    assert_eq!(report.schema(), "m6-actor-illegal-command-population-v1");
+    assert_eq!(report.observer(), observation.observer().value());
+    assert_eq!(
+      report.observation_id(),
+      observation.observation_id().value()
+    );
+    assert_eq!(
+      report.rejection_code(),
+      ActorProtocolErrorCode::HostValidationRejected
+    );
+    assert_eq!(report.attempt_count(), 4);
+    assert_eq!(
+      report,
+      ActorIllegalCommandPopulationReport::from_host(&host, 4)
+        .expect("repeated construction is deterministic")
+    );
+    assert_eq!(host.protocol_draft, draft_before);
+    assert_eq!(host.record_count(), history_before);
+    assert_eq!(host.observation(), observation_before);
+
+    let mut committed_host = CliScenarioHost::fixture();
+    let committed_observation = committed_host.observation();
+    committed_host
+      .commit_actor_draft(ActorCommitDto::new(
+        committed_observation.observer().value(),
+        committed_observation.observation_id().value(),
+        crate::protocol::ActorProtocolIntent::Contest,
+      ))
+      .expect("commit remains local before advance");
+    let committed_intent_before = committed_host.committed_intent;
+    let committed_observation_before = committed_host.observation();
+    let committed_history_before = committed_host.record_count();
+    ActorIllegalCommandPopulationReport::from_host(&committed_host, 4)
+      .expect("committed host still validates read-only");
+    assert_eq!(committed_host.committed_intent, committed_intent_before);
+    assert_eq!(committed_host.record_count(), committed_history_before);
+    assert_eq!(committed_host.observation(), committed_observation_before);
+
+    let mut closed_host = CliScenarioHost::fixture();
+    closed_host
+      .apply_line("quit")
+      .expect("fixture closes through the host lifecycle");
+    assert_eq!(
+      ActorIllegalCommandPopulationReport::from_host(&closed_host, 0),
+      Err(ActorIllegalCommandPopulationError::EmptyPopulation)
+    );
+    assert_eq!(
+      ActorIllegalCommandPopulationReport::from_host(
+        &closed_host,
+        MAX_ACTOR_ILLEGAL_COMMAND_POPULATION + 1,
+      ),
+      Err(ActorIllegalCommandPopulationError::PopulationTooLarge {
+        max: MAX_ACTOR_ILLEGAL_COMMAND_POPULATION,
+        actual: MAX_ACTOR_ILLEGAL_COMMAND_POPULATION + 1,
+      })
+    );
   }
 
   #[test]
