@@ -115,6 +115,13 @@ pub const SCRIPTED_AGENT_DEGENERATE_POLICY_POPULATION_SCHEMA: &str =
 /// Maximum observations in one fixed degenerate-policy population.
 pub const MAX_SCRIPTED_AGENT_DEGENERATE_POLICY_POPULATION: usize = 4;
 
+/// Versioned identity for bounded fixed-fixture exploit-seeking evidence.
+pub const SCRIPTED_AGENT_EXPLOIT_SEEKING_POPULATION_SCHEMA: &str =
+  "m6-scripted-agent-exploit-seeking-population-v1";
+
+/// Maximum observations in one fixed exploit-seeking policy population.
+pub const MAX_SCRIPTED_AGENT_EXPLOIT_SEEKING_POPULATION: usize = 4;
+
 /// Versioned identity for bounded fixed-fixture frequency baseline comparisons.
 pub const SCRIPTED_AGENT_FIXTURE_SCENARIO_FREQUENCY_COMPARISON_SCHEMA: &str =
   "m6-scripted-agent-fixture-frequency-compare-v1";
@@ -1120,6 +1127,99 @@ impl ScriptedAgentDegeneratePolicyPopulationReport {
       observer,
       observation_count: u8::try_from(observations.len()).expect("population cap fits in u8"),
       selected_intent: LaneIntent::Stabilize,
+    })
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn profile_id(self) -> &'static str {
+    self.profile_id
+  }
+
+  pub const fn evaluation_rule(self) -> &'static str {
+    self.evaluation_rule
+  }
+
+  pub const fn observer(self) -> ActorId {
+    self.observer
+  }
+
+  pub const fn observation_count(self) -> u8 {
+    self.observation_count
+  }
+
+  pub const fn selected_intent(self) -> LaneIntent {
+    self.selected_intent
+  }
+}
+
+/// Bounded failures from fixed exploit-seeking policy population construction.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentExploitSeekingPopulationError {
+  EmptyPopulation,
+  PopulationTooLarge { max: usize, actual: usize },
+  MismatchedObserver,
+  DuplicateObservationId,
+  UnexpectedIntent,
+}
+
+/// Verified caller-declared population whose risk-taking policy selects Contest.
+///
+/// This is fixed-fixture selected-intent evidence only; it does not search for
+/// exploits or establish adversarial prevalence, outcomes, or strategy quality.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentExploitSeekingPopulationReport {
+  schema: &'static str,
+  profile_id: &'static str,
+  evaluation_rule: &'static str,
+  observer: ActorId,
+  observation_count: u8,
+  selected_intent: LaneIntent,
+}
+
+impl ScriptedAgentExploitSeekingPopulationReport {
+  /// Build fixed risk-taking evidence from actor-visible observations only.
+  pub fn from_observations(
+    observations: &[LanerObservation],
+  ) -> Result<Self, ScriptedAgentExploitSeekingPopulationError> {
+    if observations.is_empty() {
+      return Err(ScriptedAgentExploitSeekingPopulationError::EmptyPopulation);
+    }
+    if observations.len() > MAX_SCRIPTED_AGENT_EXPLOIT_SEEKING_POPULATION {
+      return Err(
+        ScriptedAgentExploitSeekingPopulationError::PopulationTooLarge {
+          max: MAX_SCRIPTED_AGENT_EXPLOIT_SEEKING_POPULATION,
+          actual: observations.len(),
+        },
+      );
+    }
+    let observer = observations[0].observer();
+    let mut seen_ids = Vec::with_capacity(observations.len());
+    for observation in observations {
+      if observation.observer() != observer {
+        return Err(ScriptedAgentExploitSeekingPopulationError::MismatchedObserver);
+      }
+      if seen_ids.contains(&observation.observation_id()) {
+        return Err(ScriptedAgentExploitSeekingPopulationError::DuplicateObservationId);
+      }
+      seen_ids.push(observation.observation_id());
+      if ScriptedAgent::risk_taking_v1()
+        .choose(*observation)
+        .selected_intent()
+        != LaneIntent::Contest
+      {
+        return Err(ScriptedAgentExploitSeekingPopulationError::UnexpectedIntent);
+      }
+    }
+    Ok(Self {
+      schema: SCRIPTED_AGENT_EXPLOIT_SEEKING_POPULATION_SCHEMA,
+      profile_id: ScriptedAgentProfile::risk_taking_v1().profile_id(),
+      evaluation_rule: ScriptedAgentProfile::risk_taking_v1().evaluation_rule(),
+      observer,
+      observation_count: u8::try_from(observations.len()).expect("population cap fits in u8"),
+      selected_intent: LaneIntent::Contest,
     })
   }
 
@@ -6396,6 +6496,84 @@ mod tests {
         ScriptedAgentDegeneratePolicyPopulationError::PopulationTooLarge {
           max: MAX_SCRIPTED_AGENT_DEGENERATE_POLICY_POPULATION,
           actual: MAX_SCRIPTED_AGENT_DEGENERATE_POLICY_POPULATION + 1,
+        }
+      )
+    );
+  }
+
+  #[test]
+  fn exploit_seeking_population_is_bounded_and_fixed_fixture_only() {
+    let state = LaneSnapshot::initial();
+    let observations = (0..MAX_SCRIPTED_AGENT_EXPLOIT_SEEKING_POPULATION)
+      .map(|offset| {
+        observe_player(
+          &state,
+          ObservationId::new(1_000 + u64::try_from(offset).expect("offset fits")),
+        )
+        .observation()
+      })
+      .collect::<Vec<_>>();
+    let report = ScriptedAgentExploitSeekingPopulationReport::from_observations(&observations)
+      .expect("risk-taking policy selects Contest in the safe fixture");
+    assert_eq!(
+      SCRIPTED_AGENT_EXPLOIT_SEEKING_POPULATION_SCHEMA,
+      "m6-scripted-agent-exploit-seeking-population-v1"
+    );
+    assert_eq!(
+      report.schema(),
+      SCRIPTED_AGENT_EXPLOIT_SEEKING_POPULATION_SCHEMA
+    );
+    assert_eq!(report.profile_id(), "risk-taking-laner-v1");
+    assert_eq!(report.evaluation_rule(), "contest-first-fixed-score-v1");
+    assert_eq!(report.observer(), observations[0].observer());
+    assert_eq!(report.observation_count(), 4);
+    assert_eq!(report.selected_intent(), LaneIntent::Contest);
+    let singleton =
+      ScriptedAgentExploitSeekingPopulationReport::from_observations(&observations[..1])
+        .expect("inclusive one-member population fits");
+    assert_eq!(singleton.observation_count(), 1);
+    assert_eq!(singleton.selected_intent(), LaneIntent::Contest);
+    assert_eq!(
+      ScriptedAgentExploitSeekingPopulationReport::from_observations(&observations),
+      Ok(report)
+    );
+    assert_eq!(
+      ScriptedAgentExploitSeekingPopulationReport::from_observations(&[]),
+      Err(ScriptedAgentExploitSeekingPopulationError::EmptyPopulation)
+    );
+    assert_eq!(
+      ScriptedAgentExploitSeekingPopulationReport::from_observations(&[
+        observations[0],
+        observations[0],
+      ]),
+      Err(ScriptedAgentExploitSeekingPopulationError::DuplicateObservationId)
+    );
+    let allied_observation = LanerObservation {
+      observer: ALLIED_AUTONOMOUS_ACTOR,
+      ..observations[0]
+    };
+    assert_eq!(
+      ScriptedAgentExploitSeekingPopulationReport::from_observations(&[
+        observations[0],
+        allied_observation,
+      ]),
+      Err(ScriptedAgentExploitSeekingPopulationError::MismatchedObserver)
+    );
+    let too_many = (0..=MAX_SCRIPTED_AGENT_EXPLOIT_SEEKING_POPULATION)
+      .map(|offset| {
+        observe_player(
+          &state,
+          ObservationId::new(1_100 + u64::try_from(offset).expect("offset fits")),
+        )
+        .observation()
+      })
+      .collect::<Vec<_>>();
+    assert_eq!(
+      ScriptedAgentExploitSeekingPopulationReport::from_observations(&too_many),
+      Err(
+        ScriptedAgentExploitSeekingPopulationError::PopulationTooLarge {
+          max: MAX_SCRIPTED_AGENT_EXPLOIT_SEEKING_POPULATION,
+          actual: MAX_SCRIPTED_AGENT_EXPLOIT_SEEKING_POPULATION + 1,
         }
       )
     );

@@ -1263,6 +1263,18 @@ canonical policy instead of duplicating it.
 - Prevention: keep exploit search, communication semantics, prevalence,
   outcomes, persistence, providers, and human evidence in separate contracts.
 
+## Keep risk-taking policy evidence separate from exploit search
+
+- Context: M6 needed a bounded risk-taking population before adversarial
+  search or communication-abuse modeling was authorized.
+- Symptom: labeling repeated `Contest` selections as exploits can imply
+  prevalence, outcome quality, or an actual search over opportunities.
+- Resolution: bind one fixed risk-taking profile/rule to one to four
+  actor-visible observations and retain only the verified selected intent.
+- Prevention: keep exploit definitions/search, communication semantics,
+  prevalence, outcomes, strategy quality, persistence, providers, and human
+  evidence in separate contracts.
+
 ## Keep metric candidates separate from outlier judgments
 
 - Context: M6 needed a deterministic largest-delta candidate before broader

@@ -1201,6 +1201,13 @@ transport-integrated sessions and broader protocol compatibility remain open.
   attempt count; it does not search for exploits, model communication abuse,
   infer prevalence, or own transition, history, persistence, provider, or
   outcome authority.
+- `ScriptedAgentExploitSeekingPopulationReport` defines
+  `m6-scripted-agent-exploit-seeking-population-v1` as a bounded
+  caller-declared population of one to four actor-visible observations where
+  the fixed `risk-taking-laner-v1` policy selects `Contest`. It is a
+  selected-intent boundary report only; it does not search for exploits,
+  model communication abuse, infer prevalence, or claim outcomes, strategy
+  quality, persistence, providers, or human behavior.
 - Each tally row can expose ordered 10,000-point intent shares in
   `[Stabilize, Contest, Yield, Recall, Withdraw]` order. The first four shares
   use floor division and Withdraw receives the remainder, so each row sums to
