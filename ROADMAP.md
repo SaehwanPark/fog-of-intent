@@ -1452,8 +1452,10 @@ representative replays, and an evidence-limited report.
 - [x] Bind one deterministic decision replay identity to the bounded
   operational sequence status; causal-trace completeness, runtime production,
   and scenario-wide replay remain open.
-- [ ] Check causal-trace completeness and scenario-wide replay identity for
-  sampled runs.
+- [x] Add bounded scenario-wide replay identity evidence over caller-declared
+  replay records from a sampled run; causal-trace completeness, runtime
+  production, and external persistence remain open.
+- [ ] Check causal-trace completeness for sampled runs.
 - [x] Define one provisional fixed-fixture regression gate with written
   threshold rationale; broader gates remain open.
 - [x] Define a bounded non-authoritative operational event log container

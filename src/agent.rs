@@ -181,6 +181,16 @@ pub const SCRIPTED_AGENT_REPLAY_SEQUENCE_EVIDENCE_SCHEMA: &str =
 pub const SCRIPTED_AGENT_REPLAY_SEQUENCE_EVIDENCE_RULE: &str =
   "m6-replay-identity-operational-sequence-v1";
 
+/// Versioned identity for scenario-wide replay identity evidence.
+pub const SCRIPTED_AGENT_SCENARIO_REPLAY_IDENTITY_SCHEMA: &str =
+  "m6-scripted-agent-scenario-replay-identity-v1";
+
+/// Stable identity for the scenario replay identity rule.
+pub const SCRIPTED_AGENT_SCENARIO_REPLAY_IDENTITY_RULE: &str = "m6-scenario-replay-identity-v1";
+
+/// Maximum number of replay records evaluated in one scenario-wide identity check.
+pub const MAX_SCRIPTED_AGENT_SCENARIO_REPLAY_RECORDS: usize = 16;
+
 /// Maximum number of operational events retained in one in-memory log.
 pub const MAX_SCRIPTED_AGENT_OPERATIONAL_EVENTS: usize = 16;
 
@@ -1638,6 +1648,139 @@ impl ScriptedAgentReplaySequenceEvidenceReport {
 
   pub const fn sequence_status(self) -> ScriptedAgentOperationalLogSequenceStatus {
     self.sequence_status
+  }
+}
+
+/// Closed outcome status for scenario-wide replay identity evaluation.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentScenarioReplayIdentityStatus {
+  AllVerified,
+  DecisionMismatch,
+}
+
+impl ScriptedAgentScenarioReplayIdentityStatus {
+  pub const fn id(self) -> &'static str {
+    match self {
+      Self::AllVerified => "all_verified",
+      Self::DecisionMismatch => "decision_mismatch",
+    }
+  }
+}
+
+/// Bounded failure modes when building scenario replay identity evidence.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentScenarioReplayIdentityError {
+  Empty,
+  Oversized,
+  DuplicateObservationId,
+}
+
+/// Bounded evidence verifying deterministic replay across a sequence of decision records.
+///
+/// This report checks one to sixteen caller-supplied replay records from a sampled
+/// scenario run against deterministic replay. It does not claim causal-trace
+/// completeness, runtime event production, or scenario-wide persistence.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentScenarioReplayIdentityReport {
+  schema: &'static str,
+  rule: &'static str,
+  record_count: u8,
+  verified_count: u8,
+  status: ScriptedAgentScenarioReplayIdentityStatus,
+  start_observation_id: ObservationId,
+  end_observation_id: ObservationId,
+}
+
+impl ScriptedAgentScenarioReplayIdentityReport {
+  /// Evaluate deterministic replay across an ordered slice of decision records.
+  pub fn from_records(
+    records: &[ScriptedAgentReplayRecord],
+  ) -> Result<Self, ScriptedAgentScenarioReplayIdentityError> {
+    if records.is_empty() {
+      return Err(ScriptedAgentScenarioReplayIdentityError::Empty);
+    }
+    if records.len() > MAX_SCRIPTED_AGENT_SCENARIO_REPLAY_RECORDS {
+      return Err(ScriptedAgentScenarioReplayIdentityError::Oversized);
+    }
+    let record_count = match u8::try_from(records.len()) {
+      Ok(count) => count,
+      Err(_) => return Err(ScriptedAgentScenarioReplayIdentityError::Oversized),
+    };
+
+    for (i, record) in records.iter().enumerate() {
+      for other in &records[i.saturating_add(1)..] {
+        if record.observation_id() == other.observation_id() {
+          return Err(ScriptedAgentScenarioReplayIdentityError::DuplicateObservationId);
+        }
+      }
+    }
+
+    let start_observation_id = match records.first() {
+      Some(record) => record.observation_id(),
+      None => return Err(ScriptedAgentScenarioReplayIdentityError::Empty),
+    };
+    let end_observation_id = match records.last() {
+      Some(record) => record.observation_id(),
+      None => return Err(ScriptedAgentScenarioReplayIdentityError::Empty),
+    };
+
+    let mut verified_count: u8 = 0;
+    let mut all_verified = true;
+
+    for record in records {
+      match record.replay() {
+        Ok(_) => {
+          verified_count = verified_count.saturating_add(1);
+        }
+        Err(ScriptedAgentReplayError::DecisionMismatch) => {
+          all_verified = false;
+        }
+      }
+    }
+
+    let status = if all_verified {
+      ScriptedAgentScenarioReplayIdentityStatus::AllVerified
+    } else {
+      ScriptedAgentScenarioReplayIdentityStatus::DecisionMismatch
+    };
+
+    Ok(Self {
+      schema: SCRIPTED_AGENT_SCENARIO_REPLAY_IDENTITY_SCHEMA,
+      rule: SCRIPTED_AGENT_SCENARIO_REPLAY_IDENTITY_RULE,
+      record_count,
+      verified_count,
+      status,
+      start_observation_id,
+      end_observation_id,
+    })
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn rule(self) -> &'static str {
+    self.rule
+  }
+
+  pub const fn record_count(self) -> u8 {
+    self.record_count
+  }
+
+  pub const fn verified_count(self) -> u8 {
+    self.verified_count
+  }
+
+  pub const fn status(self) -> ScriptedAgentScenarioReplayIdentityStatus {
+    self.status
+  }
+
+  pub const fn start_observation_id(self) -> ObservationId {
+    self.start_observation_id
+  }
+
+  pub const fn end_observation_id(self) -> ObservationId {
+    self.end_observation_id
   }
 }
 
@@ -7862,6 +8005,108 @@ mod tests {
     assert_eq!(
       mismatch.sequence_status(),
       ScriptedAgentOperationalLogSequenceStatus::Complete
+    );
+  }
+
+  #[test]
+  fn scenario_replay_identity_verifies_sequence_and_rejects_malformed_input() {
+    let state = LaneSnapshot::initial();
+    let obs1 = observe_player(&state, ObservationId::new(101)).observation();
+    let obs2 = observe_player(&state, ObservationId::new(102)).observation();
+    let obs3 = observe_player(&state, ObservationId::new(103)).observation();
+
+    let rec1 = ScriptedAgentReplayRecord::capture(
+      ScriptedAgent::cautious_v1(),
+      obs1,
+      LaneIntent::Stabilize,
+      None,
+    );
+    let rec2 = ScriptedAgentReplayRecord::capture(
+      ScriptedAgent::risk_taking_v1(),
+      obs2,
+      LaneIntent::Contest,
+      None,
+    );
+    let rec3 = ScriptedAgentReplayRecord::capture(
+      ScriptedAgent::yielding_v1(),
+      obs3,
+      LaneIntent::Yield,
+      None,
+    );
+
+    let report = ScriptedAgentScenarioReplayIdentityReport::from_records(&[
+      rec1.clone(),
+      rec2.clone(),
+      rec3.clone(),
+    ])
+    .expect("valid sequence verifies");
+
+    assert_eq!(
+      report.schema(),
+      "m6-scripted-agent-scenario-replay-identity-v1"
+    );
+    assert_eq!(report.rule(), "m6-scenario-replay-identity-v1");
+    assert_eq!(report.record_count(), 3);
+    assert_eq!(report.verified_count(), 3);
+    assert_eq!(
+      report.status(),
+      ScriptedAgentScenarioReplayIdentityStatus::AllVerified
+    );
+    assert_eq!(report.status().id(), "all_verified");
+    assert_eq!(report.start_observation_id(), ObservationId::new(101));
+    assert_eq!(report.end_observation_id(), ObservationId::new(103));
+
+    // Decision mismatch in one record
+    let mut tampered = rec2.clone();
+    tampered.decision.selected_intent = LaneIntent::Stabilize;
+    let mismatch_report = ScriptedAgentScenarioReplayIdentityReport::from_records(&[
+      rec1.clone(),
+      tampered,
+      rec3.clone(),
+    ])
+    .expect("evaluates with mismatch");
+    assert_eq!(mismatch_report.record_count(), 3);
+    assert_eq!(mismatch_report.verified_count(), 2);
+    assert_eq!(
+      mismatch_report.status(),
+      ScriptedAgentScenarioReplayIdentityStatus::DecisionMismatch
+    );
+    assert_eq!(mismatch_report.status().id(), "decision_mismatch");
+
+    // Empty input fails closed
+    assert_eq!(
+      ScriptedAgentScenarioReplayIdentityReport::from_records(&[]),
+      Err(ScriptedAgentScenarioReplayIdentityError::Empty)
+    );
+
+    // Duplicate observation ID fails closed
+    let duplicate_obs = observe_player(&state, ObservationId::new(101)).observation();
+    let duplicate_rec = ScriptedAgentReplayRecord::capture(
+      ScriptedAgent::yielding_v1(),
+      duplicate_obs,
+      LaneIntent::Yield,
+      None,
+    );
+    assert_eq!(
+      ScriptedAgentScenarioReplayIdentityReport::from_records(&[rec1.clone(), duplicate_rec]),
+      Err(ScriptedAgentScenarioReplayIdentityError::DuplicateObservationId)
+    );
+
+    // Oversized input fails closed
+    let mut oversized = Vec::new();
+    for i in 0..=MAX_SCRIPTED_AGENT_SCENARIO_REPLAY_RECORDS {
+      let obs_id = u64::try_from(i.saturating_add(200)).expect("fits in u64");
+      let obs = observe_player(&state, ObservationId::new(obs_id)).observation();
+      oversized.push(ScriptedAgentReplayRecord::capture(
+        ScriptedAgent::cautious_v1(),
+        obs,
+        LaneIntent::Stabilize,
+        None,
+      ));
+    }
+    assert_eq!(
+      ScriptedAgentScenarioReplayIdentityReport::from_records(&oversized),
+      Err(ScriptedAgentScenarioReplayIdentityError::Oversized)
     );
   }
 

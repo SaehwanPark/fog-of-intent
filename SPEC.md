@@ -1284,6 +1284,15 @@ transport-integrated sessions and broader protocol compatibility remain open.
   status. This is a pure bounded decision-replay check, not causal-trace
   completeness, scenario-wide replay identity, runtime production,
   persistence, or provider authority.
+- `ScriptedAgentScenarioReplayIdentityReport` defines
+  `m6-scripted-agent-scenario-replay-identity-v1` under
+  `m6-scenario-replay-identity-v1`. It verifies deterministic replay consistency
+  across one to sixteen caller-supplied `ScriptedAgentReplayRecord`s from a
+  sampled scenario run, reporting `all_verified` or `decision_mismatch` alongside
+  retained record and verified counts and observation ID bounds. Empty inputs,
+  oversized inputs, and duplicate observation IDs fail closed. This is bounded
+  sequence replay evidence, not causal-trace completeness, runtime automated log
+  production, durable persistence, provider integration, or human gameplay claims.
 - `ScriptedAgentFixtureScenarioSelection` defines
   `m6-scripted-agent-fixture-scenarios-v1` over the closed
   `safe-fixture-v1` and `river-side-threat-v1` IDs. It binds one or more
