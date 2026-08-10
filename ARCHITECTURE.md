@@ -280,6 +280,11 @@ consistency across one to sixteen caller-supplied decision replay records from
 a sampled run under `m6-scenario-replay-identity-v1`, retaining record/verified
 counts and observation ID bounds. It adds no causal-trace, runtime automated log
 production, durable persistence, provider, or human-gameplay authority.
+`ScriptedAgentScenarioCausalTraceCompletenessReport` verifies causal-trace
+completeness across one to sixteen caller-supplied decision replay records from
+a sampled run under `m6-scenario-causal-trace-completeness-v1`, retaining
+record/traced counts and observation ID bounds. It adds no runtime automated log
+production, durable persistence, provider, or human-gameplay authority.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

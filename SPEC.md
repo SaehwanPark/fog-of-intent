@@ -1293,6 +1293,15 @@ transport-integrated sessions and broader protocol compatibility remain open.
   oversized inputs, and duplicate observation IDs fail closed. This is bounded
   sequence replay evidence, not causal-trace completeness, runtime automated log
   production, durable persistence, provider integration, or human gameplay claims.
+- `ScriptedAgentScenarioCausalTraceCompletenessReport` defines
+  `m6-scripted-agent-scenario-causal-trace-completeness-v1` under
+  `m6-scenario-causal-trace-completeness-v1`. It verifies causal-trace completeness
+  across one to sixteen caller-supplied `ScriptedAgentReplayRecord`s from a
+  sampled scenario run, reporting `all_complete` or `incomplete_trace` alongside
+  retained record and traced counts and observation ID bounds. Empty inputs,
+  oversized inputs, and duplicate observation IDs fail closed. This is bounded
+  sequence causal-trace completeness evidence, not runtime automated log
+  production, durable persistence, provider integration, or human gameplay claims.
 - `ScriptedAgentFixtureScenarioSelection` defines
   `m6-scripted-agent-fixture-scenarios-v1` over the closed
   `safe-fixture-v1` and `river-side-threat-v1` IDs. It binds one or more

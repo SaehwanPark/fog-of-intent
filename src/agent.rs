@@ -188,6 +188,14 @@ pub const SCRIPTED_AGENT_SCENARIO_REPLAY_IDENTITY_SCHEMA: &str =
 /// Stable identity for the scenario replay identity rule.
 pub const SCRIPTED_AGENT_SCENARIO_REPLAY_IDENTITY_RULE: &str = "m6-scenario-replay-identity-v1";
 
+/// Versioned identity for scenario-wide causal-trace completeness evidence.
+pub const SCRIPTED_AGENT_SCENARIO_CAUSAL_TRACE_COMPLETENESS_SCHEMA: &str =
+  "m6-scripted-agent-scenario-causal-trace-completeness-v1";
+
+/// Stable identity for the scenario causal-trace completeness rule.
+pub const SCRIPTED_AGENT_SCENARIO_CAUSAL_TRACE_COMPLETENESS_RULE: &str =
+  "m6-scenario-causal-trace-completeness-v1";
+
 /// Maximum number of replay records evaluated in one scenario-wide identity check.
 pub const MAX_SCRIPTED_AGENT_SCENARIO_REPLAY_RECORDS: usize = 16;
 
@@ -1772,6 +1780,147 @@ impl ScriptedAgentScenarioReplayIdentityReport {
   }
 
   pub const fn status(self) -> ScriptedAgentScenarioReplayIdentityStatus {
+    self.status
+  }
+
+  pub const fn start_observation_id(self) -> ObservationId {
+    self.start_observation_id
+  }
+
+  pub const fn end_observation_id(self) -> ObservationId {
+    self.end_observation_id
+  }
+}
+
+/// Closed outcome status for scenario-wide causal-trace completeness evaluation.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentScenarioCausalTraceCompletenessStatus {
+  AllComplete,
+  IncompleteTrace,
+}
+
+impl ScriptedAgentScenarioCausalTraceCompletenessStatus {
+  pub const fn id(self) -> &'static str {
+    match self {
+      Self::AllComplete => "all_complete",
+      Self::IncompleteTrace => "incomplete_trace",
+    }
+  }
+}
+
+/// Bounded failure modes when building scenario causal-trace completeness evidence.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentScenarioCausalTraceCompletenessError {
+  Empty,
+  Oversized,
+  DuplicateObservationId,
+}
+
+/// Bounded evidence verifying causal-trace completeness across a sequence of decision records.
+///
+/// This report checks one to sixteen caller-supplied replay records from a sampled
+/// scenario run for complete causal policy trace provenance and deterministic replay.
+/// It does not claim runtime automated log production, durable persistence, or
+/// human gameplay evidence.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentScenarioCausalTraceCompletenessReport {
+  schema: &'static str,
+  rule: &'static str,
+  record_count: u8,
+  traced_count: u8,
+  status: ScriptedAgentScenarioCausalTraceCompletenessStatus,
+  start_observation_id: ObservationId,
+  end_observation_id: ObservationId,
+}
+
+impl ScriptedAgentScenarioCausalTraceCompletenessReport {
+  /// Evaluate causal-trace completeness across an ordered slice of decision records.
+  pub fn from_records(
+    records: &[ScriptedAgentReplayRecord],
+  ) -> Result<Self, ScriptedAgentScenarioCausalTraceCompletenessError> {
+    if records.is_empty() {
+      return Err(ScriptedAgentScenarioCausalTraceCompletenessError::Empty);
+    }
+    if records.len() > MAX_SCRIPTED_AGENT_SCENARIO_REPLAY_RECORDS {
+      return Err(ScriptedAgentScenarioCausalTraceCompletenessError::Oversized);
+    }
+    let record_count = match u8::try_from(records.len()) {
+      Ok(count) => count,
+      Err(_) => return Err(ScriptedAgentScenarioCausalTraceCompletenessError::Oversized),
+    };
+
+    for (i, record) in records.iter().enumerate() {
+      for other in &records[i.saturating_add(1)..] {
+        if record.observation_id() == other.observation_id() {
+          return Err(ScriptedAgentScenarioCausalTraceCompletenessError::DuplicateObservationId);
+        }
+      }
+    }
+
+    let start_observation_id = match records.first() {
+      Some(record) => record.observation_id(),
+      None => return Err(ScriptedAgentScenarioCausalTraceCompletenessError::Empty),
+    };
+    let end_observation_id = match records.last() {
+      Some(record) => record.observation_id(),
+      None => return Err(ScriptedAgentScenarioCausalTraceCompletenessError::Empty),
+    };
+
+    let mut traced_count: u8 = 0;
+    let mut all_complete = true;
+
+    for record in records {
+      let is_complete = match record.replay() {
+        Ok(decision) => {
+          let selected = decision.selected_intent();
+          let candidate_matches = decision.candidates().iter().any(|c| c.intent() == selected);
+          let rule_valid = !decision.selection_rule().is_empty();
+          candidate_matches && rule_valid
+        }
+        Err(_) => false,
+      };
+
+      if is_complete {
+        traced_count = traced_count.saturating_add(1);
+      } else {
+        all_complete = false;
+      }
+    }
+
+    let status = if all_complete {
+      ScriptedAgentScenarioCausalTraceCompletenessStatus::AllComplete
+    } else {
+      ScriptedAgentScenarioCausalTraceCompletenessStatus::IncompleteTrace
+    };
+
+    Ok(Self {
+      schema: SCRIPTED_AGENT_SCENARIO_CAUSAL_TRACE_COMPLETENESS_SCHEMA,
+      rule: SCRIPTED_AGENT_SCENARIO_CAUSAL_TRACE_COMPLETENESS_RULE,
+      record_count,
+      traced_count,
+      status,
+      start_observation_id,
+      end_observation_id,
+    })
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn rule(self) -> &'static str {
+    self.rule
+  }
+
+  pub const fn record_count(self) -> u8 {
+    self.record_count
+  }
+
+  pub const fn traced_count(self) -> u8 {
+    self.traced_count
+  }
+
+  pub const fn status(self) -> ScriptedAgentScenarioCausalTraceCompletenessStatus {
     self.status
   }
 
@@ -8107,6 +8256,111 @@ mod tests {
     assert_eq!(
       ScriptedAgentScenarioReplayIdentityReport::from_records(&oversized),
       Err(ScriptedAgentScenarioReplayIdentityError::Oversized)
+    );
+  }
+
+  #[test]
+  fn scenario_causal_trace_completeness_verifies_sequence_and_rejects_malformed_input() {
+    let state = LaneSnapshot::initial();
+    let obs1 = observe_player(&state, ObservationId::new(201)).observation();
+    let obs2 = observe_player(&state, ObservationId::new(202)).observation();
+    let obs3 = observe_player(&state, ObservationId::new(203)).observation();
+
+    let rec1 = ScriptedAgentReplayRecord::capture(
+      ScriptedAgent::cautious_v1(),
+      obs1,
+      LaneIntent::Stabilize,
+      None,
+    );
+    let rec2 = ScriptedAgentReplayRecord::capture(
+      ScriptedAgent::risk_taking_v1(),
+      obs2,
+      LaneIntent::Contest,
+      None,
+    );
+    let rec3 = ScriptedAgentReplayRecord::capture(
+      ScriptedAgent::yielding_v1(),
+      obs3,
+      LaneIntent::Yield,
+      None,
+    );
+
+    let report = ScriptedAgentScenarioCausalTraceCompletenessReport::from_records(&[
+      rec1.clone(),
+      rec2.clone(),
+      rec3.clone(),
+    ])
+    .expect("valid sequence verifies causal completeness");
+
+    assert_eq!(
+      report.schema(),
+      "m6-scripted-agent-scenario-causal-trace-completeness-v1"
+    );
+    assert_eq!(report.rule(), "m6-scenario-causal-trace-completeness-v1");
+    assert_eq!(report.record_count(), 3);
+    assert_eq!(report.traced_count(), 3);
+    assert_eq!(
+      report.status(),
+      ScriptedAgentScenarioCausalTraceCompletenessStatus::AllComplete
+    );
+    assert_eq!(report.status().id(), "all_complete");
+    assert_eq!(report.start_observation_id(), ObservationId::new(201));
+    assert_eq!(report.end_observation_id(), ObservationId::new(203));
+
+    // Decision mismatch in one record makes it incomplete
+    let mut tampered = rec2.clone();
+    tampered.decision.selected_intent = LaneIntent::Stabilize;
+    let incomplete_report = ScriptedAgentScenarioCausalTraceCompletenessReport::from_records(&[
+      rec1.clone(),
+      tampered,
+      rec3.clone(),
+    ])
+    .expect("evaluates with incomplete trace");
+    assert_eq!(incomplete_report.record_count(), 3);
+    assert_eq!(incomplete_report.traced_count(), 2);
+    assert_eq!(
+      incomplete_report.status(),
+      ScriptedAgentScenarioCausalTraceCompletenessStatus::IncompleteTrace
+    );
+    assert_eq!(incomplete_report.status().id(), "incomplete_trace");
+
+    // Empty input fails closed
+    assert_eq!(
+      ScriptedAgentScenarioCausalTraceCompletenessReport::from_records(&[]),
+      Err(ScriptedAgentScenarioCausalTraceCompletenessError::Empty)
+    );
+
+    // Duplicate observation ID fails closed
+    let duplicate_obs = observe_player(&state, ObservationId::new(201)).observation();
+    let duplicate_rec = ScriptedAgentReplayRecord::capture(
+      ScriptedAgent::yielding_v1(),
+      duplicate_obs,
+      LaneIntent::Yield,
+      None,
+    );
+    assert_eq!(
+      ScriptedAgentScenarioCausalTraceCompletenessReport::from_records(&[
+        rec1.clone(),
+        duplicate_rec
+      ]),
+      Err(ScriptedAgentScenarioCausalTraceCompletenessError::DuplicateObservationId)
+    );
+
+    // Oversized input fails closed
+    let mut oversized = Vec::new();
+    for i in 0..=MAX_SCRIPTED_AGENT_SCENARIO_REPLAY_RECORDS {
+      let obs_id = u64::try_from(i.saturating_add(300)).expect("fits in u64");
+      let obs = observe_player(&state, ObservationId::new(obs_id)).observation();
+      oversized.push(ScriptedAgentReplayRecord::capture(
+        ScriptedAgent::cautious_v1(),
+        obs,
+        LaneIntent::Stabilize,
+        None,
+      ));
+    }
+    assert_eq!(
+      ScriptedAgentScenarioCausalTraceCompletenessReport::from_records(&oversized),
+      Err(ScriptedAgentScenarioCausalTraceCompletenessError::Oversized)
     );
   }
 
