@@ -1428,7 +1428,9 @@ representative replays, and an evidence-limited report.
 - [x] Add a bounded fixed-fixture risk-taking policy population over repeated
   actor-visible `Contest` selections; actual exploit search, communication
   abuse, prevalence, outcomes, and strategy-quality evidence remain open.
-- [ ] Add communication-abuse policy populations.
+- [x] Add a bounded caller-declared communication-abuse policy population over
+  repeated invalid message values; actual communication-abuse search,
+  prevalence, and delivery remain open.
 - [x] Add a bounded caller-declared degenerate-policy population over repeated
   actor-visible `Stabilize` selections; broad adversarial populations,
   prevalence, and outcomes remain open.
