@@ -1455,7 +1455,8 @@ representative replays, and an evidence-limited report.
 - [x] Add bounded scenario-wide replay identity evidence over caller-declared
   replay records from a sampled run; causal-trace completeness, runtime
   production, and external persistence remain open.
-- [ ] Check causal-trace completeness for sampled runs.
+- [x] Check causal-trace completeness for sampled runs; runtime automated log
+  production, durable persistence, and provider integration remain open.
 - [x] Define one provisional fixed-fixture regression gate with written
   threshold rationale; broader gates remain open.
 - [x] Define a bounded non-authoritative operational event log container

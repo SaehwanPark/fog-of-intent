@@ -98,6 +98,21 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.170 — 2026-08-10
+
+### Added
+
+- Added `m6-scripted-agent-scenario-causal-trace-completeness-v1`, a bounded
+  report over one to sixteen caller-supplied decision replay records from a
+  sampled scenario run, verifying causal-trace completeness (`AllComplete` vs
+  `IncompleteTrace`).
+
+### Known limits
+
+- This is pure library-side sequence causal-trace completeness evidence; runtime
+  automated log production, durable persistence, provider integration, and human
+  gameplay claims remain open.
+
 ## 0.1.169 — 2026-08-10
 
 ### Added
