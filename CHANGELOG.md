@@ -98,6 +98,20 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.168 — 2026-08-10
+
+### Added
+
+- Added `m6-actor-communication-abuse-population-v1`, a bounded actor-visible
+  report over one to four repeated invalid message values validated against
+  `ActorMessageDto::new`, retaining only the stable `InvalidValue` codec error.
+
+### Known limits
+
+- This is protocol-level codec boundary evidence only; actual exploit search,
+  communication-abuse search, routing, delivery, prevalence, outcomes,
+  persistence, providers, and human evidence remain open.
+
 ## 0.1.167 — 2026-08-08
 
 ### Added

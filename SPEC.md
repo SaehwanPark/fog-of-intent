@@ -1208,6 +1208,13 @@ transport-integrated sessions and broader protocol compatibility remain open.
   selected-intent boundary report only; it does not search for exploits,
   model communication abuse, infer prevalence, or claim outcomes, strategy
   quality, persistence, providers, or human behavior.
+- `ActorCommunicationAbusePopulationReport` defines
+  `m6-actor-communication-abuse-population-v1` as a bounded caller-declared
+  population of one to four repeated invalid message values validated against
+  `ActorMessageDto::new`. It retains only the actor-safe `InvalidValue` codec
+  error plus sender, recipient, observation ID, and attempt count; it does not
+  route, deliver, or store message text, search for exploits, infer prevalence,
+  or own transition, history, persistence, provider, or outcome authority.
 - Each tally row can expose ordered 10,000-point intent shares in
   `[Stabilize, Contest, Yield, Recall, Withdraw]` order. The first four shares
   use floor division and Withdraw receives the remainder, so each row sums to

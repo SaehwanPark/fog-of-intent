@@ -1317,6 +1317,103 @@ impl ActorMessageDto {
   }
 }
 
+/// Maximum message attempts in one fixed communication-abuse population.
+pub const MAX_ACTOR_COMMUNICATION_ABUSE_POPULATION: usize = 4;
+
+/// Versioned identity for bounded communication-abuse evidence.
+pub const ACTOR_COMMUNICATION_ABUSE_POPULATION_SCHEMA: &str =
+  "m6-actor-communication-abuse-population-v1";
+
+/// Failures from constructing a communication-abuse population report.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ActorCommunicationAbusePopulationError {
+  EmptyPopulation,
+  PopulationTooLarge { max: usize, actual: usize },
+  UnexpectedError { actual: ActorProtocolCodecError },
+  InvalidTarget,
+}
+
+/// Bounded actor-visible evidence over repeated invalid message values.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ActorCommunicationAbusePopulationReport {
+  schema: &'static str,
+  sender: u8,
+  recipient: u8,
+  observation_id: u64,
+  rejection_error: ActorProtocolCodecError,
+  attempt_count: u8,
+}
+
+impl ActorCommunicationAbusePopulationReport {
+  /// Validate one caller-declared invalid-message population without routing or delivery.
+  pub fn from_invalid_payload(
+    sender: u8,
+    recipient: u8,
+    observation_id: u64,
+    invalid_payload: &str,
+    attempt_count: usize,
+  ) -> Result<Self, ActorCommunicationAbusePopulationError> {
+    if attempt_count == 0 {
+      return Err(ActorCommunicationAbusePopulationError::EmptyPopulation);
+    }
+    if attempt_count > MAX_ACTOR_COMMUNICATION_ABUSE_POPULATION {
+      return Err(ActorCommunicationAbusePopulationError::PopulationTooLarge {
+        max: MAX_ACTOR_COMMUNICATION_ABUSE_POPULATION,
+        actual: attempt_count,
+      });
+    }
+    if sender == 0 || recipient == 0 || observation_id == 0 {
+      return Err(ActorCommunicationAbusePopulationError::InvalidTarget);
+    }
+    let rejection_error = ActorProtocolCodecError::InvalidValue;
+    for _ in 0..attempt_count {
+      let error = match ActorMessageDto::new(sender, recipient, observation_id, invalid_payload) {
+        Ok(_) => {
+          return Err(ActorCommunicationAbusePopulationError::UnexpectedError {
+            actual: ActorProtocolCodecError::InvalidValue,
+          });
+        }
+        Err(err) => err,
+      };
+      if error != rejection_error {
+        return Err(ActorCommunicationAbusePopulationError::UnexpectedError { actual: error });
+      }
+    }
+    Ok(Self {
+      schema: ACTOR_COMMUNICATION_ABUSE_POPULATION_SCHEMA,
+      sender,
+      recipient,
+      observation_id,
+      rejection_error,
+      attempt_count: u8::try_from(attempt_count).expect("population cap fits in u8"),
+    })
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn sender(self) -> u8 {
+    self.sender
+  }
+
+  pub const fn recipient(self) -> u8 {
+    self.recipient
+  }
+
+  pub const fn observation_id(self) -> u64 {
+    self.observation_id
+  }
+
+  pub const fn rejection_error(self) -> ActorProtocolCodecError {
+    self.rejection_error
+  }
+
+  pub const fn attempt_count(self) -> u8 {
+    self.attempt_count
+  }
+}
+
 /// Bounded actor-safe acknowledgement after host-owned draft staging.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct ActorDraftReceiptDto {
@@ -4027,5 +4124,100 @@ mod tests {
 
     validate_lane_request(&state, &receipt, &action.to_lane_request())
       .expect("decoded action is accepted by host validator");
+  }
+
+  #[test]
+  fn actor_communication_abuse_population_is_bounded_and_pure() {
+    assert_eq!(MAX_ACTOR_COMMUNICATION_ABUSE_POPULATION, 4);
+    assert_eq!(
+      ACTOR_COMMUNICATION_ABUSE_POPULATION_SCHEMA,
+      "m6-actor-communication-abuse-population-v1"
+    );
+
+    let invalid_payloads = ["", "line\nbreak", "null\0byte", "cr\rreturn"];
+
+    for invalid_payload in invalid_payloads {
+      for attempts in 1..=MAX_ACTOR_COMMUNICATION_ABUSE_POPULATION {
+        let report = ActorCommunicationAbusePopulationReport::from_invalid_payload(
+          1,
+          2,
+          55,
+          invalid_payload,
+          attempts,
+        )
+        .expect("bounded invalid payload population succeeds");
+
+        assert_eq!(
+          report.schema(),
+          "m6-actor-communication-abuse-population-v1"
+        );
+        assert_eq!(report.sender(), 1);
+        assert_eq!(report.recipient(), 2);
+        assert_eq!(report.observation_id(), 55);
+        assert_eq!(
+          report.rejection_error(),
+          ActorProtocolCodecError::InvalidValue
+        );
+        assert_eq!(
+          report.attempt_count(),
+          u8::try_from(attempts).expect("fits in u8")
+        );
+
+        let debug_str = format!("{report:?}");
+        assert!(!debug_str.contains("break"));
+        assert!(!debug_str.contains("payload"));
+        assert!(!debug_str.contains("StateHash"));
+      }
+    }
+
+    let oversized = "x".repeat(MAX_ACTOR_DRAFT_VALUE_BYTES + 1);
+    let report =
+      ActorCommunicationAbusePopulationReport::from_invalid_payload(1, 2, 55, &oversized, 3)
+        .expect("oversized invalid payload population succeeds");
+    assert_eq!(report.attempt_count(), 3);
+
+    // Self-delivery is also an invalid message value
+    let report_self =
+      ActorCommunicationAbusePopulationReport::from_invalid_payload(1, 1, 55, "valid text", 2)
+        .expect("self-delivery invalid payload population succeeds");
+    assert_eq!(report_self.sender(), 1);
+    assert_eq!(report_self.recipient(), 1);
+    assert_eq!(report_self.attempt_count(), 2);
+
+    assert_eq!(
+      ActorCommunicationAbusePopulationReport::from_invalid_payload(1, 2, 55, "", 0),
+      Err(ActorCommunicationAbusePopulationError::EmptyPopulation)
+    );
+
+    assert_eq!(
+      ActorCommunicationAbusePopulationReport::from_invalid_payload(
+        1,
+        2,
+        55,
+        "",
+        MAX_ACTOR_COMMUNICATION_ABUSE_POPULATION + 1
+      ),
+      Err(ActorCommunicationAbusePopulationError::PopulationTooLarge { max: 4, actual: 5 })
+    );
+
+    assert_eq!(
+      ActorCommunicationAbusePopulationReport::from_invalid_payload(1, 2, 55, "valid ping", 1),
+      Err(ActorCommunicationAbusePopulationError::UnexpectedError {
+        actual: ActorProtocolCodecError::InvalidValue,
+      })
+    );
+
+    assert_eq!(
+      ActorCommunicationAbusePopulationReport::from_invalid_payload(0, 2, 55, "", 1),
+      Err(ActorCommunicationAbusePopulationError::InvalidTarget)
+    );
+    assert_eq!(
+      ActorCommunicationAbusePopulationReport::from_invalid_payload(1, 0, 55, "", 1),
+      Err(ActorCommunicationAbusePopulationError::InvalidTarget)
+    );
+    assert_eq!(
+      ActorCommunicationAbusePopulationReport::from_invalid_payload(1, 2, 0, "", 1),
+      Err(ActorCommunicationAbusePopulationError::InvalidTarget)
+    );
   }
 }

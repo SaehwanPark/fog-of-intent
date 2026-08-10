@@ -268,6 +268,13 @@ and records only the `risk-taking-laner-v1`/`contest-first-fixed-score-v1`
 selection of `Contest`. It does not search for exploits or add population,
 prevalence, outcome, strategy-quality, transition, history, persistence,
 provider, or human-evidence authority.
+`ActorCommunicationAbusePopulationReport` is the corresponding invalid-message
+policy boundary at the protocol edge: it validates one to four repeated invalid
+message attempts against `ActorMessageDto::new` and retains only the stable
+`InvalidValue` codec error plus sender, recipient, observation ID, and attempt
+count. It does not route, deliver, or store message text, search for exploits,
+or add transition, history, replay, transport, persistence, provider,
+prevalence, or outcome authority.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO
