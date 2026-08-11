@@ -156,6 +156,17 @@ pub const SCRIPTED_AGENT_TALLY_REPLAY_REFERENCE_SCHEMA: &str =
 pub const SCRIPTED_AGENT_TALLY_REPLAY_REFERENCE_RULE: &str =
   "m6-first-verified-candidate-replay-v1";
 
+/// Versioned identity for a calibrated outlier and representative replay report.
+pub const SCRIPTED_AGENT_CALIBRATED_OUTLIER_REPLAY_SCHEMA: &str =
+  "m6-scripted-agent-calibrated-outlier-replay-v1";
+
+/// Versioned selection rule for calibrated outlier and representative replay tracing.
+pub const SCRIPTED_AGENT_CALIBRATED_OUTLIER_REPLAY_RULE: &str =
+  "m6-calibrated-outlier-representative-replay-v1";
+
+/// Calibrated threshold magnitude for classifying a tally delta as an outlier.
+pub const SCRIPTED_AGENT_CALIBRATED_OUTLIER_THRESHOLD_MAGNITUDE: u16 = 2;
+
 /// Versioned identity for caller-declared build labels on comparisons.
 pub const SCRIPTED_AGENT_BUILD_ID_SCHEMA: &str = "m6-scripted-agent-build-id-v1";
 
@@ -4285,6 +4296,143 @@ impl ScriptedAgentTallyReplayReference {
   }
 }
 
+/// Closed result of calibrated outlier detection and representative replay tracing.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScriptedAgentCalibratedOutlierReplayStatus {
+  Qualified,
+  BelowThreshold,
+  NoCandidate,
+  NoMatchingReplay,
+  DecisionMismatch,
+}
+
+impl ScriptedAgentCalibratedOutlierReplayStatus {
+  pub const fn id(self) -> &'static str {
+    match self {
+      Self::Qualified => "qualified",
+      Self::BelowThreshold => "below_threshold",
+      Self::NoCandidate => "no_candidate",
+      Self::NoMatchingReplay => "no_matching_replay",
+      Self::DecisionMismatch => "decision_mismatch",
+    }
+  }
+}
+
+/// Bounded evidence report tracing a calibrated outlier to a committed representative replay.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScriptedAgentCalibratedOutlierReplayReport {
+  schema: &'static str,
+  rule: &'static str,
+  threshold: u16,
+  status: ScriptedAgentCalibratedOutlierReplayStatus,
+  candidate: Option<ScriptedAgentMatchedScenarioTallyOutlierCandidate>,
+  observation_id: Option<ObservationId>,
+}
+
+impl ScriptedAgentCalibratedOutlierReplayReport {
+  /// Trace a calibrated outlier candidate from comparison to a verified representative replay.
+  pub fn from_comparison_and_records(
+    comparison: &ScriptedAgentMatchedScenarioTallyComparisonReport,
+    records: &[ScriptedAgentReplayRecord],
+  ) -> Self {
+    let candidate = match comparison.largest_delta_candidate() {
+      Some(c) => c,
+      None => {
+        return Self {
+          schema: SCRIPTED_AGENT_CALIBRATED_OUTLIER_REPLAY_SCHEMA,
+          rule: SCRIPTED_AGENT_CALIBRATED_OUTLIER_REPLAY_RULE,
+          threshold: SCRIPTED_AGENT_CALIBRATED_OUTLIER_THRESHOLD_MAGNITUDE,
+          status: ScriptedAgentCalibratedOutlierReplayStatus::NoCandidate,
+          candidate: None,
+          observation_id: None,
+        };
+      }
+    };
+
+    if candidate.magnitude() < SCRIPTED_AGENT_CALIBRATED_OUTLIER_THRESHOLD_MAGNITUDE {
+      return Self {
+        schema: SCRIPTED_AGENT_CALIBRATED_OUTLIER_REPLAY_SCHEMA,
+        rule: SCRIPTED_AGENT_CALIBRATED_OUTLIER_REPLAY_RULE,
+        threshold: SCRIPTED_AGENT_CALIBRATED_OUTLIER_THRESHOLD_MAGNITUDE,
+        status: ScriptedAgentCalibratedOutlierReplayStatus::BelowThreshold,
+        candidate: Some(candidate),
+        observation_id: None,
+      };
+    }
+
+    let mut matching_mismatch: Option<ObservationId> = None;
+    for record in records {
+      if record.profile().profile_id() != candidate.profile_id()
+        || record.profile().evaluation_rule() != candidate.evaluation_rule()
+        || record.selected_intent() != candidate.intent()
+      {
+        continue;
+      }
+      match record.replay() {
+        Ok(_) => {
+          return Self {
+            schema: SCRIPTED_AGENT_CALIBRATED_OUTLIER_REPLAY_SCHEMA,
+            rule: SCRIPTED_AGENT_CALIBRATED_OUTLIER_REPLAY_RULE,
+            threshold: SCRIPTED_AGENT_CALIBRATED_OUTLIER_THRESHOLD_MAGNITUDE,
+            status: ScriptedAgentCalibratedOutlierReplayStatus::Qualified,
+            candidate: Some(candidate),
+            observation_id: Some(record.observation_id()),
+          };
+        }
+        Err(ScriptedAgentReplayError::DecisionMismatch) => {
+          if matching_mismatch.is_none() {
+            matching_mismatch = Some(record.observation_id());
+          }
+        }
+      }
+    }
+
+    if let Some(obs_id) = matching_mismatch {
+      Self {
+        schema: SCRIPTED_AGENT_CALIBRATED_OUTLIER_REPLAY_SCHEMA,
+        rule: SCRIPTED_AGENT_CALIBRATED_OUTLIER_REPLAY_RULE,
+        threshold: SCRIPTED_AGENT_CALIBRATED_OUTLIER_THRESHOLD_MAGNITUDE,
+        status: ScriptedAgentCalibratedOutlierReplayStatus::DecisionMismatch,
+        candidate: Some(candidate),
+        observation_id: Some(obs_id),
+      }
+    } else {
+      Self {
+        schema: SCRIPTED_AGENT_CALIBRATED_OUTLIER_REPLAY_SCHEMA,
+        rule: SCRIPTED_AGENT_CALIBRATED_OUTLIER_REPLAY_RULE,
+        threshold: SCRIPTED_AGENT_CALIBRATED_OUTLIER_THRESHOLD_MAGNITUDE,
+        status: ScriptedAgentCalibratedOutlierReplayStatus::NoMatchingReplay,
+        candidate: Some(candidate),
+        observation_id: None,
+      }
+    }
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn rule(self) -> &'static str {
+    self.rule
+  }
+
+  pub const fn threshold(self) -> u16 {
+    self.threshold
+  }
+
+  pub const fn status(self) -> ScriptedAgentCalibratedOutlierReplayStatus {
+    self.status
+  }
+
+  pub const fn candidate(self) -> Option<ScriptedAgentMatchedScenarioTallyOutlierCandidate> {
+    self.candidate
+  }
+
+  pub const fn observation_id(self) -> Option<ObservationId> {
+    self.observation_id
+  }
+}
+
 /// One actor-safe row in a scripted-agent comparison report.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct ScriptedAgentComparisonEntry {
@@ -7505,6 +7653,198 @@ mod tests {
     assert_eq!(
       ScriptedAgentTallyReplayReference::from_candidate_and_records(candidate, &[no_match]),
       Err(ScriptedAgentTallyReplayReferenceError::NoMatchingReplay)
+    );
+  }
+
+  #[test]
+  fn calibrated_outlier_detection_and_representative_replay_is_deterministic() {
+    assert_eq!(
+      SCRIPTED_AGENT_CALIBRATED_OUTLIER_REPLAY_SCHEMA,
+      "m6-scripted-agent-calibrated-outlier-replay-v1"
+    );
+    assert_eq!(
+      SCRIPTED_AGENT_CALIBRATED_OUTLIER_REPLAY_RULE,
+      "m6-calibrated-outlier-representative-replay-v1"
+    );
+    assert_eq!(SCRIPTED_AGENT_CALIBRATED_OUTLIER_THRESHOLD_MAGNITUDE, 2);
+    assert_eq!(
+      ScriptedAgentCalibratedOutlierReplayStatus::Qualified.id(),
+      "qualified"
+    );
+    assert_eq!(
+      ScriptedAgentCalibratedOutlierReplayStatus::BelowThreshold.id(),
+      "below_threshold"
+    );
+    assert_eq!(
+      ScriptedAgentCalibratedOutlierReplayStatus::NoCandidate.id(),
+      "no_candidate"
+    );
+    assert_eq!(
+      ScriptedAgentCalibratedOutlierReplayStatus::NoMatchingReplay.id(),
+      "no_matching_replay"
+    );
+    assert_eq!(
+      ScriptedAgentCalibratedOutlierReplayStatus::DecisionMismatch.id(),
+      "decision_mismatch"
+    );
+
+    let manifest = [ScriptedAgentExperimentManifest::new(
+      ScriptedAgentProfile::cautious_v1(),
+      ScriptedAgentSeedBundle::new(101, StreamId::new(102), DrawId::new(103)),
+    )];
+
+    // 1. Qualified Outlier: delta >= 2 with matching verified replay record
+    let baseline = ScriptedAgentFixtureScenarioPopulation::generate_from_scenario_ids(
+      &[
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+      ],
+      540,
+    )
+    .expect("baseline population builds")
+    .matched_tally(&manifest)
+    .expect("baseline tally builds");
+    let candidate_tally = ScriptedAgentFixtureScenarioPopulation::generate_from_scenario_ids(
+      &[
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+      ],
+      548,
+    )
+    .expect("candidate population builds")
+    .matched_tally(&manifest)
+    .expect("candidate tally builds");
+    let comparison =
+      ScriptedAgentMatchedScenarioTallyComparisonReport::from_reports(&baseline, &candidate_tally)
+        .expect("verified tallies compare");
+    let candidate = comparison
+      .largest_delta_candidate()
+      .expect("largest candidate exists");
+    assert!(candidate.magnitude() >= SCRIPTED_AGENT_CALIBRATED_OUTLIER_THRESHOLD_MAGNITUDE);
+
+    let state = LaneSnapshot::initial();
+    let noise_observation = observe_player(&state, ObservationId::new(700)).observation();
+    let match_observation = observe_player(&state, ObservationId::new(701)).observation();
+    let noise_record = ScriptedAgentReplayRecord::capture(
+      ScriptedAgent::risk_taking_v1(),
+      noise_observation,
+      LaneIntent::Contest,
+      None,
+    );
+    let match_record = ScriptedAgentReplayRecord::capture(
+      ScriptedAgent::cautious_v1(),
+      match_observation,
+      LaneIntent::Stabilize,
+      None,
+    );
+
+    let qualified_report = ScriptedAgentCalibratedOutlierReplayReport::from_comparison_and_records(
+      &comparison,
+      &[noise_record.clone(), match_record.clone()],
+    );
+    assert_eq!(
+      qualified_report.schema(),
+      SCRIPTED_AGENT_CALIBRATED_OUTLIER_REPLAY_SCHEMA
+    );
+    assert_eq!(
+      qualified_report.rule(),
+      SCRIPTED_AGENT_CALIBRATED_OUTLIER_REPLAY_RULE
+    );
+    assert_eq!(
+      qualified_report.threshold(),
+      SCRIPTED_AGENT_CALIBRATED_OUTLIER_THRESHOLD_MAGNITUDE
+    );
+    assert_eq!(
+      qualified_report.status(),
+      ScriptedAgentCalibratedOutlierReplayStatus::Qualified
+    );
+    assert_eq!(qualified_report.candidate(), Some(candidate));
+    assert_eq!(
+      qualified_report.observation_id(),
+      Some(ObservationId::new(701))
+    );
+
+    // 2. Below Threshold: delta = 1
+    let below_candidate = ScriptedAgentFixtureScenarioPopulation::generate_from_scenario_ids(
+      &[
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_SAFE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+        SCRIPTED_AGENT_RIVER_SIDE_FIXTURE_SCENARIO_ID,
+      ],
+      548,
+    )
+    .expect("below candidate population builds")
+    .matched_tally(&manifest)
+    .expect("below candidate tally builds");
+    let below_comparison =
+      ScriptedAgentMatchedScenarioTallyComparisonReport::from_reports(&baseline, &below_candidate)
+        .expect("below tallies compare");
+    let below_report = ScriptedAgentCalibratedOutlierReplayReport::from_comparison_and_records(
+      &below_comparison,
+      std::slice::from_ref(&match_record),
+    );
+    assert_eq!(
+      below_report.status(),
+      ScriptedAgentCalibratedOutlierReplayStatus::BelowThreshold
+    );
+    assert!(below_report.candidate().is_some());
+    assert_eq!(below_report.candidate().unwrap().magnitude(), 1);
+    assert_eq!(below_report.observation_id(), None);
+
+    // 3. No Candidate: unchanged baseline vs baseline
+    let unchanged_comparison =
+      ScriptedAgentMatchedScenarioTallyComparisonReport::from_reports(&baseline, &baseline)
+        .expect("unchanged tallies compare");
+    let no_cand_report = ScriptedAgentCalibratedOutlierReplayReport::from_comparison_and_records(
+      &unchanged_comparison,
+      std::slice::from_ref(&match_record),
+    );
+    assert_eq!(
+      no_cand_report.status(),
+      ScriptedAgentCalibratedOutlierReplayStatus::NoCandidate
+    );
+    assert_eq!(no_cand_report.candidate(), None);
+    assert_eq!(no_cand_report.observation_id(), None);
+
+    // 4. No Matching Replay: delta >= 2 but no matching record
+    let no_matching_report =
+      ScriptedAgentCalibratedOutlierReplayReport::from_comparison_and_records(
+        &comparison,
+        std::slice::from_ref(&noise_record),
+      );
+    assert_eq!(
+      no_matching_report.status(),
+      ScriptedAgentCalibratedOutlierReplayStatus::NoMatchingReplay
+    );
+    assert_eq!(no_matching_report.candidate(), Some(candidate));
+    assert_eq!(no_matching_report.observation_id(), None);
+
+    // 5. Decision Mismatch: delta >= 2 with corrupted replay record
+    let mut corrupted = match_record;
+    corrupted
+      .decision
+      .candidates
+      .iter_mut()
+      .find(|c| c.intent() == LaneIntent::Stabilize)
+      .expect("candidate exists")
+      .score += 1;
+    let mismatch_report = ScriptedAgentCalibratedOutlierReplayReport::from_comparison_and_records(
+      &comparison,
+      std::slice::from_ref(&corrupted),
+    );
+    assert_eq!(
+      mismatch_report.status(),
+      ScriptedAgentCalibratedOutlierReplayStatus::DecisionMismatch
+    );
+    assert_eq!(mismatch_report.candidate(), Some(candidate));
+    assert_eq!(
+      mismatch_report.observation_id(),
+      Some(ObservationId::new(701))
     );
   }
 

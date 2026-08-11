@@ -98,6 +98,22 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.171 — 2026-08-11
+
+### Added
+
+- Added `m6-scripted-agent-calibrated-outlier-replay-v1`, a bounded in-process
+  evidence report that calibrates outlier detection from a verified
+  profile-aware comparison report against an explicit threshold magnitude (2)
+  and deterministically traces the qualified outlier to a verified committed
+  decision replay record.
+
+### Known limits
+
+- This is in-process calibrated outlier tracing evidence; runtime automated log
+  production, durable external persistence, provider integration, and human
+  gameplay claims remain open.
+
 ## 0.1.170 — 2026-08-10
 
 ### Added

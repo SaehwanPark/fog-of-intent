@@ -1443,8 +1443,9 @@ representative replays, and an evidence-limited report.
 - [x] Select the first caller-declared verified replay reference matching a
   largest-delta candidate by profile, rule, and intent; representative replay
   proof and scenario-wide replay remain open.
-- [ ] Calibrate outlier detection and select representative replays
-  deterministically.
+- [x] Calibrate outlier detection and select representative replays
+  deterministically; runtime automated log production, durable persistence, and
+  human evidence remain open.
 - [x] Classify caller-declared operational `batch_started` →
   `chunk_completed` → `batch_finished` label order with optional checkpoint/
   resume labels; causal-trace completeness and scenario-wide replay identity
