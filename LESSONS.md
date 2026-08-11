@@ -1310,3 +1310,20 @@ canonical policy instead of duplicating it.
   `decision_mismatch` replay identity and the existing sequence status.
 - Prevention: keep causal-trace completeness, runtime production, and
   scenario-wide replay explicitly outside this composition.
+
+## Trace calibrated outliers to committed replays deterministically
+
+- Context: M6 needed to connect verified aggregate metric deltas to committed
+  decision replay records without adding runtime logging or broad sampling authority.
+- Symptom: Pairing aggregate outlier signals with unverified or non-deterministic
+  records can obscure whether a metric anomaly reflects a real reproducible decision.
+- Cause: Metric deltas and replay verification operate on different layers of
+  the testing ecology and must be joined via explicit matching keys.
+- Resolution: Gate candidate qualification with an explicit threshold, match
+  `profile_id`, `evaluation_rule`, and `selected_intent` to caller-declared
+  replay records in stable order, and verify replay determinism before returning
+  a `Qualified` status.
+- Prevention: Keep outlier detection and replay selection pure and bounded;
+  defer runtime automated log production, external persistence, and human
+  evidence to separate contracts.
+

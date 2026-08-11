@@ -1302,6 +1302,15 @@ transport-integrated sessions and broader protocol compatibility remain open.
   oversized inputs, and duplicate observation IDs fail closed. This is bounded
   sequence causal-trace completeness evidence, not runtime automated log
   production, durable persistence, provider integration, or human gameplay claims.
+- `ScriptedAgentCalibratedOutlierReplayReport` defines
+  `m6-scripted-agent-calibrated-outlier-replay-v1` under
+  `m6-calibrated-outlier-representative-replay-v1`. It calibrates outlier
+  detection from a verified profile-aware comparison report against an explicit
+  inclusive threshold magnitude of 2, deterministically tracing a qualified
+  candidate to the first matching verified decision replay record with statuses
+  `qualified`, `below_threshold`, `no_candidate`, `no_matching_replay`, and
+  `decision_mismatch`. This is bounded in-process outlier tracing evidence,
+  not runtime automated log production, durable persistence, or human gameplay claims.
 - `ScriptedAgentFixtureScenarioSelection` defines
   `m6-scripted-agent-fixture-scenarios-v1` over the closed
   `safe-fixture-v1` and `river-side-threat-v1` IDs. It binds one or more

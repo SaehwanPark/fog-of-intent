@@ -285,6 +285,11 @@ completeness across one to sixteen caller-supplied decision replay records from
 a sampled run under `m6-scenario-causal-trace-completeness-v1`, retaining
 record/traced counts and observation ID bounds. It adds no runtime automated log
 production, durable persistence, provider, or human-gameplay authority.
+`ScriptedAgentCalibratedOutlierReplayReport` calibrates outlier detection from a
+verified profile-aware comparison against a fixed threshold magnitude (2) and
+traces a qualified outlier to a verified decision replay record under
+`m6-calibrated-outlier-representative-replay-v1`. It adds no runtime automated
+log production, durable persistence, provider, or human-gameplay authority.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO
