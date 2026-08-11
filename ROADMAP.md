@@ -1532,7 +1532,9 @@ uncertainty and evidence limits reported.
 
 ### Scope
 
-- [ ] Define a compact semantic profile vocabulary and schema.
+- [x] Define a compact semantic profile vocabulary and schema;
+  diagnostic scenario choices, distribution estimation, and parametric fitting
+  remain open.
 - [ ] Create diagnostic choices for contest/concede, follow/reject, farm/assist,
   recall timing, sacrifice, surprise, and response to failure.
 - [ ] Define repeated-sampling and model/prompt version protocols.

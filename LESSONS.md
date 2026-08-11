@@ -5,6 +5,19 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Keep semantic profile schemas discrete and declarative
+
+- Context: M7 needed a compact semantic profile vocabulary before diagnostic
+  scenario batteries or parametric model fitting were authorized.
+- Symptom: Free-form prompt strings or unbounded natural-language traits would
+  turn a schema into an uninspectable latent-variable engine.
+- Resolution: Define `SemanticProfileDefinition` over discrete categorical
+  dimensions (risk tolerance, deference, focus, communication clarity) with a
+  fail-closed lookup catalog (`SemanticProfileVocabulary`).
+- Prevention: Treat semantic trait schemas, diagnostic scenario choice
+  batteries, and parametric policy fitting as separate contracts with separate
+  evidence.
+
 ## Keep message envelopes separate from delivery
 
 - Context: M5 needed a recipient-scoped communication shape while transport,

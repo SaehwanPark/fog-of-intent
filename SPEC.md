@@ -1407,6 +1407,26 @@ transport-integrated sessions and broader protocol compatibility remain open.
   `list_segments` reports recognized indices in stable order only; it does not
   merge files, infer rotation, or provide race-hard directory semantics.
 
+## Semantic Profile Vocabulary and Calibration (Phase 7)
+
+**Status:** Versioned compact semantic profile vocabulary and schema defined
+for reference agent profiles; diagnostic scenario choice batteries, empirical
+distribution estimation, and parametric fitting remain open.
+
+- `SemanticProfileDefinition` defines `m7-semantic-profile-vocabulary-v1`
+  covering discrete trait dimensions: `SemanticRiskTolerance` (`cautious`,
+  `balanced`, `risk-seeking`), `SemanticDeference` (`autonomous`, `compliant`,
+  `yielding`), `SemanticFocus` (`patience`, `opportunity`, `urgency`), and
+  `SemanticCommunicationClarity` (`terse`, `standard`, `verbose`).
+- Canonical baseline semantic profile definitions are provided for
+  `cautious-laner-semantic-v1`, `risk-taking-laner-semantic-v1`, and
+  `yielding-laner-semantic-v1`.
+- `SemanticProfileVocabulary` provides a fail-closed lookup and validation
+  catalog over the registered canonical profiles.
+- This contract provides structured semantic descriptors for reference behaviors;
+  it does not claim human psychological validity or complete natural-language
+  grounding.
+
 ## Future
 
 The detailed and canonical order is in `ROADMAP.md`.
