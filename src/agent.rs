@@ -207,6 +207,18 @@ pub const SCRIPTED_AGENT_SCENARIO_CAUSAL_TRACE_COMPLETENESS_SCHEMA: &str =
 pub const SCRIPTED_AGENT_SCENARIO_CAUSAL_TRACE_COMPLETENESS_RULE: &str =
   "m6-scenario-causal-trace-completeness-v1";
 
+/// Versioned schema for the compact semantic profile vocabulary.
+pub const SEMANTIC_PROFILE_VOCABULARY_SCHEMA: &str = "m7-semantic-profile-vocabulary-v1";
+
+/// Stable identifier for the cautious reference semantic profile.
+pub const CAUTIOUS_SEMANTIC_PROFILE_ID: &str = "cautious-laner-semantic-v1";
+
+/// Stable identifier for the risk-taking reference semantic profile.
+pub const RISK_TAKING_SEMANTIC_PROFILE_ID: &str = "risk-taking-laner-semantic-v1";
+
+/// Stable identifier for the yielding reference semantic profile.
+pub const YIELDING_SEMANTIC_PROFILE_ID: &str = "yielding-laner-semantic-v1";
+
 /// Maximum number of replay records evaluated in one scenario-wide identity check.
 pub const MAX_SCRIPTED_AGENT_SCENARIO_REPLAY_RECORDS: usize = 16;
 
@@ -4430,6 +4442,253 @@ impl ScriptedAgentCalibratedOutlierReplayReport {
 
   pub const fn observation_id(self) -> Option<ObservationId> {
     self.observation_id
+  }
+}
+
+/// Compact semantic risk tolerance level.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum SemanticRiskTolerance {
+  /// Prioritizes damage avoidance and retreat under ambiguity or threat.
+  Cautious,
+  /// Balances resource gain and safety.
+  Balanced,
+  /// Prioritizes contested objectives and forward pressure despite risk.
+  RiskSeeking,
+}
+
+impl SemanticRiskTolerance {
+  /// Return the canonical label for this risk tolerance level.
+  pub const fn as_str(self) -> &'static str {
+    match self {
+      Self::Cautious => "cautious",
+      Self::Balanced => "balanced",
+      Self::RiskSeeking => "risk-seeking",
+    }
+  }
+
+  /// Parse a risk tolerance level from a canonical label.
+  pub fn parse(label: &str) -> Option<Self> {
+    match label {
+      "cautious" => Some(Self::Cautious),
+      "balanced" => Some(Self::Balanced),
+      "risk-seeking" => Some(Self::RiskSeeking),
+      _ => None,
+    }
+  }
+}
+
+/// Compact semantic deference level for authority and coordination.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum SemanticDeference {
+  /// Acts primarily on own local evaluation.
+  Autonomous,
+  /// Aligns with external calls or leader direction.
+  Compliant,
+  /// Readily yields contest priority to ally or neutral presence.
+  Yielding,
+}
+
+impl SemanticDeference {
+  /// Return the canonical label for this deference level.
+  pub const fn as_str(self) -> &'static str {
+    match self {
+      Self::Autonomous => "autonomous",
+      Self::Compliant => "compliant",
+      Self::Yielding => "yielding",
+    }
+  }
+
+  /// Parse a deference level from a canonical label.
+  pub fn parse(label: &str) -> Option<Self> {
+    match label {
+      "autonomous" => Some(Self::Autonomous),
+      "compliant" => Some(Self::Compliant),
+      "yielding" => Some(Self::Yielding),
+      _ => None,
+    }
+  }
+}
+
+/// Compact semantic focus level for decision posture.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum SemanticFocus {
+  /// Waits for wave stabilization and defensive positioning.
+  Patience,
+  /// Exploits openings and immediate favorable conditions.
+  Opportunity,
+  /// Prioritizes rapid escalation or immediate objective contest.
+  Urgency,
+}
+
+impl SemanticFocus {
+  /// Return the canonical label for this focus level.
+  pub const fn as_str(self) -> &'static str {
+    match self {
+      Self::Patience => "patience",
+      Self::Opportunity => "opportunity",
+      Self::Urgency => "urgency",
+    }
+  }
+
+  /// Parse a focus level from a canonical label.
+  pub fn parse(label: &str) -> Option<Self> {
+    match label {
+      "patience" => Some(Self::Patience),
+      "opportunity" => Some(Self::Opportunity),
+      "urgency" => Some(Self::Urgency),
+      _ => None,
+    }
+  }
+}
+
+/// Compact semantic communication clarity level.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum SemanticCommunicationClarity {
+  /// Minimal signals, essential threat and status only.
+  Terse,
+  /// Balanced communicative frequency.
+  Standard,
+  /// High communicative frequency and explicit intents.
+  Verbose,
+}
+
+impl SemanticCommunicationClarity {
+  /// Return the canonical label for this communication clarity level.
+  pub const fn as_str(self) -> &'static str {
+    match self {
+      Self::Terse => "terse",
+      Self::Standard => "standard",
+      Self::Verbose => "verbose",
+    }
+  }
+
+  /// Parse a communication clarity level from a canonical label.
+  pub fn parse(label: &str) -> Option<Self> {
+    match label {
+      "terse" => Some(Self::Terse),
+      "standard" => Some(Self::Standard),
+      "verbose" => Some(Self::Verbose),
+      _ => None,
+    }
+  }
+}
+
+/// Compact semantic profile definition schema and trait bundle.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct SemanticProfileDefinition {
+  profile_id: &'static str,
+  schema: &'static str,
+  risk_tolerance: SemanticRiskTolerance,
+  deference: SemanticDeference,
+  focus: SemanticFocus,
+  communication_clarity: SemanticCommunicationClarity,
+  description: &'static str,
+}
+
+impl SemanticProfileDefinition {
+  /// Construct the cautious baseline semantic profile definition.
+  pub const fn cautious_v1() -> Self {
+    Self {
+      profile_id: CAUTIOUS_SEMANTIC_PROFILE_ID,
+      schema: SEMANTIC_PROFILE_VOCABULARY_SCHEMA,
+      risk_tolerance: SemanticRiskTolerance::Cautious,
+      deference: SemanticDeference::Autonomous,
+      focus: SemanticFocus::Patience,
+      communication_clarity: SemanticCommunicationClarity::Terse,
+      description: "Cautious autonomous laner prioritizing lane stabilization and threat retreat.",
+    }
+  }
+
+  /// Construct the risk-taking baseline semantic profile definition.
+  pub const fn risk_taking_v1() -> Self {
+    Self {
+      profile_id: RISK_TAKING_SEMANTIC_PROFILE_ID,
+      schema: SEMANTIC_PROFILE_VOCABULARY_SCHEMA,
+      risk_tolerance: SemanticRiskTolerance::RiskSeeking,
+      deference: SemanticDeference::Autonomous,
+      focus: SemanticFocus::Opportunity,
+      communication_clarity: SemanticCommunicationClarity::Standard,
+      description: "Risk-seeking autonomous laner prioritizing contest opportunities.",
+    }
+  }
+
+  /// Construct the yielding baseline semantic profile definition.
+  pub const fn yielding_v1() -> Self {
+    Self {
+      profile_id: YIELDING_SEMANTIC_PROFILE_ID,
+      schema: SEMANTIC_PROFILE_VOCABULARY_SCHEMA,
+      risk_tolerance: SemanticRiskTolerance::Cautious,
+      deference: SemanticDeference::Yielding,
+      focus: SemanticFocus::Patience,
+      communication_clarity: SemanticCommunicationClarity::Terse,
+      description: "Yielding laner deferring contest to avoid confrontation.",
+    }
+  }
+
+  pub const fn profile_id(self) -> &'static str {
+    self.profile_id
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn risk_tolerance(self) -> SemanticRiskTolerance {
+    self.risk_tolerance
+  }
+
+  pub const fn deference(self) -> SemanticDeference {
+    self.deference
+  }
+
+  pub const fn focus(self) -> SemanticFocus {
+    self.focus
+  }
+
+  pub const fn communication_clarity(self) -> SemanticCommunicationClarity {
+    self.communication_clarity
+  }
+
+  pub const fn description(self) -> &'static str {
+    self.description
+  }
+}
+
+/// Errors raised when parsing or validating semantic profile vocabulary.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum SemanticProfileVocabularyError {
+  UnknownProfile,
+}
+
+/// Canonical catalog of semantic profile vocabulary entries.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct SemanticProfileVocabulary;
+
+impl SemanticProfileVocabulary {
+  /// Return all registered canonical semantic profile definitions.
+  pub const fn all_profiles() -> [SemanticProfileDefinition; 3] {
+    [
+      SemanticProfileDefinition::cautious_v1(),
+      SemanticProfileDefinition::risk_taking_v1(),
+      SemanticProfileDefinition::yielding_v1(),
+    ]
+  }
+
+  /// Lookup a semantic profile definition by its stable ID.
+  pub fn lookup(profile_id: &str) -> Option<SemanticProfileDefinition> {
+    match profile_id {
+      CAUTIOUS_SEMANTIC_PROFILE_ID => Some(SemanticProfileDefinition::cautious_v1()),
+      RISK_TAKING_SEMANTIC_PROFILE_ID => Some(SemanticProfileDefinition::risk_taking_v1()),
+      YIELDING_SEMANTIC_PROFILE_ID => Some(SemanticProfileDefinition::yielding_v1()),
+      _ => None,
+    }
+  }
+
+  /// Validate that a profile ID exists in the vocabulary.
+  pub fn validate_profile_id(
+    profile_id: &str,
+  ) -> Result<SemanticProfileDefinition, SemanticProfileVocabularyError> {
+    Self::lookup(profile_id).ok_or(SemanticProfileVocabularyError::UnknownProfile)
   }
 }
 
@@ -9175,5 +9434,130 @@ mod tests {
       .expect("yielding safe request is legal");
     validate_lane_request(&threat_state, &threat_receipt, &yielding_threat.request())
       .expect("yielding threat request is legal");
+  }
+
+  #[test]
+  fn semantic_profile_dimensions_round_trip_and_reject_invalid() {
+    for (val, label) in [
+      (SemanticRiskTolerance::Cautious, "cautious"),
+      (SemanticRiskTolerance::Balanced, "balanced"),
+      (SemanticRiskTolerance::RiskSeeking, "risk-seeking"),
+    ] {
+      assert_eq!(val.as_str(), label);
+      assert_eq!(SemanticRiskTolerance::parse(label), Some(val));
+    }
+    assert_eq!(SemanticRiskTolerance::parse("unknown"), None);
+
+    for (val, label) in [
+      (SemanticDeference::Autonomous, "autonomous"),
+      (SemanticDeference::Compliant, "compliant"),
+      (SemanticDeference::Yielding, "yielding"),
+    ] {
+      assert_eq!(val.as_str(), label);
+      assert_eq!(SemanticDeference::parse(label), Some(val));
+    }
+    assert_eq!(SemanticDeference::parse("unknown"), None);
+
+    for (val, label) in [
+      (SemanticFocus::Patience, "patience"),
+      (SemanticFocus::Opportunity, "opportunity"),
+      (SemanticFocus::Urgency, "urgency"),
+    ] {
+      assert_eq!(val.as_str(), label);
+      assert_eq!(SemanticFocus::parse(label), Some(val));
+    }
+    assert_eq!(SemanticFocus::parse("unknown"), None);
+
+    for (val, label) in [
+      (SemanticCommunicationClarity::Terse, "terse"),
+      (SemanticCommunicationClarity::Standard, "standard"),
+      (SemanticCommunicationClarity::Verbose, "verbose"),
+    ] {
+      assert_eq!(val.as_str(), label);
+      assert_eq!(SemanticCommunicationClarity::parse(label), Some(val));
+    }
+    assert_eq!(SemanticCommunicationClarity::parse("unknown"), None);
+  }
+
+  #[test]
+  fn semantic_profile_definitions_and_vocabulary_lookup_are_canonical() {
+    let cautious = SemanticProfileDefinition::cautious_v1();
+    let risk_taking = SemanticProfileDefinition::risk_taking_v1();
+    let yielding = SemanticProfileDefinition::yielding_v1();
+
+    assert_eq!(cautious.schema(), SEMANTIC_PROFILE_VOCABULARY_SCHEMA);
+    assert_eq!(risk_taking.schema(), SEMANTIC_PROFILE_VOCABULARY_SCHEMA);
+    assert_eq!(yielding.schema(), SEMANTIC_PROFILE_VOCABULARY_SCHEMA);
+
+    assert_eq!(cautious.profile_id(), CAUTIOUS_SEMANTIC_PROFILE_ID);
+    assert_eq!(risk_taking.profile_id(), RISK_TAKING_SEMANTIC_PROFILE_ID);
+    assert_eq!(yielding.profile_id(), YIELDING_SEMANTIC_PROFILE_ID);
+
+    assert_eq!(cautious.risk_tolerance(), SemanticRiskTolerance::Cautious);
+    assert_eq!(cautious.deference(), SemanticDeference::Autonomous);
+    assert_eq!(cautious.focus(), SemanticFocus::Patience);
+    assert_eq!(
+      cautious.communication_clarity(),
+      SemanticCommunicationClarity::Terse
+    );
+    assert!(!cautious.description().is_empty());
+
+    assert_eq!(
+      risk_taking.risk_tolerance(),
+      SemanticRiskTolerance::RiskSeeking
+    );
+    assert_eq!(risk_taking.deference(), SemanticDeference::Autonomous);
+    assert_eq!(risk_taking.focus(), SemanticFocus::Opportunity);
+    assert_eq!(
+      risk_taking.communication_clarity(),
+      SemanticCommunicationClarity::Standard
+    );
+    assert!(!risk_taking.description().is_empty());
+
+    assert_eq!(yielding.risk_tolerance(), SemanticRiskTolerance::Cautious);
+    assert_eq!(yielding.deference(), SemanticDeference::Yielding);
+    assert_eq!(yielding.focus(), SemanticFocus::Patience);
+    assert_eq!(
+      yielding.communication_clarity(),
+      SemanticCommunicationClarity::Terse
+    );
+    assert!(!yielding.description().is_empty());
+
+    let all = SemanticProfileVocabulary::all_profiles();
+    assert_eq!(all.len(), 3);
+    assert_eq!(all[0], cautious);
+    assert_eq!(all[1], risk_taking);
+    assert_eq!(all[2], yielding);
+
+    assert_eq!(
+      SemanticProfileVocabulary::lookup(CAUTIOUS_SEMANTIC_PROFILE_ID),
+      Some(cautious)
+    );
+    assert_eq!(
+      SemanticProfileVocabulary::lookup(RISK_TAKING_SEMANTIC_PROFILE_ID),
+      Some(risk_taking)
+    );
+    assert_eq!(
+      SemanticProfileVocabulary::lookup(YIELDING_SEMANTIC_PROFILE_ID),
+      Some(yielding)
+    );
+    assert_eq!(SemanticProfileVocabulary::lookup("unknown-profile"), None);
+
+    assert_eq!(
+      SemanticProfileVocabulary::validate_profile_id(CAUTIOUS_SEMANTIC_PROFILE_ID),
+      Ok(cautious)
+    );
+    assert_eq!(
+      SemanticProfileVocabulary::validate_profile_id(RISK_TAKING_SEMANTIC_PROFILE_ID),
+      Ok(risk_taking)
+    );
+    assert_eq!(
+      SemanticProfileVocabulary::validate_profile_id(YIELDING_SEMANTIC_PROFILE_ID),
+      Ok(yielding)
+    );
+    assert_eq!(
+      SemanticProfileVocabulary::validate_profile_id("unknown-profile"),
+      Err(SemanticProfileVocabularyError::UnknownProfile)
+    );
   }
 }

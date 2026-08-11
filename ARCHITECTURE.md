@@ -290,6 +290,13 @@ verified profile-aware comparison against a fixed threshold magnitude (2) and
 traces a qualified outlier to a verified decision replay record under
 `m6-calibrated-outlier-representative-replay-v1`. It adds no runtime automated
 log production, durable persistence, provider, or human-gameplay authority.
+`SemanticProfileDefinition` defines `m7-semantic-profile-vocabulary-v1`,
+providing a compact categorical trait schema over risk tolerance, deference,
+focus, and communication clarity dimensions for baseline reference profiles
+(`cautious-laner-semantic-v1`, `risk-taking-laner-semantic-v1`,
+`yielding-laner-semantic-v1`) alongside a fail-closed lookup catalog
+(`SemanticProfileVocabulary`). It does not execute prompt generation or claim
+human psychological validity.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

@@ -98,6 +98,23 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.172 — 2026-08-11
+
+### Added
+
+- Added `m7-semantic-profile-vocabulary-v1`, a compact semantic profile
+  vocabulary and schema covering discrete trait dimensions (`SemanticRiskTolerance`,
+  `SemanticDeference`, `SemanticFocus`, and `SemanticCommunicationClarity`) and
+  canonical descriptors for baseline reference profiles (`cautious-laner-semantic-v1`,
+  `risk-taking-laner-semantic-v1`, and `yielding-laner-semantic-v1`) with a
+  fail-closed lookup catalog (`SemanticProfileVocabulary`).
+
+### Known limits
+
+- This is a declarative reference vocabulary schema; diagnostic scenario choice
+  batteries, empirical action/communication distribution estimation, prompt
+  protocols, and parametric model fitting remain open.
+
 ## 0.1.171 — 2026-08-11
 
 ### Added

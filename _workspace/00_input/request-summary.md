@@ -1,23 +1,29 @@
-# Request Summary: Calibrated Outlier Detection and Representative Replay Evidence
+# Request Summary: Compact Semantic Profile Vocabulary and Schema
 
 ## Goal and Outcome
-Implement `m6-scripted-agent-calibrated-outlier-replay-v1`, an in-process evidence report that calibrates outlier detection from a verified profile-aware tally comparison report and deterministically selects the representative decision replay record, fulfilling the M6 exit evidence requirement that an outlier can be traced from aggregate metric to committed replay.
+Define the versioned schema `m7-semantic-profile-vocabulary-v1` with a compact semantic profile vocabulary covering core behavioral trait dimensions (risk tolerance, deference, focus, and communication clarity), providing structured semantic descriptors for the reference agent profiles (`cautious-laner-semantic-v1`, `risk-taking-laner-semantic-v1`, and `yielding-laner-semantic-v1`) without making human behavioral validity claims.
 
 ## Roadmap Milestone
-M6 — Automated Behavioral Validation.
-Item: `Calibrate outlier detection and select representative replays deterministically.`
+M7 — Semantic-to-Parametric Calibration Proof.
+Item: `Define a compact semantic profile vocabulary and schema.`
 
 ## Scope
-- Add `ScriptedAgentCalibratedOutlierReplayReport` and `ScriptedAgentCalibratedOutlierReplayStatus` in `src/agent.rs`.
-- Enforce schema `m6-scripted-agent-calibrated-outlier-replay-v1` and rule `m6-calibrated-outlier-representative-replay-v1`.
-- Calibrate outlier qualification with inclusive threshold magnitude 2 (`SCRIPTED_AGENT_CALIBRATED_OUTLIER_THRESHOLD_MAGNITUDE`).
-- Trace the qualified outlier to the first matching caller-declared `ScriptedAgentReplayRecord`, validating its replay determinism.
-- Handle all closed status outcomes: `Qualified`, `BelowThreshold`, `NoCandidate`, `NoMatchingReplay`, and `DecisionMismatch`.
-- Comprehensive unit tests covering all statuses, tie-breaks, and edge cases.
-- Reconcile `Cargo.toml` (0.1.171), `CHANGELOG.md`, `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `LESSONS.md`.
+- Add versioned schema `m7-semantic-profile-vocabulary-v1` in `src/agent.rs`.
+- Define compact categorical semantic dimensions:
+  - `SemanticRiskTolerance`: `Cautious`, `Balanced`, `RiskSeeking`
+  - `SemanticDeference`: `Autonomous`, `Compliant`, `Yielding`
+  - `SemanticFocus`: `Patience`, `Opportunity`, `Urgency`
+  - `SemanticCommunicationClarity`: `Terse`, `Standard`, `Verbose`
+- Define `SemanticProfileDefinition` with structured fields: `profile_id`, `schema`, `risk_tolerance`, `deference`, `focus`, `communication_clarity`, and `description`.
+- Define canonical 3 baseline semantic profile definitions corresponding to M4/M6 reference behaviors:
+  - `cautious-laner-semantic-v1`
+  - `risk-taking-laner-semantic-v1`
+  - `yielding-laner-semantic-v1`
+- Define `SemanticProfileVocabulary` registry/catalog with schema verification, stable profile enumeration, and fail-closed lookup/validation.
+- Add comprehensive unit tests covering all dimensions, parsing, roundtrips, invalid profile ID handling, and vocabulary consistency.
+- Reconcile `Cargo.toml` (0.1.172), `CHANGELOG.md`, `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, and `LESSONS.md`.
 
 ## Non-Goals & Explicit Limits
-- No runtime automated log emission or tracing transport.
-- No durable external file persistence.
-- No model provider or LLM integration.
-- No claims about human gameplay, player behavior, or strategic optimality.
+- No prompt generation or LLM runtime calls.
+- No claim that semantic profiles capture human psychological ground truth.
+- No parametric model fitting or held-out diagnostic scenario evaluation (deferred to subsequent M7 slices).
