@@ -98,6 +98,24 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.175 — 2026-08-12
+
+### Added
+
+- Added `m7-empirical-distribution-estimation-v1`, `m7-empirical-action-distribution-v1`,
+  and `m7-empirical-communication-distribution-v1`, providing typed empirical
+  action distributions (`DiagnosticChoiceActionDistribution`), communication ping signal
+  distributions (`DiagnosticChoiceCommunicationDistribution`), and aggregated
+  diagnostic choice distribution reports (`EmpiricalDistributionEstimateReport`) with
+  deterministic integer basis-point representations (10,000 basis points) and canonical
+  estimates for baseline semantic profiles (`cautious_v1`, `risk_taking_v1`, `yielding_v1`).
+
+### Known limits
+
+- These are declarative empirical distribution estimates and frequency projections;
+  parametric model fitting, distance/entropy metric calculations, and live model provider
+  integration remain open.
+
 ## 0.1.174 — 2026-08-12
 
 ### Added

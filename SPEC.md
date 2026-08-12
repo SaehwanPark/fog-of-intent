@@ -1446,8 +1446,18 @@ distribution estimation, and parametric fitting remain open.
 - `RepeatedSamplingProtocolCatalog` provides fail-closed lookup, bounds validation,
   and enumeration over canonical schedules (`sampling-standard-repeat-10-v1`,
   `sampling-diagnostic-repeat-30-v1`, and `sampling-quick-check-5-v1`).
-- This contract establishes typed strategic choice dilemmas and empirical
-  sampling protocols for calibration; it does not claim full match scenario
+- `DiagnosticChoiceActionDistribution` defines `m7-empirical-action-distribution-v1`
+  for empirical primary vs alternative action choices with exact integer 10,000
+  basis-point representations and fail-closed count/bound validation.
+- `DiagnosticChoiceCommunicationDistribution` defines `m7-empirical-communication-distribution-v1`
+  for empirical ping signal distributions across five discrete signals (`None`, `Danger`,
+  `OnMyWay`, `Assist`, `EnemyMissing`) with exact integer 10,000 basis-point representations.
+- `EmpiricalDistributionEstimateReport` defines `m7-empirical-distribution-estimation-v1`,
+  aggregating seven canonical diagnostic dilemmas and communication distributions with
+  fail-closed validation and canonical baseline reports (`cautious_v1`, `risk_taking_v1`,
+  `yielding_v1`).
+- This contract establishes typed strategic choice dilemmas, empirical sampling protocols,
+  and empirical distribution estimation for calibration; it does not claim full match scenario
   execution or human behavioral completeness.
 
 ## Future

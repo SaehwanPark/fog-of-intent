@@ -1540,7 +1540,8 @@ uncertainty and evidence limits reported.
   distribution estimation, prompt protocols, and parametric fitting remain open.
 - [x] Define repeated-sampling and model/prompt version protocols;
   distribution estimation and parametric fitting remain open.
-- [ ] Estimate empirical action and communication distributions.
+- [x] Estimate empirical action and communication distributions;
+  distance/entropy measures and parametric fitting remain open.
 - [ ] Define behavioral distance, entropy, sensitivity, consistency, and
   adaptation measures.
 - [ ] Fit initial bounded parametric policies with regularization.
