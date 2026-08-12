@@ -1549,14 +1549,10 @@ uncertainty and evidence limits reported.
   held-out evaluation, model comparison, and recalibration remain open.
 - [x] Evaluate held-out scenarios and counterfactual perturbations;
 - [x] Compare more than one model or prompting family where feasible;
-  unidentifiable parameters, private chain-of-thought preservation, and
-  recalibration triggers remain open.
 - [x] Report unidentifiable parameters and unstable semantic labels;
-  private chain-of-thought preservation and recalibration triggers remain open.
 - [x] Preserve reference outputs without storing or requiring private
   chain-of-thought;
-  recalibration triggers remain open.
-- [ ] Define recalibration triggers for model or prompt changes.
+- [x] Define recalibration triggers for model or prompt changes.
 
 ### Deliverables
 
