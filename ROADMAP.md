@@ -1553,8 +1553,9 @@ uncertainty and evidence limits reported.
   recalibration triggers remain open.
 - [x] Report unidentifiable parameters and unstable semantic labels;
   private chain-of-thought preservation and recalibration triggers remain open.
-- [ ] Preserve reference outputs without storing or requiring private
-  chain-of-thought.
+- [x] Preserve reference outputs without storing or requiring private
+  chain-of-thought;
+  recalibration triggers remain open.
 - [ ] Define recalibration triggers for model or prompt changes.
 
 ### Deliverables

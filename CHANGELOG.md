@@ -98,6 +98,27 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.181 — 2026-08-12
+
+### Added
+
+- Added `m7-reference-output-v1`, `ReferenceOutputRecord`, `StructuredRationale`,
+  `StructuredRationaleCategory`, and `ReferenceOutputError` in `src/agent/reference_output.rs`,
+  capturing observable decision outputs (`LaneIntent`, `LaneTargetFocus`, `LaneCommitment`,
+  `LanePingSignal`, bounded `StructuredRationale`) with strict fail-closed rejection if
+  private chain-of-thought is requested or present (`chain_of_thought_present == true`).
+- Added `m7-reference-output-preservation-v1`, `ReferenceOutputPreservationReport`, and
+  `ReferenceOutputCatalog` in `src/agent/reference_output.rs`, preserving complete 7-dilemma
+  diagnostic reference suites across semantic profiles and model/prompt protocols, asserting
+  `chain_of_thought_free: true`, providing formatted Markdown export, and enforcing canonical
+  dilemma domain ordering.
+- Added canonical baseline reference suites for `cautious_v1`, `risk_taking_v1`, and
+  `yielding_v1` under both reference diagnostic and alternative diagnostic prompt protocols.
+
+### Known limits
+
+- Live model provider APIs, online recalibration triggers, and network adapters remain explicitly deferred.
+
 ## 0.1.180 — 2026-08-12
 
 ### Added

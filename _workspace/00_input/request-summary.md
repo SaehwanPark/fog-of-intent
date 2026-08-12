@@ -1,67 +1,43 @@
-# Request Summary — M7: Evaluate Held-Out Scenarios and Counterfactual Perturbations
+# Request Summary — M7 Reference Output Preservation
 
 ## Requested Outcome
 
-Implement evaluation of held-out diagnostic scenarios and counterfactual perturbations for regularized parametric policies under Milestone M7 (Semantic-to-Parametric Calibration Proof).
+Implement the Phase 7 (Semantic-to-Parametric Calibration Proof) vertical slice:
+"Preserve reference outputs without storing or requiring private chain-of-thought."
 
 ## Roadmap Milestone
 
-- Milestone: M7 — Semantic-to-Parametric Calibration Proof
-- Target slice: `[ ] Evaluate held-out scenarios and counterfactual perturbations.`
-- Dependencies: M6 automated behavioral validation, M7 semantic profile vocabulary, diagnostic choice catalog, empirical distribution estimation, behavioral measures, and regularized parametric policy fitting.
-
-## Current Evidence
-
-- `ParametricPolicyDefinition` and `ParametricPolicyFitter` provide regularized parameter estimation from empirical choice distributions (`cautious_v1`, `risk_taking_v1`, `yielding_v1`) across 7 diagnostic dilemma domains.
-- Exact integer basis-point representations ($[0..=10,000]$ bp) and conservation laws are established across all parameters.
-- Behavioral measures (Total Variation Distance, Gini entropy, sensitivity, consistency, adaptation) are defined and verified.
+- **Milestone:** M7 — Semantic-to-Parametric Calibration Proof
+- **Status:** Active / In-progress
+- **Preceding Slices:** Semantic profile vocabulary, diagnostic choice catalog, prompt protocols, repeated sampling protocols, empirical distribution estimation, behavioral distance/entropy/sensitivity/consistency/adaptation measures, regularized parametric policy fitting, held-out scenario evaluation, counterfactual perturbation sensitivity, multi-model family comparisons, and parameter identifiability / label stability uncertainty reports.
 
 ## In Scope
 
-1. `HeldOutScenarioDefinition` & `HeldOutScenarioCatalog`:
-   - Structured definitions for held-out evaluation scenarios across the 7 diagnostic dilemma domains (`ContestConcede`, `FollowReject`, `FarmAssist`, `RecallTiming`, `Sacrifice`, `Surprise`, `ResponseToFailure`).
-   - Canonical held-out suites for reference profiles (`cautious`, `risk-taking`, `yielding`).
-   - Empirical held-out ground-truth action distributions and expected modal intents.
-2. `HeldOutScenarioEvaluationReport`:
-   - Computes Total Variation Distance (TVD) loss between parametric policy predicted weights and held-out distributions.
-   - Computes modal prediction match and accuracy in basis points ($[0..=10,000]$ bp).
-   - Evaluates generalization threshold passing status (e.g. mean held-out loss $\le 2,500$ bp and modal accuracy $\ge 7,000$ bp).
-3. `CounterfactualPerturbationDefinition` & `CounterfactualPerturbationCatalog`:
-   - Structured definitions for counterfactual perturbation conditions (`ThreatEscalation`, `AlliedRetreatCall`, `SevereHealthAttrition`, `FavorableOpening`).
-   - Explicit target domain, condition parameters, and expected directional shifts (`ShiftTowardsDefensive`, `ShiftTowardsAggressive`, `MaintainStance`).
-4. `CounterfactualSensitivityReport`:
-   - Evaluates parametric policy behavior under counterfactual perturbations.
-   - Checks directional coherence against semantic profile traits (`Coherent`, `Neutral`, `Inverted`).
-5. `CalibrationHeldOutReport`:
-   - Aggregates held-out scenario evaluation and counterfactual sensitivity evaluation.
-   - Evaluates calibration qualification gate without requiring privileged true state or private chain-of-thought.
-   - Formatted Markdown rendering for inspectable debriefs and model cards.
+1. Define `StructuredRationaleCategory` and `StructuredRationale` for structured decision justifications without hidden cognitive states.
+2. Define `ReferenceOutputRecord` under schema `m7-reference-output-v1` capturing observable decision outputs (intent, target focus, commitment, ping signal, optional structured rationale) bound to model family, prompt protocol, and diagnostic dilemma domain, with fail-closed rejection of private chain-of-thought (`chain_of_thought_present == false`).
+3. Define `ReferenceOutputPreservationReport` under schema `m7-reference-output-preservation-v1` aggregating 7 canonical diagnostic dilemma records, validating complete dilemma domain coverage, zero private chain-of-thought presence, and providing structured Markdown export.
+4. Provide canonical reference output suites for baseline profiles (`cautious-laner-semantic-v1`, `risk-taking-laner-semantic-v1`, `yielding-laner-semantic-v1`) under standard and alternative diagnostic prompt protocols.
+5. Provide `ReferenceOutputCatalog` for canonical suite discovery and verification.
+6. Comprehensive test coverage for construction, validation, domain matching, fail-closed CoT rejection, rationale bounds, and Markdown rendering.
+7. Update `README.md`, `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, and `LESSONS.md`.
 
 ## Non-Goals
 
-- No modifications to authoritative simulation kernel transitions or host execution truth.
-- No network transport, model API integration, or floating-point math.
-- No claim that empirical distributions represent human ground truth or professional players.
-- No unseeded randomness or wall-clock dependencies.
+- Live model provider API execution or network communication (kept at outer edge/future milestones).
+- Storing or parsing unstructured natural-language thoughts or hidden scratchpads.
+- Full match simulation execution or live multi-agent game play.
+- Treating reference agent behavior as human ground truth.
 
 ## Project Boundaries Touched
 
-- `src/agent/held_out.rs` (new submodule)
-- `src/agent/mod.rs` (re-exports)
-- `src/agent/tests.rs` (focused unit tests)
-- `SPEC.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `README.md`, `Cargo.toml`
-
-## Expected Outputs
-
-- New Rust module `src/agent/held_out.rs` implementing the held-out scenario evaluation and counterfactual perturbation contracts.
-- Thorough tests covering validation, loss computation, modal accuracy, counterfactual directional shifts, calibration gates, and fail-closed error handling.
-- Passing repository checks (`cargo test`, `cargo fmt`, `cargo clippy`, `python3 scripts/check_repository.py`).
-- Updated canonical project documentation.
+- `src/agent/reference_output.rs` (new module)
+- `src/agent/mod.rs` (module declaration and re-exports)
+- `src/agent/tests.rs` (unit tests for reference output preservation)
+- Canonical docs (`ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `README.md`, `CHANGELOG.md`, `LESSONS.md`)
 
 ## Verification
 
-- `cargo fmt --all -- --check`
-- `cargo clippy --locked --all-targets --all-features -- -D warnings`
-- `cargo test --locked`
+- `cargo +1.96.0 fmt --all -- --check`
+- `cargo +1.96.0 clippy --locked --all-targets --all-features -- -D warnings`
+- `cargo +1.96.0 test --locked`
 - `python3 scripts/check_repository.py`
-- `python3 -m unittest discover -s scripts -p 'test_*.py'`

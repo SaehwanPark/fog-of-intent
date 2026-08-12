@@ -344,6 +344,16 @@ deterministic qualification gate.
 deltas across action and communication distributions, parametric policy weight shifts, modal choice
 agreement (0..=7), and categorical alignment status (`aligned`, `shifted`, `divergent`) between
 reference and alternative model/prompting protocols across diagnostic dilemmas.
+`ParameterIdentifiabilityReport` (`m7-parameter-identifiability-v1`), `SemanticLabelStabilityReport`
+(`m7-semantic-label-stability-v1`), and `CalibrationUncertaintyReport` (`m7-calibration-uncertainty-v1`)
+evaluate empirical sensitivity, confounding risk, cross-model stability, and overall uncertainty scoring
+with explicit basis-point thresholds and canonical disclaimers stating that AI behavior serves solely
+as a reference policy distribution, not human ground truth.
+`ReferenceOutputRecord` (`m7-reference-output-v1`), `StructuredRationale`, `ReferenceOutputPreservationReport`
+(`m7-reference-output-preservation-v1`), and `ReferenceOutputCatalog` preserve observable decision outputs
+(`LaneIntent`, `LaneTargetFocus`, `LaneCommitment`, `LanePingSignal`, bounded `StructuredRationale`) across all
+seven diagnostic dilemma domains, strictly failing closed if private chain-of-thought is requested or present
+(`chain_of_thought_present == true`).
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

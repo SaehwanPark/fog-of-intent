@@ -1387,3 +1387,21 @@ canonical policy instead of duplicating it.
   defer runtime automated log production, external persistence, and human
   evidence to separate contracts.
 
+## Preserve observable reference outputs without private chain-of-thought
+
+- Context: M7 requires preserving empirical reference decision outputs across diagnostic
+  dilemmas for semantic-to-parametric calibration without storing or requiring private
+  chain-of-thought.
+- Symptom: Model scratchpads or internal reasoning traces can be mistaken for authoritative
+  game logic, ground truth, or essential calibration targets.
+- Cause: Treating non-verifiable internal model reasoning as simulation artifacts leaks
+  uninspectable state and violates the principle that AI policies are reference empirical
+  distributions rather than human ground truth.
+- Resolution: Preserve only observable action outputs (`LaneIntent`, `LaneTargetFocus`,
+  `LaneCommitment`, `LanePingSignal`) alongside bounded `StructuredRationale` category tags,
+  and fail closed (`ReferenceOutputError::PrivateChainOfThoughtForbidden`) if private
+  chain-of-thought is requested or present.
+- Prevention: Enforce `chain_of_thought_free: true` across all preservation reports and keep
+  live model execution, online recalibration, and human ground truth claims explicitly out
+  of simulation contracts.
+
