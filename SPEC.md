@@ -1491,11 +1491,14 @@ distribution estimation, and parametric fitting remain open.
 - `CalibrationHeldOutReport` defines `m7-calibration-held-out-v1`, integrating held-out scenario generalization and
   counterfactual sensitivity into an inspectable qualification gate with Markdown export.
 - `MultiModelComparisonReport` defines `m7-multi-model-comparison-v1`, evaluating Total Variation Distance (TVD) across action and communication distributions, parametric policy weight shifts, modal choice agreement (0..=7), and categorical alignment status (`aligned`, `shifted`, `divergent`) between reference and alternative model/prompting protocols across diagnostic dilemmas. Canonical comparisons are provided for `cautious_v1`, `risk_taking_v1`, and `yielding_v1`.
+- `ParameterIdentifiabilityReport` defines `m7-parameter-identifiability-v1`, evaluating empirical sensitivity and confounding risk across four discrete semantic dimensions (`RiskTolerance`, `Deference`, `Focus`, `CommunicationClarity`) with basis-point thresholds (identifiable $\ge 1,500$ bp, weak $\ge 500$ bp, max confounding risk $3,000$ bp).
+- `SemanticLabelStabilityReport` defines `m7-semantic-label-stability-v1`, evaluating cross-model Total Variation Distance (TVD) and modal agreement across model/prompt variations with explicit stability thresholds (stable $\le 1,000$ bp, sensitive $\le 3,000$ bp).
+- `CalibrationUncertaintyReport` defines `m7-calibration-uncertainty-v1`, integrating parameter identifiability and semantic label stability into a unified qualification report with overall uncertainty scoring, unidentifiable parameter / unstable label presence flags, Markdown export, and the canonical calibration limit disclaimer stating that AI behavior serves solely as a reference policy distribution, not human ground truth.
 - This contract establishes typed strategic choice dilemmas, empirical sampling protocols,
   empirical distribution estimation, discrete behavioral measures, regularized parametric policy
-  fitting, held-out scenario evaluation, counterfactual perturbation sensitivity, and multi-model
-  family comparison for calibration; it does not claim full match scenario execution or human
-  behavioral completeness.
+  fitting, held-out scenario evaluation, counterfactual perturbation sensitivity, multi-model
+  family comparison, and parameter identifiability / semantic label stability uncertainty reporting
+  for calibration; it does not claim full match scenario execution or human behavioral completeness.
 
 ## Future
 

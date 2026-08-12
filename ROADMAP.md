@@ -1551,7 +1551,8 @@ uncertainty and evidence limits reported.
 - [x] Compare more than one model or prompting family where feasible;
   unidentifiable parameters, private chain-of-thought preservation, and
   recalibration triggers remain open.
-- [ ] Report unidentifiable parameters and unstable semantic labels.
+- [x] Report unidentifiable parameters and unstable semantic labels;
+  private chain-of-thought preservation and recalibration triggers remain open.
 - [ ] Preserve reference outputs without storing or requiring private
   chain-of-thought.
 - [ ] Define recalibration triggers for model or prompt changes.

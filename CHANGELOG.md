@@ -98,6 +98,33 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.180 — 2026-08-12
+
+### Added
+
+- Added `m7-parameter-identifiability-v1`, `ParameterIdentifiabilityReport`, `TraitIdentifiabilityEntry`,
+  `SemanticTraitDimension`, and `ParameterIdentifiabilityStatus` in `src/agent/uncertainty.rs`,
+  evaluating empirical sensitivity and confounding risk across four discrete semantic dimensions
+  (`RiskTolerance`, `Deference`, `Focus`, `CommunicationClarity`) with basis-point thresholds
+  (identifiable $\ge 1,500$ bp, weak $\ge 500$ bp, max confounding risk $3,000$ bp).
+- Added `m7-semantic-label-stability-v1`, `SemanticLabelStabilityReport`, `SemanticLabelStabilityEntry`,
+  and `SemanticLabelStabilityStatus` in `src/agent/uncertainty.rs`, evaluating cross-model Total
+  Variation Distance (TVD) and modal agreement across model/prompt variations with explicit stability
+  thresholds (stable $\le 1,000$ bp, sensitive $\le 3,000$ bp).
+- Added `m7-calibration-uncertainty-v1` and `CalibrationUncertaintyReport` in `src/agent/uncertainty.rs`,
+  integrating parameter identifiability and semantic label stability into a unified qualification report
+  with overall uncertainty scoring, unidentifiable parameter / unstable label presence flags, Markdown
+  export, and the canonical calibration limit disclaimer stating that AI behavior serves solely as a
+  reference policy distribution, not human ground truth.
+- Added canonical identifiability, stability, and calibration uncertainty reports for reference profiles
+  (`cautious_uncertainty_v1`, `risk_taking_uncertainty_v1`, `yielding_uncertainty_v1`).
+
+### Known limits
+
+- This contract establishes discrete mathematical parameter identifiability and semantic label stability
+  reporting for calibration uncertainty; private chain-of-thought preservation, recalibration triggers,
+  and live model provider integration remain open.
+
 ## 0.1.179 — 2026-08-12
 
 ### Added
