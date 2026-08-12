@@ -188,7 +188,8 @@ class CoreBoundaryTests(unittest.TestCase):
     with tempfile.TemporaryDirectory() as directory:
       root = Path(directory)
       self.write_core_files(root)
-      (root / "src" / "kernel.rs").write_text(
+      kernel_path = root / "src" / "kernel" / "mod.rs"
+      kernel_path.write_text(
         "use tokio::runtime::Runtime;\n"
         "use std::time::Instant;\n"
         "use std::time;\n"
@@ -207,9 +208,9 @@ class CoreBoundaryTests(unittest.TestCase):
       self.assertTrue(any("await expression" in error for error in errors))
       self.assertTrue(any("transport import" in error for error in errors))
       self.assertTrue(any("transport type" in error for error in errors))
-      self.assertTrue(all("src/kernel.rs" in error for error in errors))
+      self.assertTrue(all("src/kernel/mod.rs" in error for error in errors))
 
-      (root / "src" / "kernel.rs").write_text("fn run() {}\n")
+      kernel_path.write_text("fn run() {}\n")
       errors = []
       check_repository.check_core_boundary(root, errors)
       self.assertEqual(errors, [])
@@ -220,6 +221,17 @@ class CoreBoundaryTests(unittest.TestCase):
       check_repository.check_core_boundary(root, errors)
       self.assertTrue(any("unclassified core boundary file" in error for error in errors))
       self.assertTrue(any("wall-clock import" in error for error in errors))
+
+  def test_ignores_edge_module_directories(self) -> None:
+    with tempfile.TemporaryDirectory() as directory:
+      root = Path(directory)
+      self.write_core_files(root)
+      edge = root / "src" / "cli" / "mod.rs"
+      edge.parent.mkdir(parents=True, exist_ok=True)
+      edge.write_text("use std::time::Instant;\nasync fn run() {}\n")
+      errors: list[str] = []
+      check_repository.check_core_boundary(root, errors)
+      self.assertEqual(errors, [])
 
 
 class DependencyExceptionTests(unittest.TestCase):

@@ -39,11 +39,27 @@ CANONICAL_MARKDOWN = (
 )
 CORE_RUST_FILES = (
   "src/lib.rs",
-  "src/agent.rs",
-  "src/kernel.rs",
-  "src/protocol.rs",
-  "src/serialization.rs",
   "src/session.rs",
+  "src/agent/comparison.rs",
+  "src/agent/empirical.rs",
+  "src/agent/experiment.rs",
+  "src/agent/measures.rs",
+  "src/agent/mod.rs",
+  "src/agent/operational.rs",
+  "src/agent/parametric.rs",
+  "src/agent/policy.rs",
+  "src/agent/population.rs",
+  "src/agent/profile.rs",
+  "src/agent/replay.rs",
+  "src/agent/semantic.rs",
+  "src/agent/tally.rs",
+  "src/kernel/command.rs",
+  "src/kernel/history.rs",
+  "src/kernel/inputs.rs",
+  "src/kernel/mod.rs",
+  "src/kernel/primitives.rs",
+  "src/kernel/state.rs",
+  "src/kernel/transition.rs",
   "src/lane/branch.rs",
   "src/lane/coordination.rs",
   "src/lane/encoding.rs",
@@ -60,18 +76,40 @@ CORE_RUST_FILES = (
   "src/lane/transition.rs",
   "src/lane/validation.rs",
   "src/lane/values.rs",
+  "src/protocol/action.rs",
+  "src/protocol/codec.rs",
+  "src/protocol/commit.rs",
+  "src/protocol/debrief.rs",
+  "src/protocol/draft.rs",
+  "src/protocol/error.rs",
+  "src/protocol/history.rs",
+  "src/protocol/intents.rs",
+  "src/protocol/message.rs",
+  "src/protocol/mod.rs",
+  "src/protocol/observation.rs",
+  "src/protocol/replay.rs",
+  "src/protocol/transcript.rs",
+  "src/serialization/error.rs",
+  "src/serialization/helpers.rs",
+  "src/serialization/history.rs",
+  "src/serialization/mod.rs",
+  "src/serialization/snapshot.rs",
 )
 CORE_EDGE_RUST_FILES = frozenset(
   {
-    "src/cli.rs",
     "src/agent_batch_store.rs",
     "src/agent_operational_store.rs",
     "src/command_loop.rs",
-    "src/host.rs",
     "src/host_artifact.rs",
     "src/main.rs",
     "src/run_store.rs",
     "src/terminal.rs",
+  }
+)
+CORE_EDGE_RUST_DIRECTORIES = frozenset(
+  {
+    "src/cli",
+    "src/host",
   }
 )
 CORE_BOUNDARY_PATTERNS = (
@@ -328,26 +366,44 @@ def check_documented_package_version(
     )
 
 
+def _is_core_test_path(relative_path: Path) -> bool:
+  return (
+    "tests" in relative_path.parts
+    or relative_path.name in {"test_support.rs", "tests.rs"}
+  )
+
+
+def _is_core_edge_path(relative: str) -> bool:
+  if relative in CORE_EDGE_RUST_FILES:
+    return True
+  return any(
+    relative == directory or relative.startswith(f"{directory}/")
+    for directory in CORE_EDGE_RUST_DIRECTORIES
+  )
+
+
+def discover_core_rust_files(root: Path) -> set[str]:
+  """Collect non-edge Rust sources that belong to the deterministic core."""
+  discovered: set[str] = set()
+  src = root / "src"
+  if not src.exists():
+    return discovered
+  for path in src.rglob("*.rs"):
+    relative_path = path.relative_to(root)
+    relative = relative_path.as_posix()
+    if _is_core_edge_path(relative) or _is_core_test_path(relative_path):
+      continue
+    discovered.add(relative)
+  return discovered
+
+
 def check_core_boundary(root: Path = ROOT, errors: list[str] | None = None) -> None:
   """Keep async, wall-clock, and transport primitives at repository edges."""
   root = root.resolve()
   if errors is None:
     errors = []
   declared = set(CORE_RUST_FILES)
-  discovered: set[str] = set()
-  src = root / "src"
-  if src.exists():
-    for path in src.glob("*.rs"):
-      relative = path.relative_to(root).as_posix()
-      if relative not in CORE_EDGE_RUST_FILES:
-        discovered.add(relative)
-    lane = src / "lane"
-    if lane.exists():
-      for path in lane.rglob("*.rs"):
-        relative_path = path.relative_to(root)
-        if "tests" in relative_path.parts or path.name == "test_support.rs":
-          continue
-        discovered.add(relative_path.as_posix())
+  discovered = discover_core_rust_files(root)
   for relative in sorted(declared - discovered):
     errors.append(f"core boundary file is missing: {relative}")
   for relative in sorted(discovered - declared):
