@@ -332,6 +332,14 @@ diagnostic dilemma domains with exact integer basis-point conservation ($\sum w_
 and regularized parameter fitting via `ParametricPolicyFitter`. Regularization applies bounded
 basis-point shrinkage towards neutral uniform priors to prevent extreme weights and resolve
 unidentifiable parameters deterministically without floating-point math or provider APIs.
+`HeldOutScenarioDefinition` (`m7-held-out-scenario-v1`) and `HeldOutScenarioEvaluationReport`
+(`m7-held-out-scenario-evaluation-v1`) evaluate Total Variation Distance loss and modal accuracy
+against held-out diagnostic scenario ground-truth distributions. `CounterfactualPerturbationDefinition`
+(`m7-counterfactual-perturbation-v1`) and `CounterfactualSensitivityReport` (`m7-counterfactual-sensitivity-v1`)
+evaluate directional shift coherence under discrete perturbation conditions (`ThreatEscalation`,
+`AlliedRetreatCall`, `SevereHealthAttrition`, `FavorableOpening`). `CalibrationHeldOutReport`
+(`m7-calibration-held-out-v1`) unifies generalization loss and counterfactual sensitivity into a
+deterministic qualification gate.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

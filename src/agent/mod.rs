@@ -6,6 +6,7 @@
 pub mod comparison;
 pub mod empirical;
 pub mod experiment;
+pub mod held_out;
 pub mod measures;
 pub mod operational;
 pub mod parametric;
@@ -22,6 +23,7 @@ mod tests;
 pub use comparison::*;
 pub use empirical::*;
 pub use experiment::*;
+pub use held_out::*;
 pub use measures::*;
 pub use operational::*;
 pub use parametric::*;

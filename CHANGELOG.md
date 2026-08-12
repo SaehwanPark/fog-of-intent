@@ -98,6 +98,30 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.178 — 2026-08-12
+
+### Added
+
+- Added `m7-held-out-scenario-v1`, `HeldOutScenarioDefinition`, and `HeldOutScenarioCatalog`,
+  providing canonical held-out scenario test suites for reference semantic profiles
+  (`cautious_v1`, `risk_taking_v1`, `yielding_v1`) across all seven diagnostic dilemma domains.
+- Added `m7-held-out-scenario-evaluation-v1` and `HeldOutScenarioEvaluationReport`, evaluating Total
+  Variation Distance (TVD) loss between predicted parametric policy weights and held-out distributions,
+  alongside modal prediction match and accuracy in exact basis points.
+- Added `m7-counterfactual-perturbation-v1`, `CounterfactualPerturbationDefinition`, and
+  `CounterfactualPerturbationCatalog`, defining canonical perturbation test cases for threat escalation,
+  allied retreat calls, severe health attrition, and favorable openings.
+- Added `m7-counterfactual-sensitivity-v1` and `CounterfactualSensitivityReport`, assessing directional
+  coherence of parametric policy shifts under perturbations.
+- Added `m7-calibration-held-out-v1` and `CalibrationHeldOutReport`, integrating held-out scenario
+  generalization and counterfactual sensitivity into a deterministic qualification gate with Markdown export.
+
+### Known limits
+
+- This contract establishes bounded mathematical held-out scenario evaluation and counterfactual
+  sensitivity testing for calibration; multi-model comparisons, parameter unidentifiability reports,
+  and live model provider integration remain open.
+
 ## 0.1.177 — 2026-08-12
 
 ### Added

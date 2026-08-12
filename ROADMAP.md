@@ -1547,7 +1547,8 @@ uncertainty and evidence limits reported.
   parametric fitting remains open.
 - [x] Fit initial bounded parametric policies with regularization;
   held-out evaluation, model comparison, and recalibration remain open.
-- [ ] Evaluate held-out scenarios and counterfactual perturbations.
+- [x] Evaluate held-out scenarios and counterfactual perturbations;
+  model comparison, unidentifiable parameters, and recalibration remain open.
 - [ ] Compare more than one model or prompting family where feasible.
 - [ ] Report unidentifiable parameters and unstable semantic labels.
 - [ ] Preserve reference outputs without storing or requiring private

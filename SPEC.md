@@ -1478,9 +1478,22 @@ distribution estimation, and parametric fitting remain open.
 - `ParametricPolicyFitter` implements regularized closed-form parameter estimation from empirical
   distribution estimate reports, shrinking empirical weights towards uniform priors proportionally to $\lambda$,
   and providing canonical baseline fitted policies (`cautious_v1`, `risk_taking_v1`, `yielding_v1`).
+- `HeldOutScenarioDefinition` defines `m7-held-out-scenario-v1` across all seven dilemma domains from
+  `DiagnosticChoiceCatalog`, with canonical held-out scenario suites provided in `HeldOutScenarioCatalog`
+  for `cautious_v1`, `risk_taking_v1`, and `yielding_v1`.
+- `HeldOutScenarioEvaluationReport` defines `m7-held-out-scenario-evaluation-v1`, evaluating Total Variation
+  Distance (TVD) loss between predicted parametric policy weights and empirical held-out ground truth distributions,
+  modal prediction match, exact basis-point accuracy, and generalization threshold compliance ($\le 2,500$ bp mean loss, $\ge 7,000$ bp accuracy).
+- `CounterfactualPerturbationDefinition` defines `m7-counterfactual-perturbation-v1` covering discrete perturbation
+  conditions (`ThreatEscalation`, `AlliedRetreatCall`, `SevereHealthAttrition`, `FavorableOpening`).
+- `CounterfactualSensitivityReport` defines `m7-counterfactual-sensitivity-v1`, evaluating directional shift coherence
+  against semantic profile traits.
+- `CalibrationHeldOutReport` defines `m7-calibration-held-out-v1`, integrating held-out scenario generalization and
+  counterfactual sensitivity into an inspectable qualification gate with Markdown export.
 - This contract establishes typed strategic choice dilemmas, empirical sampling protocols,
-  empirical distribution estimation, discrete behavioral measures, and regularized parametric policy
-  fitting for calibration; it does not claim full match scenario execution or human behavioral completeness.
+  empirical distribution estimation, discrete behavioral measures, regularized parametric policy
+  fitting, held-out scenario evaluation, and counterfactual perturbation sensitivity for calibration;
+  it does not claim full match scenario execution or human behavioral completeness.
 
 ## Future
 

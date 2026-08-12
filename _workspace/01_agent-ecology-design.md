@@ -1,85 +1,61 @@
-# Agent Ecology Design — M7: Fit Initial Bounded Parametric Policies with Regularization
+# Agent Ecology Design — M7: Evaluate Held-Out Scenarios and Counterfactual Perturbations
 
-## Goal and Roadmap Milestone
+## Overview
 
-- Roadmap milestone: M7 — Semantic-to-Parametric Calibration Proof.
-- Goal: Define bounded parametric policy representations, regularized parameter fitting algorithms over empirical action and communication distributions, canonical baseline fitted policies for reference semantic profiles (`cautious_v1`, `risk_taking_v1`, `yielding_v1`), predictive evaluation across the 7 diagnostic dilemmas, and fail-closed validation.
+This design defines the typed evaluation contract for held-out diagnostic scenarios and counterfactual perturbations on regularized parametric policies under Milestone M7 (Semantic-to-Parametric Calibration Proof).
 
-## Behavioral Question and Evidence Boundary
+## Design Elements
 
-- Question: Can high-level semantic profiles and empirical dilemma choice distributions be approximated by compact, bounded parametric policy weights with explicit regularization to prevent overfitting and resolve unidentifiable parameters?
-- Evidence Boundary: This is declarative, deterministic mathematical parameter fitting using discrete integer basis points ($[0..=10,000]$ bp). It operates purely within the agent ecology layer over empirical distribution estimate reports (`m7-empirical-distribution-estimation-v1`). It does not alter simulation transition authority, kernel state, or execute live LLM provider I/O. It makes no claims of human ground truth or professional gamer psychology.
+### 1. Held-Out Evaluation Scenarios
 
-## Agent Families and Baselines
+- **Schema**: `m7-held-out-scenario-v1`
+- **Catalog Schema**: `m7-held-out-scenario-catalog-v1`
+- **Domain Coverage**: All 7 diagnostic dilemma domains from `DiagnosticChoiceCatalog`:
+  1. `ContestConcede`: `held-out-contest-under-threat-v1` (escalated opponent presence)
+  2. `FollowReject`: `held-out-follow-after-retreat-v1` (allied retreat call under pressure)
+  3. `FarmAssist`: `held-out-farm-under-wave-pressure-v1` (crashing minion wave while ally engages)
+  4. `RecallTiming`: `held-out-recall-low-health-v1` (sub-30% health under lane freeze)
+  5. `Sacrifice`: `held-out-sacrifice-isolated-v1` (isolated tower defense under multiple threats)
+  6. `Surprise`: `held-out-surprise-flank-v1` (unexpected river flank sighting)
+  7. `ResponseToFailure`: `held-out-failure-reset-v1` (subsequent turn after lost trade)
+- **Held-Out Action Distribution**: `DiagnosticChoiceActionDistribution` with exact integer basis points ($[0..=10,000]$ bp) representing empirical ground-truth test distributions from held-out conditions.
+- **Evaluation Loss**: Total Variation Distance (TVD) between parametric policy action weights and held-out distributions:
+  $$\text{Loss}_{\text{domain}} = \text{TVD}(\mathbf{w}_{\text{param}}, \mathbf{p}_{\text{held\_out}}) = \frac{1}{2} \sum_{i=1}^3 |w_i - p_i| \in [0..=10,000] \text{ bp}$$
+- **Modal Accuracy**: Percentage of held-out scenarios where the parametric policy's `predicted_intent()` matches the held-out distribution's primary modal intent.
 
-1. Baseline Semantic Profiles (`m7-semantic-profile-vocabulary-v1`):
-   - `cautious-laner-semantic-v1`
-   - `risk-taking-laner-semantic-v1`
-   - `yielding-laner-semantic-v1`
-2. Empirical Distributions (`m7-empirical-distribution-estimation-v1`):
-   - `EmpiricalDistributionEstimateReport::cautious_v1()`
-   - `EmpiricalDistributionEstimateReport::risk_taking_v1()`
-   - `EmpiricalDistributionEstimateReport::yielding_v1()`
-3. Fitted Parametric Policies (`m7-parametric-policy-v1`):
-   - `ParametricPolicyDefinition::cautious_v1()`
-   - `ParametricPolicyDefinition::risk_taking_v1()`
-   - `ParametricPolicyDefinition::yielding_v1()`
+### 2. Counterfactual Perturbations
 
-## Observation, Memory, and Policy Inputs
+- **Schema**: `m7-counterfactual-perturbation-v1`
+- **Conditions**:
+  - `ThreatEscalation`: Opposing jungle threat appears on river flank. Expected: defensive shift for cautious/yielding, or contest hold for risk-seeking.
+  - `AlliedRetreatCall`: Allied teammate signals retreat. Expected: compliant retreat for yielding/compliant, autonomous plan maintenance for autonomous.
+  - `SevereHealthAttrition`: Player health drops significantly below safety threshold. Expected: escalation of recall/withdrawal.
+  - `FavorableOpening`: Opponent overextends with low mana. Expected: opportunistic contest increase for risk-seeking.
+- **Directional Coherence**:
+  - Evaluates difference in primary/alternative weights:
+    $$\Delta_{\text{shift}} = w_{\text{perturbed}} - w_{\text{baseline}}$$
+  - Checked against expected directional traits for the semantic profile:
+    - `Coherent`: Sign and magnitude of shift align with semantic trait definitions.
+    - `Neutral`: Shift is within minimal tolerance ($\le 200$ bp).
+    - `Inverted`: Shift opposes semantic trait definition (indicates calibration failure).
 
-- Inputs: `EmpiricalDistributionEstimateReport`, which contains 7 `DiagnosticChoiceActionDistribution`s and 7 `DiagnosticChoiceCommunicationDistribution`s scaled to 10,000 basis points.
-- Regularization Penalty Parameter: $\lambda \in [0..=10,000]$ basis points (where 0 bp = unregularized maximum likelihood estimation, 1,000 bp = 10% shrinkage towards uniform prior, 10,000 bp = fully regularized prior).
+### 3. Integrated Calibration Report
 
-## Candidate Generation, Evaluation, and Selection
+- **Schema**: `m7-calibration-held-out-v1`
+- **Generalization Criteria**:
+  - Mean held-out loss $\le 2,500$ bp (average TVD $\le 25\%$).
+  - Modal choice accuracy $\ge 7,000$ bp ($\ge 70\%$).
+  - All counterfactual perturbations evaluated as `Coherent`.
+- **Reporting**:
+  - Self-contained Markdown summary for debrief and model inspection.
+  - Clear statement of evidence limits: AI behavior represents reference policies, not human ground truth.
 
-- For each of the 7 diagnostic dilemmas in `DiagnosticChoiceCatalog`:
-  - Dilemma domain primary vs alternative choice weights:
-    $$w_{\text{primary}} = \left\lfloor \frac{(10,000 - \lambda) \cdot p_{\text{primary}}^{\text{empirical}} + \lambda \cdot 5,000}{10,000} \right\rfloor$$
-    $$w_{\text{alt}} = \left\lfloor \frac{(10,000 - \lambda) \cdot p_{\text{alt}}^{\text{empirical}} + \lambda \cdot 5,000}{10,000} \right\rfloor$$
-    $$w_{\text{res}} = 10,000 - w_{\text{primary}} - w_{\text{alt}}$$
-  - Communication ping signal weights across 5 signals (`None`, `Danger`, `OnMyWay`, `Assist`, `EnemyMissing`):
-    $$w_i = \left\lfloor \frac{(10,000 - \lambda) \cdot p_i^{\text{empirical}} + \lambda \cdot 2,000}{10,000} \right\rfloor \quad (i = 0..3)$$
-    $$w_4 = 10,000 - \sum_{i=0}^3 w_i$$
-- Loss Calculation: Total Variation Distance (TVD) between fitted weights and empirical probabilities, plus regularization penalty:
-  $$\text{Fit Loss (bp)} = \text{mean\_tvd}(W, P^{\text{empirical}}) + \left\lfloor \frac{\lambda}{100} \right\rfloor$$
+## Error Handling
 
-## Communication, Trust, and Team Coordination
-
-- Fitted communication parameter weights express the profile's propensity for specific ping signals (`None`, `Danger`, `OnMyWay`, `Assist`, `EnemyMissing`) during coordination dilemmas, capturing communication style (e.g. terse vs standard vs danger-heavy).
-
-## Randomness and Reproducibility
-
-- Pure integer basis-point arithmetic (10,000 bp scale).
-- Zero floating-point operations, zero random number generators, completely deterministic.
-
-## Scenarios, Populations, and Metrics
-
-- Evaluation across all 7 canonical dilemma domains: `ContestConcede`, `FollowReject`, `FarmAssist`, `RecallTiming`, `Sacrifice`, `Surprise`, `ResponseToFailure`.
-- Fit quality evaluated by parameter residuals, action and communication TVDs, and regularization stability.
-
-## Calibration or Regression Protocol
-
-- Fitter validates regularization bounds ($\le 10,000$ bp), ensures exact basis-point conservation ($\sum w_i = 10,000$), and validates choice/profile matching.
-- Fail-closed error handling with `ParametricPolicyError`.
-
-## Expected Effects and Failure Signals
-
-- Directional consistency:
-  - `cautious_v1` fitted policy must have low primary weight on ContestConcede ($< 3,000$ bp) and high primary weight on Surprise ($> 8,000$ bp).
-  - `risk_taking_v1` fitted policy must have high primary weight on ContestConcede ($> 7,000$ bp) and low primary weight on Surprise ($< 4,000$ bp).
-  - `yielding_v1` fitted policy must have low primary weight on ContestConcede ($< 2,000$ bp) and high primary weight on ResponseToFailure ($> 7,000$ bp).
-- Increasing $\lambda$ monotonically shrinks weights towards the uninformative prior (5,000 bp for action choices, 2,000 bp for signals).
-
-## Verification Contract
-
-1. `ParametricPolicyDefinition` creation and validation.
-2. `ParametricPolicyFitter::fit` with $\lambda = 0$, $\lambda = 1,000$, $\lambda = 5,000$, and $\lambda = 10,000$.
-3. Basis-point conservation: all weights sum to exactly 10,000 bp.
-4. Canonical baseline fitted policies (`cautious_v1`, `risk_taking_v1`, `yielding_v1`) meet expected trait bounds.
-5. Markdown rendering output matches exact format.
-6. Fail-closed error handling for invalid regularization ($> 10,000$ bp) and mismatched inputs.
-
-## Open Questions
-
-- Held-out scenario evaluation and counterfactual perturbations (deferred to next M7 slice).
-- Multi-model and prompt comparison (deferred to subsequent M7 slice).
+- `HeldOutEvaluationError` enum:
+  - `UnknownScenario`
+  - `UnknownPerturbation`
+  - `MismatchedProfile`
+  - `MismatchedChoice`
+  - `InvalidLossValue`
+- All parsing and lookup methods fail closed with typed errors.

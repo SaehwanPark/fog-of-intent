@@ -43,6 +43,7 @@ CORE_RUST_FILES = (
   "src/agent/comparison.rs",
   "src/agent/empirical.rs",
   "src/agent/experiment.rs",
+  "src/agent/held_out.rs",
   "src/agent/measures.rs",
   "src/agent/mod.rs",
   "src/agent/operational.rs",

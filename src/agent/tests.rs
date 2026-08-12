@@ -5217,3 +5217,211 @@ fn parametric_policy_fitting_and_regularization_evaluate_correctly() {
     Err(ParametricPolicyError::InvalidRegularization)
   );
 }
+
+#[test]
+fn held_out_scenario_evaluation_and_counterfactual_perturbations_are_verified() {
+  // 1. Schema constants and thresholds
+  assert_eq!(HELD_OUT_SCENARIO_SCHEMA, "m7-held-out-scenario-v1");
+  assert_eq!(
+    HELD_OUT_SCENARIO_CATALOG_SCHEMA,
+    "m7-held-out-scenario-catalog-v1"
+  );
+  assert_eq!(
+    HELD_OUT_EVALUATION_SCHEMA,
+    "m7-held-out-scenario-evaluation-v1"
+  );
+  assert_eq!(
+    COUNTERFACTUAL_PERTURBATION_SCHEMA,
+    "m7-counterfactual-perturbation-v1"
+  );
+  assert_eq!(
+    COUNTERFACTUAL_SENSITIVITY_SCHEMA,
+    "m7-counterfactual-sensitivity-v1"
+  );
+  assert_eq!(CALIBRATION_HELD_OUT_SCHEMA, "m7-calibration-held-out-v1");
+  assert_eq!(MAX_ACCEPTABLE_HELD_OUT_LOSS_BP, 2_500);
+  assert_eq!(MIN_ACCEPTABLE_MODAL_ACCURACY_BP, 7_000);
+  assert_eq!(COUNTERFACTUAL_TOLERANCE_BP, 200);
+
+  // 2. Held-out scenario suites for all 3 canonical profiles
+  let cautious_scenarios =
+    HeldOutScenarioCatalog::scenarios_for_profile(CAUTIOUS_SEMANTIC_PROFILE_ID)
+      .expect("cautious scenarios found");
+  let risk_scenarios =
+    HeldOutScenarioCatalog::scenarios_for_profile(RISK_TAKING_SEMANTIC_PROFILE_ID)
+      .expect("risk scenarios found");
+  let yielding_scenarios =
+    HeldOutScenarioCatalog::scenarios_for_profile(YIELDING_SEMANTIC_PROFILE_ID)
+      .expect("yielding scenarios found");
+
+  assert_eq!(cautious_scenarios.len(), 7);
+  assert_eq!(risk_scenarios.len(), 7);
+  assert_eq!(yielding_scenarios.len(), 7);
+
+  assert_eq!(
+    HeldOutScenarioCatalog::scenarios_for_profile("unknown-profile-v1"),
+    Err(HeldOutEvaluationError::UnknownProfile)
+  );
+
+  // Verify all 7 diagnostic domains are represented in each suite
+  for suite in [&cautious_scenarios, &risk_scenarios, &yielding_scenarios] {
+    let domains: Vec<_> = suite.iter().map(|s| s.domain()).collect();
+    assert_eq!(
+      domains,
+      vec![
+        DiagnosticChoiceDomain::ContestConcede,
+        DiagnosticChoiceDomain::FollowReject,
+        DiagnosticChoiceDomain::FarmAssist,
+        DiagnosticChoiceDomain::RecallTiming,
+        DiagnosticChoiceDomain::Sacrifice,
+        DiagnosticChoiceDomain::Surprise,
+        DiagnosticChoiceDomain::ResponseToFailure,
+      ]
+    );
+    for s in *suite {
+      assert_eq!(s.schema(), HELD_OUT_SCENARIO_SCHEMA);
+      assert!(!s.description().is_empty());
+      assert_eq!(
+        u32::from(s.held_out_distribution().primary_count())
+          + u32::from(s.held_out_distribution().alternative_count())
+          + u32::from(s.held_out_distribution().other_count()),
+        100
+      );
+    }
+  }
+
+  // 3. Held-out scenario evaluation report for regularized policies
+  let policy_cautious = ParametricPolicyDefinition::cautious_v1();
+  let policy_risk = ParametricPolicyDefinition::risk_taking_v1();
+  let policy_yielding = ParametricPolicyDefinition::yielding_v1();
+
+  let rep_cautious = HeldOutScenarioEvaluationReport::from_policy(&policy_cautious)
+    .expect("cautious held-out evaluation succeeds");
+  assert_eq!(rep_cautious.schema(), HELD_OUT_EVALUATION_SCHEMA);
+  assert_eq!(rep_cautious.profile_id(), CAUTIOUS_SEMANTIC_PROFILE_ID);
+  assert!(rep_cautious.mean_held_out_loss_bp() <= MAX_ACCEPTABLE_HELD_OUT_LOSS_BP);
+  assert!(rep_cautious.modal_accuracy_bp() >= MIN_ACCEPTABLE_MODAL_ACCURACY_BP);
+  assert!(rep_cautious.passed_generalization_threshold());
+
+  let rep_risk = HeldOutScenarioEvaluationReport::from_policy(&policy_risk)
+    .expect("risk-taking held-out evaluation succeeds");
+  assert_eq!(rep_risk.schema(), HELD_OUT_EVALUATION_SCHEMA);
+  assert_eq!(rep_risk.profile_id(), RISK_TAKING_SEMANTIC_PROFILE_ID);
+  assert!(rep_risk.mean_held_out_loss_bp() <= MAX_ACCEPTABLE_HELD_OUT_LOSS_BP);
+  assert!(rep_risk.modal_accuracy_bp() >= MIN_ACCEPTABLE_MODAL_ACCURACY_BP);
+  assert!(rep_risk.passed_generalization_threshold());
+
+  let rep_yielding = HeldOutScenarioEvaluationReport::from_policy(&policy_yielding)
+    .expect("yielding held-out evaluation succeeds");
+  assert_eq!(rep_yielding.schema(), HELD_OUT_EVALUATION_SCHEMA);
+  assert_eq!(rep_yielding.profile_id(), YIELDING_SEMANTIC_PROFILE_ID);
+  assert!(rep_yielding.mean_held_out_loss_bp() <= MAX_ACCEPTABLE_HELD_OUT_LOSS_BP);
+  assert!(rep_yielding.modal_accuracy_bp() >= MIN_ACCEPTABLE_MODAL_ACCURACY_BP);
+  assert!(rep_yielding.passed_generalization_threshold());
+
+  let md_held_out = rep_cautious.to_markdown();
+  assert!(md_held_out.contains("# Held-Out Scenario Evaluation Report"));
+  assert!(md_held_out.contains("passed_generalization_threshold: true"));
+
+  // 4. Counterfactual Perturbation Catalog
+  let perturbations = CounterfactualPerturbationCatalog::all_perturbations();
+  assert_eq!(perturbations.len(), 4);
+  assert_eq!(perturbations[0].perturbation_id(), CF_THREAT_ESCALATION_ID);
+  assert_eq!(perturbations[1].perturbation_id(), CF_ALLIED_RETREAT_ID);
+  assert_eq!(perturbations[2].perturbation_id(), CF_HEALTH_ATTRITION_ID);
+  assert_eq!(perturbations[3].perturbation_id(), CF_FAVORABLE_OPENING_ID);
+
+  for cf in perturbations {
+    assert_eq!(cf.schema(), COUNTERFACTUAL_PERTURBATION_SCHEMA);
+    assert_eq!(
+      CounterfactualPerturbationCatalog::lookup(cf.perturbation_id()),
+      Some(cf)
+    );
+    assert_eq!(
+      CounterfactualPerturbationCatalog::validate_perturbation_id(cf.perturbation_id()),
+      Ok(cf)
+    );
+  }
+  assert_eq!(
+    CounterfactualPerturbationCatalog::validate_perturbation_id("unknown-cf-id"),
+    Err(HeldOutEvaluationError::UnknownPerturbation)
+  );
+
+  // 5. Counterfactual Sensitivity Reports
+  let cf_cautious = CounterfactualSensitivityReport::from_policy(&policy_cautious)
+    .expect("cautious counterfactual sensitivity succeeds");
+  assert_eq!(cf_cautious.schema(), COUNTERFACTUAL_SENSITIVITY_SCHEMA);
+  assert_eq!(cf_cautious.profile_id(), CAUTIOUS_SEMANTIC_PROFILE_ID);
+  assert!(cf_cautious.all_coherent());
+  for ev in cf_cautious.evaluations() {
+    assert_eq!(ev.status(), DirectionalCoherenceStatus::Coherent);
+  }
+
+  let cf_risk = CounterfactualSensitivityReport::from_policy(&policy_risk)
+    .expect("risk counterfactual sensitivity succeeds");
+  assert_eq!(cf_risk.schema(), COUNTERFACTUAL_SENSITIVITY_SCHEMA);
+  assert_eq!(cf_risk.profile_id(), RISK_TAKING_SEMANTIC_PROFILE_ID);
+  assert!(cf_risk.all_coherent());
+  for ev in cf_risk.evaluations() {
+    assert_eq!(ev.status(), DirectionalCoherenceStatus::Coherent);
+  }
+
+  let cf_yielding = CounterfactualSensitivityReport::from_policy(&policy_yielding)
+    .expect("yielding counterfactual sensitivity succeeds");
+  assert_eq!(cf_yielding.schema(), COUNTERFACTUAL_SENSITIVITY_SCHEMA);
+  assert_eq!(cf_yielding.profile_id(), YIELDING_SEMANTIC_PROFILE_ID);
+  assert!(cf_yielding.all_coherent());
+  for ev in cf_yielding.evaluations() {
+    assert_eq!(ev.status(), DirectionalCoherenceStatus::Coherent);
+  }
+
+  let md_cf = cf_cautious.to_markdown();
+  assert!(md_cf.contains("# Counterfactual Sensitivity Report"));
+  assert!(md_cf.contains("all_coherent: true"));
+
+  // 6. Integrated Calibration Held-Out Report
+  let cal_cautious = CalibrationHeldOutReport::from_policy(&policy_cautious)
+    .expect("cautious calibration report succeeds");
+  assert_eq!(cal_cautious.schema(), CALIBRATION_HELD_OUT_SCHEMA);
+  assert_eq!(cal_cautious.profile_id(), CAUTIOUS_SEMANTIC_PROFILE_ID);
+  assert!(cal_cautious.meets_calibration_gate());
+
+  let cal_risk =
+    CalibrationHeldOutReport::from_policy(&policy_risk).expect("risk calibration report succeeds");
+  assert_eq!(cal_risk.schema(), CALIBRATION_HELD_OUT_SCHEMA);
+  assert_eq!(cal_risk.profile_id(), RISK_TAKING_SEMANTIC_PROFILE_ID);
+  assert!(cal_risk.meets_calibration_gate());
+
+  let cal_yielding = CalibrationHeldOutReport::from_policy(&policy_yielding)
+    .expect("yielding calibration report succeeds");
+  assert_eq!(cal_yielding.schema(), CALIBRATION_HELD_OUT_SCHEMA);
+  assert_eq!(cal_yielding.profile_id(), YIELDING_SEMANTIC_PROFILE_ID);
+  assert!(cal_yielding.meets_calibration_gate());
+
+  let md_cal = cal_cautious.to_markdown();
+  assert!(md_cal.contains("# Calibration Held-Out & Counterfactual Report"));
+  assert!(md_cal.contains("meets_calibration_gate: true"));
+
+  // 7. Error handling & boundary checks
+  let invalid_dist = DiagnosticChoiceActionDistribution::new(
+    CHOICE_CONTEST_CONCEDE_ID,
+    CAUTIOUS_SEMANTIC_PROFILE_ID,
+    100,
+    50,
+    50,
+    0,
+  )
+  .expect("valid dist");
+
+  assert_eq!(
+    HeldOutScenarioDefinition::new(
+      "test-scenario",
+      DiagnosticChoiceDomain::ContestConcede,
+      CHOICE_FOLLOW_REJECT_ID, // Mismatched choice domain
+      invalid_dist,
+      LaneIntent::Contest,
+      "test description",
+    ),
+    Err(HeldOutEvaluationError::MismatchedChoice)
+  );
+}
