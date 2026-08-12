@@ -304,6 +304,13 @@ providing typed diagnostic choice dilemma definitions across seven domains
 (`DiagnosticChoiceCatalog`). It establishes bounded strategic dilemmas for
 calibration and does not claim full match scenario execution or human behavioral
 completeness.
+`ModelPromptProtocolDefinition` defines `m7-model-prompt-protocol-v1` and
+`RepeatedSamplingProtocolDefinition` defines `m7-repeated-sampling-protocol-v1`,
+providing typed declarations for model family IDs, prompt templates, system prompt
+versions, temperature/top-p bounds, structured output enforcement, forbidden private
+chain-of-thought, sample counts, and repair retry budgets alongside fail-closed catalogs
+(`ModelPromptProtocolCatalog`, `RepeatedSamplingProtocolCatalog`). They establish
+declarative sampling protocols for calibration and do not execute live LLM provider I/O.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

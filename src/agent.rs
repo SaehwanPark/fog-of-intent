@@ -243,6 +243,30 @@ pub const CHOICE_SURPRISE_ID: &str = "choice-surprise-v1";
 /// Stable identifier for the response to failure diagnostic choice.
 pub const CHOICE_RESPONSE_TO_FAILURE_ID: &str = "choice-response-to-failure-v1";
 
+/// Versioned schema for the model and prompt configuration protocol.
+pub const MODEL_PROMPT_PROTOCOL_SCHEMA: &str = "m7-model-prompt-protocol-v1";
+
+/// Stable identifier for the reference standard model-prompt protocol.
+pub const MODEL_PROMPT_REFERENCE_STANDARD_ID: &str = "model-prompt-reference-standard-v1";
+
+/// Stable identifier for the reference diagnostic model-prompt protocol.
+pub const MODEL_PROMPT_REFERENCE_DIAGNOSTIC_ID: &str = "model-prompt-reference-diagnostic-v1";
+
+/// Stable identifier for the alternative diagnostic model-prompt protocol.
+pub const MODEL_PROMPT_ALTERNATIVE_DIAGNOSTIC_ID: &str = "model-prompt-alternative-diagnostic-v1";
+
+/// Versioned schema for the repeated sampling protocol.
+pub const REPEATED_SAMPLING_PROTOCOL_SCHEMA: &str = "m7-repeated-sampling-protocol-v1";
+
+/// Stable identifier for the standard 10-repeat sampling protocol.
+pub const SAMPLING_STANDARD_REPEAT_10_ID: &str = "sampling-standard-repeat-10-v1";
+
+/// Stable identifier for the diagnostic 30-repeat sampling protocol.
+pub const SAMPLING_DIAGNOSTIC_REPEAT_30_ID: &str = "sampling-diagnostic-repeat-30-v1";
+
+/// Stable identifier for the quick 5-repeat check sampling protocol.
+pub const SAMPLING_QUICK_CHECK_5_ID: &str = "sampling-quick-check-5-v1";
+
 /// Maximum number of replay records evaluated in one scenario-wide identity check.
 pub const MAX_SCRIPTED_AGENT_SCENARIO_REPLAY_RECORDS: usize = 16;
 
@@ -4955,6 +4979,300 @@ impl DiagnosticChoiceCatalog {
         DiagnosticChoiceDefinition::response_to_failure_v1()
       }
     }
+  }
+}
+
+/// Errors raised when validating model and prompt version protocol definitions.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ModelPromptProtocolError {
+  UnknownProtocol,
+  InvalidTemperature,
+  InvalidTopP,
+  PrivateChainOfThoughtForbidden,
+}
+
+/// Structured protocol for model family, prompt template, and sampling parameter bounds.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ModelPromptProtocolDefinition {
+  protocol_id: &'static str,
+  schema: &'static str,
+  model_family_id: &'static str,
+  prompt_template_id: &'static str,
+  system_prompt_version: &'static str,
+  temperature_centiperc: u16,
+  top_p_centiperc: u16,
+  requires_structured_output: bool,
+  chain_of_thought_required: bool,
+}
+
+impl ModelPromptProtocolDefinition {
+  /// Reference model with standard decision prompt protocol.
+  pub const fn reference_standard_v1() -> Self {
+    Self {
+      protocol_id: MODEL_PROMPT_REFERENCE_STANDARD_ID,
+      schema: MODEL_PROMPT_PROTOCOL_SCHEMA,
+      model_family_id: "model-family-reference-v1",
+      prompt_template_id: "prompt-template-lane-standard-v1",
+      system_prompt_version: "sysprompt-actor-contract-v1",
+      temperature_centiperc: 70,
+      top_p_centiperc: 95,
+      requires_structured_output: true,
+      chain_of_thought_required: false,
+    }
+  }
+
+  /// Reference model with diagnostic dilemma prompt protocol.
+  pub const fn reference_diagnostic_v1() -> Self {
+    Self {
+      protocol_id: MODEL_PROMPT_REFERENCE_DIAGNOSTIC_ID,
+      schema: MODEL_PROMPT_PROTOCOL_SCHEMA,
+      model_family_id: "model-family-reference-v1",
+      prompt_template_id: "prompt-template-lane-diagnostic-v1",
+      system_prompt_version: "sysprompt-actor-contract-v1",
+      temperature_centiperc: 50,
+      top_p_centiperc: 90,
+      requires_structured_output: true,
+      chain_of_thought_required: false,
+    }
+  }
+
+  /// Alternative model family with diagnostic dilemma prompt protocol.
+  pub const fn alternative_diagnostic_v1() -> Self {
+    Self {
+      protocol_id: MODEL_PROMPT_ALTERNATIVE_DIAGNOSTIC_ID,
+      schema: MODEL_PROMPT_PROTOCOL_SCHEMA,
+      model_family_id: "model-family-alternative-v1",
+      prompt_template_id: "prompt-template-lane-diagnostic-v1",
+      system_prompt_version: "sysprompt-actor-contract-v1",
+      temperature_centiperc: 50,
+      top_p_centiperc: 90,
+      requires_structured_output: true,
+      chain_of_thought_required: false,
+    }
+  }
+
+  pub const fn protocol_id(self) -> &'static str {
+    self.protocol_id
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn model_family_id(self) -> &'static str {
+    self.model_family_id
+  }
+
+  pub const fn prompt_template_id(self) -> &'static str {
+    self.prompt_template_id
+  }
+
+  pub const fn system_prompt_version(self) -> &'static str {
+    self.system_prompt_version
+  }
+
+  pub const fn temperature_centiperc(self) -> u16 {
+    self.temperature_centiperc
+  }
+
+  pub const fn top_p_centiperc(self) -> u16 {
+    self.top_p_centiperc
+  }
+
+  pub const fn requires_structured_output(self) -> bool {
+    self.requires_structured_output
+  }
+
+  pub const fn chain_of_thought_required(self) -> bool {
+    self.chain_of_thought_required
+  }
+
+  /// Validate protocol bounds.
+  pub fn validate(self) -> Result<(), ModelPromptProtocolError> {
+    if self.temperature_centiperc > 200 {
+      return Err(ModelPromptProtocolError::InvalidTemperature);
+    }
+    if self.top_p_centiperc > 100 {
+      return Err(ModelPromptProtocolError::InvalidTopP);
+    }
+    if self.chain_of_thought_required {
+      return Err(ModelPromptProtocolError::PrivateChainOfThoughtForbidden);
+    }
+    Ok(())
+  }
+}
+
+/// Catalog of canonical model and prompt protocols.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ModelPromptProtocolCatalog;
+
+impl ModelPromptProtocolCatalog {
+  /// Return all registered canonical model and prompt protocols.
+  pub const fn all_protocols() -> [ModelPromptProtocolDefinition; 3] {
+    [
+      ModelPromptProtocolDefinition::reference_standard_v1(),
+      ModelPromptProtocolDefinition::reference_diagnostic_v1(),
+      ModelPromptProtocolDefinition::alternative_diagnostic_v1(),
+    ]
+  }
+
+  /// Lookup a model/prompt protocol by its stable ID.
+  pub fn lookup(protocol_id: &str) -> Option<ModelPromptProtocolDefinition> {
+    match protocol_id {
+      MODEL_PROMPT_REFERENCE_STANDARD_ID => {
+        Some(ModelPromptProtocolDefinition::reference_standard_v1())
+      }
+      MODEL_PROMPT_REFERENCE_DIAGNOSTIC_ID => {
+        Some(ModelPromptProtocolDefinition::reference_diagnostic_v1())
+      }
+      MODEL_PROMPT_ALTERNATIVE_DIAGNOSTIC_ID => {
+        Some(ModelPromptProtocolDefinition::alternative_diagnostic_v1())
+      }
+      _ => None,
+    }
+  }
+
+  /// Validate that a protocol ID exists in the catalog and meets bounds.
+  pub fn validate_protocol_id(
+    protocol_id: &str,
+  ) -> Result<ModelPromptProtocolDefinition, ModelPromptProtocolError> {
+    let def = Self::lookup(protocol_id).ok_or(ModelPromptProtocolError::UnknownProtocol)?;
+    def.validate()?;
+    Ok(def)
+  }
+}
+
+/// Errors raised when validating repeated-sampling protocol definitions.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum RepeatedSamplingProtocolError {
+  UnknownProtocol,
+  InvalidSampleCount,
+  InvalidMaxRetries,
+  InvalidSeedOffsetStep,
+}
+
+/// Structured protocol for repeated empirical sampling schedules and retry budgets.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct RepeatedSamplingProtocolDefinition {
+  protocol_id: &'static str,
+  schema: &'static str,
+  sample_count: u16,
+  seed_offset_step: u32,
+  max_repair_retries: u8,
+  fail_closed_on_unrepaired: bool,
+}
+
+impl RepeatedSamplingProtocolDefinition {
+  /// Standard 10-repeat sampling protocol.
+  pub const fn standard_repeat_10_v1() -> Self {
+    Self {
+      protocol_id: SAMPLING_STANDARD_REPEAT_10_ID,
+      schema: REPEATED_SAMPLING_PROTOCOL_SCHEMA,
+      sample_count: 10,
+      seed_offset_step: 1,
+      max_repair_retries: 3,
+      fail_closed_on_unrepaired: true,
+    }
+  }
+
+  /// Comprehensive diagnostic 30-repeat sampling protocol.
+  pub const fn diagnostic_repeat_30_v1() -> Self {
+    Self {
+      protocol_id: SAMPLING_DIAGNOSTIC_REPEAT_30_ID,
+      schema: REPEATED_SAMPLING_PROTOCOL_SCHEMA,
+      sample_count: 30,
+      seed_offset_step: 1,
+      max_repair_retries: 3,
+      fail_closed_on_unrepaired: true,
+    }
+  }
+
+  /// Quick check 5-repeat sampling protocol.
+  pub const fn quick_check_5_v1() -> Self {
+    Self {
+      protocol_id: SAMPLING_QUICK_CHECK_5_ID,
+      schema: REPEATED_SAMPLING_PROTOCOL_SCHEMA,
+      sample_count: 5,
+      seed_offset_step: 1,
+      max_repair_retries: 2,
+      fail_closed_on_unrepaired: true,
+    }
+  }
+
+  pub const fn protocol_id(self) -> &'static str {
+    self.protocol_id
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn sample_count(self) -> u16 {
+    self.sample_count
+  }
+
+  pub const fn seed_offset_step(self) -> u32 {
+    self.seed_offset_step
+  }
+
+  pub const fn max_repair_retries(self) -> u8 {
+    self.max_repair_retries
+  }
+
+  pub const fn fail_closed_on_unrepaired(self) -> bool {
+    self.fail_closed_on_unrepaired
+  }
+
+  /// Validate protocol bounds.
+  pub fn validate(self) -> Result<(), RepeatedSamplingProtocolError> {
+    if self.sample_count == 0 || self.sample_count > 100 {
+      return Err(RepeatedSamplingProtocolError::InvalidSampleCount);
+    }
+    if self.seed_offset_step == 0 {
+      return Err(RepeatedSamplingProtocolError::InvalidSeedOffsetStep);
+    }
+    if self.max_repair_retries > 10 {
+      return Err(RepeatedSamplingProtocolError::InvalidMaxRetries);
+    }
+    Ok(())
+  }
+}
+
+/// Catalog of canonical repeated sampling protocols.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct RepeatedSamplingProtocolCatalog;
+
+impl RepeatedSamplingProtocolCatalog {
+  /// Return all registered canonical repeated sampling protocols.
+  pub const fn all_protocols() -> [RepeatedSamplingProtocolDefinition; 3] {
+    [
+      RepeatedSamplingProtocolDefinition::standard_repeat_10_v1(),
+      RepeatedSamplingProtocolDefinition::diagnostic_repeat_30_v1(),
+      RepeatedSamplingProtocolDefinition::quick_check_5_v1(),
+    ]
+  }
+
+  /// Lookup a repeated sampling protocol by its stable ID.
+  pub fn lookup(protocol_id: &str) -> Option<RepeatedSamplingProtocolDefinition> {
+    match protocol_id {
+      SAMPLING_STANDARD_REPEAT_10_ID => {
+        Some(RepeatedSamplingProtocolDefinition::standard_repeat_10_v1())
+      }
+      SAMPLING_DIAGNOSTIC_REPEAT_30_ID => {
+        Some(RepeatedSamplingProtocolDefinition::diagnostic_repeat_30_v1())
+      }
+      SAMPLING_QUICK_CHECK_5_ID => Some(RepeatedSamplingProtocolDefinition::quick_check_5_v1()),
+      _ => None,
+    }
+  }
+
+  /// Validate that a protocol ID exists in the catalog and meets bounds.
+  pub fn validate_protocol_id(
+    protocol_id: &str,
+  ) -> Result<RepeatedSamplingProtocolDefinition, RepeatedSamplingProtocolError> {
+    let def = Self::lookup(protocol_id).ok_or(RepeatedSamplingProtocolError::UnknownProtocol)?;
+    def.validate()?;
+    Ok(def)
   }
 }
 
@@ -9926,6 +10244,186 @@ mod tests {
     assert_eq!(
       DiagnosticChoiceCatalog::validate_choice_id("unknown-choice"),
       Err(DiagnosticChoiceCatalogError::UnknownChoice)
+    );
+  }
+
+  #[test]
+  fn m7_model_prompt_and_repeated_sampling_protocols_are_bounded_and_fail_closed() {
+    let std_prompt = ModelPromptProtocolDefinition::reference_standard_v1();
+    let diag_prompt = ModelPromptProtocolDefinition::reference_diagnostic_v1();
+    let alt_prompt = ModelPromptProtocolDefinition::alternative_diagnostic_v1();
+
+    assert_eq!(std_prompt.schema(), MODEL_PROMPT_PROTOCOL_SCHEMA);
+    assert_eq!(std_prompt.protocol_id(), MODEL_PROMPT_REFERENCE_STANDARD_ID);
+    assert_eq!(std_prompt.model_family_id(), "model-family-reference-v1");
+    assert_eq!(
+      std_prompt.prompt_template_id(),
+      "prompt-template-lane-standard-v1"
+    );
+    assert_eq!(
+      std_prompt.system_prompt_version(),
+      "sysprompt-actor-contract-v1"
+    );
+    assert_eq!(std_prompt.temperature_centiperc(), 70);
+    assert_eq!(std_prompt.top_p_centiperc(), 95);
+    assert!(std_prompt.requires_structured_output());
+    assert!(!std_prompt.chain_of_thought_required());
+    assert_eq!(std_prompt.validate(), Ok(()));
+
+    assert_eq!(diag_prompt.schema(), MODEL_PROMPT_PROTOCOL_SCHEMA);
+    assert_eq!(
+      diag_prompt.protocol_id(),
+      MODEL_PROMPT_REFERENCE_DIAGNOSTIC_ID
+    );
+    assert_eq!(diag_prompt.model_family_id(), "model-family-reference-v1");
+    assert_eq!(
+      diag_prompt.prompt_template_id(),
+      "prompt-template-lane-diagnostic-v1"
+    );
+    assert_eq!(diag_prompt.temperature_centiperc(), 50);
+    assert_eq!(diag_prompt.top_p_centiperc(), 90);
+    assert!(diag_prompt.requires_structured_output());
+    assert!(!diag_prompt.chain_of_thought_required());
+    assert_eq!(diag_prompt.validate(), Ok(()));
+
+    assert_eq!(alt_prompt.schema(), MODEL_PROMPT_PROTOCOL_SCHEMA);
+    assert_eq!(
+      alt_prompt.protocol_id(),
+      MODEL_PROMPT_ALTERNATIVE_DIAGNOSTIC_ID
+    );
+    assert_eq!(alt_prompt.model_family_id(), "model-family-alternative-v1");
+    assert_eq!(
+      alt_prompt.prompt_template_id(),
+      "prompt-template-lane-diagnostic-v1"
+    );
+    assert_eq!(alt_prompt.temperature_centiperc(), 50);
+    assert_eq!(alt_prompt.top_p_centiperc(), 90);
+    assert!(alt_prompt.requires_structured_output());
+    assert!(!alt_prompt.chain_of_thought_required());
+    assert_eq!(alt_prompt.validate(), Ok(()));
+
+    let all_prompts = ModelPromptProtocolCatalog::all_protocols();
+    assert_eq!(all_prompts.len(), 3);
+    assert_eq!(all_prompts[0], std_prompt);
+    assert_eq!(all_prompts[1], diag_prompt);
+    assert_eq!(all_prompts[2], alt_prompt);
+
+    for p in [std_prompt, diag_prompt, alt_prompt] {
+      assert_eq!(ModelPromptProtocolCatalog::lookup(p.protocol_id()), Some(p));
+      assert_eq!(
+        ModelPromptProtocolCatalog::validate_protocol_id(p.protocol_id()),
+        Ok(p)
+      );
+    }
+    assert_eq!(
+      ModelPromptProtocolCatalog::lookup("unknown-model-prompt"),
+      None
+    );
+    assert_eq!(
+      ModelPromptProtocolCatalog::validate_protocol_id("unknown-model-prompt"),
+      Err(ModelPromptProtocolError::UnknownProtocol)
+    );
+
+    let mut invalid_temp = std_prompt;
+    invalid_temp.temperature_centiperc = 201;
+    assert_eq!(
+      invalid_temp.validate(),
+      Err(ModelPromptProtocolError::InvalidTemperature)
+    );
+
+    let mut invalid_top_p = std_prompt;
+    invalid_top_p.top_p_centiperc = 101;
+    assert_eq!(
+      invalid_top_p.validate(),
+      Err(ModelPromptProtocolError::InvalidTopP)
+    );
+
+    let mut invalid_cot = std_prompt;
+    invalid_cot.chain_of_thought_required = true;
+    assert_eq!(
+      invalid_cot.validate(),
+      Err(ModelPromptProtocolError::PrivateChainOfThoughtForbidden)
+    );
+
+    let std_samp = RepeatedSamplingProtocolDefinition::standard_repeat_10_v1();
+    let diag_samp = RepeatedSamplingProtocolDefinition::diagnostic_repeat_30_v1();
+    let quick_samp = RepeatedSamplingProtocolDefinition::quick_check_5_v1();
+
+    assert_eq!(std_samp.schema(), REPEATED_SAMPLING_PROTOCOL_SCHEMA);
+    assert_eq!(std_samp.protocol_id(), SAMPLING_STANDARD_REPEAT_10_ID);
+    assert_eq!(std_samp.sample_count(), 10);
+    assert_eq!(std_samp.seed_offset_step(), 1);
+    assert_eq!(std_samp.max_repair_retries(), 3);
+    assert!(std_samp.fail_closed_on_unrepaired());
+    assert_eq!(std_samp.validate(), Ok(()));
+
+    assert_eq!(diag_samp.schema(), REPEATED_SAMPLING_PROTOCOL_SCHEMA);
+    assert_eq!(diag_samp.protocol_id(), SAMPLING_DIAGNOSTIC_REPEAT_30_ID);
+    assert_eq!(diag_samp.sample_count(), 30);
+    assert_eq!(diag_samp.seed_offset_step(), 1);
+    assert_eq!(diag_samp.max_repair_retries(), 3);
+    assert!(diag_samp.fail_closed_on_unrepaired());
+    assert_eq!(diag_samp.validate(), Ok(()));
+
+    assert_eq!(quick_samp.schema(), REPEATED_SAMPLING_PROTOCOL_SCHEMA);
+    assert_eq!(quick_samp.protocol_id(), SAMPLING_QUICK_CHECK_5_ID);
+    assert_eq!(quick_samp.sample_count(), 5);
+    assert_eq!(quick_samp.seed_offset_step(), 1);
+    assert_eq!(quick_samp.max_repair_retries(), 2);
+    assert!(quick_samp.fail_closed_on_unrepaired());
+    assert_eq!(quick_samp.validate(), Ok(()));
+
+    let all_samps = RepeatedSamplingProtocolCatalog::all_protocols();
+    assert_eq!(all_samps.len(), 3);
+    assert_eq!(all_samps[0], std_samp);
+    assert_eq!(all_samps[1], diag_samp);
+    assert_eq!(all_samps[2], quick_samp);
+
+    for s in [std_samp, diag_samp, quick_samp] {
+      assert_eq!(
+        RepeatedSamplingProtocolCatalog::lookup(s.protocol_id()),
+        Some(s)
+      );
+      assert_eq!(
+        RepeatedSamplingProtocolCatalog::validate_protocol_id(s.protocol_id()),
+        Ok(s)
+      );
+    }
+    assert_eq!(
+      RepeatedSamplingProtocolCatalog::lookup("unknown-sampling-protocol"),
+      None
+    );
+    assert_eq!(
+      RepeatedSamplingProtocolCatalog::validate_protocol_id("unknown-sampling-protocol"),
+      Err(RepeatedSamplingProtocolError::UnknownProtocol)
+    );
+
+    let mut zero_samples = std_samp;
+    zero_samples.sample_count = 0;
+    assert_eq!(
+      zero_samples.validate(),
+      Err(RepeatedSamplingProtocolError::InvalidSampleCount)
+    );
+
+    let mut excessive_samples = std_samp;
+    excessive_samples.sample_count = 101;
+    assert_eq!(
+      excessive_samples.validate(),
+      Err(RepeatedSamplingProtocolError::InvalidSampleCount)
+    );
+
+    let mut zero_step = std_samp;
+    zero_step.seed_offset_step = 0;
+    assert_eq!(
+      zero_step.validate(),
+      Err(RepeatedSamplingProtocolError::InvalidSeedOffsetStep)
+    );
+
+    let mut excessive_retries = std_samp;
+    excessive_retries.max_repair_retries = 11;
+    assert_eq!(
+      excessive_retries.validate(),
+      Err(RepeatedSamplingProtocolError::InvalidMaxRetries)
     );
   }
 }

@@ -1433,8 +1433,22 @@ distribution estimation, and parametric fitting remain open.
   `choice-surprise-v1`, and `choice-response-to-failure-v1`.
 - `DiagnosticChoiceCatalog` provides fail-closed lookup, validation, domain
   mapping, and complete enumeration over the registered canonical choices.
-- This contract establishes typed strategic choice dilemmas for calibration;
-  it does not claim full match scenario execution or human behavioral completeness.
+- `ModelPromptProtocolDefinition` defines `m7-model-prompt-protocol-v1`
+  covering model family ID, prompt template ID, system prompt version,
+  sampling temperature (centipercents, 0..=200), top-p (centipercents, 0..=100),
+  structured output requirement, and fail-closed forbidden private chain-of-thought.
+- `ModelPromptProtocolCatalog` provides fail-closed lookup, bounds validation,
+  and enumeration over canonical protocols (`model-prompt-reference-standard-v1`,
+  `model-prompt-reference-diagnostic-v1`, and `model-prompt-alternative-diagnostic-v1`).
+- `RepeatedSamplingProtocolDefinition` defines `m7-repeated-sampling-protocol-v1`
+  covering sample count bounds (1..=100), seed offset step schedules, max repair
+  retry budgets (0..=10), and fail-closed un-repaired error handling.
+- `RepeatedSamplingProtocolCatalog` provides fail-closed lookup, bounds validation,
+  and enumeration over canonical schedules (`sampling-standard-repeat-10-v1`,
+  `sampling-diagnostic-repeat-30-v1`, and `sampling-quick-check-5-v1`).
+- This contract establishes typed strategic choice dilemmas and empirical
+  sampling protocols for calibration; it does not claim full match scenario
+  execution or human behavioral completeness.
 
 ## Future
 

@@ -1538,7 +1538,8 @@ uncertainty and evidence limits reported.
 - [x] Create diagnostic choices for contest/concede, follow/reject, farm/assist,
   recall timing, sacrifice, surprise, and response to failure;
   distribution estimation, prompt protocols, and parametric fitting remain open.
-- [ ] Define repeated-sampling and model/prompt version protocols.
+- [x] Define repeated-sampling and model/prompt version protocols;
+  distribution estimation and parametric fitting remain open.
 - [ ] Estimate empirical action and communication distributions.
 - [ ] Define behavioral distance, entropy, sensitivity, consistency, and
   adaptation measures.

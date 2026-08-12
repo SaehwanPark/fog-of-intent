@@ -98,6 +98,29 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.174 — 2026-08-12
+
+### Added
+
+- Added `m7-model-prompt-protocol-v1`, providing structured model family, prompt
+  template, system prompt version, sampling temperature (centipercents), top-p,
+  and fail-closed chain-of-thought-free validation (`ModelPromptProtocolDefinition`)
+  alongside a registry catalog (`ModelPromptProtocolCatalog`) for canonical protocols
+  (`model-prompt-reference-standard-v1`, `model-prompt-reference-diagnostic-v1`,
+  `model-prompt-alternative-diagnostic-v1`).
+- Added `m7-repeated-sampling-protocol-v1`, providing bounded repeated empirical
+  sampling parameters (`RepeatedSamplingProtocolDefinition`), sample count bounds,
+  seed offset schedules, retry budgets, and fail-closed validation alongside a
+  registry catalog (`RepeatedSamplingProtocolCatalog`) for canonical sampling schedules
+  (`sampling-standard-repeat-10-v1`, `sampling-diagnostic-repeat-30-v1`,
+  `sampling-quick-check-5-v1`).
+
+### Known limits
+
+- These are declarative protocol definitions and parameter bounds for calibration;
+  empirical distribution estimation, action frequency measurement, and parametric
+  policy fitting remain open.
+
 ## 0.1.173 — 2026-08-12
 
 ### Added
