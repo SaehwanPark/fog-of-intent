@@ -1494,11 +1494,15 @@ distribution estimation, and parametric fitting remain open.
 - `ParameterIdentifiabilityReport` defines `m7-parameter-identifiability-v1`, evaluating empirical sensitivity and confounding risk across four discrete semantic dimensions (`RiskTolerance`, `Deference`, `Focus`, `CommunicationClarity`) with basis-point thresholds (identifiable $\ge 1,500$ bp, weak $\ge 500$ bp, max confounding risk $3,000$ bp).
 - `SemanticLabelStabilityReport` defines `m7-semantic-label-stability-v1`, evaluating cross-model Total Variation Distance (TVD) and modal agreement across model/prompt variations with explicit stability thresholds (stable $\le 1,000$ bp, sensitive $\le 3,000$ bp).
 - `CalibrationUncertaintyReport` defines `m7-calibration-uncertainty-v1`, integrating parameter identifiability and semantic label stability into a unified qualification report with overall uncertainty scoring, unidentifiable parameter / unstable label presence flags, Markdown export, and the canonical calibration limit disclaimer stating that AI behavior serves solely as a reference policy distribution, not human ground truth.
+- `ReferenceOutputRecord` defines `m7-reference-output-v1`, capturing observable decision outputs (`LaneIntent`, `LaneTargetFocus`, `LaneCommitment`, `LanePingSignal`, bounded `StructuredRationale`) with fail-closed rejection if private chain-of-thought is requested or present (`chain_of_thought_present == true`).
+- `ReferenceOutputPreservationReport` defines `m7-reference-output-preservation-v1`, preserving complete 7-dilemma diagnostic reference suites across semantic profiles and model/prompt protocols, asserting `chain_of_thought_free: true`, providing formatted Markdown export, and enforcing canonical dilemma domain ordering.
+- `ReferenceOutputCatalog` provides discovery and lookup helpers for canonical reference output suites (`cautious_v1`, `risk_taking_v1`, `yielding_v1`) under reference and alternative diagnostic prompt protocols.
 - This contract establishes typed strategic choice dilemmas, empirical sampling protocols,
   empirical distribution estimation, discrete behavioral measures, regularized parametric policy
   fitting, held-out scenario evaluation, counterfactual perturbation sensitivity, multi-model
-  family comparison, and parameter identifiability / semantic label stability uncertainty reporting
-  for calibration; it does not claim full match scenario execution or human behavioral completeness.
+  family comparison, parameter identifiability / semantic label stability uncertainty reporting,
+  and observable reference output preservation without private chain-of-thought for calibration;
+  it does not claim full match scenario execution or human behavioral completeness.
 
 ## Future
 

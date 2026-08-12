@@ -2,9 +2,9 @@ use super::*;
 use crate::host::CliScenarioHost;
 use crate::kernel::{DrawId, StreamId};
 use crate::lane::{
-  ALLIED_AUTONOMOUS_ACTOR, JungleThreatTruth, LaneIntent, LanePingSignal, LaneSnapshot, LaneStatus,
-  LanerObservation, M2_LANE_RULESET, ObservationId, WavePressure, WaveState, observe_player,
-  validate_lane_request,
+  ALLIED_AUTONOMOUS_ACTOR, JungleThreatTruth, LaneCommitment, LaneIntent, LanePingSignal,
+  LaneSnapshot, LaneStatus, LaneTargetFocus, LanerObservation, M2_LANE_RULESET, ObservationId,
+  WavePressure, WaveState, observe_player, validate_lane_request,
 };
 use crate::protocol::{
   ActorActionDto, ActorMessageDto, ActorProtocolCodecError, ActorProtocolIntent,
@@ -5777,5 +5777,378 @@ fn calibration_uncertainty_report_integrates_identifiability_and_stability() {
   assert_eq!(
     CalibrationUncertaintyReport::evaluate(ident_cautious, stab_risk),
     Err(CalibrationUncertaintyError::MismatchedProfile)
+  );
+}
+
+#[test]
+fn reference_output_records_and_rationales_validate_and_bound_correctly() {
+  assert_eq!(REFERENCE_OUTPUT_SCHEMA, "m7-reference-output-v1");
+  assert_eq!(
+    REFERENCE_OUTPUT_PRESERVATION_SCHEMA,
+    "m7-reference-output-preservation-v1"
+  );
+  assert_eq!(MAX_STRUCTURED_RATIONALE_LEN, 128);
+
+  // 1. StructuredRationaleCategory string mappings
+  let categories = StructuredRationaleCategory::all_categories();
+  assert_eq!(categories.len(), 6);
+  assert_eq!(
+    StructuredRationaleCategory::ThreatMitigation.as_str(),
+    "threat-mitigation"
+  );
+  assert_eq!(
+    StructuredRationaleCategory::ResourcePreservation.as_str(),
+    "resource-preservation"
+  );
+  assert_eq!(
+    StructuredRationaleCategory::ObjectiveContest.as_str(),
+    "objective-contest"
+  );
+  assert_eq!(
+    StructuredRationaleCategory::TeamCoordination.as_str(),
+    "team-coordination"
+  );
+  assert_eq!(
+    StructuredRationaleCategory::FallbackContingency.as_str(),
+    "fallback-contingency"
+  );
+  assert_eq!(
+    StructuredRationaleCategory::PacingAdjustment.as_str(),
+    "pacing-adjustment"
+  );
+
+  for cat in categories {
+    assert_eq!(StructuredRationaleCategory::parse(cat.as_str()), Some(cat));
+  }
+  assert_eq!(StructuredRationaleCategory::parse("unknown"), None);
+
+  // 2. StructuredRationale bounds and validation
+  let valid_rat = StructuredRationale::new(
+    StructuredRationaleCategory::ThreatMitigation,
+    "Mitigate wave pressure and avoid lethal trade",
+  )
+  .expect("valid rationale");
+  assert_eq!(
+    valid_rat.category(),
+    StructuredRationaleCategory::ThreatMitigation
+  );
+  assert_eq!(
+    valid_rat.summary(),
+    "Mitigate wave pressure and avoid lethal trade"
+  );
+
+  assert_eq!(
+    StructuredRationale::new(StructuredRationaleCategory::ThreatMitigation, ""),
+    Err(ReferenceOutputError::EmptyRationaleSummary)
+  );
+
+  let long_summary = "a".repeat(129);
+  let static_long: &'static str = Box::leak(long_summary.into_boxed_str());
+  assert_eq!(
+    StructuredRationale::new(StructuredRationaleCategory::ThreatMitigation, static_long),
+    Err(ReferenceOutputError::RationaleSummaryTooLong)
+  );
+
+  assert_eq!(
+    StructuredRationale::new(
+      StructuredRationaleCategory::ThreatMitigation,
+      "Invalid\x00summary"
+    ),
+    Err(ReferenceOutputError::InvalidRationaleSummary)
+  );
+
+  // 3. ReferenceOutputRecord validation and fail-closed CoT rejection
+  let valid_rec = ReferenceOutputRecord::new(
+    CAUTIOUS_SEMANTIC_PROFILE_ID,
+    CHOICE_CONTEST_CONCEDE_ID,
+    DiagnosticChoiceDomain::ContestConcede,
+    "model-family-reference-v1",
+    MODEL_PROMPT_REFERENCE_DIAGNOSTIC_ID,
+    LaneIntent::Yield,
+    LaneTargetFocus::Minions,
+    LaneCommitment::Cautious,
+    LanePingSignal::Danger,
+    Some(valid_rat),
+    false,
+  )
+  .expect("valid reference record");
+
+  assert_eq!(valid_rec.schema(), REFERENCE_OUTPUT_SCHEMA);
+  assert_eq!(valid_rec.profile_id(), CAUTIOUS_SEMANTIC_PROFILE_ID);
+  assert_eq!(valid_rec.choice_id(), CHOICE_CONTEST_CONCEDE_ID);
+  assert_eq!(
+    valid_rec.dilemma_domain(),
+    DiagnosticChoiceDomain::ContestConcede
+  );
+  assert_eq!(valid_rec.model_family_id(), "model-family-reference-v1");
+  assert_eq!(
+    valid_rec.prompt_protocol_id(),
+    MODEL_PROMPT_REFERENCE_DIAGNOSTIC_ID
+  );
+  assert_eq!(valid_rec.selected_intent(), LaneIntent::Yield);
+  assert_eq!(valid_rec.target_focus(), LaneTargetFocus::Minions);
+  assert_eq!(valid_rec.commitment(), LaneCommitment::Cautious);
+  assert_eq!(valid_rec.ping_signal(), LanePingSignal::Danger);
+  assert_eq!(valid_rec.structured_rationale(), Some(valid_rat));
+  assert!(!valid_rec.chain_of_thought_present());
+
+  // Fail-closed on private chain-of-thought
+  assert_eq!(
+    ReferenceOutputRecord::new(
+      CAUTIOUS_SEMANTIC_PROFILE_ID,
+      CHOICE_CONTEST_CONCEDE_ID,
+      DiagnosticChoiceDomain::ContestConcede,
+      "model-family-reference-v1",
+      MODEL_PROMPT_REFERENCE_DIAGNOSTIC_ID,
+      LaneIntent::Yield,
+      LaneTargetFocus::Minions,
+      LaneCommitment::Cautious,
+      LanePingSignal::Danger,
+      Some(valid_rat),
+      true,
+    ),
+    Err(ReferenceOutputError::PrivateChainOfThoughtForbidden)
+  );
+
+  // Fail-closed on unknown profile
+  assert_eq!(
+    ReferenceOutputRecord::new(
+      "unknown-profile-v1",
+      CHOICE_CONTEST_CONCEDE_ID,
+      DiagnosticChoiceDomain::ContestConcede,
+      "model-family-reference-v1",
+      MODEL_PROMPT_REFERENCE_DIAGNOSTIC_ID,
+      LaneIntent::Yield,
+      LaneTargetFocus::Minions,
+      LaneCommitment::Cautious,
+      LanePingSignal::Danger,
+      Some(valid_rat),
+      false,
+    ),
+    Err(ReferenceOutputError::UnknownProfile)
+  );
+
+  // Fail-closed on unknown choice
+  assert_eq!(
+    ReferenceOutputRecord::new(
+      CAUTIOUS_SEMANTIC_PROFILE_ID,
+      "unknown-choice-v1",
+      DiagnosticChoiceDomain::ContestConcede,
+      "model-family-reference-v1",
+      MODEL_PROMPT_REFERENCE_DIAGNOSTIC_ID,
+      LaneIntent::Yield,
+      LaneTargetFocus::Minions,
+      LaneCommitment::Cautious,
+      LanePingSignal::Danger,
+      Some(valid_rat),
+      false,
+    ),
+    Err(ReferenceOutputError::UnknownChoice)
+  );
+
+  // Fail-closed on domain mismatch
+  assert_eq!(
+    ReferenceOutputRecord::new(
+      CAUTIOUS_SEMANTIC_PROFILE_ID,
+      CHOICE_CONTEST_CONCEDE_ID,
+      DiagnosticChoiceDomain::FollowReject,
+      "model-family-reference-v1",
+      MODEL_PROMPT_REFERENCE_DIAGNOSTIC_ID,
+      LaneIntent::Yield,
+      LaneTargetFocus::Minions,
+      LaneCommitment::Cautious,
+      LanePingSignal::Danger,
+      Some(valid_rat),
+      false,
+    ),
+    Err(ReferenceOutputError::DomainMismatch)
+  );
+
+  // Fail-closed on unknown protocol or mismatched model family
+  assert_eq!(
+    ReferenceOutputRecord::new(
+      CAUTIOUS_SEMANTIC_PROFILE_ID,
+      CHOICE_CONTEST_CONCEDE_ID,
+      DiagnosticChoiceDomain::ContestConcede,
+      "model-family-alternative-v1",
+      MODEL_PROMPT_REFERENCE_DIAGNOSTIC_ID,
+      LaneIntent::Yield,
+      LaneTargetFocus::Minions,
+      LaneCommitment::Cautious,
+      LanePingSignal::Danger,
+      Some(valid_rat),
+      false,
+    ),
+    Err(ReferenceOutputError::UnknownProtocol)
+  );
+
+  // Error as_str tests
+  assert_eq!(
+    ReferenceOutputError::UnknownProfile.as_str(),
+    "unknown-profile"
+  );
+  assert_eq!(
+    ReferenceOutputError::UnknownChoice.as_str(),
+    "unknown-choice"
+  );
+  assert_eq!(
+    ReferenceOutputError::UnknownProtocol.as_str(),
+    "unknown-protocol"
+  );
+  assert_eq!(
+    ReferenceOutputError::DomainMismatch.as_str(),
+    "domain-mismatch"
+  );
+  assert_eq!(
+    ReferenceOutputError::PrivateChainOfThoughtForbidden.as_str(),
+    "private-chain-of-thought-forbidden"
+  );
+  assert_eq!(
+    ReferenceOutputError::EmptyRationaleSummary.as_str(),
+    "empty-rationale-summary"
+  );
+  assert_eq!(
+    ReferenceOutputError::RationaleSummaryTooLong.as_str(),
+    "rationale-summary-too-long"
+  );
+  assert_eq!(
+    ReferenceOutputError::InvalidRationaleSummary.as_str(),
+    "invalid-rationale-summary"
+  );
+  assert_eq!(
+    ReferenceOutputError::InvalidRecordOrder.as_str(),
+    "invalid-record-order"
+  );
+  assert_eq!(
+    ReferenceOutputError::DuplicateDomainRecord.as_str(),
+    "duplicate-domain-record"
+  );
+}
+
+#[test]
+fn reference_output_preservation_reports_and_catalog_verify_all_canonical_suites() {
+  // 1. All 6 canonical suites in the catalog
+  let suites = ReferenceOutputCatalog::canonical_reference_suites();
+  assert_eq!(suites.len(), 6);
+
+  for suite in &suites {
+    assert_eq!(suite.schema(), REFERENCE_OUTPUT_PRESERVATION_SCHEMA);
+    assert!(suite.chain_of_thought_free());
+    assert_eq!(suite.structured_rationale_count(), 7);
+    assert_eq!(suite.records().len(), 7);
+
+    let expected_domains = ReferenceOutputPreservationReport::canonical_domains();
+    for (i, rec) in suite.records().iter().enumerate() {
+      assert_eq!(rec.schema(), REFERENCE_OUTPUT_SCHEMA);
+      assert_eq!(rec.profile_id(), suite.profile_id());
+      assert_eq!(rec.model_family_id(), suite.model_family_id());
+      assert_eq!(rec.prompt_protocol_id(), suite.prompt_protocol_id());
+      assert_eq!(rec.dilemma_domain(), expected_domains[i]);
+      assert!(!rec.chain_of_thought_present());
+      assert!(rec.structured_rationale().is_some());
+    }
+
+    let md = suite.to_markdown();
+    assert!(md.contains("# Reference Output Preservation Report"));
+    assert!(md.contains("**Schema:** `m7-reference-output-preservation-v1`"));
+    assert!(md.contains("**Private Chain-of-Thought Free:** `true`"));
+    assert!(md.contains("**Structured Rationales Count:** `7/7`"));
+    assert!(md.contains("| Dilemma Domain | Choice ID | Selected Intent | Target Focus | Commitment | Ping Signal | Structured Rationale | CoT Free |"));
+    assert!(md.contains("Observable reference outputs preserved without storing or requiring private chain-of-thought."));
+  }
+
+  // 2. Individual profile validation
+  let cautious_ref = ReferenceOutputPreservationReport::cautious_reference_diagnostic_v1();
+  assert_eq!(cautious_ref.profile_id(), CAUTIOUS_SEMANTIC_PROFILE_ID);
+  assert_eq!(
+    cautious_ref.records()[0].selected_intent(),
+    LaneIntent::Yield
+  );
+  assert_eq!(
+    cautious_ref.records()[1].selected_intent(),
+    LaneIntent::Stabilize
+  );
+
+  let risk_ref = ReferenceOutputPreservationReport::risk_taking_reference_diagnostic_v1();
+  assert_eq!(risk_ref.profile_id(), RISK_TAKING_SEMANTIC_PROFILE_ID);
+  assert_eq!(risk_ref.records()[0].selected_intent(), LaneIntent::Contest);
+  assert_eq!(risk_ref.records()[1].selected_intent(), LaneIntent::Contest);
+
+  let yielding_ref = ReferenceOutputPreservationReport::yielding_reference_diagnostic_v1();
+  assert_eq!(yielding_ref.profile_id(), YIELDING_SEMANTIC_PROFILE_ID);
+  assert_eq!(
+    yielding_ref.records()[0].selected_intent(),
+    LaneIntent::Yield
+  );
+  assert_eq!(
+    yielding_ref.records()[1].selected_intent(),
+    LaneIntent::Yield
+  );
+
+  // 3. Alternative protocol suites
+  let cautious_alt = ReferenceOutputPreservationReport::cautious_alternative_diagnostic_v1();
+  assert_eq!(
+    cautious_alt.model_family_id(),
+    "model-family-alternative-v1"
+  );
+  assert_eq!(
+    cautious_alt.prompt_protocol_id(),
+    MODEL_PROMPT_ALTERNATIVE_DIAGNOSTIC_ID
+  );
+
+  // 4. Catalog lookup
+  assert_eq!(
+    ReferenceOutputCatalog::find_by_profile_and_protocol(
+      CAUTIOUS_SEMANTIC_PROFILE_ID,
+      MODEL_PROMPT_REFERENCE_DIAGNOSTIC_ID
+    ),
+    Some(cautious_ref)
+  );
+  assert_eq!(
+    ReferenceOutputCatalog::find_by_profile_and_protocol(
+      "unknown-profile",
+      MODEL_PROMPT_REFERENCE_DIAGNOSTIC_ID
+    ),
+    None
+  );
+  assert_eq!(
+    ReferenceOutputCatalog::find_by_profile_and_protocol(
+      CAUTIOUS_SEMANTIC_PROFILE_ID,
+      "unknown-protocol"
+    ),
+    None
+  );
+
+  // 5. Custom report constructor validation
+  let mut swapped_records = cautious_ref.records();
+  swapped_records.swap(0, 1);
+  assert_eq!(
+    ReferenceOutputPreservationReport::new(
+      CAUTIOUS_SEMANTIC_PROFILE_ID,
+      "model-family-reference-v1",
+      MODEL_PROMPT_REFERENCE_DIAGNOSTIC_ID,
+      swapped_records
+    ),
+    Err(ReferenceOutputError::InvalidRecordOrder)
+  );
+
+  assert_eq!(
+    ReferenceOutputPreservationReport::new(
+      "unknown-profile-v1",
+      "model-family-reference-v1",
+      MODEL_PROMPT_REFERENCE_DIAGNOSTIC_ID,
+      cautious_ref.records()
+    ),
+    Err(ReferenceOutputError::UnknownProfile)
+  );
+
+  assert_eq!(
+    ReferenceOutputPreservationReport::new(
+      CAUTIOUS_SEMANTIC_PROFILE_ID,
+      "model-family-reference-v1",
+      "unknown-protocol-v1",
+      cautious_ref.records()
+    ),
+    Err(ReferenceOutputError::UnknownProtocol)
   );
 }
