@@ -5425,3 +5425,127 @@ fn held_out_scenario_evaluation_and_counterfactual_perturbations_are_verified() 
     Err(HeldOutEvaluationError::MismatchedChoice)
   );
 }
+
+#[test]
+fn test_multi_model_family_comparison() {
+  // 1. Cautious profile comparison across model/prompting families
+  let rep_cautious = MultiModelComparisonReport::cautious_comparison_v1();
+  assert_eq!(rep_cautious.schema(), MULTI_MODEL_COMPARISON_SCHEMA);
+  assert_eq!(rep_cautious.profile_id(), CAUTIOUS_SEMANTIC_PROFILE_ID);
+  assert_eq!(
+    rep_cautious.reference_model_prompt_protocol_id(),
+    MODEL_PROMPT_REFERENCE_DIAGNOSTIC_ID
+  );
+  assert_eq!(
+    rep_cautious.alternative_model_prompt_protocol_id(),
+    MODEL_PROMPT_ALTERNATIVE_DIAGNOSTIC_ID
+  );
+  assert_eq!(
+    rep_cautious.alignment_status(),
+    ModelFamilyAlignmentStatus::Aligned
+  );
+  assert_eq!(rep_cautious.modal_agreement_count(), 7);
+  assert!(rep_cautious.mean_action_tvd_bp() <= ALIGNMENT_THRESHOLD_ALIGNED_TVD_BP);
+  assert_eq!(rep_cautious.entries().len(), 7);
+
+  for entry in rep_cautious.entries() {
+    assert!(entry.modal_agreement());
+    assert_eq!(entry.ref_modal_intent(), entry.alt_modal_intent());
+    let md_row = entry.to_markdown();
+    assert!(md_row.starts_with("| choice-"));
+  }
+
+  let md_cautious = rep_cautious.to_markdown();
+  assert!(md_cautious.contains("# Multi-Model & Prompting Family Comparison Report"));
+  assert!(md_cautious.contains("alignment_status: aligned"));
+  assert!(md_cautious.contains("modal_agreement_count: 7/7"));
+
+  // 2. Risk-taking profile comparison across model/prompting families
+  let rep_risk = MultiModelComparisonReport::risk_taking_comparison_v1();
+  assert_eq!(rep_risk.schema(), MULTI_MODEL_COMPARISON_SCHEMA);
+  assert_eq!(rep_risk.profile_id(), RISK_TAKING_SEMANTIC_PROFILE_ID);
+  assert_eq!(
+    rep_risk.reference_model_prompt_protocol_id(),
+    MODEL_PROMPT_REFERENCE_DIAGNOSTIC_ID
+  );
+  assert_eq!(
+    rep_risk.alternative_model_prompt_protocol_id(),
+    MODEL_PROMPT_ALTERNATIVE_DIAGNOSTIC_ID
+  );
+  assert_eq!(
+    rep_risk.alignment_status(),
+    ModelFamilyAlignmentStatus::Aligned
+  );
+  assert_eq!(rep_risk.modal_agreement_count(), 7);
+  assert!(rep_risk.mean_action_tvd_bp() <= ALIGNMENT_THRESHOLD_ALIGNED_TVD_BP);
+
+  // 3. Yielding profile comparison across model/prompting families
+  let rep_yielding = MultiModelComparisonReport::yielding_comparison_v1();
+  assert_eq!(rep_yielding.schema(), MULTI_MODEL_COMPARISON_SCHEMA);
+  assert_eq!(rep_yielding.profile_id(), YIELDING_SEMANTIC_PROFILE_ID);
+  assert_eq!(
+    rep_yielding.reference_model_prompt_protocol_id(),
+    MODEL_PROMPT_REFERENCE_DIAGNOSTIC_ID
+  );
+  assert_eq!(
+    rep_yielding.alternative_model_prompt_protocol_id(),
+    MODEL_PROMPT_ALTERNATIVE_DIAGNOSTIC_ID
+  );
+  assert_eq!(
+    rep_yielding.alignment_status(),
+    ModelFamilyAlignmentStatus::Aligned
+  );
+  assert_eq!(rep_yielding.modal_agreement_count(), 7);
+  assert!(rep_yielding.mean_action_tvd_bp() <= ALIGNMENT_THRESHOLD_ALIGNED_TVD_BP);
+
+  // 4. Identical protocol self-comparison
+  let ref_cautious_emp = EmpiricalDistributionEstimateReport::cautious_v1();
+  let ref_cautious_pol =
+    ParametricPolicyFitter::fit_standard_regularized(&ref_cautious_emp).expect("fit");
+  let self_rep = MultiModelComparisonReport::compare(
+    &ref_cautious_emp,
+    &ref_cautious_emp,
+    &ref_cautious_pol,
+    &ref_cautious_pol,
+  )
+  .expect("self comparison");
+
+  assert_eq!(self_rep.mean_action_tvd_bp(), 0);
+  assert_eq!(self_rep.mean_communication_tvd_bp(), 0);
+  assert_eq!(self_rep.modal_agreement_count(), 7);
+  assert_eq!(
+    self_rep.alignment_status(),
+    ModelFamilyAlignmentStatus::Aligned
+  );
+
+  // 5. Error handling and status enum tests
+  let ref_risk_emp = EmpiricalDistributionEstimateReport::risk_taking_v1();
+  let ref_risk_pol = ParametricPolicyFitter::fit_standard_regularized(&ref_risk_emp).expect("fit");
+
+  assert_eq!(
+    MultiModelComparisonReport::compare(
+      &ref_cautious_emp,
+      &ref_risk_emp,
+      &ref_cautious_pol,
+      &ref_risk_pol,
+    ),
+    Err(MultiModelComparisonError::MismatchedProfile)
+  );
+
+  assert_eq!(ModelFamilyAlignmentStatus::Aligned.as_str(), "aligned");
+  assert_eq!(ModelFamilyAlignmentStatus::Shifted.as_str(), "shifted");
+  assert_eq!(ModelFamilyAlignmentStatus::Divergent.as_str(), "divergent");
+  assert_eq!(
+    ModelFamilyAlignmentStatus::parse("aligned"),
+    Some(ModelFamilyAlignmentStatus::Aligned)
+  );
+  assert_eq!(
+    ModelFamilyAlignmentStatus::parse("shifted"),
+    Some(ModelFamilyAlignmentStatus::Shifted)
+  );
+  assert_eq!(
+    ModelFamilyAlignmentStatus::parse("divergent"),
+    Some(ModelFamilyAlignmentStatus::Divergent)
+  );
+  assert_eq!(ModelFamilyAlignmentStatus::parse("unknown"), None);
+}

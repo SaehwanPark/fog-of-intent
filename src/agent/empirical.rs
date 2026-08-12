@@ -932,6 +932,282 @@ impl EmpiricalDistributionEstimateReport {
     }
   }
 
+  /// Canonical empirical distribution estimate for the cautious semantic profile under the alternative diagnostic prompt protocol.
+  pub fn cautious_alt_v1() -> Self {
+    let profile_id = CAUTIOUS_SEMANTIC_PROFILE_ID;
+    let sampling_id = SAMPLING_STANDARD_REPEAT_10_ID;
+    let prompt_id = MODEL_PROMPT_ALTERNATIVE_DIAGNOSTIC_ID;
+
+    let action_dists = [
+      DiagnosticChoiceActionDistribution::new(CHOICE_CONTEST_CONCEDE_ID, profile_id, 10, 2, 8, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_FOLLOW_REJECT_ID, profile_id, 10, 4, 6, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_FARM_ASSIST_ID, profile_id, 10, 10, 0, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_RECALL_TIMING_ID, profile_id, 10, 10, 0, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_SACRIFICE_ID, profile_id, 10, 1, 9, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_SURPRISE_ID, profile_id, 10, 10, 0, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(
+        CHOICE_RESPONSE_TO_FAILURE_ID,
+        profile_id,
+        10,
+        9,
+        1,
+        0,
+      )
+      .expect("valid"),
+    ];
+
+    let comm_dists = [
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_CONTEST_CONCEDE_ID,
+        profile_id,
+        10,
+        [10, 0, 0, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_FOLLOW_REJECT_ID,
+        profile_id,
+        10,
+        [9, 1, 0, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_FARM_ASSIST_ID,
+        profile_id,
+        10,
+        [10, 0, 0, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_RECALL_TIMING_ID,
+        profile_id,
+        10,
+        [8, 0, 2, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_SACRIFICE_ID,
+        profile_id,
+        10,
+        [8, 2, 0, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_SURPRISE_ID,
+        profile_id,
+        10,
+        [6, 4, 0, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_RESPONSE_TO_FAILURE_ID,
+        profile_id,
+        10,
+        [9, 1, 0, 0, 0],
+      )
+      .expect("valid"),
+    ];
+
+    Self {
+      schema: EMPIRICAL_DISTRIBUTION_ESTIMATION_SCHEMA,
+      profile_id,
+      sampling_protocol_id: sampling_id,
+      model_prompt_protocol_id: prompt_id,
+      action_distributions: action_dists,
+      communication_distributions: comm_dists,
+    }
+  }
+
+  /// Canonical empirical distribution estimate for the risk-taking semantic profile under the alternative diagnostic prompt protocol.
+  pub fn risk_taking_alt_v1() -> Self {
+    let profile_id = RISK_TAKING_SEMANTIC_PROFILE_ID;
+    let sampling_id = SAMPLING_STANDARD_REPEAT_10_ID;
+    let prompt_id = MODEL_PROMPT_ALTERNATIVE_DIAGNOSTIC_ID;
+
+    let action_dists = [
+      DiagnosticChoiceActionDistribution::new(CHOICE_CONTEST_CONCEDE_ID, profile_id, 10, 8, 2, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_FOLLOW_REJECT_ID, profile_id, 10, 9, 1, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_FARM_ASSIST_ID, profile_id, 10, 2, 8, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_RECALL_TIMING_ID, profile_id, 10, 3, 7, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_SACRIFICE_ID, profile_id, 10, 8, 2, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_SURPRISE_ID, profile_id, 10, 1, 9, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(
+        CHOICE_RESPONSE_TO_FAILURE_ID,
+        profile_id,
+        10,
+        2,
+        8,
+        0,
+      )
+      .expect("valid"),
+    ];
+
+    let comm_dists = [
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_CONTEST_CONCEDE_ID,
+        profile_id,
+        10,
+        [7, 0, 0, 3, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_FOLLOW_REJECT_ID,
+        profile_id,
+        10,
+        [7, 0, 3, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_FARM_ASSIST_ID,
+        profile_id,
+        10,
+        [8, 0, 2, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_RECALL_TIMING_ID,
+        profile_id,
+        10,
+        [8, 0, 2, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_SACRIFICE_ID,
+        profile_id,
+        10,
+        [7, 0, 0, 3, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_SURPRISE_ID,
+        profile_id,
+        10,
+        [7, 3, 0, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_RESPONSE_TO_FAILURE_ID,
+        profile_id,
+        10,
+        [8, 0, 0, 2, 0],
+      )
+      .expect("valid"),
+    ];
+
+    Self {
+      schema: EMPIRICAL_DISTRIBUTION_ESTIMATION_SCHEMA,
+      profile_id,
+      sampling_protocol_id: sampling_id,
+      model_prompt_protocol_id: prompt_id,
+      action_distributions: action_dists,
+      communication_distributions: comm_dists,
+    }
+  }
+
+  /// Canonical empirical distribution estimate for the yielding semantic profile under the alternative diagnostic prompt protocol.
+  pub fn yielding_alt_v1() -> Self {
+    let profile_id = YIELDING_SEMANTIC_PROFILE_ID;
+    let sampling_id = SAMPLING_STANDARD_REPEAT_10_ID;
+    let prompt_id = MODEL_PROMPT_ALTERNATIVE_DIAGNOSTIC_ID;
+
+    let action_dists = [
+      DiagnosticChoiceActionDistribution::new(CHOICE_CONTEST_CONCEDE_ID, profile_id, 10, 1, 9, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_FOLLOW_REJECT_ID, profile_id, 10, 2, 8, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_FARM_ASSIST_ID, profile_id, 10, 9, 1, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_RECALL_TIMING_ID, profile_id, 10, 8, 2, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_SACRIFICE_ID, profile_id, 10, 2, 8, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_SURPRISE_ID, profile_id, 10, 9, 1, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(
+        CHOICE_RESPONSE_TO_FAILURE_ID,
+        profile_id,
+        10,
+        10,
+        0,
+        0,
+      )
+      .expect("valid"),
+    ];
+
+    let comm_dists = [
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_CONTEST_CONCEDE_ID,
+        profile_id,
+        10,
+        [10, 0, 0, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_FOLLOW_REJECT_ID,
+        profile_id,
+        10,
+        [10, 0, 0, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_FARM_ASSIST_ID,
+        profile_id,
+        10,
+        [10, 0, 0, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_RECALL_TIMING_ID,
+        profile_id,
+        10,
+        [10, 0, 0, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_SACRIFICE_ID,
+        profile_id,
+        10,
+        [9, 1, 0, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_SURPRISE_ID,
+        profile_id,
+        10,
+        [7, 3, 0, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_RESPONSE_TO_FAILURE_ID,
+        profile_id,
+        10,
+        [10, 0, 0, 0, 0],
+      )
+      .expect("valid"),
+    ];
+
+    Self {
+      schema: EMPIRICAL_DISTRIBUTION_ESTIMATION_SCHEMA,
+      profile_id,
+      sampling_protocol_id: sampling_id,
+      model_prompt_protocol_id: prompt_id,
+      action_distributions: action_dists,
+      communication_distributions: comm_dists,
+    }
+  }
+
   /// Render the empirical distribution estimate report as formatted Markdown.
   pub fn to_markdown(&self) -> String {
     let mut out = format!(

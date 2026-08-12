@@ -98,7 +98,28 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.179 — 2026-08-12
+
+### Added
+
+- Added `m7-multi-model-comparison-v1`, `MultiModelComparisonReport`, `DilemmaModelComparisonEntry`,
+  and `ModelFamilyAlignmentStatus` in `src/agent/multi_model.rs`, evaluating Total Variation Distance
+  (TVD) deltas across action and communication distributions, parametric policy weight shifts, modal
+  choice agreement (0..=7), and categorical alignment status (`aligned`, `shifted`, `divergent`)
+  between reference and alternative model/prompting protocols across diagnostic dilemmas.
+- Added canonical alternative diagnostic empirical distribution baselines (`cautious_alt_v1`,
+  `risk_taking_alt_v1`, `yielding_alt_v1`) in `src/agent/empirical.rs`.
+- Added canonical baseline multi-model comparison reports (`cautious_comparison_v1`,
+  `risk_taking_comparison_v1`, `yielding_comparison_v1`) and formatted Markdown export.
+
+### Known limits
+
+- This contract establishes discrete mathematical multi-model and prompting family comparison
+  for calibration; unidentifiable parameters, private chain-of-thought preservation, recalibration
+  triggers, and live model provider integration remain open.
+
 ## 0.1.178 — 2026-08-12
+
 
 ### Added
 

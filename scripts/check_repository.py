@@ -46,6 +46,7 @@ CORE_RUST_FILES = (
   "src/agent/held_out.rs",
   "src/agent/measures.rs",
   "src/agent/mod.rs",
+  "src/agent/multi_model.rs",
   "src/agent/operational.rs",
   "src/agent/parametric.rs",
   "src/agent/policy.rs",
