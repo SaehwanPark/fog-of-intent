@@ -1545,7 +1545,8 @@ uncertainty and evidence limits reported.
 - [x] Define behavioral distance, entropy, sensitivity, consistency, and
   adaptation measures;
   parametric fitting remains open.
-- [ ] Fit initial bounded parametric policies with regularization.
+- [x] Fit initial bounded parametric policies with regularization;
+  held-out evaluation, model comparison, and recalibration remain open.
 - [ ] Evaluate held-out scenarios and counterfactual perturbations.
 - [ ] Compare more than one model or prompting family where feasible.
 - [ ] Report unidentifiable parameters and unstable semantic labels.

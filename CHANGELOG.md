@@ -98,6 +98,31 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.177 — 2026-08-12
+
+### Added
+
+- Added `m7-parametric-policy-v1`, `ParametricPolicyDefinition`,
+  `ParametricActionWeights`, `ParametricCommunicationWeights`, and
+  `ParametricPolicyFitter`, providing bounded parametric policy parameter models
+  and regularized closed-form estimation from empirical distribution reports:
+  - `ParametricActionWeights` and `ParametricCommunicationWeights` for choice-level
+    parameter weights with exact integer basis-point conservation ($\sum w_i = 10,000$ bp)
+    and modal intent/signal prediction.
+  - `ParametricPolicyFitter` for deterministic parameter fitting with bounded
+    regularization penalty $\lambda \in [0..=10,000]$ bp shrinking empirical weights
+    towards neutral uniform priors.
+  - `ParametricPolicyDefinition` for full profile parameter bundles across all seven
+    diagnostic dilemmas with fit loss tracking and formatted Markdown reporting.
+  - Canonical baseline fitted policies for `cautious_v1`, `risk_taking_v1`, and
+    `yielding_v1`.
+
+### Known limits
+
+- This contract establishes bounded mathematical parametric policy fitting with basis-point
+  regularization; held-out scenario evaluation, counterfactual perturbations, and live model
+  provider integration remain open.
+
 ## 0.1.176 — 2026-08-12
 
 ### Added

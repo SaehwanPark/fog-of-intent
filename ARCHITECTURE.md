@@ -326,6 +326,12 @@ Variation Distance, Gini diversity, dilemma contrast deltas, modal adherence, an
 alongside aggregated reports (`BehavioralMeasuresReport` under `m7-behavioral-measures-v1`).
 They establish declarative behavioral metrics for calibration without floating-point math or
 hidden state.
+`ParametricActionWeights`, `ParametricCommunicationWeights`, and `ParametricPolicyDefinition`
+(`m7-parametric-policy-v1`) define bounded parametric policy parameter weights across the seven
+diagnostic dilemma domains with exact integer basis-point conservation ($\sum w_i = 10,000$ bp)
+and regularized parameter fitting via `ParametricPolicyFitter`. Regularization applies bounded
+basis-point shrinkage towards neutral uniform priors to prevent extreme weights and resolve
+unidentifiable parameters deterministically without floating-point math or provider APIs.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

@@ -5,6 +5,22 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Keep parametric policy fitting regularized and basis-point bounded
+
+- Context: M7 required parametric policy parameter estimation from empirical
+  choice distributions before held-out scenario evaluation or live model
+  providers were authorized.
+- Symptom: Introducing continuous floating-point optimization or unbounded
+  weight estimation would compromise cross-platform determinism and produce
+  extreme, unidentifiable weights on skewed empirical distributions.
+- Resolution: Define `ParametricPolicyFitter` using closed-form integer basis-point
+  regularization shrinkage towards neutral uniform priors proportionally to
+  `regularization_bp` in `0..=10_000` bp, enforcing exact basis-point sum conservation
+  (`10_000` bp).
+- Prevention: Treat parametric policy parameter representation, regularized
+  fitting, held-out evaluation, and multi-model comparison as separate contracts
+  with separate evidence.
+
 ## Keep diagnostic choice catalogs discrete and contrast-focused
 
 - Context: M7 required diagnostic choice definitions across core behavioral

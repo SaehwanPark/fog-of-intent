@@ -1469,10 +1469,18 @@ distribution estimation, and parametric fitting remain open.
   adaptation across adverse dilemmas in exact integer basis points.
 - `BehavioralMeasuresReport` defines `m7-behavioral-measures-v1`, aggregating all behavioral metrics
   for a semantic profile with formatted Markdown reporting.
+- `ParametricActionWeights` and `ParametricCommunicationWeights` define bounded choice-level
+  action and communication ping signal weights with basis-point conservation ($\sum w_i = 10,000$ bp)
+  and modal choice prediction.
+- `ParametricPolicyDefinition` defines `m7-parametric-policy-v1`, representing full parametric policies
+  across all seven diagnostic dilemmas with bounded regularization penalty $\lambda \in [0..=10,000]$ bp,
+  loss tracking, and formatted Markdown rendering.
+- `ParametricPolicyFitter` implements regularized closed-form parameter estimation from empirical
+  distribution estimate reports, shrinking empirical weights towards uniform priors proportionally to $\lambda$,
+  and providing canonical baseline fitted policies (`cautious_v1`, `risk_taking_v1`, `yielding_v1`).
 - This contract establishes typed strategic choice dilemmas, empirical sampling protocols,
-  empirical distribution estimation, and discrete behavioral distance, entropy, sensitivity,
-  consistency, and adaptation measures for calibration; it does not claim full match scenario
-  execution or human behavioral completeness.
+  empirical distribution estimation, discrete behavioral measures, and regularized parametric policy
+  fitting for calibration; it does not claim full match scenario execution or human behavioral completeness.
 
 ## Future
 

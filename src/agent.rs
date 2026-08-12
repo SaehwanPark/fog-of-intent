@@ -299,6 +299,15 @@ pub const BEHAVIORAL_CONSISTENCY_SCHEMA: &str = "m7-behavioral-consistency-v1";
 /// Versioned schema for adverse-condition adaptation measures.
 pub const BEHAVIORAL_ADAPTATION_SCHEMA: &str = "m7-behavioral-adaptation-v1";
 
+/// Versioned schema for bounded parametric policy models and regularized fitting.
+pub const PARAMETRIC_POLICY_SCHEMA: &str = "m7-parametric-policy-v1";
+
+/// Default standard regularization penalty parameter in basis points (1,000 bp = 10% shrinkage).
+pub const DEFAULT_PARAMETRIC_REGULARIZATION_BASIS_POINTS: u16 = 1_000;
+
+/// Maximum regularization penalty parameter in basis points (10,000 bp = 100% shrinkage to prior).
+pub const MAX_PARAMETRIC_REGULARIZATION_BASIS_POINTS: u16 = 10_000;
+
 /// Maximum number of replay records evaluated in one scenario-wide identity check.
 pub const MAX_SCRIPTED_AGENT_SCENARIO_REPLAY_RECORDS: usize = 16;
 
@@ -6329,6 +6338,480 @@ impl BehavioralMeasuresReport {
   }
 }
 
+/// Errors raised when validating or fitting parametric policies.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ParametricPolicyError {
+  UnknownProfile,
+  UnknownChoice,
+  InvalidRegularization,
+  WeightSumMismatch,
+  MismatchedChoice,
+  MismatchedProfile,
+}
+
+/// Bounded parametric action weights for a single diagnostic choice dilemma.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ParametricActionWeights {
+  choice_id: &'static str,
+  primary_intent: LaneIntent,
+  alternative_intent: LaneIntent,
+  primary_weight_bp: u16,
+  alternative_weight_bp: u16,
+  residual_weight_bp: u16,
+}
+
+impl ParametricActionWeights {
+  /// Create and validate parametric action weights for a diagnostic dilemma.
+  pub fn new(
+    choice_id: &'static str,
+    primary_intent: LaneIntent,
+    alternative_intent: LaneIntent,
+    primary_weight_bp: u16,
+    alternative_weight_bp: u16,
+    residual_weight_bp: u16,
+  ) -> Result<Self, ParametricPolicyError> {
+    let choice = DiagnosticChoiceCatalog::validate_choice_id(choice_id)
+      .map_err(|_| ParametricPolicyError::UnknownChoice)?;
+
+    if primary_intent != choice.primary_intent()
+      || alternative_intent != choice.alternative_intent()
+    {
+      return Err(ParametricPolicyError::MismatchedChoice);
+    }
+
+    let sum = u32::from(primary_weight_bp)
+      + u32::from(alternative_weight_bp)
+      + u32::from(residual_weight_bp);
+    if sum != u32::from(EMPIRICAL_DISTRIBUTION_SCALE_BASIS_POINTS) {
+      return Err(ParametricPolicyError::WeightSumMismatch);
+    }
+
+    Ok(Self {
+      choice_id,
+      primary_intent,
+      alternative_intent,
+      primary_weight_bp,
+      alternative_weight_bp,
+      residual_weight_bp,
+    })
+  }
+
+  pub const fn choice_id(self) -> &'static str {
+    self.choice_id
+  }
+
+  pub const fn primary_intent(self) -> LaneIntent {
+    self.primary_intent
+  }
+
+  pub const fn alternative_intent(self) -> LaneIntent {
+    self.alternative_intent
+  }
+
+  pub const fn primary_weight_bp(self) -> u16 {
+    self.primary_weight_bp
+  }
+
+  pub const fn alternative_weight_bp(self) -> u16 {
+    self.alternative_weight_bp
+  }
+
+  pub const fn residual_weight_bp(self) -> u16 {
+    self.residual_weight_bp
+  }
+
+  pub const fn basis_points(self) -> [u16; 3] {
+    [
+      self.primary_weight_bp,
+      self.alternative_weight_bp,
+      self.residual_weight_bp,
+    ]
+  }
+
+  /// Predict the highest-weighted intent under this parametric policy.
+  pub const fn predicted_intent(self) -> LaneIntent {
+    if self.primary_weight_bp >= self.alternative_weight_bp
+      && self.primary_weight_bp >= self.residual_weight_bp
+    {
+      self.primary_intent
+    } else if self.alternative_weight_bp >= self.residual_weight_bp {
+      self.alternative_intent
+    } else {
+      LaneIntent::Stabilize
+    }
+  }
+
+  /// Render this action weight row as Markdown table line.
+  pub fn to_markdown(&self) -> String {
+    format!(
+      "| {} | {} | {} | {} | {} |\n",
+      self.choice_id,
+      self.primary_weight_bp,
+      self.alternative_weight_bp,
+      self.residual_weight_bp,
+      match self.predicted_intent() {
+        LaneIntent::Stabilize => "stabilize",
+        LaneIntent::Contest => "contest",
+        LaneIntent::Yield => "yield",
+        LaneIntent::Recall => "recall",
+        LaneIntent::Withdraw => "withdraw",
+      },
+    )
+  }
+}
+
+/// Bounded parametric communication ping signal weights for a diagnostic dilemma.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ParametricCommunicationWeights {
+  choice_id: &'static str,
+  signal_weights_bp: [u16; 5],
+}
+
+impl ParametricCommunicationWeights {
+  /// Create and validate parametric communication weights across 5 ping signals.
+  pub fn new(
+    choice_id: &'static str,
+    signal_weights_bp: [u16; 5],
+  ) -> Result<Self, ParametricPolicyError> {
+    DiagnosticChoiceCatalog::validate_choice_id(choice_id)
+      .map_err(|_| ParametricPolicyError::UnknownChoice)?;
+
+    let mut sum = 0_u32;
+    for w in signal_weights_bp {
+      sum += u32::from(w);
+    }
+    if sum != u32::from(EMPIRICAL_DISTRIBUTION_SCALE_BASIS_POINTS) {
+      return Err(ParametricPolicyError::WeightSumMismatch);
+    }
+
+    Ok(Self {
+      choice_id,
+      signal_weights_bp,
+    })
+  }
+
+  pub const fn choice_id(self) -> &'static str {
+    self.choice_id
+  }
+
+  pub const fn signal_weights_bp(self) -> [u16; 5] {
+    self.signal_weights_bp
+  }
+
+  pub const fn none_bp(self) -> u16 {
+    self.signal_weights_bp[0]
+  }
+
+  pub const fn danger_bp(self) -> u16 {
+    self.signal_weights_bp[1]
+  }
+
+  pub const fn on_my_way_bp(self) -> u16 {
+    self.signal_weights_bp[2]
+  }
+
+  pub const fn assist_bp(self) -> u16 {
+    self.signal_weights_bp[3]
+  }
+
+  pub const fn enemy_missing_bp(self) -> u16 {
+    self.signal_weights_bp[4]
+  }
+
+  /// Predict the modal ping signal under this parametric policy.
+  pub const fn predicted_signal(self) -> LanePingSignal {
+    let mut max_idx = 0_usize;
+    let mut max_val = self.signal_weights_bp[0];
+    let mut i = 1_usize;
+    while i < 5 {
+      if self.signal_weights_bp[i] > max_val {
+        max_val = self.signal_weights_bp[i];
+        max_idx = i;
+      }
+      i += 1;
+    }
+    match max_idx {
+      0 => LanePingSignal::None,
+      1 => LanePingSignal::Danger,
+      2 => LanePingSignal::OnMyWay,
+      3 => LanePingSignal::Assist,
+      _ => LanePingSignal::EnemyMissing,
+    }
+  }
+
+  /// Render this communication weight row as Markdown table line.
+  pub fn to_markdown(&self) -> String {
+    format!(
+      "| {} | {} | {} | {} | {} | {} | {} |\n",
+      self.choice_id,
+      self.none_bp(),
+      self.danger_bp(),
+      self.on_my_way_bp(),
+      self.assist_bp(),
+      self.enemy_missing_bp(),
+      match self.predicted_signal() {
+        LanePingSignal::None => "none",
+        LanePingSignal::Danger => "danger",
+        LanePingSignal::OnMyWay => "on_my_way",
+        LanePingSignal::Assist => "assist",
+        LanePingSignal::EnemyMissing => "enemy_missing",
+      },
+    )
+  }
+}
+
+/// Bounded parametric policy definition with regularized parameter weights across all 7 diagnostic dilemmas.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct ParametricPolicyDefinition {
+  schema: &'static str,
+  profile_id: &'static str,
+  regularization_bp: u16,
+  action_weights: [ParametricActionWeights; 7],
+  communication_weights: [ParametricCommunicationWeights; 7],
+  mean_fit_loss_bp: u16,
+}
+
+impl ParametricPolicyDefinition {
+  /// Standard regularized parametric policy for the cautious reference profile.
+  pub fn cautious_v1() -> Self {
+    let rep = EmpiricalDistributionEstimateReport::cautious_v1();
+    ParametricPolicyFitter::fit_standard_regularized(&rep).expect("canonical cautious report fits")
+  }
+
+  /// Standard regularized parametric policy for the risk-taking reference profile.
+  pub fn risk_taking_v1() -> Self {
+    let rep = EmpiricalDistributionEstimateReport::risk_taking_v1();
+    ParametricPolicyFitter::fit_standard_regularized(&rep)
+      .expect("canonical risk-taking report fits")
+  }
+
+  /// Standard regularized parametric policy for the yielding reference profile.
+  pub fn yielding_v1() -> Self {
+    let rep = EmpiricalDistributionEstimateReport::yielding_v1();
+    ParametricPolicyFitter::fit_standard_regularized(&rep).expect("canonical yielding report fits")
+  }
+
+  pub const fn schema(&self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn profile_id(&self) -> &'static str {
+    self.profile_id
+  }
+
+  pub const fn regularization_bp(&self) -> u16 {
+    self.regularization_bp
+  }
+
+  pub const fn action_weights(&self) -> &[ParametricActionWeights; 7] {
+    &self.action_weights
+  }
+
+  pub const fn communication_weights(&self) -> &[ParametricCommunicationWeights; 7] {
+    &self.communication_weights
+  }
+
+  pub const fn mean_fit_loss_bp(&self) -> u16 {
+    self.mean_fit_loss_bp
+  }
+
+  /// Validate schema, profile ID, choice ordering, and regularization bounds.
+  pub fn validate(&self) -> Result<(), ParametricPolicyError> {
+    if self.schema != PARAMETRIC_POLICY_SCHEMA {
+      return Err(ParametricPolicyError::UnknownProfile);
+    }
+    SemanticProfileVocabulary::validate_profile_id(self.profile_id)
+      .map_err(|_| ParametricPolicyError::UnknownProfile)?;
+    if self.regularization_bp > MAX_PARAMETRIC_REGULARIZATION_BASIS_POINTS {
+      return Err(ParametricPolicyError::InvalidRegularization);
+    }
+
+    let choices = DiagnosticChoiceCatalog::all_choices();
+    for (i, choice) in choices.iter().enumerate() {
+      if self.action_weights[i].choice_id() != choice.choice_id() {
+        return Err(ParametricPolicyError::MismatchedChoice);
+      }
+      if self.communication_weights[i].choice_id() != choice.choice_id() {
+        return Err(ParametricPolicyError::MismatchedChoice);
+      }
+    }
+
+    Ok(())
+  }
+
+  /// Retrieve action weights for a specific diagnostic dilemma domain.
+  pub fn action_weights_for_domain(
+    &self,
+    domain: DiagnosticChoiceDomain,
+  ) -> Option<ParametricActionWeights> {
+    let target_choice = DiagnosticChoiceCatalog::choice_for_domain(domain);
+    self
+      .action_weights
+      .iter()
+      .copied()
+      .find(|w| w.choice_id() == target_choice.choice_id())
+  }
+
+  /// Retrieve communication weights for a specific diagnostic dilemma domain.
+  pub fn communication_weights_for_domain(
+    &self,
+    domain: DiagnosticChoiceDomain,
+  ) -> Option<ParametricCommunicationWeights> {
+    let target_choice = DiagnosticChoiceCatalog::choice_for_domain(domain);
+    self
+      .communication_weights
+      .iter()
+      .copied()
+      .find(|w| w.choice_id() == target_choice.choice_id())
+  }
+
+  /// Render the parametric policy definition as formatted Markdown.
+  pub fn to_markdown(&self) -> String {
+    let mut out = format!(
+      "# Parametric Policy Definition\n\n- schema: {}\n- profile_id: {}\n- regularization_bp: {}\n- mean_fit_loss_bp: {}\n\n## Action Parameter Weights\n\n| choice_id | primary_bp | alternative_bp | residual_bp | predicted_intent |\n| --- | ---: | ---: | ---: | --- |\n",
+      self.schema, self.profile_id, self.regularization_bp, self.mean_fit_loss_bp,
+    );
+    for w in &self.action_weights {
+      out.push_str(&w.to_markdown());
+    }
+    out.push_str("\n## Communication Parameter Weights\n\n| choice_id | none_bp | danger_bp | on_my_way_bp | assist_bp | enemy_missing_bp | predicted_signal |\n| --- | ---: | ---: | ---: | ---: | ---: | --- |\n");
+    for w in &self.communication_weights {
+      out.push_str(&w.to_markdown());
+    }
+    out
+  }
+}
+
+/// Fitter for parametric policies applying basis-point regularization shrinkage over empirical distributions.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ParametricPolicyFitter;
+
+impl ParametricPolicyFitter {
+  /// Fit a regularized parametric policy from an empirical distribution estimate report.
+  pub fn fit(
+    report: &EmpiricalDistributionEstimateReport,
+    regularization_bp: u16,
+  ) -> Result<ParametricPolicyDefinition, ParametricPolicyError> {
+    report
+      .validate()
+      .map_err(|_| ParametricPolicyError::UnknownProfile)?;
+    if regularization_bp > MAX_PARAMETRIC_REGULARIZATION_BASIS_POINTS {
+      return Err(ParametricPolicyError::InvalidRegularization);
+    }
+
+    let choices = DiagnosticChoiceCatalog::all_choices();
+    let mut action_weights = [ParametricActionWeights {
+      choice_id: choices[0].choice_id(),
+      primary_intent: choices[0].primary_intent(),
+      alternative_intent: choices[0].alternative_intent(),
+      primary_weight_bp: 0,
+      alternative_weight_bp: 0,
+      residual_weight_bp: 0,
+    }; 7];
+
+    let mut communication_weights = [ParametricCommunicationWeights {
+      choice_id: choices[0].choice_id(),
+      signal_weights_bp: [0; 5],
+    }; 7];
+
+    let reg_u32 = u32::from(regularization_bp);
+    let scale_u32 = u32::from(EMPIRICAL_DISTRIBUTION_SCALE_BASIS_POINTS);
+    let keep_u32 = scale_u32.saturating_sub(reg_u32);
+
+    let mut total_tvd_u32 = 0_u32;
+
+    for i in 0..7 {
+      let choice = choices[i];
+      let act_dist = report.action_distributions()[i];
+      let act_bp = act_dist.basis_points();
+
+      // Prior for action choice: 50% primary, 50% alternative, 0% residual (5000 / 5000 / 0 bp)
+      let prior_primary_u32 = 5_000_u32;
+      let prior_alt_u32 = 5_000_u32;
+
+      let primary_w =
+        u16::try_from((keep_u32 * u32::from(act_bp[0]) + reg_u32 * prior_primary_u32) / scale_u32)
+          .expect("fits in u16");
+      let alt_w =
+        u16::try_from((keep_u32 * u32::from(act_bp[1]) + reg_u32 * prior_alt_u32) / scale_u32)
+          .expect("fits in u16");
+      let res_w = EMPIRICAL_DISTRIBUTION_SCALE_BASIS_POINTS
+        .saturating_sub(primary_w)
+        .saturating_sub(alt_w);
+
+      action_weights[i] = ParametricActionWeights {
+        choice_id: choice.choice_id(),
+        primary_intent: choice.primary_intent(),
+        alternative_intent: choice.alternative_intent(),
+        primary_weight_bp: primary_w,
+        alternative_weight_bp: alt_w,
+        residual_weight_bp: res_w,
+      };
+
+      // Calculate action TVD between fitted weights and empirical probabilities
+      let diff_act = u32::from(primary_w.abs_diff(act_bp[0]))
+        + u32::from(alt_w.abs_diff(act_bp[1]))
+        + u32::from(res_w.abs_diff(act_bp[2]));
+      let act_tvd = diff_act / 2;
+      total_tvd_u32 += act_tvd;
+
+      // Prior for communication: uniform 20% across 5 signals (2000 bp each)
+      let comm_dist = report.communication_distributions()[i];
+      let comm_bp = comm_dist.basis_points();
+      let prior_comm_u32 = 2_000_u32;
+
+      let mut comm_w = [0_u16; 5];
+      let mut sum_comm_w = 0_u16;
+      for k in 0..4 {
+        let w =
+          u16::try_from((keep_u32 * u32::from(comm_bp[k]) + reg_u32 * prior_comm_u32) / scale_u32)
+            .expect("fits in u16");
+        comm_w[k] = w;
+        sum_comm_w += w;
+      }
+      comm_w[4] = EMPIRICAL_DISTRIBUTION_SCALE_BASIS_POINTS.saturating_sub(sum_comm_w);
+
+      communication_weights[i] = ParametricCommunicationWeights {
+        choice_id: choice.choice_id(),
+        signal_weights_bp: comm_w,
+      };
+
+      // Calculate communication TVD
+      let mut diff_comm = 0_u32;
+      for k in 0..5 {
+        diff_comm += u32::from(comm_w[k].abs_diff(comm_bp[k]));
+      }
+      let comm_tvd = diff_comm / 2;
+      total_tvd_u32 += comm_tvd;
+    }
+
+    let mean_fit_loss_bp = u16::try_from(total_tvd_u32 / 14).expect("mean loss fits in u16");
+
+    Ok(ParametricPolicyDefinition {
+      schema: PARAMETRIC_POLICY_SCHEMA,
+      profile_id: report.profile_id(),
+      regularization_bp,
+      action_weights,
+      communication_weights,
+      mean_fit_loss_bp,
+    })
+  }
+
+  /// Fit an unregularized parametric policy (maximum likelihood estimate over empirical distribution, lambda = 0).
+  pub fn fit_unregularized(
+    report: &EmpiricalDistributionEstimateReport,
+  ) -> Result<ParametricPolicyDefinition, ParametricPolicyError> {
+    Self::fit(report, 0)
+  }
+
+  /// Fit a standard regularized parametric policy (lambda = 1,000 basis points / 10% shrinkage).
+  pub fn fit_standard_regularized(
+    report: &EmpiricalDistributionEstimateReport,
+  ) -> Result<ParametricPolicyDefinition, ParametricPolicyError> {
+    Self::fit(report, DEFAULT_PARAMETRIC_REGULARIZATION_BASIS_POINTS)
+  }
+}
+
 /// One actor-safe row in a scripted-agent comparison report.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct ScriptedAgentComparisonEntry {
@@ -11810,5 +12293,224 @@ mod tests {
     let md = measures_cautious.to_markdown();
     assert!(md.contains("# Behavioral Measures Report"));
     assert!(md.contains("composite_adaptation_bp: 9500"));
+  }
+
+  #[test]
+  fn parametric_policy_fitting_and_regularization_evaluate_correctly() {
+    let cc_choice = CHOICE_CONTEST_CONCEDE_ID;
+
+    // 1. ParametricActionWeights creation and validation
+    let act_w = ParametricActionWeights::new(
+      cc_choice,
+      LaneIntent::Contest,
+      LaneIntent::Yield,
+      2000,
+      8000,
+      0,
+    )
+    .expect("valid action weights");
+    assert_eq!(act_w.choice_id(), cc_choice);
+    assert_eq!(act_w.primary_intent(), LaneIntent::Contest);
+    assert_eq!(act_w.alternative_intent(), LaneIntent::Yield);
+    assert_eq!(act_w.primary_weight_bp(), 2000);
+    assert_eq!(act_w.alternative_weight_bp(), 8000);
+    assert_eq!(act_w.residual_weight_bp(), 0);
+    assert_eq!(act_w.basis_points(), [2000, 8000, 0]);
+    assert_eq!(act_w.predicted_intent(), LaneIntent::Yield);
+    let act_md = act_w.to_markdown();
+    assert!(act_md.contains(cc_choice));
+    assert!(act_md.contains("yield"));
+
+    // Action weight error handling
+    assert_eq!(
+      ParametricActionWeights::new(
+        "unknown-choice",
+        LaneIntent::Contest,
+        LaneIntent::Yield,
+        2000,
+        8000,
+        0,
+      ),
+      Err(ParametricPolicyError::UnknownChoice)
+    );
+    assert_eq!(
+      ParametricActionWeights::new(
+        cc_choice,
+        LaneIntent::Stabilize,
+        LaneIntent::Yield,
+        2000,
+        8000,
+        0,
+      ),
+      Err(ParametricPolicyError::MismatchedChoice)
+    );
+    assert_eq!(
+      ParametricActionWeights::new(
+        cc_choice,
+        LaneIntent::Contest,
+        LaneIntent::Yield,
+        2000,
+        7000,
+        0,
+      ),
+      Err(ParametricPolicyError::WeightSumMismatch)
+    );
+
+    // 2. ParametricCommunicationWeights creation and validation
+    let comm_w = ParametricCommunicationWeights::new(cc_choice, [5000, 3000, 1000, 1000, 0])
+      .expect("valid communication weights");
+    assert_eq!(comm_w.choice_id(), cc_choice);
+    assert_eq!(comm_w.none_bp(), 5000);
+    assert_eq!(comm_w.danger_bp(), 3000);
+    assert_eq!(comm_w.on_my_way_bp(), 1000);
+    assert_eq!(comm_w.assist_bp(), 1000);
+    assert_eq!(comm_w.enemy_missing_bp(), 0);
+    assert_eq!(comm_w.predicted_signal(), LanePingSignal::None);
+    let comm_md = comm_w.to_markdown();
+    assert!(comm_md.contains(cc_choice));
+    assert!(comm_md.contains("none"));
+
+    // Communication weight error handling
+    assert_eq!(
+      ParametricCommunicationWeights::new("unknown-choice", [2000; 5]),
+      Err(ParametricPolicyError::UnknownChoice)
+    );
+    assert_eq!(
+      ParametricCommunicationWeights::new(cc_choice, [2000, 2000, 2000, 2000, 1000]),
+      Err(ParametricPolicyError::WeightSumMismatch)
+    );
+
+    // 3. Regularized Fitting across lambda values
+    let cautious_rep = EmpiricalDistributionEstimateReport::cautious_v1();
+    let risk_rep = EmpiricalDistributionEstimateReport::risk_taking_v1();
+    let yielding_rep = EmpiricalDistributionEstimateReport::yielding_v1();
+
+    // Lambda = 0 (unregularized / MLE)
+    let unreg_cautious =
+      ParametricPolicyFitter::fit_unregularized(&cautious_rep).expect("unregularized fit succeeds");
+    assert_eq!(unreg_cautious.regularization_bp(), 0);
+    assert_eq!(unreg_cautious.mean_fit_loss_bp(), 0);
+    assert_eq!(
+      unreg_cautious.action_weights()[0].basis_points(),
+      cautious_rep.action_distributions()[0].basis_points()
+    );
+    assert_eq!(
+      unreg_cautious.communication_weights()[0].signal_weights_bp(),
+      cautious_rep.communication_distributions()[0].basis_points()
+    );
+
+    let unreg_risk = ParametricPolicyFitter::fit_unregularized(&risk_rep)
+      .expect("unregularized risk fit succeeds");
+    assert_eq!(unreg_risk.regularization_bp(), 0);
+    assert_eq!(unreg_risk.mean_fit_loss_bp(), 0);
+
+    let unreg_yielding = ParametricPolicyFitter::fit_unregularized(&yielding_rep)
+      .expect("unregularized yielding fit succeeds");
+    assert_eq!(unreg_yielding.regularization_bp(), 0);
+    assert_eq!(unreg_yielding.mean_fit_loss_bp(), 0);
+
+    // Lambda = 10,000 (fully regularized prior)
+    let fully_reg =
+      ParametricPolicyFitter::fit(&cautious_rep, 10_000).expect("fully regularized fit succeeds");
+    assert_eq!(fully_reg.regularization_bp(), 10_000);
+    for w in fully_reg.action_weights() {
+      assert_eq!(w.primary_weight_bp(), 5000);
+      assert_eq!(w.alternative_weight_bp(), 5000);
+      assert_eq!(w.residual_weight_bp(), 0);
+    }
+    for w in fully_reg.communication_weights() {
+      assert_eq!(w.signal_weights_bp(), [2000, 2000, 2000, 2000, 2000]);
+    }
+
+    // Monotonic shrinkage as lambda increases from 0 to 10,000
+    // In cautious ContestConcede, empirical primary is 2000 bp. Prior is 5000 bp.
+    // As lambda increases, primary weight must monotonically increase towards 5000 bp.
+    let fit_0 = ParametricPolicyFitter::fit(&cautious_rep, 0).expect("fit 0");
+    let fit_1k = ParametricPolicyFitter::fit(&cautious_rep, 1000).expect("fit 1k");
+    let fit_5k = ParametricPolicyFitter::fit(&cautious_rep, 5000).expect("fit 5k");
+    let fit_10k = ParametricPolicyFitter::fit(&cautious_rep, 10000).expect("fit 10k");
+
+    let p0 = fit_0.action_weights()[0].primary_weight_bp();
+    let p1k = fit_1k.action_weights()[0].primary_weight_bp();
+    let p5k = fit_5k.action_weights()[0].primary_weight_bp();
+    let p10k = fit_10k.action_weights()[0].primary_weight_bp();
+
+    assert_eq!(p0, 2000);
+    assert_eq!(p1k, 2300); // 0.9 * 2000 + 0.1 * 5000 = 1800 + 500 = 2300
+    assert_eq!(p5k, 3500); // 0.5 * 2000 + 0.5 * 5000 = 1000 + 2500 = 3500
+    assert_eq!(p10k, 5000);
+    assert!(p0 < p1k && p1k < p5k && p5k < p10k);
+
+    // Sum conservation check for all fitted policies
+    for fit in [&fit_0, &fit_1k, &fit_5k, &fit_10k] {
+      for act in fit.action_weights() {
+        assert_eq!(
+          u32::from(act.primary_weight_bp())
+            + u32::from(act.alternative_weight_bp())
+            + u32::from(act.residual_weight_bp()),
+          10_000
+        );
+      }
+      for comm in fit.communication_weights() {
+        let sum: u32 = comm.signal_weights_bp().iter().map(|&w| u32::from(w)).sum();
+        assert_eq!(sum, 10_000);
+      }
+    }
+
+    // 4. Canonical baseline fitted policies
+    let policy_cautious = ParametricPolicyDefinition::cautious_v1();
+    let policy_risk = ParametricPolicyDefinition::risk_taking_v1();
+    let policy_yielding = ParametricPolicyDefinition::yielding_v1();
+
+    for policy in [&policy_cautious, &policy_risk, &policy_yielding] {
+      assert_eq!(policy.schema(), PARAMETRIC_POLICY_SCHEMA);
+      assert_eq!(
+        policy.regularization_bp(),
+        DEFAULT_PARAMETRIC_REGULARIZATION_BASIS_POINTS
+      );
+      assert_eq!(policy.validate(), Ok(()));
+      assert_eq!(policy.action_weights().len(), 7);
+      assert_eq!(policy.communication_weights().len(), 7);
+
+      let md = policy.to_markdown();
+      assert!(md.contains("# Parametric Policy Definition"));
+      assert!(md.contains("## Action Parameter Weights"));
+      assert!(md.contains("## Communication Parameter Weights"));
+    }
+
+    // Trait bounds and predicted intents
+    // Cautious: ContestConcede -> Yield; Surprise -> Withdraw
+    let cc_cautious = policy_cautious
+      .action_weights_for_domain(DiagnosticChoiceDomain::ContestConcede)
+      .expect("choice found");
+    assert_eq!(cc_cautious.predicted_intent(), LaneIntent::Yield);
+
+    let surprise_cautious = policy_cautious
+      .action_weights_for_domain(DiagnosticChoiceDomain::Surprise)
+      .expect("choice found");
+    assert_eq!(surprise_cautious.predicted_intent(), LaneIntent::Withdraw);
+
+    // RiskTaking: ContestConcede -> Contest; FarmAssist -> Contest
+    let cc_risk = policy_risk
+      .action_weights_for_domain(DiagnosticChoiceDomain::ContestConcede)
+      .expect("choice found");
+    assert_eq!(cc_risk.predicted_intent(), LaneIntent::Contest);
+
+    let farm_risk = policy_risk
+      .action_weights_for_domain(DiagnosticChoiceDomain::FarmAssist)
+      .expect("choice found");
+    assert_eq!(farm_risk.predicted_intent(), LaneIntent::Contest);
+
+    // Yielding: ResponseToFailure -> Yield
+    let failure_yielding = policy_yielding
+      .action_weights_for_domain(DiagnosticChoiceDomain::ResponseToFailure)
+      .expect("choice found");
+    assert_eq!(failure_yielding.predicted_intent(), LaneIntent::Yield);
+
+    // 5. Error cases
+    assert_eq!(
+      ParametricPolicyFitter::fit(&cautious_rep, 10_001),
+      Err(ParametricPolicyError::InvalidRegularization)
+    );
   }
 }

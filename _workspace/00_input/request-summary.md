@@ -1,50 +1,68 @@
-# Request Summary: Bounded M7 Behavioral Distance, Entropy, Sensitivity, Consistency, and Adaptation Measures
+# Request Summary — M7: Fit Initial Bounded Parametric Policies with Regularization
 
-## Goal and Outcome
-Define the versioned schemas `m7-behavioral-measures-v1`, `m7-behavioral-distance-v1`, `m7-behavioral-entropy-v1`, `m7-behavioral-sensitivity-v1`, `m7-behavioral-consistency-v1`, and `m7-behavioral-adaptation-v1` in `src/agent.rs` under M7 (Semantic-to-Parametric Calibration Proof), establishing typed, deterministic integer arithmetic (10,000 basis points) measures for evaluating behavioral divergence, choice entropy/diversity, dilemma sensitivity, repeated-sample consistency, and adverse-condition adaptation across empirical action and communication distributions.
+## Requested Outcome
+
+Implement the target slice "Fit initial bounded parametric policies with regularization" under Milestone M7 (Semantic-to-Parametric Calibration Proof). Define typed bounded parametric policy models, regularized estimation / fitting methods from empirical distributions, canonical baseline fitted policies for reference semantic profiles (`cautious_v1`, `risk_taking_v1`, `yielding_v1`), predictive evaluation across the 7 diagnostic dilemmas, and fail-closed validation.
 
 ## Roadmap Milestone
-M7 — Semantic-to-Parametric Calibration Proof.
-Item: `Define behavioral distance, entropy, sensitivity, consistency, and adaptation measures.`
 
-## Scope
-- Add versioned schema constants in `src/agent.rs`:
-  - `BEHAVIORAL_MEASURES_SCHEMA = "m7-behavioral-measures-v1"`
-  - `BEHAVIORAL_DISTANCE_SCHEMA = "m7-behavioral-distance-v1"`
-  - `BEHAVIORAL_ENTROPY_SCHEMA = "m7-behavioral-entropy-v1"`
-  - `BEHAVIORAL_SENSITIVITY_SCHEMA = "m7-behavioral-sensitivity-v1"`
-  - `BEHAVIORAL_CONSISTENCY_SCHEMA = "m7-behavioral-consistency-v1"`
-  - `BEHAVIORAL_ADAPTATION_SCHEMA = "m7-behavioral-adaptation-v1"`
-- Define `BehavioralDistanceMeasure`:
-  - Quantifies total variation distance (TVD) in integer basis points `[0..=10,000]` between two empirical action or communication distributions.
-  - Formula: `TVD(P, Q) = 1/2 * sum(|P_i - Q_i|)`.
-  - Methods for action distribution TVD, communication distribution TVD, and whole-report mean distance.
-- Define `BehavioralEntropyMeasure`:
-  - Quantifies choice dispersion and uncertainty in basis points using Gini diversity index `10,000 - sum(p_i^2)/10,000`.
-  - Range: `0` (deterministic choice) to `6,666` (3-choice uniform) or `8,000` (5-signal uniform).
-- Define `BehavioralSensitivityMeasure`:
-  - Quantifies behavioral shift across contrasting dilemmas (e.g. `ContestConcede` vs `Surprise`, or `ContestConcede` vs `Sacrifice`).
-  - Computes basis point shift in primary/defensive posture.
-- Define `BehavioralConsistencyMeasure`:
-  - Quantifies modal adherence across repeated samples within a dilemma: `max(p_i)` in basis points `[0..=10,000]`.
-  - Computes per-choice consistency and mean consistency across all 7 dilemmas.
-- Define `BehavioralAdaptationMeasure`:
-  - Quantifies tactical adjustment when confronting surprise and failure: delta in withdrawal/concession basis points between normal baseline and adverse dilemmas (`Surprise`, `ResponseToFailure`).
-- Define `BehavioralMeasuresReport`:
-  - Aggregates distance, entropy, sensitivity, consistency, and adaptation profiles for an `EmpiricalDistributionEstimateReport`.
-  - Methods for comparing reports, validating schemas, and markdown rendering.
-- Define `BehavioralMeasuresError` enum with typed, fail-closed error variants.
-- Unit tests verifying:
-  - Exact basis-point properties (distances in `0..=10,000`, entropy in bounds, symmetry, triangle inequality for TVD).
-  - High consistency for deterministic/near-deterministic profiles, low consistency for dispersed choices.
-  - Proper sensitivity and adaptation contrasts across cautious, risk-taking, and yielding baseline profiles.
-  - Markdown projection rendering.
-- Project state reconciliation:
-  - Bump package version in `Cargo.toml` and `Cargo.lock` to `0.1.183`.
-  - Update `CHANGELOG.md`, `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `README.md`.
+- Milestone: M7 — Semantic-to-Parametric Calibration Proof
+- Status: Planned (in progress)
+- Target checklist item: `[x] Fit initial bounded parametric policies with regularization.`
 
-## Non-Goals & Explicit Limits
-- No floating-point math or non-deterministic approximations (exact integer basis points).
-- No direct LLM provider network I/O or live API invocation (pure typed contracts and empirical projections).
-- No claim of human ground truth or external behavioral completeness.
-- No parametric policy fitting or loss calculation (separate roadmap item).
+## Current Evidence
+
+- `m7-semantic-profile-vocabulary-v1`: Discrete categorical trait dimensions and canonical reference profiles (`cautious-laner-semantic-v1`, `risk-taking-laner-semantic-v1`, `yielding-laner-semantic-v1`).
+- `m7-diagnostic-choice-catalog-v1`: 7 canonical dilemma domains (`ContestConcede`, `FollowReject`, `FarmAssist`, `RecallTiming`, `Sacrifice`, `Surprise`, `ResponseToFailure`).
+- `m7-model-prompt-protocol-v1` & `m7-repeated-sampling-protocol-v1`: Declarative prompt protocols and sampling schedules.
+- `m7-empirical-distribution-estimation-v1`: Empirical action and communication ping signal distributions in 10,000 basis points.
+- `m7-behavioral-measures-v1`: Discrete basis-point measures (Total Variation Distance, Gini diversity, sensitivity, consistency, adaptation).
+
+## In Scope
+
+1. `ParametricPolicyDefinition`:
+   - Schema: `m7-parametric-policy-v1`.
+   - Profile ID, regularization strength (basis points, 0..=10,000 bp).
+   - Dilemma action parameter weights (primary and alternative intent weights in integer basis points).
+   - Communication ping signal parameter weights (5 signal weights in integer basis points summing to 10,000 bp).
+   - Loss / fit residual metric (mean TVD distance or regularized residual in basis points).
+2. `ParametricPolicyFitter`:
+   - Fit parametric policies from `EmpiricalDistributionEstimateReport` with declared regularization penalty $\lambda \in [0, 10,000]$ bp.
+   - Regularization shrinks empirical probabilities towards an uninformative/uniform prior (or neutral default baseline) proportional to $\lambda$:
+     $$\hat{p}_i = \frac{(10,000 - \lambda) \cdot p_i^{\text{empirical}} + \lambda \cdot p_i^{\text{prior}}}{10,000}$$
+   - Produces deterministic, bounded, integer-basis-point fitted policies.
+3. Canonical baseline fitted policies:
+   - `cautious_v1` fitted policy.
+   - `risk_taking_v1` fitted policy.
+   - `yielding_v1` fitted policy.
+4. `ParametricPolicyReport`:
+   - Aggregated report of fitted parametric policies across profiles and diagnostic dilemmas, with Markdown rendering.
+5. Strict fail-closed validation, unit tests, and property checks in `src/agent.rs`.
+
+## Non-Goals
+
+- No floating point arithmetic (all calculations use deterministic integer basis points).
+- No external model-provider API or network I/O.
+- No alteration to simulation transition, kernel, or CLI host authority.
+- No claims of human psychological ground truth or professional gamer validation.
+
+## Project Boundaries Touched
+
+- `src/agent.rs`: Module where agent ecology and M7 calibration contracts reside.
+- `SPEC.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `README.md`, `Cargo.toml`.
+
+## Expected Outputs
+
+- `_workspace/00_input/request-summary.md`
+- `_workspace/01_agent-ecology-design.md`
+- `_workspace/03_domain-qa.md`
+- `_workspace/final/handoff.md`
+- Rust implementation and tests in `src/agent.rs`.
+
+## Verification
+
+- `cargo fmt --all -- --check`
+- `cargo clippy --locked --all-targets --all-features -- -D warnings`
+- `cargo test --locked`
+- `python3 scripts/check_repository.py`
+- `python3 -m unittest discover -s scripts -p 'test_*.py'`
