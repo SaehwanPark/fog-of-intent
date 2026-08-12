@@ -17,6 +17,7 @@ pub mod profile;
 pub mod replay;
 pub mod semantic;
 pub mod tally;
+pub mod uncertainty;
 
 #[cfg(test)]
 mod tests;
@@ -35,3 +36,4 @@ pub use profile::*;
 pub use replay::*;
 pub use semantic::*;
 pub use tally::*;
+pub use uncertainty::*;

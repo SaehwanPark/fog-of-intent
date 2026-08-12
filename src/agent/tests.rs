@@ -5549,3 +5549,233 @@ fn test_multi_model_family_comparison() {
   );
   assert_eq!(ModelFamilyAlignmentStatus::parse("unknown"), None);
 }
+
+#[test]
+fn parameter_identifiability_report_evaluates_and_bounds_traits_correctly() {
+  assert_eq!(
+    PARAMETER_IDENTIFIABILITY_SCHEMA,
+    "m7-parameter-identifiability-v1"
+  );
+  assert_eq!(IDENTIFIABILITY_THRESHOLD_IDENTIFIED_BP, 1_500);
+  assert_eq!(IDENTIFIABILITY_THRESHOLD_WEAK_BP, 500);
+  assert_eq!(IDENTIFIABILITY_MAX_CONFOUNDING_RISK_BP, 3_000);
+
+  // Status enum and trait dimension string parsing
+  assert_eq!(
+    SemanticTraitDimension::RiskTolerance.as_str(),
+    "risk-tolerance"
+  );
+  assert_eq!(SemanticTraitDimension::Deference.as_str(), "deference");
+  assert_eq!(SemanticTraitDimension::Focus.as_str(), "focus");
+  assert_eq!(
+    SemanticTraitDimension::CommunicationClarity.as_str(),
+    "communication-clarity"
+  );
+  assert_eq!(
+    SemanticTraitDimension::parse("risk-tolerance"),
+    Some(SemanticTraitDimension::RiskTolerance)
+  );
+  assert_eq!(
+    SemanticTraitDimension::parse("deference"),
+    Some(SemanticTraitDimension::Deference)
+  );
+  assert_eq!(
+    SemanticTraitDimension::parse("focus"),
+    Some(SemanticTraitDimension::Focus)
+  );
+  assert_eq!(
+    SemanticTraitDimension::parse("communication-clarity"),
+    Some(SemanticTraitDimension::CommunicationClarity)
+  );
+  assert_eq!(SemanticTraitDimension::parse("unknown"), None);
+  assert_eq!(SemanticTraitDimension::all_dimensions().len(), 4);
+
+  assert_eq!(
+    ParameterIdentifiabilityStatus::Identifiable.as_str(),
+    "identifiable"
+  );
+  assert_eq!(
+    ParameterIdentifiabilityStatus::WeaklyIdentified.as_str(),
+    "weakly-identified"
+  );
+  assert_eq!(
+    ParameterIdentifiabilityStatus::Unidentifiable.as_str(),
+    "unidentifiable"
+  );
+  assert_eq!(
+    ParameterIdentifiabilityStatus::parse("identifiable"),
+    Some(ParameterIdentifiabilityStatus::Identifiable)
+  );
+  assert_eq!(
+    ParameterIdentifiabilityStatus::parse("weakly-identified"),
+    Some(ParameterIdentifiabilityStatus::WeaklyIdentified)
+  );
+  assert_eq!(
+    ParameterIdentifiabilityStatus::parse("unidentifiable"),
+    Some(ParameterIdentifiabilityStatus::Unidentifiable)
+  );
+  assert_eq!(ParameterIdentifiabilityStatus::parse("unknown"), None);
+
+  // 1. Cautious identifiability report
+  let rep_cautious = ParameterIdentifiabilityReport::cautious_identifiability_v1();
+  assert_eq!(rep_cautious.schema(), PARAMETER_IDENTIFIABILITY_SCHEMA);
+  assert_eq!(rep_cautious.profile_id(), CAUTIOUS_SEMANTIC_PROFILE_ID);
+  assert_eq!(rep_cautious.entries().len(), 4);
+  assert!(rep_cautious.identifiable_count() >= 3);
+  assert_eq!(rep_cautious.unidentifiable_count(), 0);
+  assert!(rep_cautious.mean_sensitivity_bp() >= IDENTIFIABILITY_THRESHOLD_IDENTIFIED_BP);
+
+  for entry in rep_cautious.entries() {
+    assert!(entry.sensitivity_bp() > 0);
+    assert!(entry.confounding_risk_bp() <= IDENTIFIABILITY_MAX_CONFOUNDING_RISK_BP);
+    assert!(entry.salient_dilemma_count() > 0);
+    assert!(!entry.justification().is_empty());
+    let md = entry.to_markdown();
+    assert!(md.starts_with("| "));
+  }
+
+  let md_cautious = rep_cautious.to_markdown();
+  assert!(md_cautious.contains("# Parameter Identifiability Report"));
+  assert!(md_cautious.contains("schema: m7-parameter-identifiability-v1"));
+  assert!(md_cautious.contains("identifiable_traits:"));
+
+  // 2. Risk-taking identifiability report
+  let rep_risk = ParameterIdentifiabilityReport::risk_taking_identifiability_v1();
+  assert_eq!(rep_risk.schema(), PARAMETER_IDENTIFIABILITY_SCHEMA);
+  assert_eq!(rep_risk.profile_id(), RISK_TAKING_SEMANTIC_PROFILE_ID);
+  assert!(rep_risk.identifiable_count() >= 3);
+
+  // 3. Yielding identifiability report
+  let rep_yielding = ParameterIdentifiabilityReport::yielding_identifiability_v1();
+  assert_eq!(rep_yielding.schema(), PARAMETER_IDENTIFIABILITY_SCHEMA);
+  assert_eq!(rep_yielding.profile_id(), YIELDING_SEMANTIC_PROFILE_ID);
+  assert_eq!(rep_yielding.identifiable_count(), 2);
+  assert_eq!(rep_yielding.weakly_identified_count(), 2);
+  assert_eq!(rep_yielding.unidentifiable_count(), 0);
+
+  // 4. Error handling
+  assert_eq!(
+    SemanticProfileVocabulary::validate_profile_id("unknown-profile-v1"),
+    Err(SemanticProfileVocabularyError::UnknownProfile)
+  );
+  assert_eq!(ParameterIdentifiabilityStatus::parse("unknown"), None);
+  assert_eq!(SemanticTraitDimension::parse("unknown"), None);
+}
+
+#[test]
+fn semantic_label_stability_report_evaluates_cross_model_shifts_correctly() {
+  assert_eq!(
+    SEMANTIC_LABEL_STABILITY_SCHEMA,
+    "m7-semantic-label-stability-v1"
+  );
+  assert_eq!(STABILITY_THRESHOLD_STABLE_TVD_BP, 1_000);
+  assert_eq!(STABILITY_THRESHOLD_SENSITIVE_TVD_BP, 3_000);
+
+  assert_eq!(SemanticLabelStabilityStatus::Stable.as_str(), "stable");
+  assert_eq!(
+    SemanticLabelStabilityStatus::Sensitive.as_str(),
+    "sensitive"
+  );
+  assert_eq!(SemanticLabelStabilityStatus::Unstable.as_str(), "unstable");
+  assert_eq!(
+    SemanticLabelStabilityStatus::parse("stable"),
+    Some(SemanticLabelStabilityStatus::Stable)
+  );
+  assert_eq!(
+    SemanticLabelStabilityStatus::parse("sensitive"),
+    Some(SemanticLabelStabilityStatus::Sensitive)
+  );
+  assert_eq!(
+    SemanticLabelStabilityStatus::parse("unstable"),
+    Some(SemanticLabelStabilityStatus::Unstable)
+  );
+  assert_eq!(SemanticLabelStabilityStatus::parse("unknown"), None);
+
+  // 1. Cautious stability report
+  let rep_cautious = SemanticLabelStabilityReport::cautious_stability_v1();
+  assert_eq!(rep_cautious.schema(), SEMANTIC_LABEL_STABILITY_SCHEMA);
+  assert_eq!(rep_cautious.profile_id(), CAUTIOUS_SEMANTIC_PROFILE_ID);
+  assert_eq!(rep_cautious.entries().len(), 4);
+  assert_eq!(rep_cautious.stable_count(), 3);
+  assert_eq!(rep_cautious.sensitive_count(), 1);
+  assert_eq!(rep_cautious.unstable_count(), 0);
+  assert!(rep_cautious.mean_stability_score_bp() >= 9_000);
+
+  for entry in rep_cautious.entries() {
+    assert!(entry.modal_agreement());
+    assert!(entry.cross_model_tvd_bp() <= STABILITY_THRESHOLD_SENSITIVE_TVD_BP);
+    assert_eq!(
+      entry.stability_score_bp(),
+      10_000 - entry.cross_model_tvd_bp()
+    );
+    let md = entry.to_markdown();
+    assert!(md.starts_with("| "));
+  }
+
+  let md_cautious = rep_cautious.to_markdown();
+  assert!(md_cautious.contains("# Semantic Label Stability Report"));
+  assert!(md_cautious.contains("stable_labels: 3/4"));
+
+  // 2. Risk-taking stability report
+  let rep_risk = SemanticLabelStabilityReport::risk_taking_stability_v1();
+  assert_eq!(rep_risk.schema(), SEMANTIC_LABEL_STABILITY_SCHEMA);
+  assert_eq!(rep_risk.profile_id(), RISK_TAKING_SEMANTIC_PROFILE_ID);
+  assert_eq!(rep_risk.stable_count(), 4);
+
+  // 3. Yielding stability report
+  let rep_yielding = SemanticLabelStabilityReport::yielding_stability_v1();
+  assert_eq!(rep_yielding.schema(), SEMANTIC_LABEL_STABILITY_SCHEMA);
+  assert_eq!(rep_yielding.profile_id(), YIELDING_SEMANTIC_PROFILE_ID);
+  assert_eq!(rep_yielding.stable_count(), 4);
+}
+
+#[test]
+fn calibration_uncertainty_report_integrates_identifiability_and_stability() {
+  assert_eq!(
+    CALIBRATION_UNCERTAINTY_SCHEMA,
+    "m7-calibration-uncertainty-v1"
+  );
+  assert!(CALIBRATION_UNCERTAINTY_DISCLAIMER.contains("reference policy distribution"));
+  assert!(CALIBRATION_UNCERTAINTY_DISCLAIMER.contains("not human ground truth"));
+
+  // 1. Cautious calibration uncertainty report
+  let rep_cautious = CalibrationUncertaintyReport::cautious_uncertainty_v1();
+  assert_eq!(rep_cautious.schema(), CALIBRATION_UNCERTAINTY_SCHEMA);
+  assert_eq!(rep_cautious.profile_id(), CAUTIOUS_SEMANTIC_PROFILE_ID);
+  assert_eq!(
+    rep_cautious.disclaimer(),
+    CALIBRATION_UNCERTAINTY_DISCLAIMER
+  );
+  assert!(!rep_cautious.unidentifiable_parameters_present());
+  assert!(!rep_cautious.unstable_labels_present());
+  assert!(rep_cautious.overall_uncertainty_score_bp() <= 5_000);
+
+  let md_cautious = rep_cautious.to_markdown();
+  assert!(md_cautious.contains("# Calibration Uncertainty Report"));
+  assert!(md_cautious.contains("schema: m7-calibration-uncertainty-v1"));
+  assert!(md_cautious.contains(CALIBRATION_UNCERTAINTY_DISCLAIMER));
+  assert!(md_cautious.contains("# Parameter Identifiability Report"));
+  assert!(md_cautious.contains("# Semantic Label Stability Report"));
+
+  // 2. Risk-taking calibration uncertainty report
+  let rep_risk = CalibrationUncertaintyReport::risk_taking_uncertainty_v1();
+  assert_eq!(rep_risk.schema(), CALIBRATION_UNCERTAINTY_SCHEMA);
+  assert_eq!(rep_risk.profile_id(), RISK_TAKING_SEMANTIC_PROFILE_ID);
+  assert!(!rep_risk.unidentifiable_parameters_present());
+  assert!(!rep_risk.unstable_labels_present());
+
+  // 3. Yielding calibration uncertainty report
+  let rep_yielding = CalibrationUncertaintyReport::yielding_uncertainty_v1();
+  assert_eq!(rep_yielding.schema(), CALIBRATION_UNCERTAINTY_SCHEMA);
+  assert_eq!(rep_yielding.profile_id(), YIELDING_SEMANTIC_PROFILE_ID);
+  assert!(!rep_yielding.unidentifiable_parameters_present());
+  assert!(!rep_yielding.unstable_labels_present());
+
+  // 4. Mismatched profile error
+  let ident_cautious = ParameterIdentifiabilityReport::cautious_identifiability_v1();
+  let stab_risk = SemanticLabelStabilityReport::risk_taking_stability_v1();
+  assert_eq!(
+    CalibrationUncertaintyReport::evaluate(ident_cautious, stab_risk),
+    Err(CalibrationUncertaintyError::MismatchedProfile)
+  );
+}
