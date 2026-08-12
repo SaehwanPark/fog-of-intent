@@ -98,6 +98,29 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.182 — 2026-08-12
+
+### Added
+
+- Added `m7-recalibration-trigger-v1`, `m7-recalibration-evaluation-v1`, `RecalibrationTriggerReason`,
+  `RecalibrationUrgency`, `RecalibrationTriggerCondition`, `RecalibrationPolicy`, and
+  `RecalibrationEvaluationReport` in `src/agent/recalibration.rs`, defining deterministic recalibration
+  triggers across 9 discrete reasons (`ModelVersionChanged`, `PromptProtocolChanged`,
+  `TotalVariationDistanceBreach`, `ModalChoiceDisagreement`, `UnidentifiableParameterDetected`,
+  `UnstableSemanticLabel`, `HeldOutLossBreach`, `CounterfactualCoherenceFailure`, `ChainOfThoughtLeakage`)
+  with integer basis-point thresholds ($1,500$ bp TVD, max 1 modal disagreement, $2,500$ bp held-out loss limit).
+- Added canonical baseline evaluation suites in `RecalibrationEvaluationReport` for `cautious_v1`,
+  `risk_taking_v1`, and `yielding_v1`, evaluating model/prompt drift with formatted Markdown reporting
+  and explicit calibration disclaimers.
+- Added `m7-calibration-model-card-v1` and `CalibrationModelCardReport` in `src/agent/recalibration.rs`,
+  formalizing the canonical M7 calibration proof deliverable with intended use, evidence limits,
+  evaluated profiles, held-out generalization status, uncertainty findings, recalibration policy summary,
+  and zero private chain-of-thought observability rules.
+
+### Known limits
+
+- Live model provider APIs, network adapters, and online telemetry remain explicitly deferred.
+
 ## 0.1.181 — 2026-08-12
 
 ### Added

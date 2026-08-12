@@ -6152,3 +6152,272 @@ fn reference_output_preservation_reports_and_catalog_verify_all_canonical_suites
     Err(ReferenceOutputError::UnknownProtocol)
   );
 }
+
+#[test]
+fn recalibration_triggers_and_calibration_model_card_contract_holds() {
+  // 1. Schemas, thresholds, and constants
+  assert_eq!(RECALIBRATION_TRIGGER_SCHEMA, "m7-recalibration-trigger-v1");
+  assert_eq!(
+    RECALIBRATION_EVALUATION_SCHEMA,
+    "m7-recalibration-evaluation-v1"
+  );
+  assert_eq!(
+    CALIBRATION_MODEL_CARD_SCHEMA,
+    "m7-calibration-model-card-v1"
+  );
+  assert_eq!(DEFAULT_RECALIBRATION_TVD_THRESHOLD_BP, 1_500);
+  assert_eq!(DEFAULT_RECALIBRATION_MAX_MODAL_DISAGREEMENTS, 1);
+  assert_eq!(DEFAULT_RECALIBRATION_HELD_OUT_LOSS_MAX_BP, 2_500);
+  assert_eq!(DEFAULT_RECALIBRATION_HELD_OUT_ACCURACY_MIN_BP, 7_000);
+  assert!(
+    RECALIBRATION_DISCLAIMER
+      .contains("AI-agent behavior serves solely as a reference policy distribution")
+  );
+
+  // 2. Trigger reasons enum and parsing
+  let all_reasons = RecalibrationTriggerReason::all_reasons();
+  assert_eq!(all_reasons.len(), 9);
+  for reason in all_reasons {
+    let s = reason.as_str();
+    assert_eq!(RecalibrationTriggerReason::parse(s), Some(reason));
+  }
+  assert_eq!(RecalibrationTriggerReason::parse("unknown-reason"), None);
+
+  // 3. Urgency enum and parsing
+  for urgency in [
+    RecalibrationUrgency::Immediate,
+    RecalibrationUrgency::Scheduled,
+    RecalibrationUrgency::None,
+  ] {
+    let s = urgency.as_str();
+    assert_eq!(RecalibrationUrgency::parse(s), Some(urgency));
+  }
+  assert_eq!(RecalibrationUrgency::parse("unknown-urgency"), None);
+
+  // 4. Trigger condition construction & validation
+  let cond = RecalibrationTriggerCondition::new(
+    RecalibrationTriggerReason::TotalVariationDistanceBreach,
+    RecalibrationUrgency::Immediate,
+    "Distribution drift detected",
+    Some(2_100),
+    Some(1_500),
+  )
+  .expect("valid condition");
+  assert_eq!(
+    cond.reason(),
+    RecalibrationTriggerReason::TotalVariationDistanceBreach
+  );
+  assert_eq!(cond.urgency(), RecalibrationUrgency::Immediate);
+  assert_eq!(cond.detail(), "Distribution drift detected");
+  assert_eq!(cond.metric_value_bp(), Some(2_100));
+  assert_eq!(cond.threshold_bp(), Some(1_500));
+
+  // Condition validation errors
+  assert_eq!(
+    RecalibrationTriggerCondition::new(
+      RecalibrationTriggerReason::ModelVersionChanged,
+      RecalibrationUrgency::Scheduled,
+      "",
+      None,
+      None,
+    ),
+    Err(RecalibrationError::InvalidConditionDetail)
+  );
+  assert_eq!(
+    RecalibrationTriggerCondition::new(
+      RecalibrationTriggerReason::TotalVariationDistanceBreach,
+      RecalibrationUrgency::Immediate,
+      "Valid detail",
+      Some(10_001),
+      Some(1_500),
+    ),
+    Err(RecalibrationError::InvalidThreshold)
+  );
+
+  // 5. Policy construction & validation
+  let default_policy = RecalibrationPolicy::default();
+  assert_eq!(default_policy.schema(), RECALIBRATION_TRIGGER_SCHEMA);
+  assert_eq!(default_policy.tvd_threshold_bp(), 1_500);
+  assert_eq!(default_policy.max_modal_disagreements(), 1);
+  assert_eq!(default_policy.max_held_out_loss_bp(), 2_500);
+  assert_eq!(default_policy.min_held_out_accuracy_bp(), 7_000);
+
+  let custom_policy =
+    RecalibrationPolicy::new(1_200, 0, 2_000, 8_000).expect("valid custom policy");
+  assert_eq!(custom_policy.tvd_threshold_bp(), 1_200);
+  assert_eq!(custom_policy.max_modal_disagreements(), 0);
+
+  assert_eq!(
+    RecalibrationPolicy::new(10_001, 1, 2_500, 7_000),
+    Err(RecalibrationError::InvalidThreshold)
+  );
+  assert_eq!(
+    RecalibrationPolicy::new(1_500, 8, 2_500, 7_000),
+    Err(RecalibrationError::InvalidThreshold)
+  );
+
+  // 6. Baseline evaluations
+  let cautious_eval = RecalibrationEvaluationReport::cautious_baseline_v1();
+  assert_eq!(cautious_eval.profile_id(), CAUTIOUS_SEMANTIC_PROFILE_ID);
+  assert_eq!(
+    cautious_eval.reference_model_family(),
+    "model-family-reference-v1"
+  );
+  assert_eq!(
+    cautious_eval.candidate_model_family(),
+    "model-family-alternative-v1"
+  );
+  assert_eq!(
+    cautious_eval.reference_prompt_protocol(),
+    MODEL_PROMPT_REFERENCE_DIAGNOSTIC_ID
+  );
+  assert_eq!(
+    cautious_eval.candidate_prompt_protocol(),
+    MODEL_PROMPT_ALTERNATIVE_DIAGNOSTIC_ID
+  );
+  assert!(cautious_eval.is_recalibration_required());
+  // Because prompt protocol & model family differ between reference and alternative diagnostic suites, scheduled recalibration is active
+  assert_eq!(cautious_eval.urgency(), RecalibrationUrgency::Scheduled);
+  assert!(
+    cautious_eval
+      .active_triggers()
+      .iter()
+      .any(|t| t.reason() == RecalibrationTriggerReason::ModelVersionChanged)
+  );
+  assert!(
+    cautious_eval
+      .active_triggers()
+      .iter()
+      .any(|t| t.reason() == RecalibrationTriggerReason::PromptProtocolChanged)
+  );
+
+  let risk_eval = RecalibrationEvaluationReport::risk_taking_baseline_v1();
+  assert_eq!(risk_eval.profile_id(), RISK_TAKING_SEMANTIC_PROFILE_ID);
+  assert_eq!(risk_eval.urgency(), RecalibrationUrgency::Scheduled);
+
+  let yielding_eval = RecalibrationEvaluationReport::yielding_baseline_v1();
+  assert_eq!(yielding_eval.profile_id(), YIELDING_SEMANTIC_PROFILE_ID);
+  assert_eq!(yielding_eval.urgency(), RecalibrationUrgency::Scheduled);
+
+  // Markdown rendering of evaluation report
+  let md = cautious_eval.to_markdown();
+  assert!(md.contains("# Recalibration Trigger Evaluation Report — `cautious-laner-semantic-v1`"));
+  assert!(md.contains("**Recalibration Urgency:** `scheduled`"));
+  assert!(md.contains("| `model-version-changed` | `scheduled` |"));
+  assert!(md.contains(RECALIBRATION_DISCLAIMER));
+
+  // 7. Policy evaluation error paths
+  let comp = MultiModelComparisonReport::cautious_comparison_v1();
+  let unc = CalibrationUncertaintyReport::cautious_uncertainty_v1();
+  let param_pol = ParametricPolicyDefinition::cautious_v1();
+  let ho = CalibrationHeldOutReport::from_policy(&param_pol).expect("valid held out");
+  let pres = ReferenceOutputPreservationReport::cautious_reference_diagnostic_v1();
+
+  assert_eq!(
+    default_policy.evaluate("unknown-profile-v1", &comp, &unc, &ho, Some(&pres)),
+    Err(RecalibrationError::UnknownProfile)
+  );
+
+  let risk_comp = MultiModelComparisonReport::risk_taking_comparison_v1();
+  assert_eq!(
+    default_policy.evaluate(
+      CAUTIOUS_SEMANTIC_PROFILE_ID,
+      &risk_comp,
+      &unc,
+      &ho,
+      Some(&pres)
+    ),
+    Err(RecalibrationError::MismatchedProfile)
+  );
+
+  let risk_unc = CalibrationUncertaintyReport::risk_taking_uncertainty_v1();
+  assert_eq!(
+    default_policy.evaluate(
+      CAUTIOUS_SEMANTIC_PROFILE_ID,
+      &comp,
+      &risk_unc,
+      &ho,
+      Some(&pres)
+    ),
+    Err(RecalibrationError::MismatchedProfile)
+  );
+
+  let risk_pres = ReferenceOutputPreservationReport::risk_taking_reference_diagnostic_v1();
+  assert_eq!(
+    default_policy.evaluate(
+      CAUTIOUS_SEMANTIC_PROFILE_ID,
+      &comp,
+      &unc,
+      &ho,
+      Some(&risk_pres)
+    ),
+    Err(RecalibrationError::MismatchedProfile)
+  );
+
+  // Strict policy triggering immediate recalibration on modal disagreement or TVD breach
+  let strict_policy = RecalibrationPolicy::new(100, 0, 100, 9_999).expect("strict policy");
+  let strict_eval = strict_policy
+    .evaluate(CAUTIOUS_SEMANTIC_PROFILE_ID, &comp, &unc, &ho, Some(&pres))
+    .expect("strict evaluation succeeds");
+  assert_eq!(strict_eval.urgency(), RecalibrationUrgency::Immediate);
+  assert!(strict_eval.is_recalibration_required());
+  assert!(
+    strict_eval
+      .active_triggers()
+      .iter()
+      .any(|t| t.reason() == RecalibrationTriggerReason::TotalVariationDistanceBreach)
+  );
+  assert!(
+    strict_eval
+      .active_triggers()
+      .iter()
+      .any(|t| t.reason() == RecalibrationTriggerReason::HeldOutLossBreach)
+  );
+
+  // 8. Calibration Model Card
+  let model_card = CalibrationModelCardReport::canonical_m7();
+  assert_eq!(model_card.schema(), CALIBRATION_MODEL_CARD_SCHEMA);
+  assert_eq!(
+    model_card.title(),
+    "Fog of Intent M7 Semantic-to-Parametric Calibration Model Card"
+  );
+  assert_eq!(model_card.profiles_evaluated().len(), 3);
+  assert!(
+    model_card
+      .intended_use()
+      .contains("parametric policy proxies")
+  );
+  assert!(
+    model_card
+      .evidence_limits()
+      .contains("not represent human ground truth")
+  );
+  assert!(
+    model_card
+      .held_out_generalization_status()
+      .contains("<= 25.00% mean TVD loss")
+  );
+  assert!(
+    model_card
+      .uncertainty_and_identifiability_status()
+      .contains("identifiability")
+  );
+  assert!(
+    model_card
+      .recalibration_policy_summary()
+      .contains("Deterministic recalibration triggers monitor")
+  );
+  assert!(
+    model_card
+      .chain_of_thought_policy()
+      .contains("Zero private chain-of-thought")
+  );
+
+  let card_md = model_card.to_markdown();
+  assert!(card_md.contains("# Fog of Intent M7 Semantic-to-Parametric Calibration Model Card"));
+  assert!(card_md.contains("## Held-Out Generalization Status"));
+  assert!(card_md.contains("## Uncertainty and Identifiability Findings"));
+  assert!(card_md.contains("## Recalibration Trigger Policy"));
+  assert!(card_md.contains("## Observability and Chain-of-Thought Policy"));
+  assert!(card_md.contains("## Evidence and Claim Limits"));
+}

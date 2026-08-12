@@ -5,6 +5,18 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Keep recalibration triggers discrete and urgency-classified
+
+- Context: M7 required defining recalibration triggers upon model family or prompt protocol changes
+  before live model APIs or continuous online learning were authorized.
+- Symptom: Triggering recalibration based on informal heuristics or unbounded continuous gradients would
+  turn discrete evaluation contracts into ad-hoc monitoring scripts.
+- Resolution: Define `RecalibrationTriggerCondition` and `RecalibrationPolicy` with closed trigger reasons,
+  exact integer basis-point thresholds ($1,500$ bp TVD, max 1 modal disagreement, $2,500$ bp held-out loss),
+  and categorical urgency levels (`Immediate`, `Scheduled`, `None`).
+- Prevention: Treat drift detection, uncertainty reporting, generalization evaluation, and recalibration
+  policies as separate contracts with separate evidence.
+
 ## Keep multi-model comparisons discrete and basis-point bounded
 
 - Context: M7 required comparing empirical choice distributions and fitted parametric

@@ -1,43 +1,41 @@
-# Request Summary — M7 Reference Output Preservation
+# Request Summary — M7 Recalibration Triggers & Model Card
 
 ## Requested Outcome
 
-Implement the Phase 7 (Semantic-to-Parametric Calibration Proof) vertical slice:
-"Preserve reference outputs without storing or requiring private chain-of-thought."
+Implement the final M7 scope item: "Define recalibration triggers for model or prompt changes" and provide the canonical calibration model card and evaluation reports, completing the Milestone 7 (M7 — Semantic-to-Parametric Calibration Proof) exit evidence.
 
-## Roadmap Milestone
+## Current Milestone
 
 - **Milestone:** M7 — Semantic-to-Parametric Calibration Proof
-- **Status:** Active / In-progress
-- **Preceding Slices:** Semantic profile vocabulary, diagnostic choice catalog, prompt protocols, repeated sampling protocols, empirical distribution estimation, behavioral distance/entropy/sensitivity/consistency/adaptation measures, regularized parametric policy fitting, held-out scenario evaluation, counterfactual perturbation sensitivity, multi-model family comparisons, and parameter identifiability / label stability uncertainty reports.
+- **Status:** Finalizing M7 exit evidence and transitioning towards M8 (Team Communication and Shot-Calling).
 
-## In Scope
+## Scope
 
-1. Define `StructuredRationaleCategory` and `StructuredRationale` for structured decision justifications without hidden cognitive states.
-2. Define `ReferenceOutputRecord` under schema `m7-reference-output-v1` capturing observable decision outputs (intent, target focus, commitment, ping signal, optional structured rationale) bound to model family, prompt protocol, and diagnostic dilemma domain, with fail-closed rejection of private chain-of-thought (`chain_of_thought_present == false`).
-3. Define `ReferenceOutputPreservationReport` under schema `m7-reference-output-preservation-v1` aggregating 7 canonical diagnostic dilemma records, validating complete dilemma domain coverage, zero private chain-of-thought presence, and providing structured Markdown export.
-4. Provide canonical reference output suites for baseline profiles (`cautious-laner-semantic-v1`, `risk-taking-laner-semantic-v1`, `yielding-laner-semantic-v1`) under standard and alternative diagnostic prompt protocols.
-5. Provide `ReferenceOutputCatalog` for canonical suite discovery and verification.
-6. Comprehensive test coverage for construction, validation, domain matching, fail-closed CoT rejection, rationale bounds, and Markdown rendering.
-7. Update `README.md`, `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, and `LESSONS.md`.
+1. Define versioned recalibration trigger schema (`m7-recalibration-trigger-v1`, `m7-recalibration-evaluation-v1`, `m7-calibration-model-card-v1`).
+2. Define discrete recalibration trigger reasons (`ModelVersionChanged`, `PromptProtocolChanged`, `TotalVariationDistanceBreach`, `ModalChoiceDisagreement`, `UnidentifiableParameterDetected`, `UnstableSemanticLabel`, `HeldOutLossBreach`, `CounterfactualCoherenceFailure`, `ChainOfThoughtLeakage`).
+3. Define recalibration urgency levels (`Immediate`, `Scheduled`, `None`).
+4. Implement `RecalibrationTriggerCondition`, `RecalibrationPolicy`, and `RecalibrationEvaluationReport` with integer basis-point thresholds.
+5. Implement `CalibrationModelCardReport` stating intended use, evidence limits, evaluated profiles, uncertainty findings, and recalibration policies.
+6. Provide canonical baseline evaluations for `cautious_v1`, `risk_taking_v1`, and `yielding_v1`, plus critical drift test fixtures.
+7. Integrate into `src/agent/` module tree and export public API.
+8. Add exhaustive unit tests in `src/agent/tests.rs`.
+9. Update `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, and `README.md`.
 
 ## Non-Goals
 
-- Live model provider API execution or network communication (kept at outer edge/future milestones).
-- Storing or parsing unstructured natural-language thoughts or hidden scratchpads.
-- Full match simulation execution or live multi-agent game play.
-- Treating reference agent behavior as human ground truth.
+- Live network or LLM API calls.
+- Unconstrained floating-point or continuous parameter fitting.
+- Claims that AI reference distributions represent human ground truth.
+- Private chain-of-thought storage or reasoning requirements.
 
-## Project Boundaries Touched
+## Source Files
 
-- `src/agent/reference_output.rs` (new module)
-- `src/agent/mod.rs` (module declaration and re-exports)
-- `src/agent/tests.rs` (unit tests for reference output preservation)
-- Canonical docs (`ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `README.md`, `CHANGELOG.md`, `LESSONS.md`)
-
-## Verification
-
-- `cargo +1.96.0 fmt --all -- --check`
-- `cargo +1.96.0 clippy --locked --all-targets --all-features -- -D warnings`
-- `cargo +1.96.0 test --locked`
-- `python3 scripts/check_repository.py`
+- `src/agent/recalibration.rs` (new)
+- `src/agent/mod.rs`
+- `src/agent/tests.rs`
+- `src/lib.rs`
+- `Cargo.toml`
+- `SPEC.md`
+- `ROADMAP.md`
+- `ARCHITECTURE.md`
+- `CHANGELOG.md`

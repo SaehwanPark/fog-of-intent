@@ -1497,11 +1497,15 @@ distribution estimation, and parametric fitting remain open.
 - `ReferenceOutputRecord` defines `m7-reference-output-v1`, capturing observable decision outputs (`LaneIntent`, `LaneTargetFocus`, `LaneCommitment`, `LanePingSignal`, bounded `StructuredRationale`) with fail-closed rejection if private chain-of-thought is requested or present (`chain_of_thought_present == true`).
 - `ReferenceOutputPreservationReport` defines `m7-reference-output-preservation-v1`, preserving complete 7-dilemma diagnostic reference suites across semantic profiles and model/prompt protocols, asserting `chain_of_thought_free: true`, providing formatted Markdown export, and enforcing canonical dilemma domain ordering.
 - `ReferenceOutputCatalog` provides discovery and lookup helpers for canonical reference output suites (`cautious_v1`, `risk_taking_v1`, `yielding_v1`) under reference and alternative diagnostic prompt protocols.
+- `RecalibrationTriggerReason` and `RecalibrationTriggerCondition` define `m7-recalibration-trigger-v1` across 9 discrete reasons (`ModelVersionChanged`, `PromptProtocolChanged`, `TotalVariationDistanceBreach`, `ModalChoiceDisagreement`, `UnidentifiableParameterDetected`, `UnstableSemanticLabel`, `HeldOutLossBreach`, `CounterfactualCoherenceFailure`, `ChainOfThoughtLeakage`) and 3 urgency levels (`Immediate`, `Scheduled`, `None`).
+- `RecalibrationPolicy` and `RecalibrationEvaluationReport` define `m7-recalibration-evaluation-v1`, evaluating multi-model comparisons, uncertainty reports, held-out losses, and CoT-free preservation reports against configurable integer basis-point thresholds with canonical baseline reports for `cautious_v1`, `risk_taking_v1`, and `yielding_v1`.
+- `CalibrationModelCardReport` defines `m7-calibration-model-card-v1`, formalizing the canonical M7 calibration proof deliverable with intended use, evidence limits, evaluated profiles, generalization status, uncertainty findings, recalibration policy summary, and chain-of-thought free observability rules.
 - This contract establishes typed strategic choice dilemmas, empirical sampling protocols,
   empirical distribution estimation, discrete behavioral measures, regularized parametric policy
   fitting, held-out scenario evaluation, counterfactual perturbation sensitivity, multi-model
   family comparison, parameter identifiability / semantic label stability uncertainty reporting,
-  and observable reference output preservation without private chain-of-thought for calibration;
+  observable reference output preservation without private chain-of-thought, deterministic
+  recalibration triggers, and the calibration proof model card;
   it does not claim full match scenario execution or human behavioral completeness.
 
 ## Future

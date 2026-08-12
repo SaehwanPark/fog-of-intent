@@ -354,6 +354,14 @@ as a reference policy distribution, not human ground truth.
 (`LaneIntent`, `LaneTargetFocus`, `LaneCommitment`, `LanePingSignal`, bounded `StructuredRationale`) across all
 seven diagnostic dilemma domains, strictly failing closed if private chain-of-thought is requested or present
 (`chain_of_thought_present == true`).
+`RecalibrationTriggerCondition` (`m7-recalibration-trigger-v1`), `RecalibrationPolicy`, and `RecalibrationEvaluationReport`
+(`m7-recalibration-evaluation-v1`) evaluate distributional drift and contract breaches across 9 discrete trigger reasons
+and 3 urgency levels (`Immediate`, `Scheduled`, `None`), enforcing basis-point threshold checks across model comparisons,
+uncertainty reports, generalization loss, and CoT-free reference outputs.
+`CalibrationModelCardReport` (`m7-calibration-model-card-v1`) formalizes the canonical M7 calibration proof deliverable,
+documenting intended use, evidence boundaries, evaluated profiles, generalization status, uncertainty findings,
+recalibration policy rules, and zero private chain-of-thought constraints.
+
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO
