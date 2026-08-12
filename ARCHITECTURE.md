@@ -311,6 +311,13 @@ versions, temperature/top-p bounds, structured output enforcement, forbidden pri
 chain-of-thought, sample counts, and repair retry budgets alongside fail-closed catalogs
 (`ModelPromptProtocolCatalog`, `RepeatedSamplingProtocolCatalog`). They establish
 declarative sampling protocols for calibration and do not execute live LLM provider I/O.
+`DiagnosticChoiceActionDistribution` defines `m7-empirical-action-distribution-v1` and
+`DiagnosticChoiceCommunicationDistribution` defines `m7-empirical-communication-distribution-v1`,
+providing typed empirical action and communication ping signal frequency distributions
+with exact integer 10,000 basis-point representations alongside aggregated diagnostic
+reports (`EmpiricalDistributionEstimateReport` under `m7-empirical-distribution-estimation-v1`).
+They establish declarative empirical distribution estimates for calibration and do not
+execute live LLM provider I/O or claim human psychological ground truth.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

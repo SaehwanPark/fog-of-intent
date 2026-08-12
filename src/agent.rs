@@ -267,6 +267,20 @@ pub const SAMPLING_DIAGNOSTIC_REPEAT_30_ID: &str = "sampling-diagnostic-repeat-3
 /// Stable identifier for the quick 5-repeat check sampling protocol.
 pub const SAMPLING_QUICK_CHECK_5_ID: &str = "sampling-quick-check-5-v1";
 
+/// Versioned schema for the diagnostic choice empirical distribution estimation report.
+pub const EMPIRICAL_DISTRIBUTION_ESTIMATION_SCHEMA: &str =
+  "m7-empirical-distribution-estimation-v1";
+
+/// Versioned schema for diagnostic choice action distributions.
+pub const EMPIRICAL_ACTION_DISTRIBUTION_SCHEMA: &str = "m7-empirical-action-distribution-v1";
+
+/// Versioned schema for diagnostic choice communication distributions.
+pub const EMPIRICAL_COMMUNICATION_DISTRIBUTION_SCHEMA: &str =
+  "m7-empirical-communication-distribution-v1";
+
+/// Basis-point scale for empirical distribution estimation (10,000 basis points = 100.00%).
+pub const EMPIRICAL_DISTRIBUTION_SCALE_BASIS_POINTS: u16 = 10_000;
+
 /// Maximum number of replay records evaluated in one scenario-wide identity check.
 pub const MAX_SCRIPTED_AGENT_SCENARIO_REPLAY_RECORDS: usize = 16;
 
@@ -5273,6 +5287,622 @@ impl RepeatedSamplingProtocolCatalog {
     let def = Self::lookup(protocol_id).ok_or(RepeatedSamplingProtocolError::UnknownProtocol)?;
     def.validate()?;
     Ok(def)
+  }
+}
+
+/// Errors raised when validating empirical distribution estimates.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum EmpiricalDistributionEstimationError {
+  UnknownProfile,
+  UnknownChoice,
+  UnknownSamplingProtocol,
+  UnknownModelPromptProtocol,
+  InvalidSampleCount,
+  CountSumMismatch,
+  MismatchedChoice,
+  MismatchedProfile,
+}
+
+/// Bounded empirical action distribution over repeated samples for a diagnostic choice dilemma.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct DiagnosticChoiceActionDistribution {
+  schema: &'static str,
+  choice_id: &'static str,
+  profile_id: &'static str,
+  primary_intent: LaneIntent,
+  alternative_intent: LaneIntent,
+  sample_count: u16,
+  primary_count: u16,
+  alternative_count: u16,
+  other_count: u16,
+}
+
+impl DiagnosticChoiceActionDistribution {
+  /// Create and validate a new diagnostic choice action distribution.
+  pub fn new(
+    choice_id: &'static str,
+    profile_id: &'static str,
+    sample_count: u16,
+    primary_count: u16,
+    alternative_count: u16,
+    other_count: u16,
+  ) -> Result<Self, EmpiricalDistributionEstimationError> {
+    SemanticProfileVocabulary::validate_profile_id(profile_id)
+      .map_err(|_| EmpiricalDistributionEstimationError::UnknownProfile)?;
+    let choice = DiagnosticChoiceCatalog::validate_choice_id(choice_id)
+      .map_err(|_| EmpiricalDistributionEstimationError::UnknownChoice)?;
+
+    if sample_count == 0 || sample_count > 100 {
+      return Err(EmpiricalDistributionEstimationError::InvalidSampleCount);
+    }
+    if primary_count + alternative_count + other_count != sample_count {
+      return Err(EmpiricalDistributionEstimationError::CountSumMismatch);
+    }
+
+    Ok(Self {
+      schema: EMPIRICAL_ACTION_DISTRIBUTION_SCHEMA,
+      choice_id,
+      profile_id,
+      primary_intent: choice.primary_intent(),
+      alternative_intent: choice.alternative_intent(),
+      sample_count,
+      primary_count,
+      alternative_count,
+      other_count,
+    })
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn choice_id(self) -> &'static str {
+    self.choice_id
+  }
+
+  pub const fn profile_id(self) -> &'static str {
+    self.profile_id
+  }
+
+  pub const fn primary_intent(self) -> LaneIntent {
+    self.primary_intent
+  }
+
+  pub const fn alternative_intent(self) -> LaneIntent {
+    self.alternative_intent
+  }
+
+  pub const fn sample_count(self) -> u16 {
+    self.sample_count
+  }
+
+  pub const fn primary_count(self) -> u16 {
+    self.primary_count
+  }
+
+  pub const fn alternative_count(self) -> u16 {
+    self.alternative_count
+  }
+
+  pub const fn other_count(self) -> u16 {
+    self.other_count
+  }
+
+  /// Return `[primary, alternative, other]` basis-point shares scaled to 10,000.
+  ///
+  /// The primary and alternative shares use integer floor division; the
+  /// other share receives the remainder so the three shares always sum to 10,000.
+  pub fn basis_points(self) -> [u16; 3] {
+    let scale = u32::from(EMPIRICAL_DISTRIBUTION_SCALE_BASIS_POINTS);
+    let total = u32::from(self.sample_count);
+    let primary_bp = u16::try_from(u32::from(self.primary_count) * scale / total)
+      .expect("primary basis points fit in u16");
+    let alt_bp = u16::try_from(u32::from(self.alternative_count) * scale / total)
+      .expect("alternative basis points fit in u16");
+    let other_bp = EMPIRICAL_DISTRIBUTION_SCALE_BASIS_POINTS - (primary_bp + alt_bp);
+    [primary_bp, alt_bp, other_bp]
+  }
+
+  pub fn primary_share_basis_points(self) -> u16 {
+    self.basis_points()[0]
+  }
+
+  pub fn alternative_share_basis_points(self) -> u16 {
+    self.basis_points()[1]
+  }
+
+  pub fn other_share_basis_points(self) -> u16 {
+    self.basis_points()[2]
+  }
+
+  /// Render the distribution as formatted Markdown.
+  pub fn to_markdown(&self) -> String {
+    let bp = self.basis_points();
+    format!(
+      "| {} | {} | {} | {} | {} | {} |\n",
+      self.choice_id, self.sample_count, self.primary_count, bp[0], self.alternative_count, bp[1],
+    )
+  }
+}
+
+/// Bounded empirical communication ping signal distribution over repeated samples.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct DiagnosticChoiceCommunicationDistribution {
+  schema: &'static str,
+  choice_id: &'static str,
+  profile_id: &'static str,
+  sample_count: u16,
+  signal_counts: [u16; 5],
+}
+
+impl DiagnosticChoiceCommunicationDistribution {
+  /// Create and validate a new diagnostic choice communication distribution.
+  pub fn new(
+    choice_id: &'static str,
+    profile_id: &'static str,
+    sample_count: u16,
+    signal_counts: [u16; 5],
+  ) -> Result<Self, EmpiricalDistributionEstimationError> {
+    SemanticProfileVocabulary::validate_profile_id(profile_id)
+      .map_err(|_| EmpiricalDistributionEstimationError::UnknownProfile)?;
+    DiagnosticChoiceCatalog::validate_choice_id(choice_id)
+      .map_err(|_| EmpiricalDistributionEstimationError::UnknownChoice)?;
+
+    if sample_count == 0 || sample_count > 100 {
+      return Err(EmpiricalDistributionEstimationError::InvalidSampleCount);
+    }
+    let total_signals =
+      signal_counts[0] + signal_counts[1] + signal_counts[2] + signal_counts[3] + signal_counts[4];
+    if total_signals != sample_count {
+      return Err(EmpiricalDistributionEstimationError::CountSumMismatch);
+    }
+
+    Ok(Self {
+      schema: EMPIRICAL_COMMUNICATION_DISTRIBUTION_SCHEMA,
+      choice_id,
+      profile_id,
+      sample_count,
+      signal_counts,
+    })
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn choice_id(self) -> &'static str {
+    self.choice_id
+  }
+
+  pub const fn profile_id(self) -> &'static str {
+    self.profile_id
+  }
+
+  pub const fn sample_count(self) -> u16 {
+    self.sample_count
+  }
+
+  pub const fn signal_counts(self) -> [u16; 5] {
+    self.signal_counts
+  }
+
+  /// Return `[None, Danger, OnMyWay, Assist, EnemyMissing]` basis-point shares scaled to 10,000.
+  pub fn basis_points(self) -> [u16; 5] {
+    let scale = u32::from(EMPIRICAL_DISTRIBUTION_SCALE_BASIS_POINTS);
+    let total = u32::from(self.sample_count);
+    let mut shares = [0_u16; 5];
+    let mut assigned = 0_u16;
+    for (idx, count) in self.signal_counts.iter().take(4).enumerate() {
+      shares[idx] =
+        u16::try_from(u32::from(*count) * scale / total).expect("signal basis points fit in u16");
+      assigned += shares[idx];
+    }
+    shares[4] = EMPIRICAL_DISTRIBUTION_SCALE_BASIS_POINTS - assigned;
+    shares
+  }
+
+  pub fn signal_share_basis_points(self, signal: LanePingSignal) -> u16 {
+    let idx = match signal {
+      LanePingSignal::None => 0,
+      LanePingSignal::Danger => 1,
+      LanePingSignal::OnMyWay => 2,
+      LanePingSignal::Assist => 3,
+      LanePingSignal::EnemyMissing => 4,
+    };
+    self.basis_points()[idx]
+  }
+
+  /// Render the communication distribution as formatted Markdown.
+  pub fn to_markdown(&self) -> String {
+    let bp = self.basis_points();
+    format!(
+      "| {} | {} | {} | {} | {} | {} | {} |\n",
+      self.choice_id, self.sample_count, bp[0], bp[1], bp[2], bp[3], bp[4],
+    )
+  }
+}
+
+/// Comprehensive empirical action and communication distribution estimate report over all 7 diagnostic dilemmas.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct EmpiricalDistributionEstimateReport {
+  schema: &'static str,
+  profile_id: &'static str,
+  sampling_protocol_id: &'static str,
+  model_prompt_protocol_id: &'static str,
+  action_distributions: [DiagnosticChoiceActionDistribution; 7],
+  communication_distributions: [DiagnosticChoiceCommunicationDistribution; 7],
+}
+
+impl EmpiricalDistributionEstimateReport {
+  /// Create and validate a complete empirical distribution estimate report.
+  pub fn new(
+    profile_id: &'static str,
+    sampling_protocol_id: &'static str,
+    model_prompt_protocol_id: &'static str,
+    action_distributions: [DiagnosticChoiceActionDistribution; 7],
+    communication_distributions: [DiagnosticChoiceCommunicationDistribution; 7],
+  ) -> Result<Self, EmpiricalDistributionEstimationError> {
+    let report = Self {
+      schema: EMPIRICAL_DISTRIBUTION_ESTIMATION_SCHEMA,
+      profile_id,
+      sampling_protocol_id,
+      model_prompt_protocol_id,
+      action_distributions,
+      communication_distributions,
+    };
+    report.validate()?;
+    Ok(report)
+  }
+
+  pub const fn schema(&self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn profile_id(&self) -> &'static str {
+    self.profile_id
+  }
+
+  pub const fn sampling_protocol_id(&self) -> &'static str {
+    self.sampling_protocol_id
+  }
+
+  pub const fn model_prompt_protocol_id(&self) -> &'static str {
+    self.model_prompt_protocol_id
+  }
+
+  pub const fn action_distributions(&self) -> &[DiagnosticChoiceActionDistribution; 7] {
+    &self.action_distributions
+  }
+
+  pub const fn communication_distributions(
+    &self,
+  ) -> &[DiagnosticChoiceCommunicationDistribution; 7] {
+    &self.communication_distributions
+  }
+
+  /// Validate report consistency against registered catalogs and ordering.
+  pub fn validate(&self) -> Result<(), EmpiricalDistributionEstimationError> {
+    SemanticProfileVocabulary::validate_profile_id(self.profile_id)
+      .map_err(|_| EmpiricalDistributionEstimationError::UnknownProfile)?;
+    RepeatedSamplingProtocolCatalog::validate_protocol_id(self.sampling_protocol_id)
+      .map_err(|_| EmpiricalDistributionEstimationError::UnknownSamplingProtocol)?;
+    ModelPromptProtocolCatalog::validate_protocol_id(self.model_prompt_protocol_id)
+      .map_err(|_| EmpiricalDistributionEstimationError::UnknownModelPromptProtocol)?;
+
+    let canonical_choices = DiagnosticChoiceCatalog::all_choices();
+    for (i, action_dist) in self.action_distributions.iter().enumerate() {
+      if action_dist.profile_id() != self.profile_id {
+        return Err(EmpiricalDistributionEstimationError::MismatchedProfile);
+      }
+      if action_dist.choice_id() != canonical_choices[i].choice_id() {
+        return Err(EmpiricalDistributionEstimationError::MismatchedChoice);
+      }
+    }
+    for (i, comm_dist) in self.communication_distributions.iter().enumerate() {
+      if comm_dist.profile_id() != self.profile_id {
+        return Err(EmpiricalDistributionEstimationError::MismatchedProfile);
+      }
+      if comm_dist.choice_id() != canonical_choices[i].choice_id() {
+        return Err(EmpiricalDistributionEstimationError::MismatchedChoice);
+      }
+    }
+    Ok(())
+  }
+
+  /// Canonical empirical distribution estimate for the cautious semantic profile.
+  pub fn cautious_v1() -> Self {
+    let profile_id = CAUTIOUS_SEMANTIC_PROFILE_ID;
+    let sampling_id = SAMPLING_STANDARD_REPEAT_10_ID;
+    let prompt_id = MODEL_PROMPT_REFERENCE_DIAGNOSTIC_ID;
+
+    let action_dists = [
+      DiagnosticChoiceActionDistribution::new(CHOICE_CONTEST_CONCEDE_ID, profile_id, 10, 2, 8, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_FOLLOW_REJECT_ID, profile_id, 10, 2, 8, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_FARM_ASSIST_ID, profile_id, 10, 9, 1, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_RECALL_TIMING_ID, profile_id, 10, 8, 2, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_SACRIFICE_ID, profile_id, 10, 1, 9, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_SURPRISE_ID, profile_id, 10, 10, 0, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(
+        CHOICE_RESPONSE_TO_FAILURE_ID,
+        profile_id,
+        10,
+        9,
+        1,
+        0,
+      )
+      .expect("valid"),
+    ];
+
+    let comm_dists = [
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_CONTEST_CONCEDE_ID,
+        profile_id,
+        10,
+        [10, 0, 0, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_FOLLOW_REJECT_ID,
+        profile_id,
+        10,
+        [10, 0, 0, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_FARM_ASSIST_ID,
+        profile_id,
+        10,
+        [10, 0, 0, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_RECALL_TIMING_ID,
+        profile_id,
+        10,
+        [9, 0, 1, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_SACRIFICE_ID,
+        profile_id,
+        10,
+        [7, 3, 0, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_SURPRISE_ID,
+        profile_id,
+        10,
+        [5, 5, 0, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_RESPONSE_TO_FAILURE_ID,
+        profile_id,
+        10,
+        [8, 2, 0, 0, 0],
+      )
+      .expect("valid"),
+    ];
+
+    Self {
+      schema: EMPIRICAL_DISTRIBUTION_ESTIMATION_SCHEMA,
+      profile_id,
+      sampling_protocol_id: sampling_id,
+      model_prompt_protocol_id: prompt_id,
+      action_distributions: action_dists,
+      communication_distributions: comm_dists,
+    }
+  }
+
+  /// Canonical empirical distribution estimate for the risk-taking semantic profile.
+  pub fn risk_taking_v1() -> Self {
+    let profile_id = RISK_TAKING_SEMANTIC_PROFILE_ID;
+    let sampling_id = SAMPLING_STANDARD_REPEAT_10_ID;
+    let prompt_id = MODEL_PROMPT_REFERENCE_DIAGNOSTIC_ID;
+
+    let action_dists = [
+      DiagnosticChoiceActionDistribution::new(CHOICE_CONTEST_CONCEDE_ID, profile_id, 10, 9, 1, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_FOLLOW_REJECT_ID, profile_id, 10, 8, 2, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_FARM_ASSIST_ID, profile_id, 10, 3, 7, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_RECALL_TIMING_ID, profile_id, 10, 2, 8, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_SACRIFICE_ID, profile_id, 10, 9, 1, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_SURPRISE_ID, profile_id, 10, 2, 8, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(
+        CHOICE_RESPONSE_TO_FAILURE_ID,
+        profile_id,
+        10,
+        1,
+        9,
+        0,
+      )
+      .expect("valid"),
+    ];
+
+    let comm_dists = [
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_CONTEST_CONCEDE_ID,
+        profile_id,
+        10,
+        [8, 0, 0, 2, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_FOLLOW_REJECT_ID,
+        profile_id,
+        10,
+        [8, 0, 2, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_FARM_ASSIST_ID,
+        profile_id,
+        10,
+        [7, 0, 3, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_RECALL_TIMING_ID,
+        profile_id,
+        10,
+        [9, 0, 1, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_SACRIFICE_ID,
+        profile_id,
+        10,
+        [6, 0, 0, 4, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_SURPRISE_ID,
+        profile_id,
+        10,
+        [8, 2, 0, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_RESPONSE_TO_FAILURE_ID,
+        profile_id,
+        10,
+        [7, 0, 0, 3, 0],
+      )
+      .expect("valid"),
+    ];
+
+    Self {
+      schema: EMPIRICAL_DISTRIBUTION_ESTIMATION_SCHEMA,
+      profile_id,
+      sampling_protocol_id: sampling_id,
+      model_prompt_protocol_id: prompt_id,
+      action_distributions: action_dists,
+      communication_distributions: comm_dists,
+    }
+  }
+
+  /// Canonical empirical distribution estimate for the yielding semantic profile.
+  pub fn yielding_v1() -> Self {
+    let profile_id = YIELDING_SEMANTIC_PROFILE_ID;
+    let sampling_id = SAMPLING_STANDARD_REPEAT_10_ID;
+    let prompt_id = MODEL_PROMPT_REFERENCE_DIAGNOSTIC_ID;
+
+    let action_dists = [
+      DiagnosticChoiceActionDistribution::new(CHOICE_CONTEST_CONCEDE_ID, profile_id, 10, 1, 9, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_FOLLOW_REJECT_ID, profile_id, 10, 1, 9, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_FARM_ASSIST_ID, profile_id, 10, 8, 2, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_RECALL_TIMING_ID, profile_id, 10, 9, 1, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_SACRIFICE_ID, profile_id, 10, 1, 9, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(CHOICE_SURPRISE_ID, profile_id, 10, 9, 1, 0)
+        .expect("valid"),
+      DiagnosticChoiceActionDistribution::new(
+        CHOICE_RESPONSE_TO_FAILURE_ID,
+        profile_id,
+        10,
+        10,
+        0,
+        0,
+      )
+      .expect("valid"),
+    ];
+
+    let comm_dists = [
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_CONTEST_CONCEDE_ID,
+        profile_id,
+        10,
+        [10, 0, 0, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_FOLLOW_REJECT_ID,
+        profile_id,
+        10,
+        [10, 0, 0, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_FARM_ASSIST_ID,
+        profile_id,
+        10,
+        [10, 0, 0, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_RECALL_TIMING_ID,
+        profile_id,
+        10,
+        [10, 0, 0, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_SACRIFICE_ID,
+        profile_id,
+        10,
+        [8, 2, 0, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_SURPRISE_ID,
+        profile_id,
+        10,
+        [6, 4, 0, 0, 0],
+      )
+      .expect("valid"),
+      DiagnosticChoiceCommunicationDistribution::new(
+        CHOICE_RESPONSE_TO_FAILURE_ID,
+        profile_id,
+        10,
+        [9, 1, 0, 0, 0],
+      )
+      .expect("valid"),
+    ];
+
+    Self {
+      schema: EMPIRICAL_DISTRIBUTION_ESTIMATION_SCHEMA,
+      profile_id,
+      sampling_protocol_id: sampling_id,
+      model_prompt_protocol_id: prompt_id,
+      action_distributions: action_dists,
+      communication_distributions: comm_dists,
+    }
+  }
+
+  /// Render the empirical distribution estimate report as formatted Markdown.
+  pub fn to_markdown(&self) -> String {
+    let mut out = format!(
+      "# Empirical Distribution Estimate Report\n\n- schema: {}\n- profile_id: {}\n- sampling_protocol_id: {}\n- model_prompt_protocol_id: {}\n- scale_basis_points: {}\n\n## Action Distributions\n\n| choice_id | sample_count | primary_count | primary_bp | alternative_count | alternative_bp |\n| --- | ---: | ---: | ---: | ---: | ---: |\n",
+      self.schema,
+      self.profile_id,
+      self.sampling_protocol_id,
+      self.model_prompt_protocol_id,
+      EMPIRICAL_DISTRIBUTION_SCALE_BASIS_POINTS,
+    );
+    for dist in &self.action_distributions {
+      out.push_str(&dist.to_markdown());
+    }
+    out.push_str("\n## Communication Distributions\n\n| choice_id | sample_count | none_bp | danger_bp | on_my_way_bp | assist_bp | enemy_missing_bp |\n| --- | ---: | ---: | ---: | ---: | ---: | ---: |\n");
+    for dist in &self.communication_distributions {
+      out.push_str(&dist.to_markdown());
+    }
+    out
   }
 }
 
@@ -10424,6 +11054,208 @@ mod tests {
     assert_eq!(
       excessive_retries.validate(),
       Err(RepeatedSamplingProtocolError::InvalidMaxRetries)
+    );
+  }
+
+  #[test]
+  fn m7_empirical_action_and_communication_distribution_estimates_are_bounded_and_exact() {
+    let cautious_profile = CAUTIOUS_SEMANTIC_PROFILE_ID;
+    let cc_choice = CHOICE_CONTEST_CONCEDE_ID;
+
+    let valid_action =
+      DiagnosticChoiceActionDistribution::new(cc_choice, cautious_profile, 10, 2, 8, 0)
+        .expect("valid action distribution");
+
+    assert_eq!(valid_action.schema(), EMPIRICAL_ACTION_DISTRIBUTION_SCHEMA);
+    assert_eq!(valid_action.choice_id(), cc_choice);
+    assert_eq!(valid_action.profile_id(), cautious_profile);
+    assert_eq!(valid_action.primary_intent(), LaneIntent::Contest);
+    assert_eq!(valid_action.alternative_intent(), LaneIntent::Yield);
+    assert_eq!(valid_action.sample_count(), 10);
+    assert_eq!(valid_action.primary_count(), 2);
+    assert_eq!(valid_action.alternative_count(), 8);
+    assert_eq!(valid_action.other_count(), 0);
+    assert_eq!(valid_action.basis_points(), [2_000, 8_000, 0]);
+    assert_eq!(valid_action.primary_share_basis_points(), 2_000);
+    assert_eq!(valid_action.alternative_share_basis_points(), 8_000);
+    assert_eq!(valid_action.other_share_basis_points(), 0);
+    assert_eq!(
+      valid_action.basis_points().iter().sum::<u16>(),
+      EMPIRICAL_DISTRIBUTION_SCALE_BASIS_POINTS
+    );
+    assert!(valid_action.to_markdown().contains(cc_choice));
+
+    // Remainder handling in basis points
+    let odd_action =
+      DiagnosticChoiceActionDistribution::new(cc_choice, cautious_profile, 7, 2, 4, 1)
+        .expect("valid odd sample distribution");
+    let bp = odd_action.basis_points();
+    assert_eq!(bp[0], 2857); // 2 * 10000 / 7
+    assert_eq!(bp[1], 5714); // 4 * 10000 / 7
+    assert_eq!(bp[2], 1429); // 10000 - (2857 + 5714) = 1429
+    assert_eq!(
+      bp.iter().sum::<u16>(),
+      EMPIRICAL_DISTRIBUTION_SCALE_BASIS_POINTS
+    );
+
+    // Validation errors
+    assert_eq!(
+      DiagnosticChoiceActionDistribution::new("unknown-choice", cautious_profile, 10, 2, 8, 0,),
+      Err(EmpiricalDistributionEstimationError::UnknownChoice)
+    );
+    assert_eq!(
+      DiagnosticChoiceActionDistribution::new(cc_choice, "unknown-profile", 10, 2, 8, 0,),
+      Err(EmpiricalDistributionEstimationError::UnknownProfile)
+    );
+    assert_eq!(
+      DiagnosticChoiceActionDistribution::new(cc_choice, cautious_profile, 0, 0, 0, 0,),
+      Err(EmpiricalDistributionEstimationError::InvalidSampleCount)
+    );
+    assert_eq!(
+      DiagnosticChoiceActionDistribution::new(cc_choice, cautious_profile, 101, 50, 50, 1,),
+      Err(EmpiricalDistributionEstimationError::InvalidSampleCount)
+    );
+    assert_eq!(
+      DiagnosticChoiceActionDistribution::new(cc_choice, cautious_profile, 10, 2, 7, 0,),
+      Err(EmpiricalDistributionEstimationError::CountSumMismatch)
+    );
+
+    // Communication distribution
+    let valid_comm = DiagnosticChoiceCommunicationDistribution::new(
+      cc_choice,
+      cautious_profile,
+      10,
+      [8, 1, 1, 0, 0],
+    )
+    .expect("valid comm distribution");
+    assert_eq!(
+      valid_comm.schema(),
+      EMPIRICAL_COMMUNICATION_DISTRIBUTION_SCHEMA
+    );
+    assert_eq!(valid_comm.choice_id(), cc_choice);
+    assert_eq!(valid_comm.profile_id(), cautious_profile);
+    assert_eq!(valid_comm.sample_count(), 10);
+    assert_eq!(valid_comm.signal_counts(), [8, 1, 1, 0, 0]);
+    assert_eq!(valid_comm.basis_points(), [8_000, 1_000, 1_000, 0, 0]);
+    assert_eq!(
+      valid_comm.signal_share_basis_points(LanePingSignal::None),
+      8_000
+    );
+    assert_eq!(
+      valid_comm.signal_share_basis_points(LanePingSignal::Danger),
+      1_000
+    );
+    assert_eq!(
+      valid_comm.signal_share_basis_points(LanePingSignal::OnMyWay),
+      1_000
+    );
+    assert_eq!(
+      valid_comm.signal_share_basis_points(LanePingSignal::Assist),
+      0
+    );
+    assert_eq!(
+      valid_comm.signal_share_basis_points(LanePingSignal::EnemyMissing),
+      0
+    );
+    assert_eq!(
+      valid_comm.basis_points().iter().sum::<u16>(),
+      EMPIRICAL_DISTRIBUTION_SCALE_BASIS_POINTS
+    );
+    assert!(valid_comm.to_markdown().contains(cc_choice));
+
+    // Communication validation errors
+    assert_eq!(
+      DiagnosticChoiceCommunicationDistribution::new(
+        "unknown-choice",
+        cautious_profile,
+        10,
+        [10, 0, 0, 0, 0],
+      ),
+      Err(EmpiricalDistributionEstimationError::UnknownChoice)
+    );
+    assert_eq!(
+      DiagnosticChoiceCommunicationDistribution::new(
+        cc_choice,
+        "unknown-profile",
+        10,
+        [10, 0, 0, 0, 0],
+      ),
+      Err(EmpiricalDistributionEstimationError::UnknownProfile)
+    );
+    assert_eq!(
+      DiagnosticChoiceCommunicationDistribution::new(
+        cc_choice,
+        cautious_profile,
+        0,
+        [0, 0, 0, 0, 0],
+      ),
+      Err(EmpiricalDistributionEstimationError::InvalidSampleCount)
+    );
+    assert_eq!(
+      DiagnosticChoiceCommunicationDistribution::new(
+        cc_choice,
+        cautious_profile,
+        10,
+        [9, 0, 0, 0, 0],
+      ),
+      Err(EmpiricalDistributionEstimationError::CountSumMismatch)
+    );
+
+    // Canonical baseline reports
+    let cautious_rep = EmpiricalDistributionEstimateReport::cautious_v1();
+    let risk_rep = EmpiricalDistributionEstimateReport::risk_taking_v1();
+    let yielding_rep = EmpiricalDistributionEstimateReport::yielding_v1();
+
+    for rep in [&cautious_rep, &risk_rep, &yielding_rep] {
+      assert_eq!(rep.schema(), EMPIRICAL_DISTRIBUTION_ESTIMATION_SCHEMA);
+      assert_eq!(rep.validate(), Ok(()));
+      assert_eq!(rep.action_distributions().len(), 7);
+      assert_eq!(rep.communication_distributions().len(), 7);
+
+      for action_dist in rep.action_distributions() {
+        assert_eq!(
+          action_dist.basis_points().iter().sum::<u16>(),
+          EMPIRICAL_DISTRIBUTION_SCALE_BASIS_POINTS
+        );
+      }
+      for comm_dist in rep.communication_distributions() {
+        assert_eq!(
+          comm_dist.basis_points().iter().sum::<u16>(),
+          EMPIRICAL_DISTRIBUTION_SCALE_BASIS_POINTS
+        );
+      }
+      let md = rep.to_markdown();
+      assert!(md.contains("# Empirical Distribution Estimate Report"));
+      assert!(md.contains("## Action Distributions"));
+      assert!(md.contains("## Communication Distributions"));
+    }
+
+    assert_eq!(cautious_rep.profile_id(), CAUTIOUS_SEMANTIC_PROFILE_ID);
+    assert_eq!(risk_rep.profile_id(), RISK_TAKING_SEMANTIC_PROFILE_ID);
+    assert_eq!(yielding_rep.profile_id(), YIELDING_SEMANTIC_PROFILE_ID);
+
+    // Verify report validation failure on mismatched profile inside action dist
+    let mut bad_rep = cautious_rep.clone();
+    bad_rep.action_distributions[0] = DiagnosticChoiceActionDistribution::new(
+      CHOICE_CONTEST_CONCEDE_ID,
+      RISK_TAKING_SEMANTIC_PROFILE_ID,
+      10,
+      9,
+      1,
+      0,
+    )
+    .expect("valid dist");
+    assert_eq!(
+      bad_rep.validate(),
+      Err(EmpiricalDistributionEstimationError::MismatchedProfile)
+    );
+
+    // Verify report validation failure on mismatched choice order
+    let mut unordered_rep = cautious_rep.clone();
+    unordered_rep.action_distributions[0] = cautious_rep.action_distributions[1];
+    assert_eq!(
+      unordered_rep.validate(),
+      Err(EmpiricalDistributionEstimationError::MismatchedChoice)
     );
   }
 }
