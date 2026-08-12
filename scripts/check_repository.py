@@ -52,6 +52,7 @@ CORE_RUST_FILES = (
   "src/agent/policy.rs",
   "src/agent/population.rs",
   "src/agent/profile.rs",
+  "src/agent/recalibration.rs",
   "src/agent/reference_output.rs",
   "src/agent/replay.rs",
   "src/agent/semantic.rs",
