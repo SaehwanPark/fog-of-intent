@@ -219,6 +219,30 @@ pub const RISK_TAKING_SEMANTIC_PROFILE_ID: &str = "risk-taking-laner-semantic-v1
 /// Stable identifier for the yielding reference semantic profile.
 pub const YIELDING_SEMANTIC_PROFILE_ID: &str = "yielding-laner-semantic-v1";
 
+/// Versioned schema for the diagnostic choice catalog.
+pub const DIAGNOSTIC_CHOICE_CATALOG_SCHEMA: &str = "m7-diagnostic-choice-catalog-v1";
+
+/// Stable identifier for the contest/concede diagnostic choice.
+pub const CHOICE_CONTEST_CONCEDE_ID: &str = "choice-contest-concede-v1";
+
+/// Stable identifier for the follow/reject diagnostic choice.
+pub const CHOICE_FOLLOW_REJECT_ID: &str = "choice-follow-reject-v1";
+
+/// Stable identifier for the farm/assist diagnostic choice.
+pub const CHOICE_FARM_ASSIST_ID: &str = "choice-farm-assist-v1";
+
+/// Stable identifier for the recall timing diagnostic choice.
+pub const CHOICE_RECALL_TIMING_ID: &str = "choice-recall-timing-v1";
+
+/// Stable identifier for the sacrifice diagnostic choice.
+pub const CHOICE_SACRIFICE_ID: &str = "choice-sacrifice-v1";
+
+/// Stable identifier for the surprise diagnostic choice.
+pub const CHOICE_SURPRISE_ID: &str = "choice-surprise-v1";
+
+/// Stable identifier for the response to failure diagnostic choice.
+pub const CHOICE_RESPONSE_TO_FAILURE_ID: &str = "choice-response-to-failure-v1";
+
 /// Maximum number of replay records evaluated in one scenario-wide identity check.
 pub const MAX_SCRIPTED_AGENT_SCENARIO_REPLAY_RECORDS: usize = 16;
 
@@ -4689,6 +4713,248 @@ impl SemanticProfileVocabulary {
     profile_id: &str,
   ) -> Result<SemanticProfileDefinition, SemanticProfileVocabularyError> {
     Self::lookup(profile_id).ok_or(SemanticProfileVocabularyError::UnknownProfile)
+  }
+}
+
+/// Compact diagnostic choice domain covering core lane decision dilemmas.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum DiagnosticChoiceDomain {
+  /// Contesting space vs yielding position.
+  ContestConcede,
+  /// Following allied calls vs acting autonomously.
+  FollowReject,
+  /// Solo resource farming vs rotating to assist.
+  FarmAssist,
+  /// Greedy lane stay vs timely recall reset.
+  RecallTiming,
+  /// Holding ground under threat vs self-preservation.
+  Sacrifice,
+  /// Adapting to sudden threat vs holding prior posture.
+  Surprise,
+  /// Resetting after unfavorable outcome vs doubling down.
+  ResponseToFailure,
+}
+
+impl DiagnosticChoiceDomain {
+  /// Return the canonical label for this choice domain.
+  pub const fn as_str(self) -> &'static str {
+    match self {
+      Self::ContestConcede => "contest-concede",
+      Self::FollowReject => "follow-reject",
+      Self::FarmAssist => "farm-assist",
+      Self::RecallTiming => "recall-timing",
+      Self::Sacrifice => "sacrifice",
+      Self::Surprise => "surprise",
+      Self::ResponseToFailure => "response-to-failure",
+    }
+  }
+
+  /// Parse a choice domain from a canonical label.
+  pub fn parse(label: &str) -> Option<Self> {
+    match label {
+      "contest-concede" => Some(Self::ContestConcede),
+      "follow-reject" => Some(Self::FollowReject),
+      "farm-assist" => Some(Self::FarmAssist),
+      "recall-timing" => Some(Self::RecallTiming),
+      "sacrifice" => Some(Self::Sacrifice),
+      "surprise" => Some(Self::Surprise),
+      "response-to-failure" => Some(Self::ResponseToFailure),
+      _ => None,
+    }
+  }
+}
+
+/// Compact diagnostic choice definition schema and contrast metadata.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct DiagnosticChoiceDefinition {
+  choice_id: &'static str,
+  schema: &'static str,
+  domain: DiagnosticChoiceDomain,
+  primary_intent: LaneIntent,
+  alternative_intent: LaneIntent,
+  intended_contrast: &'static str,
+  description: &'static str,
+}
+
+impl DiagnosticChoiceDefinition {
+  /// Construct the canonical contest/concede diagnostic choice definition.
+  pub const fn contest_concede_v1() -> Self {
+    Self {
+      choice_id: CHOICE_CONTEST_CONCEDE_ID,
+      schema: DIAGNOSTIC_CHOICE_CATALOG_SCHEMA,
+      domain: DiagnosticChoiceDomain::ContestConcede,
+      primary_intent: LaneIntent::Contest,
+      alternative_intent: LaneIntent::Yield,
+      intended_contrast: "Contesting space vs yielding position to preserve survivability.",
+      description: "Diagnostic choice contrasting contested wave/objective assertiveness against tactical concession.",
+    }
+  }
+
+  /// Construct the canonical follow/reject diagnostic choice definition.
+  pub const fn follow_reject_v1() -> Self {
+    Self {
+      choice_id: CHOICE_FOLLOW_REJECT_ID,
+      schema: DIAGNOSTIC_CHOICE_CATALOG_SCHEMA,
+      domain: DiagnosticChoiceDomain::FollowReject,
+      primary_intent: LaneIntent::Contest,
+      alternative_intent: LaneIntent::Stabilize,
+      intended_contrast: "Accepting allied coordinated contest vs autonomous lane stabilization.",
+      description: "Diagnostic choice contrasting adherence to allied coordination proposals against autonomous action.",
+    }
+  }
+
+  /// Construct the canonical farm/assist diagnostic choice definition.
+  pub const fn farm_assist_v1() -> Self {
+    Self {
+      choice_id: CHOICE_FARM_ASSIST_ID,
+      schema: DIAGNOSTIC_CHOICE_CATALOG_SCHEMA,
+      domain: DiagnosticChoiceDomain::FarmAssist,
+      primary_intent: LaneIntent::Stabilize,
+      alternative_intent: LaneIntent::Contest,
+      intended_contrast: "Farming wave resources in lane vs committing to assist forward contest.",
+      description: "Diagnostic choice contrasting solo resource farming against assisting allied engagements.",
+    }
+  }
+
+  /// Construct the canonical recall timing diagnostic choice definition.
+  pub const fn recall_timing_v1() -> Self {
+    Self {
+      choice_id: CHOICE_RECALL_TIMING_ID,
+      schema: DIAGNOSTIC_CHOICE_CATALOG_SCHEMA,
+      domain: DiagnosticChoiceDomain::RecallTiming,
+      primary_intent: LaneIntent::Recall,
+      alternative_intent: LaneIntent::Stabilize,
+      intended_contrast: "Executing timely recall to reset vs greedily remaining in lane to stabilize wave.",
+      description: "Diagnostic choice contrasting proactive recall resets against high-risk wave stabilization.",
+    }
+  }
+
+  /// Construct the canonical sacrifice diagnostic choice definition.
+  pub const fn sacrifice_v1() -> Self {
+    Self {
+      choice_id: CHOICE_SACRIFICE_ID,
+      schema: DIAGNOSTIC_CHOICE_CATALOG_SCHEMA,
+      domain: DiagnosticChoiceDomain::Sacrifice,
+      primary_intent: LaneIntent::Contest,
+      alternative_intent: LaneIntent::Withdraw,
+      intended_contrast: "Holding ground despite attrition danger vs withdrawing to preserve health.",
+      description: "Diagnostic choice contrasting objective defense at personal cost against self-preservation.",
+    }
+  }
+
+  /// Construct the canonical surprise diagnostic choice definition.
+  pub const fn surprise_v1() -> Self {
+    Self {
+      choice_id: CHOICE_SURPRISE_ID,
+      schema: DIAGNOSTIC_CHOICE_CATALOG_SCHEMA,
+      domain: DiagnosticChoiceDomain::Surprise,
+      primary_intent: LaneIntent::Withdraw,
+      alternative_intent: LaneIntent::Stabilize,
+      intended_contrast: "Immediate threat withdrawal vs standing ground under unexpected pressure.",
+      description: "Diagnostic choice contrasting reactive threat retreat against holding standard posture when surprised.",
+    }
+  }
+
+  /// Construct the canonical response to failure diagnostic choice definition.
+  pub const fn response_to_failure_v1() -> Self {
+    Self {
+      choice_id: CHOICE_RESPONSE_TO_FAILURE_ID,
+      schema: DIAGNOSTIC_CHOICE_CATALOG_SCHEMA,
+      domain: DiagnosticChoiceDomain::ResponseToFailure,
+      primary_intent: LaneIntent::Yield,
+      alternative_intent: LaneIntent::Contest,
+      intended_contrast: "Yielding space after an unfavorable exchange vs doubling down on contest.",
+      description: "Diagnostic choice contrasting risk reduction and tactical reset against persistent escalation after failure.",
+    }
+  }
+
+  pub const fn choice_id(self) -> &'static str {
+    self.choice_id
+  }
+
+  pub const fn schema(self) -> &'static str {
+    self.schema
+  }
+
+  pub const fn domain(self) -> DiagnosticChoiceDomain {
+    self.domain
+  }
+
+  pub const fn primary_intent(self) -> LaneIntent {
+    self.primary_intent
+  }
+
+  pub const fn alternative_intent(self) -> LaneIntent {
+    self.alternative_intent
+  }
+
+  pub const fn intended_contrast(self) -> &'static str {
+    self.intended_contrast
+  }
+
+  pub const fn description(self) -> &'static str {
+    self.description
+  }
+}
+
+/// Errors raised when validating diagnostic choice catalog lookups.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum DiagnosticChoiceCatalogError {
+  UnknownChoice,
+}
+
+/// Canonical catalog of diagnostic choice definitions.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct DiagnosticChoiceCatalog;
+
+impl DiagnosticChoiceCatalog {
+  /// Return all registered canonical diagnostic choice definitions.
+  pub const fn all_choices() -> [DiagnosticChoiceDefinition; 7] {
+    [
+      DiagnosticChoiceDefinition::contest_concede_v1(),
+      DiagnosticChoiceDefinition::follow_reject_v1(),
+      DiagnosticChoiceDefinition::farm_assist_v1(),
+      DiagnosticChoiceDefinition::recall_timing_v1(),
+      DiagnosticChoiceDefinition::sacrifice_v1(),
+      DiagnosticChoiceDefinition::surprise_v1(),
+      DiagnosticChoiceDefinition::response_to_failure_v1(),
+    ]
+  }
+
+  /// Lookup a diagnostic choice definition by its stable ID.
+  pub fn lookup(choice_id: &str) -> Option<DiagnosticChoiceDefinition> {
+    match choice_id {
+      CHOICE_CONTEST_CONCEDE_ID => Some(DiagnosticChoiceDefinition::contest_concede_v1()),
+      CHOICE_FOLLOW_REJECT_ID => Some(DiagnosticChoiceDefinition::follow_reject_v1()),
+      CHOICE_FARM_ASSIST_ID => Some(DiagnosticChoiceDefinition::farm_assist_v1()),
+      CHOICE_RECALL_TIMING_ID => Some(DiagnosticChoiceDefinition::recall_timing_v1()),
+      CHOICE_SACRIFICE_ID => Some(DiagnosticChoiceDefinition::sacrifice_v1()),
+      CHOICE_SURPRISE_ID => Some(DiagnosticChoiceDefinition::surprise_v1()),
+      CHOICE_RESPONSE_TO_FAILURE_ID => Some(DiagnosticChoiceDefinition::response_to_failure_v1()),
+      _ => None,
+    }
+  }
+
+  /// Validate that a choice ID exists in the catalog.
+  pub fn validate_choice_id(
+    choice_id: &str,
+  ) -> Result<DiagnosticChoiceDefinition, DiagnosticChoiceCatalogError> {
+    Self::lookup(choice_id).ok_or(DiagnosticChoiceCatalogError::UnknownChoice)
+  }
+
+  /// Return the canonical choice definition for a given domain.
+  pub const fn choice_for_domain(domain: DiagnosticChoiceDomain) -> DiagnosticChoiceDefinition {
+    match domain {
+      DiagnosticChoiceDomain::ContestConcede => DiagnosticChoiceDefinition::contest_concede_v1(),
+      DiagnosticChoiceDomain::FollowReject => DiagnosticChoiceDefinition::follow_reject_v1(),
+      DiagnosticChoiceDomain::FarmAssist => DiagnosticChoiceDefinition::farm_assist_v1(),
+      DiagnosticChoiceDomain::RecallTiming => DiagnosticChoiceDefinition::recall_timing_v1(),
+      DiagnosticChoiceDomain::Sacrifice => DiagnosticChoiceDefinition::sacrifice_v1(),
+      DiagnosticChoiceDomain::Surprise => DiagnosticChoiceDefinition::surprise_v1(),
+      DiagnosticChoiceDomain::ResponseToFailure => {
+        DiagnosticChoiceDefinition::response_to_failure_v1()
+      }
+    }
   }
 }
 
@@ -9558,6 +9824,108 @@ mod tests {
     assert_eq!(
       SemanticProfileVocabulary::validate_profile_id("unknown-profile"),
       Err(SemanticProfileVocabularyError::UnknownProfile)
+    );
+  }
+
+  #[test]
+  fn diagnostic_choice_domains_and_catalog_are_canonical() {
+    for (domain, label) in [
+      (DiagnosticChoiceDomain::ContestConcede, "contest-concede"),
+      (DiagnosticChoiceDomain::FollowReject, "follow-reject"),
+      (DiagnosticChoiceDomain::FarmAssist, "farm-assist"),
+      (DiagnosticChoiceDomain::RecallTiming, "recall-timing"),
+      (DiagnosticChoiceDomain::Sacrifice, "sacrifice"),
+      (DiagnosticChoiceDomain::Surprise, "surprise"),
+      (
+        DiagnosticChoiceDomain::ResponseToFailure,
+        "response-to-failure",
+      ),
+    ] {
+      assert_eq!(domain.as_str(), label);
+      assert_eq!(DiagnosticChoiceDomain::parse(label), Some(domain));
+    }
+    assert_eq!(DiagnosticChoiceDomain::parse("unknown"), None);
+
+    let cc = DiagnosticChoiceDefinition::contest_concede_v1();
+    let fr = DiagnosticChoiceDefinition::follow_reject_v1();
+    let fa = DiagnosticChoiceDefinition::farm_assist_v1();
+    let rt = DiagnosticChoiceDefinition::recall_timing_v1();
+    let sc = DiagnosticChoiceDefinition::sacrifice_v1();
+    let sp = DiagnosticChoiceDefinition::surprise_v1();
+    let rf = DiagnosticChoiceDefinition::response_to_failure_v1();
+
+    for choice in [cc, fr, fa, rt, sc, sp, rf] {
+      assert_eq!(choice.schema(), DIAGNOSTIC_CHOICE_CATALOG_SCHEMA);
+      assert!(!choice.choice_id().is_empty());
+      assert!(!choice.intended_contrast().is_empty());
+      assert!(!choice.description().is_empty());
+      assert_ne!(choice.primary_intent(), choice.alternative_intent());
+    }
+
+    assert_eq!(cc.choice_id(), CHOICE_CONTEST_CONCEDE_ID);
+    assert_eq!(cc.domain(), DiagnosticChoiceDomain::ContestConcede);
+    assert_eq!(cc.primary_intent(), LaneIntent::Contest);
+    assert_eq!(cc.alternative_intent(), LaneIntent::Yield);
+
+    assert_eq!(fr.choice_id(), CHOICE_FOLLOW_REJECT_ID);
+    assert_eq!(fr.domain(), DiagnosticChoiceDomain::FollowReject);
+    assert_eq!(fr.primary_intent(), LaneIntent::Contest);
+    assert_eq!(fr.alternative_intent(), LaneIntent::Stabilize);
+
+    assert_eq!(fa.choice_id(), CHOICE_FARM_ASSIST_ID);
+    assert_eq!(fa.domain(), DiagnosticChoiceDomain::FarmAssist);
+    assert_eq!(fa.primary_intent(), LaneIntent::Stabilize);
+    assert_eq!(fa.alternative_intent(), LaneIntent::Contest);
+
+    assert_eq!(rt.choice_id(), CHOICE_RECALL_TIMING_ID);
+    assert_eq!(rt.domain(), DiagnosticChoiceDomain::RecallTiming);
+    assert_eq!(rt.primary_intent(), LaneIntent::Recall);
+    assert_eq!(rt.alternative_intent(), LaneIntent::Stabilize);
+
+    assert_eq!(sc.choice_id(), CHOICE_SACRIFICE_ID);
+    assert_eq!(sc.domain(), DiagnosticChoiceDomain::Sacrifice);
+    assert_eq!(sc.primary_intent(), LaneIntent::Contest);
+    assert_eq!(sc.alternative_intent(), LaneIntent::Withdraw);
+
+    assert_eq!(sp.choice_id(), CHOICE_SURPRISE_ID);
+    assert_eq!(sp.domain(), DiagnosticChoiceDomain::Surprise);
+    assert_eq!(sp.primary_intent(), LaneIntent::Withdraw);
+    assert_eq!(sp.alternative_intent(), LaneIntent::Stabilize);
+
+    assert_eq!(rf.choice_id(), CHOICE_RESPONSE_TO_FAILURE_ID);
+    assert_eq!(rf.domain(), DiagnosticChoiceDomain::ResponseToFailure);
+    assert_eq!(rf.primary_intent(), LaneIntent::Yield);
+    assert_eq!(rf.alternative_intent(), LaneIntent::Contest);
+
+    let all = DiagnosticChoiceCatalog::all_choices();
+    assert_eq!(all.len(), 7);
+    assert_eq!(all[0], cc);
+    assert_eq!(all[1], fr);
+    assert_eq!(all[2], fa);
+    assert_eq!(all[3], rt);
+    assert_eq!(all[4], sc);
+    assert_eq!(all[5], sp);
+    assert_eq!(all[6], rf);
+
+    for choice in [cc, fr, fa, rt, sc, sp, rf] {
+      assert_eq!(
+        DiagnosticChoiceCatalog::lookup(choice.choice_id()),
+        Some(choice)
+      );
+      assert_eq!(
+        DiagnosticChoiceCatalog::validate_choice_id(choice.choice_id()),
+        Ok(choice)
+      );
+      assert_eq!(
+        DiagnosticChoiceCatalog::choice_for_domain(choice.domain()),
+        choice
+      );
+    }
+
+    assert_eq!(DiagnosticChoiceCatalog::lookup("unknown-choice"), None);
+    assert_eq!(
+      DiagnosticChoiceCatalog::validate_choice_id("unknown-choice"),
+      Err(DiagnosticChoiceCatalogError::UnknownChoice)
     );
   }
 }

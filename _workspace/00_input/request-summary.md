@@ -1,29 +1,40 @@
-# Request Summary: Compact Semantic Profile Vocabulary and Schema
+# Request Summary: Bounded M7 Diagnostic Choice Dimensions and Catalog
 
 ## Goal and Outcome
-Define the versioned schema `m7-semantic-profile-vocabulary-v1` with a compact semantic profile vocabulary covering core behavioral trait dimensions (risk tolerance, deference, focus, and communication clarity), providing structured semantic descriptors for the reference agent profiles (`cautious-laner-semantic-v1`, `risk-taking-laner-semantic-v1`, and `yielding-laner-semantic-v1`) without making human behavioral validity claims.
+Define the versioned schema `m7-diagnostic-choice-catalog-v1` with a canonical diagnostic choice catalog covering the 7 core behavioral choice dilemmas required by Phase 7 of `ROADMAP.md` (contest/concede, follow/reject, farm/assist, recall timing, sacrifice, surprise, and response to failure), providing typed diagnostic choice contracts for subsequent empirical distribution estimation and parametric policy calibration.
 
 ## Roadmap Milestone
 M7 — Semantic-to-Parametric Calibration Proof.
-Item: `Define a compact semantic profile vocabulary and schema.`
+Item: `Create diagnostic choices for contest/concede, follow/reject, farm/assist, recall timing, sacrifice, surprise, and response to failure.`
 
 ## Scope
-- Add versioned schema `m7-semantic-profile-vocabulary-v1` in `src/agent.rs`.
-- Define compact categorical semantic dimensions:
-  - `SemanticRiskTolerance`: `Cautious`, `Balanced`, `RiskSeeking`
-  - `SemanticDeference`: `Autonomous`, `Compliant`, `Yielding`
-  - `SemanticFocus`: `Patience`, `Opportunity`, `Urgency`
-  - `SemanticCommunicationClarity`: `Terse`, `Standard`, `Verbose`
-- Define `SemanticProfileDefinition` with structured fields: `profile_id`, `schema`, `risk_tolerance`, `deference`, `focus`, `communication_clarity`, and `description`.
-- Define canonical 3 baseline semantic profile definitions corresponding to M4/M6 reference behaviors:
-  - `cautious-laner-semantic-v1`
-  - `risk-taking-laner-semantic-v1`
-  - `yielding-laner-semantic-v1`
-- Define `SemanticProfileVocabulary` registry/catalog with schema verification, stable profile enumeration, and fail-closed lookup/validation.
-- Add comprehensive unit tests covering all dimensions, parsing, roundtrips, invalid profile ID handling, and vocabulary consistency.
-- Reconcile `Cargo.toml` (0.1.172), `CHANGELOG.md`, `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, and `LESSONS.md`.
+- Add versioned schema `m7-diagnostic-choice-catalog-v1` in `src/agent.rs`.
+- Define discrete diagnostic choice domains (`DiagnosticChoiceDomain`):
+  - `ContestConcede` ("contest-concede")
+  - `FollowReject` ("follow-reject")
+  - `FarmAssist` ("farm-assist")
+  - `RecallTiming` ("recall-timing")
+  - `Sacrifice` ("sacrifice")
+  - `Surprise` ("surprise")
+  - `ResponseToFailure` ("response-to-failure")
+- Define `DiagnosticChoiceDefinition` with structured fields: `choice_id`, `schema`, `domain`, `primary_intent`, `alternative_intent`, `intended_contrast`, and `description`.
+- Define 7 canonical diagnostic choice definitions corresponding to the roadmap requirements:
+  - `choice-contest-concede-v1`
+  - `choice-follow-reject-v1`
+  - `choice-farm-assist-v1`
+  - `choice-recall-timing-v1`
+  - `choice-sacrifice-v1`
+  - `choice-surprise-v1`
+  - `choice-response-to-failure-v1`
+- Define `DiagnosticChoiceCatalog` with:
+  - `all_choices()`
+  - `lookup(choice_id)`
+  - `validate_choice_id(choice_id)` with fail-closed `DiagnosticChoiceCatalogError::UnknownChoice`
+  - `choice_for_domain(domain)`
+- Add unit tests verifying domain conversions, parsing, roundtrips, canonical definitions, catalog lookups, and error cases.
+- Reconcile `Cargo.toml` (bumped to 0.1.173), `Cargo.lock`, `CHANGELOG.md`, `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `LESSONS.md`, and `README.md`.
 
 ## Non-Goals & Explicit Limits
 - No prompt generation or LLM runtime calls.
-- No claim that semantic profiles capture human psychological ground truth.
-- No parametric model fitting or held-out diagnostic scenario evaluation (deferred to subsequent M7 slices).
+- No claim that diagnostic choices capture complete human decision-making or full game scenarios.
+- No parametric model fitting or empirical distribution estimation (deferred to subsequent M7 slices).

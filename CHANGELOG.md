@@ -98,6 +98,24 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.173 — 2026-08-12
+
+### Added
+
+- Added `m7-diagnostic-choice-catalog-v1`, providing typed diagnostic choice
+  definitions across seven behavioral dilemma domains (`ContestConcede`,
+  `FollowReject`, `FarmAssist`, `RecallTiming`, `Sacrifice`, `Surprise`, and
+  `ResponseToFailure`) with canonical choices (`choice-contest-concede-v1`,
+  `choice-follow-reject-v1`, `choice-farm-assist-v1`, `choice-recall-timing-v1`,
+  `choice-sacrifice-v1`, `choice-surprise-v1`, `choice-response-to-failure-v1`)
+  and a fail-closed registry catalog (`DiagnosticChoiceCatalog`).
+
+### Known limits
+
+- This is a declarative diagnostic choice schema; empirical action/communication
+  distribution estimation, prompt protocols, and parametric policy fitting
+  remain open.
+
 ## 0.1.172 — 2026-08-11
 
 ### Added
