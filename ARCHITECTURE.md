@@ -297,6 +297,13 @@ focus, and communication clarity dimensions for baseline reference profiles
 `yielding-laner-semantic-v1`) alongside a fail-closed lookup catalog
 (`SemanticProfileVocabulary`). It does not execute prompt generation or claim
 human psychological validity.
+`DiagnosticChoiceDefinition` defines `m7-diagnostic-choice-catalog-v1`,
+providing typed diagnostic choice dilemma definitions across seven domains
+(`ContestConcede`, `FollowReject`, `FarmAssist`, `RecallTiming`, `Sacrifice`,
+`Surprise`, `ResponseToFailure`) alongside a fail-closed registry catalog
+(`DiagnosticChoiceCatalog`). It establishes bounded strategic dilemmas for
+calibration and does not claim full match scenario execution or human behavioral
+completeness.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

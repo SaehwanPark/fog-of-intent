@@ -5,6 +5,21 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Keep diagnostic choice catalogs discrete and contrast-focused
+
+- Context: M7 required diagnostic choice definitions across core behavioral
+  dilemmas before empirical distribution estimation or model fitting was
+  authorized.
+- Symptom: Embedding complex scenario state trees or latent utility metrics in
+  choice schemas would blur the boundary between strategic dilemma contracts
+  and full simulation execution.
+- Resolution: Define `DiagnosticChoiceDefinition` over discrete domains with
+  explicit primary/alternative intent options and documented contrast strings,
+  managed through a fail-closed `DiagnosticChoiceCatalog`.
+- Prevention: Treat choice dilemma definitions, scenario generation, empirical
+  distribution estimation, and parametric policy fitting as separate contracts
+  with separate evidence.
+
 ## Keep semantic profile schemas discrete and declarative
 
 - Context: M7 needed a compact semantic profile vocabulary before diagnostic

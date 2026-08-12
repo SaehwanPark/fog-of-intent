@@ -1423,9 +1423,18 @@ distribution estimation, and parametric fitting remain open.
   `yielding-laner-semantic-v1`.
 - `SemanticProfileVocabulary` provides a fail-closed lookup and validation
   catalog over the registered canonical profiles.
-- This contract provides structured semantic descriptors for reference behaviors;
-  it does not claim human psychological validity or complete natural-language
-  grounding.
+- `DiagnosticChoiceDefinition` defines `m7-diagnostic-choice-catalog-v1`
+  covering seven discrete behavioral dilemma domains: `ContestConcede`,
+  `FollowReject`, `FarmAssist`, `RecallTiming`, `Sacrifice`, `Surprise`, and
+  `ResponseToFailure`.
+- Canonical diagnostic choice definitions are provided for
+  `choice-contest-concede-v1`, `choice-follow-reject-v1`,
+  `choice-farm-assist-v1`, `choice-recall-timing-v1`, `choice-sacrifice-v1`,
+  `choice-surprise-v1`, and `choice-response-to-failure-v1`.
+- `DiagnosticChoiceCatalog` provides fail-closed lookup, validation, domain
+  mapping, and complete enumeration over the registered canonical choices.
+- This contract establishes typed strategic choice dilemmas for calibration;
+  it does not claim full match scenario execution or human behavioral completeness.
 
 ## Future
 

@@ -1535,8 +1535,9 @@ uncertainty and evidence limits reported.
 - [x] Define a compact semantic profile vocabulary and schema;
   diagnostic scenario choices, distribution estimation, and parametric fitting
   remain open.
-- [ ] Create diagnostic choices for contest/concede, follow/reject, farm/assist,
-  recall timing, sacrifice, surprise, and response to failure.
+- [x] Create diagnostic choices for contest/concede, follow/reject, farm/assist,
+  recall timing, sacrifice, surprise, and response to failure;
+  distribution estimation, prompt protocols, and parametric fitting remain open.
 - [ ] Define repeated-sampling and model/prompt version protocols.
 - [ ] Estimate empirical action and communication distributions.
 - [ ] Define behavioral distance, entropy, sensitivity, consistency, and
