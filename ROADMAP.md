@@ -1542,8 +1542,9 @@ uncertainty and evidence limits reported.
   distribution estimation and parametric fitting remain open.
 - [x] Estimate empirical action and communication distributions;
   distance/entropy measures and parametric fitting remain open.
-- [ ] Define behavioral distance, entropy, sensitivity, consistency, and
-  adaptation measures.
+- [x] Define behavioral distance, entropy, sensitivity, consistency, and
+  adaptation measures;
+  parametric fitting remains open.
 - [ ] Fit initial bounded parametric policies with regularization.
 - [ ] Evaluate held-out scenarios and counterfactual perturbations.
 - [ ] Compare more than one model or prompting family where feasible.

@@ -318,6 +318,14 @@ with exact integer 10,000 basis-point representations alongside aggregated diagn
 reports (`EmpiricalDistributionEstimateReport` under `m7-empirical-distribution-estimation-v1`).
 They establish declarative empirical distribution estimates for calibration and do not
 execute live LLM provider I/O or claim human psychological ground truth.
+`BehavioralDistanceMeasure` (`m7-behavioral-distance-v1`), `BehavioralEntropyMeasure`
+(`m7-behavioral-entropy-v1`), `BehavioralSensitivityMeasure` (`m7-behavioral-sensitivity-v1`),
+`BehavioralConsistencyMeasure` (`m7-behavioral-consistency-v1`), and `BehavioralAdaptationMeasure`
+(`m7-behavioral-adaptation-v1`) provide discrete integer basis-point calculators for Total
+Variation Distance, Gini diversity, dilemma contrast deltas, modal adherence, and defensive shifts
+alongside aggregated reports (`BehavioralMeasuresReport` under `m7-behavioral-measures-v1`).
+They establish declarative behavioral metrics for calibration without floating-point math or
+hidden state.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

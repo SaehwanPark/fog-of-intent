@@ -1456,8 +1456,22 @@ distribution estimation, and parametric fitting remain open.
   aggregating seven canonical diagnostic dilemmas and communication distributions with
   fail-closed validation and canonical baseline reports (`cautious_v1`, `risk_taking_v1`,
   `yielding_v1`).
+- `BehavioralDistanceMeasure` and `BehavioralDistanceReport` define `m7-behavioral-distance-v1`
+  for calculating Total Variation Distance (TVD) across action and communication distributions in
+  exact integer basis points ($[0..=10,000]$ bp).
+- `BehavioralEntropyMeasure` defines `m7-behavioral-entropy-v1` for calculating the Gini diversity
+  index ($10,000 - \frac{\sum p_i^2}{10,000}$) in exact integer basis points.
+- `BehavioralSensitivityMeasure` defines `m7-behavioral-sensitivity-v1` for quantifying intent shift
+  across contrasting dilemma pairs in exact integer basis points.
+- `BehavioralConsistencyMeasure` defines `m7-behavioral-consistency-v1` for evaluating modal choice
+  concentration ($\max_i(p_i)$) in exact integer basis points.
+- `BehavioralAdaptationMeasure` defines `m7-behavioral-adaptation-v1` for measuring defensive
+  adaptation across adverse dilemmas in exact integer basis points.
+- `BehavioralMeasuresReport` defines `m7-behavioral-measures-v1`, aggregating all behavioral metrics
+  for a semantic profile with formatted Markdown reporting.
 - This contract establishes typed strategic choice dilemmas, empirical sampling protocols,
-  and empirical distribution estimation for calibration; it does not claim full match scenario
+  empirical distribution estimation, and discrete behavioral distance, entropy, sensitivity,
+  consistency, and adaptation measures for calibration; it does not claim full match scenario
   execution or human behavioral completeness.
 
 ## Future

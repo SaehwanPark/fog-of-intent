@@ -98,6 +98,29 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.176 — 2026-08-12
+
+### Added
+
+- Added `m7-behavioral-measures-v1`, `m7-behavioral-distance-v1`,
+  `m7-behavioral-entropy-v1`, `m7-behavioral-sensitivity-v1`,
+  `m7-behavioral-consistency-v1`, and `m7-behavioral-adaptation-v1`, providing
+  pure discrete integer basis-point (10,000 bp scale) metrics:
+  - `BehavioralDistanceMeasure` and `BehavioralDistanceReport` for Total Variation
+    Distance across action and communication distributions.
+  - `BehavioralEntropyMeasure` for Gini diversity index calculation.
+  - `BehavioralSensitivityMeasure` for contrasting dilemma primary share shifts.
+  - `BehavioralConsistencyMeasure` for modal preference concentration.
+  - `BehavioralAdaptationMeasure` for defensive adaptation in adverse dilemmas.
+  - `BehavioralMeasuresReport` for unified profile-level behavioral reporting with
+    formatted Markdown rendering.
+
+### Known limits
+
+- These are discrete metric calculators over empirical distribution estimates;
+  parametric policy fitting, counterfactual perturbations, and live model provider
+  integration remain open.
+
 ## 0.1.175 — 2026-08-12
 
 ### Added
