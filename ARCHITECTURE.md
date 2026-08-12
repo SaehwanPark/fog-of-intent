@@ -340,6 +340,10 @@ evaluate directional shift coherence under discrete perturbation conditions (`Th
 `AlliedRetreatCall`, `SevereHealthAttrition`, `FavorableOpening`). `CalibrationHeldOutReport`
 (`m7-calibration-held-out-v1`) unifies generalization loss and counterfactual sensitivity into a
 deterministic qualification gate.
+`MultiModelComparisonReport` (`m7-multi-model-comparison-v1`) evaluates Total Variation Distance
+deltas across action and communication distributions, parametric policy weight shifts, modal choice
+agreement (0..=7), and categorical alignment status (`aligned`, `shifted`, `divergent`) between
+reference and alternative model/prompting protocols across diagnostic dilemmas.
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

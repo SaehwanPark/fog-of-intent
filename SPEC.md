@@ -1490,10 +1490,12 @@ distribution estimation, and parametric fitting remain open.
   against semantic profile traits.
 - `CalibrationHeldOutReport` defines `m7-calibration-held-out-v1`, integrating held-out scenario generalization and
   counterfactual sensitivity into an inspectable qualification gate with Markdown export.
+- `MultiModelComparisonReport` defines `m7-multi-model-comparison-v1`, evaluating Total Variation Distance (TVD) across action and communication distributions, parametric policy weight shifts, modal choice agreement (0..=7), and categorical alignment status (`aligned`, `shifted`, `divergent`) between reference and alternative model/prompting protocols across diagnostic dilemmas. Canonical comparisons are provided for `cautious_v1`, `risk_taking_v1`, and `yielding_v1`.
 - This contract establishes typed strategic choice dilemmas, empirical sampling protocols,
   empirical distribution estimation, discrete behavioral measures, regularized parametric policy
-  fitting, held-out scenario evaluation, and counterfactual perturbation sensitivity for calibration;
-  it does not claim full match scenario execution or human behavioral completeness.
+  fitting, held-out scenario evaluation, counterfactual perturbation sensitivity, and multi-model
+  family comparison for calibration; it does not claim full match scenario execution or human
+  behavioral completeness.
 
 ## Future
 

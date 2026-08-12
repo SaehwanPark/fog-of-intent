@@ -5,7 +5,23 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Keep multi-model comparisons discrete and basis-point bounded
+
+- Context: M7 required comparing empirical choice distributions and fitted parametric
+  policies across multiple model and prompting families before live model provider APIs
+  or unidentifiable parameter diagnostics were authorized.
+- Symptom: Introducing free-form text diffs, unscaled probabilities, or floating-point
+  similarity scores across model families would blur the boundary between empirical calibration
+  contracts and unconstrained latent-variable models.
+- Resolution: Define `MultiModelComparisonReport` over discrete diagnostic dilemma domains
+  using exact integer basis-point Total Variation Distance (TVD), modal agreement counts (0..=7),
+  and a fail-closed alignment classification (`aligned`, `shifted`, `divergent`).
+- Prevention: Treat empirical distribution estimation, behavioral distance measures,
+  regularized policy fitting, held-out evaluation, and multi-model family comparisons as separate
+  contracts with separate evidence.
+
 ## Keep parametric policy fitting regularized and basis-point bounded
+
 
 - Context: M7 required parametric policy parameter estimation from empirical
   choice distributions before held-out scenario evaluation or live model
