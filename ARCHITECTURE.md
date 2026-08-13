@@ -425,6 +425,24 @@ with Markdown debrief rendering and fail-closed zero private chain-of-thought re
 `TeamAttributionEvaluator` synthesizing multi-agent simultaneous resolutions with physical lane outcomes, and
 `CoordinationAttributionCatalog` (`m8-coordination-attribution-catalog-v1`) registering 6 canonical benchmark scenarios.
 
+`src/agent/debrief.rs` defines causal post-encounter debrief summaries:
+`CommunicationDebriefSummary` (`m8-team-communication-debrief-v1`) tracking packet transmission reliability ($[0..=10,000]$ bp),
+dialogue round metrics, and dissent frequency breakdowns, `LeadershipDebriefSummary` (`m8-team-leadership-debrief-v1`)
+tracking directive compliance rates, consensus deadlocks, fallback activations, and caller reputation deltas ($[-10,000..=10,000]$ bp),
+and `TeamEncounterDebriefReport` (`m8-team-encounter-debrief-v1`) synthesizing simultaneous resolutions, decoupled attribution,
+communication debriefs, and leadership debriefs into structured Markdown reports with strict zero private chain-of-thought enforcement.
+
+`src/agent/disagreement.rs` defines strategic disagreement legitimacy evaluation:
+`DisagreementLegitimacyClassification` (`LegitimateDissent`, `ConstructiveAlternative`, `UnjustifiedInsubordination`),
+`DisagreementLegitimacyEvaluation` (`m8-strategic-disagreement-v1`), and `TeamDisagreementEvaluator` evaluating counterfactual
+payoff value deltas ($[-10,000..=10,000]$ bp) to formally verify that dissent under adverse health and threat conditions is
+strategically legitimate and value-accretive.
+
+`src/agent/scenarios.rs` defines the canonical benchmark scenario battery:
+`TeamScenarioDefinition` (`m8-team-scenarios-v1`), `TeamScenarioExecutionResult`, and `TeamScenarioCatalog` (`m8-team-scenario-catalog-v1`)
+registering and executing 5 canonical benchmark scenarios (`scenario-high-trust-gank-v1`, `scenario-low-trust-dissent-v1`,
+`scenario-conflicting-calls-arbitration-v1`, `scenario-missing-message-fallback-v1`, `scenario-strategic-dissent-survival-v1`).
+
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

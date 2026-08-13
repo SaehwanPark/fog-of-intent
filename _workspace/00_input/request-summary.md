@@ -1,47 +1,56 @@
-# Request Summary: M8 Coordination and Execution Attribution Separation
+# Request Summary: M8 Scenarios, Debriefs, and Strategic Disagreement
 
-**Task:** M8 — Attribute coordination success and failure separately from execution
-**Milestone:** M8 — Team Communication and Shot-Calling
+**Task:** M8 — Add high-trust, low-trust, conflicting-call, and missing-message scenarios; Add communication and leadership debriefs; Test that disagreement can be strategically legitimate
+**Milestone:** M8 — Team Communication and Shot-Calling (Milestone Completion)
 **Role:** Fog of Intent Orchestrator / Agent-Ecology Designer
 
 ## Requested Outcome
 
-Implement the deterministic attribution model and causal debrief contracts that strictly separate team coordination success/failure from physical/mechanical execution outcomes. This delivers the core M8 principle that game outcomes must be inspectable across both coordination quality and execution quality, classifying decisions into the four canonical strategic quadrants (Coordinated Triumph, Coordinated Failure, Uncoordinated Bailout, Compounded Failure) with exact integer basis-point contributions and discrete causal factor taxonomies.
+Complete the final scope items for Milestone M8:
+1. Deliver a canonical benchmark scenario battery (`m8-team-scenarios-v1`) covering high-trust coordination, low-trust dissent, conflicting-call peer arbitration, missing-message transmission failure, and strategic legitimate dissent.
+2. Deliver causal communication and leadership debrief contracts (`m8-team-communication-debrief-v1`, `m8-team-leadership-debrief-v1`, `m8-team-encounter-debrief-v1`) with transmission metrics, leadership compliance/dissent rates, basis-point reputation deltas, and formatted Markdown rendering.
+3. Deliver a formal strategic disagreement legitimacy evaluator (`m8-strategic-disagreement-v1`) proving that autonomous agent insubordination under adverse conditions is strategically sound and value-accretive compared to blind compliance.
 
 ## In Scope
 
-- Versioned attribution schemas:
-  - `m8-coordination-execution-attribution-v1`
-  - `m8-coordination-execution-attribution-report-v1`
-  - `m8-coordination-attribution-catalog-v1`
-- Four canonical strategic attribution quadrants (`CoordinatedTriumph`, `CoordinatedFailure`, `UncoordinatedBailout`, `CompoundedFailure`).
-- Discrete causal factor taxonomies for coordination (`CoordinationCausalFactor`) and execution (`ExecutionCausalFactor`).
-- Discrete performance ratings for coordination (`CoordinationRating`) and execution (`ExecutionRating`).
-- Exact integer basis-point attribution metrics ($[0..=10,000]$ bp) with sum conservation (`coordination_bp + execution_bp + exogenous_bp == 10_000`).
-- Deterministic evaluator (`TeamAttributionEvaluator`) synthesizing `TeamSimultaneousResolution` with lane execution outcomes.
-- Canonical reference scenario catalog (`CoordinationAttributionCatalog`) covering all 4 quadrants and strategic dilemma cases (e.g., legitimate dissent vs execution failure, solo clutch despite dissent).
-- Structured Markdown reporting and debrief rendering.
-- Fail-closed error handling (`TeamAttributionError`) and strict zero private chain-of-thought enforcement.
+- Versioned schemas:
+  - `m8-team-scenarios-v1`
+  - `m8-team-communication-debrief-v1`
+  - `m8-team-leadership-debrief-v1`
+  - `m8-team-encounter-debrief-v1`
+  - `m8-strategic-disagreement-v1`
+- Canonical scenario suite (`TeamScenarioBattery`, `TeamScenarioCatalog`):
+  - `scenario-high-trust-gank-v1`
+  - `scenario-low-trust-dissent-v1`
+  - `scenario-conflicting-calls-arbitration-v1`
+  - `scenario-missing-message-fallback-v1`
+  - `scenario-strategic-dissent-survival-v1`
+- Communication & Leadership debrief contracts (`CommunicationDebriefSummary`, `LeadershipDebriefSummary`, `TeamEncounterDebriefReport`).
+- Strategic disagreement legitimacy evaluation (`DisagreementLegitimacyEvaluator`, `DisagreementLegitimacyClassification`, `DisagreementCounterfactualComparison`).
+- Exact integer basis-point metrics ($[0..=10,000]$ bp) and zero floating-point math.
+- Fail-closed error handling and strict zero private chain-of-thought enforcement (`chain_of_thought_present == false`).
+- Re-exports in `src/agent/mod.rs`.
+- Comprehensive unit and integration tests.
 
 ## Non-Goals & Deferrals
 
-- No floating-point math or unconstrained continuous gradient optimization.
-- No live network multiplayer, LLM provider APIs, or private chain-of-thought storage.
+- No floating-point math or continuous gradient approximations.
+- No live network multiplayer, external LLM provider APIs, or private chain-of-thought storage.
 - No multi-lane full match simulation (deferred to M9).
-- No claim that simulated team attribution represents human team psychology.
+- No claim that simulated team dynamics establish human psychology.
 
 ## Source Files
 
-- `src/agent/attribution.rs` (new module)
-- `src/agent/mod.rs` (submodule export)
-- `src/agent/simultaneous.rs` (resolution integration types)
-- `src/lane/result.rs` / `src/lane/coordination.rs` (execution outcome types)
-- `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `README.md`
+- `src/agent/debrief.rs` (new module)
+- `src/agent/disagreement.rs` (new module)
+- `src/agent/scenarios.rs` (new module)
+- `src/agent/mod.rs` (submodule exports)
+- `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `README.md`, `LESSONS.md`
 
 ## Verification Plan
 
-- Exhaustive unit test suite in `src/agent/attribution.rs` covering all quadrants, causal factors, basis-point calculations, sum conservation, catalog scenarios, markdown rendering, and error conditions.
-- Clean-checkout verification commands:
-  - `cargo fmt --all -- --check`
-  - `cargo clippy --locked --all-targets --all-features -- -D warnings`
-  - `cargo test --locked`
+- Exhaustive unit tests in each new submodule testing all scenario runs, debrief reports, markdown outputs, basis-point math, error conditions, and counterfactual evaluations.
+- Verification commands:
+  - `cargo +1.96.0 fmt --all -- --check`
+  - `cargo +1.96.0 clippy --locked --all-targets --all-features -- -D warnings`
+  - `cargo +1.96.0 test --locked`
