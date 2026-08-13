@@ -404,6 +404,27 @@ for observation-conditioned directive generation, `PeerPlanProposal` and `Decent
 across teammates against trust matrices and local observations, `LeadershipCatalog` defining 6 canonical baseline
 configurations, and `TeamLeadershipError`.
 
+`src/agent/simultaneous.rs` defines multi-agent simultaneous decision collection and resolution:
+`TeamSimultaneousPhase` (4 discrete window lifecycle states), `TeamCoordinationOutcome` (5 discrete coordination
+outcomes: `FullyCoordinated`, `PartiallyCoordinated`, `DivergentIntents`, `ConflictingDirectives`, `CommunicationFailure`),
+`TeamSubmissionEnvelope` (`m8-team-simultaneous-submission-v1`) with fail-closed zero private chain-of-thought enforcement,
+`TeamSubmissionReceipt` (payload-free receipt), `TeamSimultaneousWindow` (managing up to 4 registered roles with strict
+pre-resolution submission redaction), `RoleResolvedIntent`, `TeamSimultaneousResolution` (`m8-team-simultaneous-resolution-v1`)
+with Markdown summary reporting, `TeamSimultaneousResolver` evaluating plan alignment, proposal trust compliance, and
+leadership consensus into integer basis-point cohesion ($[0..=10,000]$ bp), and `TeamSimultaneousCatalog`
+(`m8-team-simultaneous-catalog-v1`) registering 5 canonical reference scenarios.
+
+`src/agent/attribution.rs` defines the strategic coordination versus mechanical execution attribution subsystem:
+`AttributionQuadrant` (4 canonical quadrants: `CoordinatedTriumph`, `CoordinatedFailure`, `UncoordinatedBailout`,
+`CompoundedFailure`) decoupling coordination effectiveness ($\ge 5,000$ bp) from mechanical execution efficiency ($\ge 5,000$ bp),
+`CoordinationRating` and `ExecutionRating` (4 discrete performance tiers each), `CoordinationCausalFactor` (8 discrete drivers)
+and `ExecutionCausalFactor` (8 discrete drivers), `CoordinationAssessment` and `ExecutionAssessment`, `AttributionWeights`
+(`m8-coordination-execution-attribution-v1`) enforcing exact basis-point sum conservation ($10,000$ bp),
+`CoordinationExecutionAttribution` and `CoordinationExecutionAttributionReport` (`m8-coordination-execution-attribution-report-v1`)
+with Markdown debrief rendering and fail-closed zero private chain-of-thought rejection, `AttributionEvaluationInput`,
+`TeamAttributionEvaluator` synthesizing multi-agent simultaneous resolutions with physical lane outcomes, and
+`CoordinationAttributionCatalog` (`m8-coordination-attribution-catalog-v1`) registering 6 canonical benchmark scenarios.
+
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

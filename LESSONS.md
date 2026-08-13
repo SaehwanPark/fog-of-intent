@@ -5,6 +5,13 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Decouple coordination effectiveness from mechanical execution in causal debriefs
+
+- Context: M8 required attributing team coordination success and failure separately from physical execution outcomes to eliminate outcome bias in debriefs.
+- Symptom: Evaluating team play solely on win/loss or lane status creates severe outcome bias: sound coordinated plans defeated by mechanical clutch or luck are penalized, while uncoordinated chaotic play bailed out by individual duel outplays is praised.
+- Resolution: Formalize a two-dimensional orthogonal decomposition (`AttributionQuadrant`) classifying outcomes into `CoordinatedTriumph`, `CoordinatedFailure`, `UncoordinatedBailout`, and `CompoundedFailure` using discrete thresholds ($\ge 5,000$ bp), discrete causal factor taxonomies, and exact basis-point sum conservation ($10,000$ bp invariant).
+- Prevention: In causal debriefs and agent evaluations, always separate strategic decision/coordination quality from physical execution and exogenous variance.
+
 ## Keep leadership structures discrete, consensus rules deterministic, and influence distinct from direct control
 
 - Context: M8 required implementing designated shot-caller heuristics, leaderless decentralized peer coordination,

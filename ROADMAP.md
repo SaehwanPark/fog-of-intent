@@ -1597,7 +1597,7 @@ constraints; influence never becomes disguised direct control.
 - [x] Define team-plan and individual-plan relationships.
 - [x] Add designated shot-caller and decentralized baselines.
 - [x] Preserve private submissions and simultaneous resolution.
-- [ ] Attribute coordination success and failure separately from execution.
+- [x] Attribute coordination success and failure separately from execution.
 - [ ] Add high-trust, low-trust, conflicting-call, and missing-message scenarios.
 - [ ] Add communication and leadership debriefs.
 - [ ] Test that disagreement can be strategically legitimate.
@@ -1657,10 +1657,18 @@ constraints; influence never becomes disguised direct control.
 - [x] Provide `TeamSimultaneousCatalog` with 5 registered reference scenarios (`simultaneous-gank-coordinated-v1`,
   `simultaneous-defensive-fallback-v1`, `simultaneous-dissent-tradeoff-v1`, `simultaneous-conflicting-directives-v1`,
   `simultaneous-communication-failure-v1`) with fail-closed lookup and validation.
+- [x] Define `m8-coordination-execution-attribution-v1`, `m8-coordination-execution-attribution-report-v1`,
+  `m8-coordination-attribution-catalog-v1`, `AttributionQuadrant` (4 canonical quadrants: `CoordinatedTriumph`,
+  `CoordinatedFailure`, `UncoordinatedBailout`, `CompoundedFailure`), `CoordinationRating` (4 discrete tiers),
+  `ExecutionRating` (4 discrete tiers), `CoordinationCausalFactor` (8 discrete factors), `ExecutionCausalFactor`
+  (8 discrete factors), `CoordinationAssessment`, `ExecutionAssessment`, `AttributionWeights` (exact integer basis-point
+  sum conservation $10,000$ bp), `CoordinationExecutionAttribution`, `CoordinationExecutionAttributionReport` (with Markdown debrief rendering),
+  `AttributionEvaluationInput`, `TeamAttributionEvaluator`, `AttributionScenario`, and `CoordinationAttributionCatalog` (6 registered benchmark scenarios)
+  decoupling team coordination success/failure from mechanical execution outcomes to eliminate outcome bias.
 
 This establishes structured semantic communication schemas, addressing, visibility rules, dialogue state machines,
 team plans, alignment evaluation, caller reputation tracking, transmission channel physics, designated shot-caller heuristics,
-decentralized consensus arbitration, private submission collection, and simultaneous multi-agent resolution; causal attribution of coordination success/failure separate from execution across multi-turn match scenarios remains open.
+decentralized consensus arbitration, private submission collection, simultaneous multi-agent resolution, and decoupled coordination vs execution attribution; high-trust/low-trust/conflicting-call scenario batteries and debriefs across multi-turn match scenarios remain open.
 
 ### Deliverables
 
