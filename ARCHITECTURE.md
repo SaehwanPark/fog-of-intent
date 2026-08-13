@@ -362,6 +362,17 @@ uncertainty reports, generalization loss, and CoT-free reference outputs.
 documenting intended use, evidence boundaries, evaluated profiles, generalization status, uncertainty findings,
 recalibration policy rules, and zero private chain-of-thought constraints.
 
+`src/agent/communication.rs` defines the foundational M8 team communication contracts:
+`TeamSpeechAct` (`m8-team-speech-act-v1`) covering 8 canonical communicative speech acts
+(`Proposal`, `Clarification`, `Confirmation`, `Disagreement`, `CounterProposal`, `ConditionalCommitment`,
+`Withdrawal`, `FailureReport`), `TeamRecipient` (broadcast vs direct role targeting), `TeamMessageUrgency`
+(`Low`, `Standard`, `Critical`), `TeamConfidenceLevel` (`Tentative`, `Confident`, `Definite`),
+`TeamMessageCondition` (`Unconditional`, `HealthAboveThreshold`, `ThreatAbsent`, `AlliedPresence`, `ResourceSufficient`),
+`TeamMessageVisibility` (`TeamOnly`, `DirectOnly`, `Public`) with actor/team visibility predicate rules,
+`TeamMessageEnvelope` (`m8-team-message-envelope-v1`) with fail-closed zero private chain-of-thought enforcement,
+and `TeamCommunicationCatalog` (`m8-team-communication-v1`) with registered canonical example envelopes across
+all speech acts.
+
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

@@ -33,6 +33,15 @@ impl LaneActorRole {
       Self::OpposingJungleThreat,
     ]
   }
+
+  pub const fn as_str(self) -> &'static str {
+    match self {
+      Self::HumanLaner => "human-laner",
+      Self::OpposingLaner => "opposing-laner",
+      Self::AlliedAutonomous => "allied-autonomous",
+      Self::OpposingJungleThreat => "opposing-jungle-threat",
+    }
+  }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

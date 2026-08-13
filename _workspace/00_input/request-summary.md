@@ -1,41 +1,52 @@
-# Request Summary — M7 Recalibration Triggers & Model Card
+# Request Summary: M8 Team Communication Speech Acts & Envelope Schema
 
 ## Requested Outcome
 
-Implement the final M7 scope item: "Define recalibration triggers for model or prompt changes" and provide the canonical calibration model card and evaluation reports, completing the Milestone 7 (M7 — Semantic-to-Parametric Calibration Proof) exit evidence.
+Define and implement the foundational M8 team communication contracts: typed speech acts, recipients, urgency levels, confidence ratings, message conditions, and visibility rules with fail-closed validation, canonical envelope catalogs, and zero private chain-of-thought enforcement.
 
-## Current Milestone
+## Roadmap Milestone
 
-- **Milestone:** M7 — Semantic-to-Parametric Calibration Proof
-- **Status:** Finalizing M7 exit evidence and transitioning towards M8 (Team Communication and Shot-Calling).
+- **Milestone:** M8 — Team Communication and Shot-Calling
+- **Scope item:** Define typed speech acts, recipients, urgency, confidence, conditions, and message visibility.
 
-## Scope
+## Current Evidence
 
-1. Define versioned recalibration trigger schema (`m7-recalibration-trigger-v1`, `m7-recalibration-evaluation-v1`, `m7-calibration-model-card-v1`).
-2. Define discrete recalibration trigger reasons (`ModelVersionChanged`, `PromptProtocolChanged`, `TotalVariationDistanceBreach`, `ModalChoiceDisagreement`, `UnidentifiableParameterDetected`, `UnstableSemanticLabel`, `HeldOutLossBreach`, `CounterfactualCoherenceFailure`, `ChainOfThoughtLeakage`).
-3. Define recalibration urgency levels (`Immediate`, `Scheduled`, `None`).
-4. Implement `RecalibrationTriggerCondition`, `RecalibrationPolicy`, and `RecalibrationEvaluationReport` with integer basis-point thresholds.
-5. Implement `CalibrationModelCardReport` stating intended use, evidence limits, evaluated profiles, uncertainty findings, and recalibration policies.
-6. Provide canonical baseline evaluations for `cautious_v1`, `risk_taking_v1`, and `yielding_v1`, plus critical drift test fixtures.
-7. Integrate into `src/agent/` module tree and export public API.
-8. Add exhaustive unit tests in `src/agent/tests.rs`.
-9. Update `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, and `README.md`.
+- M7 semantic profile calibration, multi-model comparison, uncertainty reporting, CoT-free reference output preservation, and recalibration policies are complete.
+- M5 actor protocol defines primitive `ActorMessageDto` envelopes with recipient and text, but lacks semantic speech acts, urgency, confidence, conditions, and structured visibility control.
+- M2/M4 define lane actors (`LaneActorRole`), intents (`LaneIntent`), and observation-bounded policies.
+
+## In Scope
+
+1. `TeamSpeechAct` enum covering 8 canonical communicative intents (`Proposal`, `Clarification`, `Confirmation`, `Disagreement`, `CounterProposal`, `ConditionalCommitment`, `Withdrawal`, `FailureReport`).
+2. `TeamRecipient` enum covering broadcast (`Broadcast`) and directed (`Direct(LaneActorRole)`) messaging.
+3. `TeamMessageUrgency` enum (`Low`, `Standard`, `Critical`).
+4. `TeamConfidenceLevel` enum (`Tentative`, `Confident`, `Definite`).
+5. `TeamMessageCondition` enum (`Unconditional`, `HealthAboveThreshold`, `ThreatAbsent`, `AlliedPresence`, `ResourceSufficient`).
+6. `TeamMessageVisibility` enum (`TeamOnly`, `DirectOnly`, `Public`) with actor/team visibility predicate rules preventing unauthorized information leakage.
+7. `TeamMessageEnvelope` representing structured, versioned (`m8-team-communication-v1`) communication items with actor provenance, proposed intents, metadata validation, Markdown rendering, and strict fail-closed rejection if private chain-of-thought is present (`chain_of_thought_present == true`).
+8. `TeamCommunicationCatalog` providing canonical envelope definitions covering all 8 speech acts with lookup and validation.
+9. Comprehensive unit tests covering round-trips, validation failures, visibility isolation, and canonical catalog consistency.
 
 ## Non-Goals
 
-- Live network or LLM API calls.
-- Unconstrained floating-point or continuous parameter fitting.
-- Claims that AI reference distributions represent human ground truth.
-- Private chain-of-thought storage or reasoning requirements.
+- Unrestricted natural-language generation or live LLM provider chat APIs.
+- Full multi-agent team dynamic trust updates or shot-caller leadership algorithms in this initial schema slice.
+- Mutating authoritative world state or executing lane transitions directly from message envelopes.
 
-## Source Files
+## Project Boundaries Touched
 
-- `src/agent/recalibration.rs` (new)
-- `src/agent/mod.rs`
-- `src/agent/tests.rs`
-- `src/lib.rs`
-- `Cargo.toml`
-- `SPEC.md`
-- `ROADMAP.md`
-- `ARCHITECTURE.md`
-- `CHANGELOG.md`
+- `src/agent/communication.rs` (new module)
+- `src/agent/mod.rs` (re-export)
+- `src/agent/tests.rs` (unit tests)
+- Documentation: `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `LESSONS.md`, `README.md`.
+
+## Verification
+
+- `cargo +1.96.0 fmt --all -- --check`
+- `cargo +1.96.0 clippy --locked --all-targets --all-features -- -D warnings`
+- `cargo +1.96.0 test --locked`
+- `python3 scripts/check_repository.py`
+
+## Evidence Limits and Open Questions
+
+- This contract establishes structured semantic communication schemas and visibility rules; trust dynamics, decentralized leadership arbitration, and full match play remain deferred.

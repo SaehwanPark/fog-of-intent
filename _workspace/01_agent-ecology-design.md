@@ -1,61 +1,91 @@
-# Agent Ecology Design — M7: Evaluate Held-Out Scenarios and Counterfactual Perturbations
+# Agent Ecology Design: M8 Team Communication Speech Acts & Envelope Schema
 
-## Overview
+## Design Objective
 
-This design defines the typed evaluation contract for held-out diagnostic scenarios and counterfactual perturbations on regularized parametric policies under Milestone M7 (Semantic-to-Parametric Calibration Proof).
+Define typed, bounded, and interpretable communication primitives for team interaction, proposal exchange, and shot-calling. These primitives allow autonomous agents and human players to negotiate intent, express confidence and conditions, and establish transparent speech acts without leaking private chain-of-thought or authoritative simulation state.
 
-## Design Elements
+## Core Schema Contracts
 
-### 1. Held-Out Evaluation Scenarios
+### 1. Version Identifiers
 
-- **Schema**: `m7-held-out-scenario-v1`
-- **Catalog Schema**: `m7-held-out-scenario-catalog-v1`
-- **Domain Coverage**: All 7 diagnostic dilemma domains from `DiagnosticChoiceCatalog`:
-  1. `ContestConcede`: `held-out-contest-under-threat-v1` (escalated opponent presence)
-  2. `FollowReject`: `held-out-follow-after-retreat-v1` (allied retreat call under pressure)
-  3. `FarmAssist`: `held-out-farm-under-wave-pressure-v1` (crashing minion wave while ally engages)
-  4. `RecallTiming`: `held-out-recall-low-health-v1` (sub-30% health under lane freeze)
-  5. `Sacrifice`: `held-out-sacrifice-isolated-v1` (isolated tower defense under multiple threats)
-  6. `Surprise`: `held-out-surprise-flank-v1` (unexpected river flank sighting)
-  7. `ResponseToFailure`: `held-out-failure-reset-v1` (subsequent turn after lost trade)
-- **Held-Out Action Distribution**: `DiagnosticChoiceActionDistribution` with exact integer basis points ($[0..=10,000]$ bp) representing empirical ground-truth test distributions from held-out conditions.
-- **Evaluation Loss**: Total Variation Distance (TVD) between parametric policy action weights and held-out distributions:
-  $$\text{Loss}_{\text{domain}} = \text{TVD}(\mathbf{w}_{\text{param}}, \mathbf{p}_{\text{held\_out}}) = \frac{1}{2} \sum_{i=1}^3 |w_i - p_i| \in [0..=10,000] \text{ bp}$$
-- **Modal Accuracy**: Percentage of held-out scenarios where the parametric policy's `predicted_intent()` matches the held-out distribution's primary modal intent.
+```rust
+pub const TEAM_COMMUNICATION_SCHEMA: &str = "m8-team-communication-v1";
+pub const TEAM_SPEECH_ACT_SCHEMA: &str = "m8-team-speech-act-v1";
+pub const TEAM_MESSAGE_ENVELOPE_SCHEMA: &str = "m8-team-message-envelope-v1";
+```
 
-### 2. Counterfactual Perturbations
+### 2. Speech Acts (`TeamSpeechAct`)
 
-- **Schema**: `m7-counterfactual-perturbation-v1`
-- **Conditions**:
-  - `ThreatEscalation`: Opposing jungle threat appears on river flank. Expected: defensive shift for cautious/yielding, or contest hold for risk-seeking.
-  - `AlliedRetreatCall`: Allied teammate signals retreat. Expected: compliant retreat for yielding/compliant, autonomous plan maintenance for autonomous.
-  - `SevereHealthAttrition`: Player health drops significantly below safety threshold. Expected: escalation of recall/withdrawal.
-  - `FavorableOpening`: Opponent overextends with low mana. Expected: opportunistic contest increase for risk-seeking.
-- **Directional Coherence**:
-  - Evaluates difference in primary/alternative weights:
-    $$\Delta_{\text{shift}} = w_{\text{perturbed}} - w_{\text{baseline}}$$
-  - Checked against expected directional traits for the semantic profile:
-    - `Coherent`: Sign and magnitude of shift align with semantic trait definitions.
-    - `Neutral`: Shift is within minimal tolerance ($\le 200$ bp).
-    - `Inverted`: Shift opposes semantic trait definition (indicates calibration failure).
+Eight discrete communicative speech acts:
+- `Proposal` (`"proposal"`): Proposes an objective, tactical maneuver, or intent (e.g. contest wave, gank).
+- `Clarification` (`"clarification"`): Queries or clarifies target priority, timing, or resource readiness.
+- `Confirmation` (`"confirmation"`): Acknowledges and confirms agreement with an active proposal.
+- `Disagreement` (`"disagreement"`): Explicitly dissents or communicates an inability to support a call.
+- `CounterProposal` (`"counter-proposal"`): Offers an alternative intent or contingency.
+- `ConditionalCommitment` (`"conditional-commitment"`): Pledges support contingent upon a prerequisite condition.
+- `Withdrawal` (`"withdrawal"`): Cancels or rescinds a prior call or commitment.
+- `FailureReport` (`"failure-report"`): Reports an aborted attempt, execution breakdown, or loss of advantage.
 
-### 3. Integrated Calibration Report
+### 3. Addressing and Recipients (`TeamRecipient`)
 
-- **Schema**: `m7-calibration-held-out-v1`
-- **Generalization Criteria**:
-  - Mean held-out loss $\le 2,500$ bp (average TVD $\le 25\%$).
-  - Modal choice accuracy $\ge 7,000$ bp ($\ge 70\%$).
-  - All counterfactual perturbations evaluated as `Coherent`.
-- **Reporting**:
-  - Self-contained Markdown summary for debrief and model inspection.
-  - Clear statement of evidence limits: AI behavior represents reference policies, not human ground truth.
+- `Broadcast` (`"broadcast"`): Message addressed to all allied team members.
+- `Direct(LaneActorRole)` (`"direct:<role>"`): Directed to a specific actor role (e.g. `HumanLaner`, `AlliedAutonomous`).
 
-## Error Handling
+### 4. Urgency Levels (`TeamMessageUrgency`)
 
-- `HeldOutEvaluationError` enum:
-  - `UnknownScenario`
-  - `UnknownPerturbation`
-  - `MismatchedProfile`
-  - `MismatchedChoice`
-  - `InvalidLossValue`
-- All parsing and lookup methods fail closed with typed errors.
+- `Low` (`"low"`): Informational or long-term positioning.
+- `Standard` (`"standard"`): Default operational pace.
+- `Critical` (`"critical"`): Immediate emergency (e.g. imminent gank, low-health collapse).
+
+### 5. Confidence Ratings (`TeamConfidenceLevel`)
+
+- `Tentative` (`"tentative"`): Exploratory or uncertain recommendation.
+- `Confident` (`"confident"`): Solid tactical basis.
+- `Definite` (`"definite"`): High-certainty command or uncompromised commitment.
+
+### 6. Tactical Conditions (`TeamMessageCondition`)
+
+- `Unconditional` (`"unconditional"`): Execute immediately regardless of state.
+- `HealthAboveThreshold` (`"health-above-threshold"`): Requires sufficient health pool.
+- `ThreatAbsent` (`"threat-absent"`): Requires jungle/gank threat to be absent or clear.
+- `AlliedPresence` (`"allied-presence"`): Requires ally in proximity.
+- `ResourceSufficient` (`"resource-sufficient"`): Requires mana/cooldowns ready.
+
+### 7. Information Visibility & Redaction (`TeamMessageVisibility`)
+
+- `TeamOnly` (`"team-only"`): Visible to all actors on the same team.
+- `DirectOnly` (`"direct-only"`): Visible only to sender and designated recipient.
+- `Public` (`"public"`): Visible across teams (e.g. general broadcast).
+
+Visibility rules are enforced via:
+`is_visible_to(viewer: LaneActorRole, is_same_team: bool) -> bool`
+
+### 8. Message Envelope (`TeamMessageEnvelope`)
+
+Structured message container:
+```rust
+pub struct TeamMessageEnvelope {
+  schema: &'static str,
+  message_id: &'static str,
+  sender: LaneActorRole,
+  recipient: TeamRecipient,
+  speech_act: TeamSpeechAct,
+  proposed_intent: Option<LaneIntent>,
+  urgency: TeamMessageUrgency,
+  confidence: TeamConfidenceLevel,
+  condition: TeamMessageCondition,
+  visibility: TeamMessageVisibility,
+  turn: u32,
+  content_summary: &'static str,
+  chain_of_thought_present: bool,
+}
+```
+
+### 9. Validation & Catalog (`TeamCommunicationCatalog`)
+
+- Strict validation ensuring:
+  - Valid non-empty message ID.
+  - Correct schema tag.
+  - `chain_of_thought_present == false` (fail closed with `TeamCommunicationError::ChainOfThoughtForbidden`).
+  - Proposed intent aligns with speech acts (e.g. `Proposal` / `CounterProposal` / `ConditionalCommitment` typically provide intent).
+- Canonical catalog containing registered standard examples for all 8 speech acts.

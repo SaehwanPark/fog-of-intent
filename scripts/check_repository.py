@@ -40,6 +40,7 @@ CANONICAL_MARKDOWN = (
 CORE_RUST_FILES = (
   "src/lib.rs",
   "src/session.rs",
+  "src/agent/communication.rs",
   "src/agent/comparison.rs",
   "src/agent/empirical.rs",
   "src/agent/experiment.rs",

@@ -100,6 +100,28 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.183 — 2026-08-12
+
+### Added
+
+- Added `m8-team-communication-v1`, `m8-team-speech-act-v1`, `m8-team-message-envelope-v1`,
+  `TeamSpeechAct`, `TeamRecipient`, `TeamMessageUrgency`, `TeamConfidenceLevel`,
+  `TeamMessageCondition`, `TeamMessageVisibility`, `TeamCommunicationError`,
+  `TeamMessageEnvelope`, and `TeamCommunicationCatalog` in `src/agent/communication.rs`,
+  establishing the foundational M8 team communication contracts:
+  - `TeamSpeechAct` covering 8 canonical communicative speech acts (`Proposal`, `Clarification`,
+    `Confirmation`, `Disagreement`, `CounterProposal`, `ConditionalCommitment`, `Withdrawal`, `FailureReport`).
+  - `TeamRecipient` covering broadcast (`Broadcast`) and directed (`Direct(LaneActorRole)`) targeting.
+  - `TeamMessageUrgency` (`Low`, `Standard`, `Critical`) and `TeamConfidenceLevel` (`Tentative`, `Confident`, `Definite`).
+  - `TeamMessageCondition` (`Unconditional`, `HealthAboveThreshold`, `ThreatAbsent`, `AlliedPresence`, `ResourceSufficient`).
+  - `TeamMessageVisibility` (`TeamOnly`, `DirectOnly`, `Public`) with actor/team visibility predicate rules preventing unauthorized information leakage across team boundaries.
+  - `TeamMessageEnvelope` with structured metadata, observation and intent binding, Markdown formatting, and strict fail-closed rejection if private chain-of-thought is present (`chain_of_thought_present == true`).
+  - `TeamCommunicationCatalog` containing registered canonical example envelopes for all 8 speech acts with fail-closed lookup and validation.
+
+### Known limits
+
+- This contract establishes structured semantic communication schemas, addressing, and visibility rules; multi-agent trust dynamics, caller reputation, designated shot-caller heuristics, and team-plan negotiation remain open.
+
 ## 0.1.182 — 2026-08-12
 
 ### Added
