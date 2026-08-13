@@ -1,43 +1,60 @@
-# Design Synthesis: M8 Team-Plan and Individual-Plan Relationships
+# Design Synthesis: M8 Team Trust, Caller Reputation, Communication Clarity, Delay, Missingness, and Overload
 
-## Synthesis Overview
+## Inputs Reviewed
 
-This synthesis unifies the agent-ecology design with simulation and communication authority boundaries for **Team-Plan and Individual-Plan Relationships**.
+- `_workspace/00_input/request-summary.md`
+- `_workspace/01_agent-ecology-design.md`
+- Existing M8 modules: `src/agent/communication.rs`, `src/agent/team_plan.rs`.
+- `ROADMAP.md` M8 milestone requirements and `SPEC.md` Phase 8 specifications.
 
-## Unified Architecture
+## Agreed Actor Information
 
-1. **Module Organization:**
-   - Dedicated submodule `src/agent/team_plan.rs`, re-exported in `src/agent/mod.rs`.
-   - Clear separation between message speech acts (`src/agent/communication.rs`) and strategic team plan definitions / alignment evaluations (`src/agent/team_plan.rs`).
+- Trust and reputation evaluations consume strictly actor-authorized information:
+  1. The proposing actor's `CallerReputationRecord` (stored in the observer's `TeamTrustMatrix`).
+  2. The delivered `TeamMessageEnvelope` (subject to channel clarity, delay, and visibility filters).
+  3. The receiving teammate's own `LanerObservation` (used by `TeamConditionEvaluator`).
+- Latent opponent state, hidden jungle state, and true world state are strictly excluded.
 
-2. **Core Domain Types:**
-   - **Schemas:**
-     - `TEAM_PLAN_SCHEMA = "m8-team-plan-v1"`
-     - `INDIVIDUAL_PLAN_SCHEMA = "m8-individual-plan-v1"`
-     - `TEAM_PLAN_RELATIONSHIP_SCHEMA = "m8-team-plan-relationship-v1"`
-   - **Enums & Structs:**
-     - `TeamStrategicObjective`: `GankSetup`, `LaneSiege`, `DefensiveHold`, `ResourceFarming`, `ObjectiveContest`, `TacticalReset`.
-     - `TeamPlanPhase`: `Preparation`, `Execution`, `Disengagement`, `Contingency`.
-     - `RolePlanAssignment`: `actor`, `assigned_intent`, `target_focus`, `commitment`, `fallback`.
-     - `TeamPlanDefinition`: `plan_id`, `objective`, `phase`, `proposed_by`, `prerequisite_condition`, `assignments`, `urgency`, `confidence`, `summary`, `chain_of_thought_present`.
-     - `IndividualPlanDefinition`: `plan_id`, `actor`, `selected_intent`, `target_focus`, `commitment`, `abort_condition`, `fallback_behavior`, `ping_signal`, `chain_of_thought_present`.
-     - `TeamPlanAlignmentType`: `Aligned`, `Divergent`, `ConditionalCompliance`, `Independent`, `Conflicted`.
-     - `AlignmentEvaluation`: `actor`, `alignment_type`, `intent_match`, `focus_match`, `commitment_compatible`, `condition_satisfied`, `dissent_reason`, `explanation`.
-     - `TeamPlanAlignmentReport`: `schema`, `team_plan_id`, `objective`, `overall_alignment`, `evaluations`, `aligned_actors_count`, `divergent_actors_count`, `cohesion_score_bp`, `render_markdown()`.
-     - `TeamPlanCatalog`: Canonical catalog registering 6 reference team plans with fail-closed lookup and validation.
-     - `TeamPlanError`: Typed error variants for schema mismatch, missing role assignments, empty assignments, invalid IDs, and chain-of-thought presence.
+## Agreed Action and Transition Boundary
 
-3. **Authority and Invariants:**
-   - **No Hidden-State Leaks:** Alignment evaluations operate purely on declared plans and optional actor-visible observations (`LanerObservation`). No true-state hashes, opponent private state, or latent threat values are exposed or required.
-   - **Deterministic & Integer-Bounded:** Cohesion score is calculated as integer basis points: $\text{cohesion\_score\_bp} = \frac{\text{aligned\_count} \times 10,000}{\text{total\_assignments}}$.
-   - **Fail-Closed Privacy:** Strict assertion that `chain_of_thought_present == false`.
-   - **Clean Code & Idiomatic Rust:** `const fn` methods, `Display` implementations, modular separation, and zero external dependencies.
+- Trust evaluations produce purely communicative decisions (`TrustComplianceDecision`: `Comply`, `Clarify`, `Dissent(TeamDissentReason)`).
+- They do NOT directly mutate authoritative simulation state or force mechanical actions upon autonomous agents.
+- Autonomous teammates preserve sovereign control over their individual plans.
 
-## Implementation Steps
+## Agreed Randomness Ownership
 
-1. Create `src/agent/team_plan.rs` implementing all data structures, evaluations, markdown rendering, and the canonical catalog.
-2. Update `src/agent/mod.rs` to declare and re-export `pub mod team_plan;`.
-3. Add unit tests in `src/agent/tests.rs` verifying all types, alignment scenarios, edge cases, error rejections, and catalog integrity.
-4. Execute `cargo fmt`, `cargo clippy`, `cargo test`, and `python3 scripts/check_repository.py`.
-5. Run Domain QA (`_workspace/03_domain-qa.md`) and create final handoff (`_workspace/final/handoff.md`).
-6. Update documentation (`SPEC.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `README.md`, `LESSONS.md`, `Cargo.toml` version increment).
+- All trust adjustments, threshold comparisons, and delay queue operations are fully deterministic integer operations.
+- Basis points are clamped to $[0..=10,000]$ bp.
+- Message delay counters decrement by exactly 1 per turn tick.
+
+## Agent Policy and Execution Boundary
+
+- Proposing a plan is a communicative speech act (`TeamSpeechAct::Proposal`).
+- The channel filters or delays the message envelope deterministically.
+- When delivered, the receiving teammate evaluates trust and local observation:
+  - If compliant, it constructs a matching `IndividualPlanDefinition`.
+  - If dissenting, it emits `TeamSpeechAct::Disagreement` or `TeamSpeechAct::CounterProposal`.
+  - If clarification is needed, it emits `TeamSpeechAct::Clarification`.
+
+## Metrics and Evidence Limits
+
+- Cohesion and compliance metrics use exact integer basis points.
+- This design proves deterministic trust modulation, reputation tracking, and channel degradation mechanics.
+- It does not claim human-like psychological fidelity or social intelligence.
+
+## Conflicts Resolved
+
+- **Channel Drops vs Delivery**: Resolved by explicit `DeliveryStatus` enum (`Delivered`, `Delayed`, `DroppedMissing`, `DroppedOverload`, `SuppressedDistrusted`), ensuring full auditability of lost messages.
+- **Reputation Scale**: Unified on standard $0..=10,000$ basis-point scale matching existing `TeamPlanEvaluator` cohesion scoring.
+
+## Unresolved Questions
+
+- Centralized designated shot-caller designation vs decentralized peer leader election will be addressed in the following M8 milestone slice.
+
+## Production Contract
+
+- Implement `src/agent/trust.rs` with `TEAM_TRUST_SCHEMA`, `CALLER_REPUTATION_SCHEMA`, `COMMUNICATION_CHANNEL_SCHEMA`.
+- Types: `TeamTrustLevel`, `CallOutcome`, `CallerReputationRecord`, `TeamTrustMatrix`, `CommunicationClarity`, `TransmissionDelay`, `DeliveryStatus`, `ChannelPacket`, `TeamCommunicationChannel`, `TrustComplianceDecision`, `TrustEvaluationReport`, `TeamTrustEvaluator`, `TeamTrustCatalog`, `TeamTrustError`.
+- Export module in `src/agent/mod.rs`.
+- Add comprehensive test coverage in `src/agent/tests.rs`.
+- Update `scripts/check_repository.py`.

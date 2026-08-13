@@ -100,6 +100,35 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.186 — 2026-08-12
+
+### Added
+
+- Added `m8-team-trust-v1`, `m8-caller-reputation-v1`, `m8-communication-channel-v1`,
+  `TeamTrustLevel`, `CallOutcome`, `CallerReputationRecord`, `TeamTrustMatrix`,
+  `CommunicationClarity`, `TransmissionDelay`, `DeliveryStatus`, `ChannelPacket`,
+  `TeamCommunicationChannel`, `TrustComplianceDecision`, `TrustEvaluationReport`,
+  `TeamTrustEvaluator`, `TeamTrustCatalog`, and `TeamTrustError` in `src/agent/trust.rs`,
+  establishing multi-agent trust dynamics, caller reputation, and communication channel physics for M8:
+  - `TeamTrustLevel` categorizing trust from basis points into 4 discrete tiers (`HighTrust`,
+    `StandardTrust`, `LowTrust`, `Distrusted`).
+  - `CallerReputationRecord` tracking historical successful, failed, and abandoned calls with exact
+    integer basis-point score updates ($[0..=10,000]$ bp) and zero chain-of-thought enforcement.
+  - `TeamTrustMatrix` providing pairwise role reputation indexing and average team reputation calculation.
+  - `CommunicationClarity` modeling 4 discrete clarity levels (`Crisp`, `Ambiguous`, `Degraded`, `Garbled`)
+    with basis-point multipliers ($1,000..=10,000$ bp).
+  - `TransmissionDelay` managing simulated beat delay steps (`Immediate`, `OneBeat`, `TwoBeats`).
+  - `TeamCommunicationChannel` providing a bounded FIFO queue (capacity 16 packets) with turn-tick delay
+    progression, distrusted sender suppression, capacity overload dropping, and visibility filtering.
+  - `TeamTrustEvaluator` deterministically evaluating proposal compliance, clarification requests, and
+    dissent reasons (`PostureIncompatible`, `ThreatDetected`, `LowHealth`, `ManaDeficit`) based on
+    caller reputation, message clarity, and local recipient observations.
+  - `TeamTrustCatalog` providing discovery and validation helpers for canonical reference caller profiles.
+
+### Known limits
+
+- This contract establishes structured caller reputation scoring, trust-modulated compliance, transmission delay queues, and channel capacity limits; designated shot-caller heuristics, centralized vs decentralized leadership baselines, and simultaneous private resolution remain open.
+
 ## 0.1.185 — 2026-08-12
 
 ### Added

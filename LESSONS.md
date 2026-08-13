@@ -5,6 +5,19 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Keep team trust dynamics basis-point bounded and transmission channels deterministic
+
+- Context: M8 required implementing caller reputation scoring, trust-modulated proposal compliance,
+  communication clarity, transmission delay queues, and channel capacity overload limits before designated
+  shot-caller heuristics or leadership election were authorized.
+- Symptom: Continuous floating-point trust values or non-deterministic packet dropping would compromise
+  replay reproducibility, leak latent state, or make communication failures uninspectable.
+- Resolution: Track `CallerReputationRecord` in exact integer basis points ($[0..=10,000]$ bp), derive
+  discrete `TeamTrustLevel` tiers, model channel transmission via bounded `TeamCommunicationChannel`
+  (capacity 16 packets) with deterministic delay decrementing and categorical `DeliveryStatus` tracking.
+- Prevention: Treat multi-agent trust dynamics, caller reputation, transmission channels, and designated
+  shot-calling arbitration as separate contracts with separate evidence.
+
 ## Keep team plans and individual plans structurally decoupled and alignment evaluations deterministic
 
 - Context: M8 required defining team-plan and individual-plan relationships, role assignments,

@@ -1,4 +1,4 @@
-# Domain QA Review: M8 Team-Plan and Individual-Plan Relationships
+# Domain QA Review: M8 Team Trust, Caller Reputation, Communication Clarity, Delay, Missingness, and Overload
 
 ## Status
 
@@ -6,64 +6,56 @@
 
 ## Reviewed Inputs
 
-- User Request: `/preferred-workflow implement one target slice as per the following steps:`
-- Roadmap Milestone: M8 — Coordinated team decision play (Phase 8: Team Communication and Shot-Calling)
-- Active Scope Item: `Define team-plan and individual-plan relationships.`
-- Changed / Produced Files:
-  - `src/agent/team_plan.rs`
-  - `src/agent/mod.rs`
-  - `src/agent/tests.rs`
-  - `scripts/check_repository.py`
-  - `_workspace/00_input/request-summary.md`
-  - `_workspace/01_agent-ecology-design.md`
-  - `_workspace/02_design-synthesis.md`
-- Verification Commands:
-  - `cargo +1.96.0 fmt --all -- --check`
-  - `cargo +1.96.0 clippy --locked --all-targets --all-features -- -D warnings`
-  - `cargo +1.96.0 test --locked`
-  - `python3 scripts/check_repository.py`
+- User request for M8 Team Trust, Caller Reputation, and Channel Dynamics slice.
+- `_workspace/00_input/request-summary.md`
+- `_workspace/01_agent-ecology-design.md`
+- `_workspace/02_design-synthesis.md`
+- `src/agent/trust.rs`
+- `src/agent/mod.rs`
+- `src/agent/tests.rs`
+- `scripts/check_repository.py`
 
 ## Scope and Roadmap Findings
 
-- The work implements exactly the scheduled M8 milestone item: "Define team-plan and individual-plan relationships."
-- Structured definitions are provided for `TeamPlanDefinition`, `IndividualPlanDefinition`, `RolePlanAssignment`, `TeamStrategicObjective`, `TeamPlanPhase`, `TeamPlanAlignmentType`, `AlignmentEvaluation`, `TeamPlanAlignmentReport`, and `TeamPlanCatalog`.
-- No out-of-scope frameworks, transport layers, or dynamic trust simulations were added prematurely.
+- Scope directly satisfies Milestone M8 Phase 8 item: "Implement trust, caller reputation, communication clarity, delay, missingness, and overload only as demonstrated needs."
+- Multi-agent trust dynamics, caller reputation records ($[0..=10,000]$ bp), clarity multipliers, delay queueing, missing/overload packet drops, and deterministic compliance evaluations are implemented cleanly.
+- Bounded to the declared slice without premature inclusion of centralized shot-caller heuristics or external network protocols.
 
 ## Authority and Information-Boundary Findings
 
-- The evaluator `TeamPlanEvaluator` functions purely as an actor-safe evaluation engine over declared plan definitions and optional actor-visible `LanerObservation` projections.
-- No true-state hashes, opponent hidden values, latent threat truths, or private host receipts are queried or exposed.
-- Strict assertion ensures `chain_of_thought_present == false`, failing closed if violated.
+- Simulation authority is strictly preserved: trust evaluations and message channel mechanics do not alter authoritative simulation state or force actions on autonomous agents.
+- Information boundaries are enforced: evaluations consume strictly actor-authorized observations and delivered message envelopes.
+- Strict zero private chain-of-thought is enforced with fail-closed validation (`chain_of_thought_present == false`).
 
 ## Determinism, Replay, and Reproducibility Findings
 
-- All operations are completely deterministic with zero RNG, wall-clock, or async dependencies.
-- Cohesion scoring uses exact integer basis points ($[0..=10,000]$ bp) calculated via safe integer arithmetic (`checked_div`, `saturating_mul`).
+- Zero floating-point arithmetic or platform-dependent math; all trust scoring, reputation updates, clarity modifiers, and delay steps use exact integer arithmetic and basis points.
+- Queueing and turn-tick progression are strictly deterministic.
 
 ## Behavior and Playtest Findings
 
-- Canonical team plans (`plan-gank-setup-v1`, `plan-lane-siege-v1`, `plan-defensive-hold-v1`, `plan-resource-farming-v1`, `plan-objective-contest-v1`, `plan-tactical-reset-v1`) cover distinct tactical objectives and phases.
-- Diverse alignment outcomes (`Aligned`, `Divergent`, `ConditionalCompliance`, `Independent`) and causal dissent reasons (`LowHealth`, `ManaDeficit`, `PostureIncompatible`, `AlternativeObjectivePriority`) are verified in unit tests.
+- Autonomous teammates modulate compliance, clarification requests, and dissent reasons based on caller reputation and local observations.
+- Disagreement is preserved as a strategically legitimate response.
 
 ## Gameplay and Debrief Findings
 
-- Alignment reports render formatted Markdown summaries with per-actor evaluation tables, intent/focus matches, condition satisfaction, dissent reasons, and explanations.
+- Structured Markdown summary rendering (`TrustEvaluationReport::render_markdown`) provides inspectable rationales for debriefing and analysis.
 
 ## Evidence and Claim Limits
 
-- This slice implements formal semantic schemas and deterministic alignment evaluations.
-- It does not claim to model human player psychological consensus, and multi-agent dynamic trust tracking is appropriately documented as deferred.
+- Trust dynamics represent bounded-rational computational rules for multi-agent coordination and do not claim human psychological validity.
 
 ## Required Fixes
 
-None.
+- None.
 
 ## Residual Risks
 
-- Dynamic multi-agent trust updates and shot-caller leadership arbitration remain open for subsequent M8 milestones.
+- Subsequent M8 slices will build upon these reputation and channel primitives for designated shot-caller arbitration and decentralized peer election.
 
 ## Verification Evidence
 
-- All 285 unit tests, 7 integration tests, and 3 doc tests pass cleanly.
-- Strict Clippy warnings (-D warnings with `as_conversions = "deny"`) pass with zero warnings.
-- Repository checker passes with clean module isolation and link integrity.
+- `cargo +1.96.0 fmt --all -- --check` passed.
+- `cargo +1.96.0 clippy --locked --all-targets --all-features -- -D warnings` passed.
+- `cargo +1.96.0 test --locked` passed (294 unit tests + 7 integration tests + 3 doc tests = 304 tests).
+- `python3 scripts/check_repository.py` passed.

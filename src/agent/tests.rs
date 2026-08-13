@@ -7365,3 +7365,490 @@ fn team_plan_alignment_report_and_cohesion_scoring() {
   assert_eq!(report_mixed.divergent_actors_count, 1);
   assert_eq!(report_mixed.cohesion_score_bp, 5_000);
 }
+
+#[test]
+fn test_team_trust_level_classification_and_labels() {
+  assert_eq!(
+    TeamTrustLevel::from_basis_points(10_000),
+    TeamTrustLevel::HighTrust
+  );
+  assert_eq!(
+    TeamTrustLevel::from_basis_points(7_500),
+    TeamTrustLevel::HighTrust
+  );
+  assert_eq!(
+    TeamTrustLevel::from_basis_points(7_499),
+    TeamTrustLevel::StandardTrust
+  );
+  assert_eq!(
+    TeamTrustLevel::from_basis_points(4_000),
+    TeamTrustLevel::StandardTrust
+  );
+  assert_eq!(
+    TeamTrustLevel::from_basis_points(3_999),
+    TeamTrustLevel::LowTrust
+  );
+  assert_eq!(
+    TeamTrustLevel::from_basis_points(1_500),
+    TeamTrustLevel::LowTrust
+  );
+  assert_eq!(
+    TeamTrustLevel::from_basis_points(1_499),
+    TeamTrustLevel::Distrusted
+  );
+  assert_eq!(
+    TeamTrustLevel::from_basis_points(0),
+    TeamTrustLevel::Distrusted
+  );
+
+  for level in TeamTrustLevel::all() {
+    let label = level.as_str();
+    assert_eq!(TeamTrustLevel::parse(label), Some(level));
+    assert_eq!(format!("{}", level), label);
+  }
+  assert_eq!(TeamTrustLevel::parse("unknown"), None);
+}
+
+#[test]
+fn test_call_outcome_labels_and_parsing() {
+  for outcome in CallOutcome::all() {
+    let label = outcome.as_str();
+    assert_eq!(CallOutcome::parse(label), Some(outcome));
+    assert_eq!(format!("{}", outcome), label);
+  }
+  assert_eq!(CallOutcome::parse("invalid"), None);
+}
+
+#[test]
+fn test_caller_reputation_record_updates_and_thresholds() {
+  let mut record = CallerReputationRecord::new(LaneActorRole::HumanLaner);
+  assert_eq!(record.caller, LaneActorRole::HumanLaner);
+  assert_eq!(record.reputation_bp, 5_000);
+  assert_eq!(record.trust_level(), TeamTrustLevel::StandardTrust);
+  assert_eq!(record.total_calls(), 0);
+  assert_eq!(record.success_rate_bp(), 5_000);
+  assert_eq!(record.compliance_threshold_bp(), 5_000);
+  assert!(record.validate().is_ok());
+
+  // Record 3 successes: 5,000 -> 6,000 -> 7,000 -> 8,000
+  record.record_outcome(CallOutcome::SuccessfulExecution);
+  assert_eq!(record.reputation_bp, 6_000);
+  record.record_outcome(CallOutcome::SuccessfulExecution);
+  assert_eq!(record.reputation_bp, 7_000);
+  record.record_outcome(CallOutcome::SuccessfulExecution);
+  assert_eq!(record.reputation_bp, 8_000);
+  assert_eq!(record.trust_level(), TeamTrustLevel::HighTrust);
+  assert_eq!(record.compliance_threshold_bp(), 2_000);
+  assert_eq!(record.total_calls(), 3);
+  assert_eq!(record.successful_calls, 3);
+  assert_eq!(record.success_rate_bp(), 10_000);
+
+  // Record 4 failures: 8,000 -> 6,500 -> 5,000 -> 3,500 -> 2,000
+  record.record_outcome(CallOutcome::FailedExecution);
+  assert_eq!(record.reputation_bp, 6_500);
+  record.record_outcome(CallOutcome::FailedExecution);
+  assert_eq!(record.reputation_bp, 5_000);
+  record.record_outcome(CallOutcome::FailedExecution);
+  assert_eq!(record.reputation_bp, 3_500);
+  assert_eq!(record.trust_level(), TeamTrustLevel::LowTrust);
+  assert_eq!(record.compliance_threshold_bp(), 8_000);
+  record.record_outcome(CallOutcome::FailedExecution);
+  assert_eq!(record.reputation_bp, 2_000);
+
+  // Record abandoned call: 2,000 -> 1,500 -> 1,000
+  record.record_outcome(CallOutcome::AbandonedCall);
+  assert_eq!(record.reputation_bp, 1_500);
+  record.record_outcome(CallOutcome::AbandonedCall);
+  assert_eq!(record.reputation_bp, 1_000);
+  assert_eq!(record.trust_level(), TeamTrustLevel::Distrusted);
+  assert_eq!(record.compliance_threshold_bp(), 10_000);
+
+  // Error cases
+  assert_eq!(
+    CallerReputationRecord::with_reputation(LaneActorRole::HumanLaner, 10_001),
+    Err(TeamTrustError::ReputationOutOfBounds {
+      reputation_bp: 10_001,
+      max: 10_000,
+    })
+  );
+
+  let mut invalid_cot = record;
+  invalid_cot.chain_of_thought_present = true;
+  assert_eq!(
+    invalid_cot.validate(),
+    Err(TeamTrustError::ChainOfThoughtPresent)
+  );
+}
+
+#[test]
+fn test_team_trust_matrix_multi_role_tracking() {
+  let mut matrix = TeamTrustMatrix::new();
+  assert!(matrix.validate().is_ok());
+  assert_eq!(matrix.allied_average_reputation_bp(), 5_000);
+
+  matrix.record_outcome(LaneActorRole::HumanLaner, CallOutcome::SuccessfulExecution);
+  assert_eq!(matrix.get(LaneActorRole::HumanLaner).reputation_bp, 6_000);
+  assert_eq!(matrix.allied_average_reputation_bp(), 5_500);
+
+  matrix.record_outcome(
+    LaneActorRole::AlliedAutonomous,
+    CallOutcome::FailedExecution,
+  );
+  assert_eq!(
+    matrix.get(LaneActorRole::AlliedAutonomous).reputation_bp,
+    3_500
+  );
+  assert_eq!(matrix.allied_average_reputation_bp(), 4_750);
+}
+
+#[test]
+fn test_communication_clarity_and_transmission_delay() {
+  for clarity in CommunicationClarity::all() {
+    let label = clarity.as_str();
+    assert_eq!(CommunicationClarity::parse(label), Some(clarity));
+    assert_eq!(format!("{}", clarity), label);
+  }
+  assert_eq!(CommunicationClarity::parse("noise"), None);
+  assert_eq!(CommunicationClarity::Crisp.clarity_modifier_bp(), 10_000);
+  assert_eq!(CommunicationClarity::Ambiguous.clarity_modifier_bp(), 7_000);
+  assert_eq!(CommunicationClarity::Degraded.clarity_modifier_bp(), 4_000);
+  assert_eq!(CommunicationClarity::Garbled.clarity_modifier_bp(), 1_000);
+  assert!(CommunicationClarity::Crisp.is_intelligible());
+  assert!(CommunicationClarity::Ambiguous.is_intelligible());
+  assert!(CommunicationClarity::Degraded.is_intelligible());
+  assert!(!CommunicationClarity::Garbled.is_intelligible());
+
+  for delay in TransmissionDelay::all() {
+    let label = delay.as_str();
+    assert_eq!(TransmissionDelay::parse(label), Some(delay));
+    assert_eq!(format!("{}", delay), label);
+  }
+  assert_eq!(TransmissionDelay::parse("infinite"), None);
+  assert_eq!(TransmissionDelay::Immediate.delay_beats(), 0);
+  assert_eq!(TransmissionDelay::OneBeat.delay_beats(), 1);
+  assert_eq!(TransmissionDelay::TwoBeats.delay_beats(), 2);
+}
+
+#[test]
+fn test_delivery_status_and_packet_lifecycle() {
+  let delivered = DeliveryStatus::Delivered;
+  assert_eq!(delivered.as_str(), "delivered");
+  assert!(delivered.is_delivered());
+  assert!(!delivered.is_dropped_or_suppressed());
+
+  let delayed = DeliveryStatus::Delayed { remaining_beats: 2 };
+  assert_eq!(delayed.as_str(), "delayed");
+  assert!(!delayed.is_delivered());
+  assert!(!delayed.is_dropped_or_suppressed());
+  assert_eq!(format!("{}", delayed), "delayed(2 beats remaining)");
+
+  let missing = DeliveryStatus::DroppedMissing;
+  assert_eq!(missing.as_str(), "dropped-missing");
+  assert!(!missing.is_delivered());
+  assert!(missing.is_dropped_or_suppressed());
+
+  let overload = DeliveryStatus::DroppedOverload;
+  assert_eq!(overload.as_str(), "dropped-overload");
+  assert!(overload.is_dropped_or_suppressed());
+
+  let suppressed = DeliveryStatus::SuppressedDistrusted;
+  assert_eq!(suppressed.as_str(), "suppressed-distrusted");
+  assert!(suppressed.is_dropped_or_suppressed());
+}
+
+#[test]
+fn test_team_communication_channel_queue_and_delivery() {
+  let mut channel = TeamCommunicationChannel::new(3);
+  let mut trust_matrix = TeamTrustMatrix::new();
+
+  let envelope_immediate = TeamMessageEnvelope::new(
+    "msg-001",
+    LaneActorRole::HumanLaner,
+    TeamRecipient::Broadcast,
+    TeamSpeechAct::Proposal,
+    Some(LaneIntent::Contest),
+    TeamMessageUrgency::Standard,
+    TeamConfidenceLevel::Definite,
+    TeamMessageCondition::Unconditional,
+    TeamMessageVisibility::TeamOnly,
+    1,
+    "Initiate lane contest",
+  );
+
+  // 1. Immediate transmission
+  let status1 = channel
+    .enqueue(
+      envelope_immediate,
+      CommunicationClarity::Crisp,
+      TransmissionDelay::Immediate,
+      &trust_matrix,
+    )
+    .unwrap();
+  assert_eq!(status1, DeliveryStatus::Delivered);
+  assert_eq!(channel.active_packet_count(), 1);
+  assert_eq!(channel.total_delivered, 1);
+
+  // 2. Delayed transmission (1 beat)
+  let envelope_delayed = TeamMessageEnvelope::new(
+    "msg-002",
+    LaneActorRole::HumanLaner,
+    TeamRecipient::Direct(LaneActorRole::AlliedAutonomous),
+    TeamSpeechAct::Proposal,
+    Some(LaneIntent::Contest),
+    TeamMessageUrgency::Standard,
+    TeamConfidenceLevel::Confident,
+    TeamMessageCondition::Unconditional,
+    TeamMessageVisibility::DirectOnly,
+    1,
+    "Incoming gank support",
+  );
+  let status2 = channel
+    .enqueue(
+      envelope_delayed,
+      CommunicationClarity::Crisp,
+      TransmissionDelay::OneBeat,
+      &trust_matrix,
+    )
+    .unwrap();
+  assert_eq!(status2, DeliveryStatus::Delayed { remaining_beats: 1 });
+  assert_eq!(channel.total_delivered, 1);
+
+  // Recipient sees only msg-001
+  let visible_before = channel.drain_delivered_for_recipient(LaneActorRole::AlliedAutonomous, true);
+  assert_eq!(visible_before.len(), 1);
+  assert_eq!(visible_before[0].message_id(), "msg-001");
+
+  // Advance turn beat
+  channel.tick_turn();
+  assert_eq!(channel.current_turn(), 2);
+  assert_eq!(channel.total_delivered, 2);
+
+  // Recipient now sees msg-001 and msg-002
+  let visible_after = channel.drain_delivered_for_recipient(LaneActorRole::AlliedAutonomous, true);
+  assert_eq!(visible_after.len(), 2);
+  assert_eq!(visible_after[1].message_id(), "msg-002");
+
+  // Opposing laner sees 0 messages due to visibility rules
+  let visible_opposing = channel.drain_delivered_for_recipient(LaneActorRole::OpposingLaner, false);
+  assert_eq!(visible_opposing.len(), 0);
+
+  // 3. Garbled non-critical message is dropped missing
+  let envelope_garbled = TeamMessageEnvelope::new(
+    "msg-003",
+    LaneActorRole::HumanLaner,
+    TeamRecipient::Broadcast,
+    TeamSpeechAct::Clarification,
+    None,
+    TeamMessageUrgency::Standard,
+    TeamConfidenceLevel::Tentative,
+    TeamMessageCondition::Unconditional,
+    TeamMessageVisibility::TeamOnly,
+    1,
+    "Unclear signal",
+  );
+  let status3 = channel
+    .enqueue(
+      envelope_garbled,
+      CommunicationClarity::Garbled,
+      TransmissionDelay::Immediate,
+      &trust_matrix,
+    )
+    .unwrap();
+  assert_eq!(status3, DeliveryStatus::DroppedMissing);
+  assert_eq!(channel.total_dropped, 1);
+
+  // 4. Overload capacity drop (capacity = 3, buffer has 3 packets)
+  let envelope_overload = TeamMessageEnvelope::new(
+    "msg-004",
+    LaneActorRole::HumanLaner,
+    TeamRecipient::Broadcast,
+    TeamSpeechAct::Proposal,
+    Some(LaneIntent::Contest),
+    TeamMessageUrgency::Critical,
+    TeamConfidenceLevel::Definite,
+    TeamMessageCondition::Unconditional,
+    TeamMessageVisibility::TeamOnly,
+    1,
+    "Critical push",
+  );
+  let status4 = channel
+    .enqueue(
+      envelope_overload,
+      CommunicationClarity::Crisp,
+      TransmissionDelay::Immediate,
+      &trust_matrix,
+    )
+    .unwrap();
+  assert_eq!(status4, DeliveryStatus::DroppedOverload);
+  assert_eq!(channel.total_dropped, 2);
+
+  // 5. Suppressed distrusted sender on Low-urgency message
+  let mut distrusted_channel = TeamCommunicationChannel::new(5);
+  trust_matrix
+    .get_mut(LaneActorRole::HumanLaner)
+    .reputation_bp = 1_000;
+  let envelope_low_urgency = TeamMessageEnvelope::new(
+    "msg-005",
+    LaneActorRole::HumanLaner,
+    TeamRecipient::Broadcast,
+    TeamSpeechAct::Proposal,
+    Some(LaneIntent::Stabilize),
+    TeamMessageUrgency::Low,
+    TeamConfidenceLevel::Tentative,
+    TeamMessageCondition::Unconditional,
+    TeamMessageVisibility::TeamOnly,
+    1,
+    "Optional farm",
+  );
+  let status5 = distrusted_channel
+    .enqueue(
+      envelope_low_urgency,
+      CommunicationClarity::Crisp,
+      TransmissionDelay::Immediate,
+      &trust_matrix,
+    )
+    .unwrap();
+  assert_eq!(status5, DeliveryStatus::SuppressedDistrusted);
+  assert_eq!(distrusted_channel.total_suppressed, 1);
+}
+
+#[test]
+fn test_team_trust_evaluator_deterministic_compliance() {
+  let initial = LaneSnapshot::initial();
+  let safe_obs = observe_player(&initial, ObservationId::new(999)).observation();
+  let threat_state = LaneSnapshot::new(
+    initial.ruleset(),
+    initial.turn(),
+    LaneStatus::Open,
+    initial.player(),
+    initial.opponent(),
+    initial.wave(),
+    JungleThreatTruth::RiverSide,
+  );
+  let threat_obs = observe_player(&threat_state, ObservationId::new(1000)).observation();
+
+  let proposal = TeamMessageEnvelope::new(
+    "prop-001",
+    LaneActorRole::HumanLaner,
+    TeamRecipient::Broadcast,
+    TeamSpeechAct::Proposal,
+    Some(LaneIntent::Contest),
+    TeamMessageUrgency::Standard,
+    TeamConfidenceLevel::Confident,
+    TeamMessageCondition::ThreatAbsent,
+    TeamMessageVisibility::TeamOnly,
+    1,
+    "Allied gank engagement",
+  );
+
+  // 1. High-trust caller -> Comply
+  let high_caller = TeamTrustCatalog::HIGH_TRUST_CALLER;
+  let report_high = TeamTrustEvaluator::evaluate_proposal(
+    &proposal,
+    &high_caller,
+    CommunicationClarity::Crisp,
+    &safe_obs,
+    LaneActorRole::AlliedAutonomous,
+  )
+  .unwrap();
+  assert_eq!(report_high.decision, TrustComplianceDecision::Comply);
+  assert_eq!(report_high.caller_trust_level, TeamTrustLevel::HighTrust);
+  assert!(report_high.validate().is_ok());
+
+  // Markdown rendering check
+  let md = report_high.render_markdown();
+  assert!(md.contains("### Trust Evaluation Report"));
+  assert!(md.contains("- **Caller Reputation**: 8500 bp (high-trust)"));
+  assert!(md.contains("- **Decision**: comply"));
+
+  // 2. Standard-trust caller with Degraded clarity -> Clarify
+  let std_caller = TeamTrustCatalog::STANDARD_TRUST_CALLER;
+  let report_std_degraded = TeamTrustEvaluator::evaluate_proposal(
+    &proposal,
+    &std_caller,
+    CommunicationClarity::Degraded,
+    &safe_obs,
+    LaneActorRole::AlliedAutonomous,
+  )
+  .unwrap();
+  assert_eq!(
+    report_std_degraded.decision,
+    TrustComplianceDecision::Clarify
+  );
+
+  // 3. Low-trust caller with Ambiguous clarity -> Clarify
+  let low_caller = TeamTrustCatalog::LOW_TRUST_CALLER;
+  let report_low_ambiguous = TeamTrustEvaluator::evaluate_proposal(
+    &proposal,
+    &low_caller,
+    CommunicationClarity::Ambiguous,
+    &safe_obs,
+    LaneActorRole::AlliedAutonomous,
+  )
+  .unwrap();
+  assert_eq!(
+    report_low_ambiguous.decision,
+    TrustComplianceDecision::Clarify
+  );
+
+  // 4. Low-trust caller with Crisp clarity and satisfied condition -> Comply
+  let report_low_crisp = TeamTrustEvaluator::evaluate_proposal(
+    &proposal,
+    &low_caller,
+    CommunicationClarity::Crisp,
+    &safe_obs,
+    LaneActorRole::AlliedAutonomous,
+  )
+  .unwrap();
+  assert_eq!(report_low_crisp.decision, TrustComplianceDecision::Comply);
+
+  // 5. Distrusted caller -> Dissent(PostureIncompatible)
+  let distrusted_caller = TeamTrustCatalog::DISTRUSTED_CALLER;
+  let report_distrusted = TeamTrustEvaluator::evaluate_proposal(
+    &proposal,
+    &distrusted_caller,
+    CommunicationClarity::Crisp,
+    &safe_obs,
+    LaneActorRole::AlliedAutonomous,
+  )
+  .unwrap();
+  assert_eq!(
+    report_distrusted.decision,
+    TrustComplianceDecision::Dissent(TeamDissentReason::PostureIncompatible)
+  );
+
+  // 6. Prerequisite condition failure on standard trust -> Dissent(ThreatDetected)
+  let report_unmet = TeamTrustEvaluator::evaluate_proposal(
+    &proposal,
+    &std_caller,
+    CommunicationClarity::Crisp,
+    &threat_obs,
+    LaneActorRole::AlliedAutonomous,
+  )
+  .unwrap();
+  assert_eq!(
+    report_unmet.decision,
+    TrustComplianceDecision::Dissent(TeamDissentReason::ThreatDetected)
+  );
+}
+
+#[test]
+fn test_team_trust_catalog_and_reference_profiles() {
+  assert_eq!(
+    TeamTrustCatalog::get_reference_caller("high-trust-caller"),
+    Some(TeamTrustCatalog::HIGH_TRUST_CALLER)
+  );
+  assert_eq!(
+    TeamTrustCatalog::get_reference_caller("standard-trust-caller"),
+    Some(TeamTrustCatalog::STANDARD_TRUST_CALLER)
+  );
+  assert_eq!(
+    TeamTrustCatalog::get_reference_caller("low-trust-caller"),
+    Some(TeamTrustCatalog::LOW_TRUST_CALLER)
+  );
+  assert_eq!(
+    TeamTrustCatalog::get_reference_caller("distrusted-caller"),
+    Some(TeamTrustCatalog::DISTRUSTED_CALLER)
+  );
+  assert_eq!(TeamTrustCatalog::get_reference_caller("non-existent"), None);
+}
