@@ -1,21 +1,29 @@
-# Milestone 8 Handoff: Private Submissions and Simultaneous Resolution
+# Handoff: M8 Coordination and Execution Attribution Separation
 
-## Summary of Completed Work
+**Outcome:** Implemented the strategic coordination versus mechanical execution attribution subsystem for M8 (Phase 8), decoupling team coordination quality from mechanical execution outcomes to eliminate outcome bias in causal debriefs.
 
-1. **Target Feature**:
-   - Implemented private multi-agent submissions and deterministic simultaneous resolution in `src/agent/simultaneous.rs`.
-   - Exposed and integrated `simultaneous` module through `src/agent/mod.rs` and registered in `scripts/check_repository.py`.
+## Changed Files
 
-2. **Core Capabilities Delivered**:
-   - `TeamSubmissionEnvelope` with observation ID binding, multi-field tactical parameters (intent, target focus, commitment, ping signal), optional communicative message and individual plan, and zero chain-of-thought assertion.
-   - `TeamSubmissionReceipt` providing lightweight, payload-free submission acknowledgment.
-   - `TeamSimultaneousWindow` state machine (`CollectingSubmissions` -> `Ready` -> `Resolved` -> `Closed`) with privacy guarantees during collection.
-   - `TeamSimultaneousResolver` evaluating multi-actor plan alignment (`TeamPlanEvaluator`), proposal trust compliance (`TeamTrustEvaluator`), and leadership consensus/directives (`TeamLeadershipEvaluator`) into integer basis-point cohesion ($[0..=10,000]$ bp) and discrete `TeamCoordinationOutcome` classifications (`FullyCoordinated`, `PartiallyCoordinated`, `DivergentIntents`, `ConflictingDirectives`, `CommunicationFailure`).
-   - `TeamSimultaneousCatalog` with reference scenarios (`simultaneous-gank-coordinated-v1`, `simultaneous-defensive-fallback-v1`, `simultaneous-dissent-tradeoff-v1`, `simultaneous-conflicting-directives-v1`, `simultaneous-communication-failure-v1`).
-   - Markdown debrief rendering via `TeamSimultaneousResolution::render_markdown()`.
+- `src/agent/attribution.rs` — Core attribution contracts: `AttributionQuadrant`, `CoordinationRating`, `ExecutionRating`, `CoordinationCausalFactor`, `ExecutionCausalFactor`, `CoordinationAssessment`, `ExecutionAssessment`, `AttributionWeights`, `CoordinationExecutionAttribution`, `CoordinationExecutionAttributionReport`, `AttributionEvaluationInput`, `TeamAttributionEvaluator`, `AttributionScenario`, `CoordinationAttributionCatalog`, and `TeamAttributionError`.
+- `src/agent/mod.rs` — Exported `pub mod attribution;` and `pub use attribution::*;`.
+- `src/agent/tests.rs` — Added integration tests for simultaneous resolution attribution and comprehensive scenario matrix.
+- `scripts/check_repository.py` — Registered `src/agent/attribution.rs` in `CORE_RUST_FILES`.
+- `Cargo.toml` & `Cargo.lock` — Version bumped to `0.1.189`.
 
-3. **Repository Verification**:
-   - `cargo +1.96.0 fmt --all -- --check`: Clean pass.
-   - `cargo +1.96.0 clippy --locked --all-targets --all-features -- -D warnings`: Clean pass.
-   - `cargo +1.96.0 test --locked`: All 319 unit/integration/doc tests pass cleanly.
-   - `python3 scripts/check_repository.py`: Verification script passes.
+## Verification Evidence
+
+- `cargo fmt --all -- --check`: PASS
+- `cargo clippy --locked --all-targets --all-features -- -D warnings`: PASS
+- `cargo test --locked`: PASS (318 unit tests, 7 binary tests, 3 doc tests)
+- `python3 scripts/check_repository.py`: PASS
+- Playtest report in `_workspace/04_playtest-report.md`: PASS
+- Domain QA review in `_workspace/03-domain-qa-m8-coordination-execution-attribution.md`: PASS
+
+## Canonical State Updates Needed
+
+- `ROADMAP.md`: Check off "- [x] Attribute coordination success and failure separately from execution." in M8 scope, update current bounded team-communication evidence.
+- `SPEC.md`: Document `m8-coordination-execution-attribution-v1`, `AttributionQuadrant`, ratings, causal factors, evaluator, and catalog under Phase 8.
+- `ARCHITECTURE.md`: Record attribution separation boundary in Agent Ecology and Causal Debrief architecture.
+- `CHANGELOG.md`: Record `0.1.189` release entry.
+- `README.md`: Update current package version and milestone progress if relevant.
+- `LESSONS.md`: Record verified lesson on basis-point sum conservation and quadrant decoupling in strategic attribution.

@@ -100,6 +100,35 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.189 — 2026-08-13
+
+### Added
+
+- Added `m8-coordination-execution-attribution-v1`, `m8-coordination-execution-attribution-report-v1`,
+  `m8-coordination-attribution-catalog-v1`, `AttributionQuadrant`, `CoordinationRating`, `ExecutionRating`,
+  `CoordinationCausalFactor`, `ExecutionCausalFactor`, `CoordinationAssessment`, `ExecutionAssessment`,
+  `AttributionWeights`, `CoordinationExecutionAttribution`, `CoordinationExecutionAttributionReport`,
+  `AttributionEvaluationInput`, `TeamAttributionEvaluator`, `AttributionScenario`, `CoordinationAttributionCatalog`,
+  and `TeamAttributionError` in `src/agent/attribution.rs`, decoupling strategic team coordination from mechanical execution outcomes to eliminate outcome bias in causal debriefs for M8:
+  - `AttributionQuadrant` classifying team turn outcomes into 4 canonical quadrants (`CoordinatedTriumph`,
+    `CoordinatedFailure`, `UncoordinatedBailout`, `CompoundedFailure`) based on orthogonal coordination
+    effectiveness ($\ge 5,000$ bp) and mechanical execution efficiency ($\ge 5,000$ bp) thresholds.
+  - Discrete performance tiers (`CoordinationRating` and `ExecutionRating`) and 8 discrete causal factor
+    taxonomies for each dimension (`CoordinationCausalFactor` and `ExecutionCausalFactor`).
+  - `AttributionWeights` enforcing exact integer basis-point sum conservation ($10,000$ bp invariant:
+    `coordination + execution + exogenous == 10_000` bp) without floating-point arithmetic.
+  - `CoordinationExecutionAttributionReport` providing structured Markdown debrief rendering and fail-closed
+    zero private chain-of-thought rejection (`chain_of_thought_present == false`).
+  - `TeamAttributionEvaluator` synthesizing `TeamSimultaneousResolution` with physical lane outcomes.
+  - `CoordinationAttributionCatalog` registering 6 canonical benchmark scenarios (`attr-coordinated-triumph-gank-v1`,
+    `attr-coordinated-failure-overreach-v1`, `attr-uncoordinated-bailout-clutch-v1`,
+    `attr-compounded-failure-deadlock-v1`, `attr-legitimate-dissent-avoided-wipe-v1`,
+    `attr-trust-breakdown-execution-miss-v1`) with fail-closed lookup and mathematical validation.
+
+### Known limits
+
+- This contract establishes decoupled coordination and execution attribution; high-trust/low-trust/conflicting-call scenario batteries and multi-turn match debriefs remain open.
+
 ## 0.1.188 — 2026-08-13
 
 ### Added

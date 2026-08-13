@@ -3,9 +3,9 @@ use crate::host::CliScenarioHost;
 use crate::kernel::{DrawId, StreamId};
 use crate::lane::{
   ALLIED_AUTONOMOUS_ACTOR, JungleThreatTruth, LaneAbortCondition, LaneActorRole, LaneCommitment,
-  LaneFallbackBehavior, LaneHealth, LaneIntent, LanePingSignal, LaneSnapshot, LaneStatus,
-  LaneTargetFocus, LanerObservation, M2_LANE_RULESET, ObservationId, PLAYER_LANER, PlayerLaneState,
-  WavePressure, WaveState, observe_player, validate_lane_request,
+  LaneFallbackBehavior, LaneHealth, LaneIntent, LaneOutcome, LanePingSignal, LaneSnapshot,
+  LaneStatus, LaneTargetFocus, LanerObservation, M2_LANE_RULESET, ObservationId, PLAYER_LANER,
+  PlayerLaneState, WavePressure, WaveState, observe_player, validate_lane_request,
 };
 use crate::protocol::{
   ActorActionDto, ActorMessageDto, ActorProtocolCodecError, ActorProtocolIntent,
@@ -8222,4 +8222,189 @@ fn test_leadership_error_formatting() {
     format!("{}", err_missing),
     "shot-caller directive missing for designated role `human-laner`"
   );
+}
+
+#[test]
+fn test_attribution_evaluator_with_simultaneous_resolution() {
+  let mut window = TeamSimultaneousWindow::new_two_role(
+    LaneActorRole::HumanLaner,
+    LaneActorRole::AlliedAutonomous,
+    100,
+    1,
+  )
+  .unwrap();
+
+  let team_plan = TeamPlanCatalog::lookup("plan-gank-setup-v1").unwrap();
+
+  let msg = TeamMessageEnvelope::new(
+    "msg-gank-prop-attr-v1",
+    LaneActorRole::HumanLaner,
+    TeamRecipient::Direct(LaneActorRole::AlliedAutonomous),
+    TeamSpeechAct::Proposal,
+    Some(LaneIntent::Contest),
+    TeamMessageUrgency::Standard,
+    TeamConfidenceLevel::Confident,
+    TeamMessageCondition::Unconditional,
+    TeamMessageVisibility::TeamOnly,
+    1,
+    "Gank proposal for attribution test",
+  );
+
+  let indiv_human = IndividualPlanDefinition {
+    plan_id: "plan-human-attr-gank-v1",
+    actor: LaneActorRole::HumanLaner,
+    selected_intent: LaneIntent::Contest,
+    target_focus: LaneTargetFocus::OpposingLaner,
+    commitment: LaneCommitment::Standard,
+    abort_condition: LaneAbortCondition::None,
+    fallback_behavior: LaneFallbackBehavior::RetreatToTower,
+    ping_signal: LanePingSignal::OnMyWay,
+    chain_of_thought_present: false,
+  };
+
+  let indiv_ally = IndividualPlanDefinition {
+    plan_id: "plan-ally-attr-gank-v1",
+    actor: LaneActorRole::AlliedAutonomous,
+    selected_intent: LaneIntent::Contest,
+    target_focus: LaneTargetFocus::OpposingLaner,
+    commitment: LaneCommitment::Standard,
+    abort_condition: LaneAbortCondition::None,
+    fallback_behavior: LaneFallbackBehavior::RetreatToTower,
+    ping_signal: LanePingSignal::Assist,
+    chain_of_thought_present: false,
+  };
+
+  let sub1 = TeamSubmissionEnvelope::new(
+    LaneActorRole::HumanLaner,
+    100,
+    1,
+    LaneIntent::Contest,
+    LaneTargetFocus::OpposingLaner,
+    LaneCommitment::Standard,
+    LanePingSignal::OnMyWay,
+    Some(msg),
+    Some(indiv_human),
+    false,
+  )
+  .unwrap();
+
+  let sub2 = TeamSubmissionEnvelope::new(
+    LaneActorRole::AlliedAutonomous,
+    100,
+    1,
+    LaneIntent::Contest,
+    LaneTargetFocus::OpposingLaner,
+    LaneCommitment::Standard,
+    LanePingSignal::Assist,
+    None,
+    Some(indiv_ally),
+    false,
+  )
+  .unwrap();
+
+  window.submit(sub1).unwrap();
+  window.submit(sub2).unwrap();
+
+  let initial = LaneSnapshot::initial();
+  let safe_obs = observe_player(&initial, ObservationId::new(100)).observation();
+
+  let resolution = TeamSimultaneousResolver::resolve(
+    &mut window,
+    Some(team_plan),
+    None,
+    &[],
+    &[],
+    None,
+    &safe_obs,
+  )
+  .unwrap();
+
+  assert_eq!(
+    resolution.coordination_outcome(),
+    TeamCoordinationOutcome::FullyCoordinated
+  );
+
+  // Evaluate triumph
+  let input = AttributionEvaluationInput {
+    lane_outcome: LaneOutcome::HeldSpace,
+    execution_score_bp: 8_500,
+    primary_coord_factor: CoordinationCausalFactor::DirectiveCompliance,
+    secondary_coord_factors: [Some(CoordinationCausalFactor::UnanimousAlignment), None],
+    primary_exec_factor: ExecutionCausalFactor::DecisiveDamageAdvantage,
+    secondary_exec_factors: [Some(ExecutionCausalFactor::ObjectiveSecured), None],
+    weights: AttributionWeights::new(5_000, 4_000, 1_000).unwrap(),
+    summary_notes: "Coordinated gank executed to plan",
+    chain_of_thought_present: false,
+  };
+  let report = TeamAttributionEvaluator::evaluate(&resolution, input).unwrap();
+
+  assert_eq!(
+    report.attribution().quadrant(),
+    AttributionQuadrant::CoordinatedTriumph
+  );
+  assert!(report.attribution().quadrant().is_coordination_effective());
+  assert!(report.attribution().quadrant().is_execution_effective());
+  assert_eq!(
+    report.attribution().coordination_assessment().rating(),
+    CoordinationRating::HighCoordination
+  );
+  assert_eq!(
+    report.attribution().execution_assessment().rating(),
+    ExecutionRating::FlawlessExecution
+  );
+
+  let md = report.to_markdown();
+  assert!(md.contains("coordinated-triumph"));
+  assert!(md.contains("directive-compliance"));
+  assert!(md.contains("decisive-damage-advantage"));
+}
+
+#[test]
+fn test_attribution_scenarios_comprehensive_matrix() {
+  let scenarios = CoordinationAttributionCatalog::all_scenarios();
+  assert_eq!(scenarios.len(), 6);
+
+  for sc in scenarios {
+    assert!(sc.validate().is_ok());
+
+    let coord = CoordinationAssessment::new(
+      sc.coordination_outcome,
+      sc.cohesion_bp,
+      sc.primary_coord_factor,
+      [None, None],
+    )
+    .unwrap();
+
+    let exec = ExecutionAssessment::new(
+      sc.lane_outcome,
+      sc.execution_score_bp,
+      sc.primary_exec_factor,
+      [None, None],
+    )
+    .unwrap();
+
+    let weights = AttributionWeights::new(
+      sc.coordination_contribution_bp,
+      sc.execution_contribution_bp,
+      sc.exogenous_variance_bp,
+    )
+    .unwrap();
+
+    let attr =
+      CoordinationExecutionAttribution::new(coord, exec, weights, sc.summary_notes).unwrap();
+
+    assert_eq!(attr.quadrant(), sc.expected_quadrant);
+    assert_eq!(
+      attr.coordination_assessment().rating(),
+      sc.expected_coordination_rating
+    );
+    assert_eq!(
+      attr.execution_assessment().rating(),
+      sc.expected_execution_rating
+    );
+
+    let report = CoordinationExecutionAttributionReport::new(1, 123, attr, false).unwrap();
+    let md = report.to_markdown();
+    assert!(md.contains(sc.expected_quadrant.as_str()));
+  }
 }

@@ -3,6 +3,7 @@
 //! This module re-exports all public surface from the decomposed submodules.
 //! External callers should import from `crate::agent::*` as they did before.
 
+pub mod attribution;
 pub mod communication;
 pub mod comparison;
 pub mod empirical;
@@ -29,6 +30,7 @@ pub mod uncertainty;
 #[cfg(test)]
 mod tests;
 
+pub use attribution::*;
 pub use communication::*;
 pub use comparison::*;
 pub use empirical::*;
