@@ -21,6 +21,7 @@ pub mod replay;
 pub mod semantic;
 pub mod tally;
 pub mod team_plan;
+pub mod trust;
 pub mod uncertainty;
 
 #[cfg(test)]
@@ -44,4 +45,5 @@ pub use replay::*;
 pub use semantic::*;
 pub use tally::*;
 pub use team_plan::*;
+pub use trust::*;
 pub use uncertainty::*;

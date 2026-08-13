@@ -1510,7 +1510,7 @@ distribution estimation, and parametric fitting remain open.
 
 ## Team Communication and Shot-Calling (Phase 8)
 
-**Status:** Versioned typed speech acts, addressing, urgency, confidence, conditions, visibility rules, message envelope schemas, speech act evaluation profiles, dialogue session state machines, team-plan definitions, and deterministic alignment evaluation defined for reference team communication; multi-agent trust dynamics, caller reputation, and shot-calling arbitration remain open.
+**Status:** Versioned typed speech acts, addressing, urgency, confidence, conditions, visibility rules, message envelope schemas, speech act evaluation profiles, dialogue session state machines, team-plan definitions, deterministic alignment evaluation, caller reputation tracking, and transmission channel dynamics defined for reference team communication; designated shot-caller arbitration and decentralized baselines remain open.
 
 - `TeamSpeechAct` defines `m8-team-speech-act-v1` covering 8 canonical communicative intents: `Proposal`, `Clarification`, `Confirmation`, `Disagreement`, `CounterProposal`, `ConditionalCommitment`, `Withdrawal`, and `FailureReport`.
 - `TeamRecipient` defines message addressing for team broadcast (`Broadcast`) and directed role targeting (`Direct(LaneActorRole)`).
@@ -1535,7 +1535,17 @@ distribution estimation, and parametric fitting remain open.
 - `AlignmentEvaluation` evaluates intent matching, focus compatibility, condition satisfaction, and causal dissent reasons (`TeamDissentReason`).
 - `TeamPlanEvaluator` and `TeamPlanAlignmentReport` provide deterministic individual and team-level alignment evaluation with exact integer basis-point cohesion scoring ($[0..=10,000]$ bp) and formatted Markdown summary rendering.
 - `TeamPlanCatalog` registers 6 canonical reference team plans with fail-closed lookup and validation.
-- This contract establishes structured semantic communication schemas, addressing, visibility boundaries, dialogue state machines, team plans, role assignments, and deterministic alignment evaluation; multi-agent trust dynamics, caller reputation, and designated shot-caller heuristics remain open.
+- `TeamTrustLevel` defines 4 qualitative trust tiers derived from basis-point reputation (`HighTrust`, `StandardTrust`, `LowTrust`, `Distrusted`).
+- `CallerReputationRecord` defines `m8-caller-reputation-v1` tracking historical calls and basis-point reputation score updates ($[0..=10,000]$ bp) upon execution outcomes (`SuccessfulExecution`, `FailedExecution`, `AbandonedCall`).
+- `TeamTrustMatrix` provides pairwise and multi-actor reputation tracking across all team roles.
+- `CommunicationClarity` defines 4 transmission clarity levels (`Crisp`, `Ambiguous`, `Degraded`, `Garbled`) with basis-point multipliers ($1,000..=10,000$ bp).
+- `TransmissionDelay` defines simulated turn-beat delay steps (`Immediate`, `OneBeat`, `TwoBeats`).
+- `DeliveryStatus` tracks packet lifecycle states (`Delivered`, `Delayed`, `DroppedMissing`, `DroppedOverload`, `SuppressedDistrusted`).
+- `TeamCommunicationChannel` defines `m8-communication-channel-v1` managing bounded FIFO transmission queues (capacity 16 packets) with turn-tick delay progression, capacity overload dropping, noise filtering, and visibility enforcement.
+- `TrustComplianceDecision` and `TrustEvaluationReport` define `m8-team-trust-v1` representing deterministic proposal compliance decisions, clarification requests, and dissent attributions under caller reputation and local observation constraints.
+- `TeamTrustEvaluator` evaluates incoming proposals against caller reputation, message clarity, and local conditions.
+- `TeamTrustCatalog` registers 4 canonical reference caller reputation records with fail-closed lookup and validation.
+- This contract establishes structured semantic communication schemas, addressing, visibility boundaries, dialogue state machines, team plans, role assignments, deterministic alignment evaluation, caller reputation tracking, and transmission channel physics; designated shot-caller heuristics, centralized vs decentralized leadership baselines, and simultaneous private resolution remain open.
 
 ## Future
 

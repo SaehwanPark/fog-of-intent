@@ -1595,7 +1595,7 @@ constraints; influence never becomes disguised direct control.
 - [x] Implement proposal, clarification, confirmation, disagreement,
   counterproposal, conditional commitment, withdrawal, and failure reporting.
 - [x] Define team-plan and individual-plan relationships.
-- [ ] Implement trust, caller reputation, communication clarity, delay,
+- [x] Implement trust, caller reputation, communication clarity, delay,
   missingness, and overload only as demonstrated needs.
 - [ ] Add designated shot-caller and decentralized baselines.
 - [ ] Preserve private submissions and simultaneous resolution.
@@ -1632,10 +1632,19 @@ constraints; influence never becomes disguised direct control.
 - [x] Provide `TeamPlanCatalog` with 6 registered canonical team plans (`plan-gank-setup-v1`,
   `plan-lane-siege-v1`, `plan-defensive-hold-v1`, `plan-resource-farming-v1`, `plan-objective-contest-v1`,
   `plan-tactical-reset-v1`) with fail-closed lookup and validation.
+- [x] Define `m8-team-trust-v1`, `m8-caller-reputation-v1`, `m8-communication-channel-v1`,
+  `TeamTrustLevel` (4 discrete levels), `CallOutcome`, `CallerReputationRecord` ($[0..=10,000]$ bp updates),
+  `TeamTrustMatrix`, `CommunicationClarity` (4 clarity modifiers), `TransmissionDelay` (0..=2 beat delays),
+  `DeliveryStatus` (5 delivery states), `ChannelPacket`, `TeamCommunicationChannel` (capacity 16 queue with
+  turn-tick progression and overload/noise dropping), `TrustComplianceDecision`, `TrustEvaluationReport`,
+  and `TeamTrustEvaluator` managing deterministic proposal compliance and dissent attribution under trust constraints.
+- [x] Provide `TeamTrustCatalog` with 4 registered canonical reference caller profiles (`high-trust-caller`,
+  `standard-trust-caller`, `low-trust-caller`, `distrusted-caller`) with fail-closed lookup and validation.
 
-This establishes structured semantic communication schemas, addressing, visibility rules, dialogue state machines, team plans, and alignment evaluation;
-multi-agent trust dynamics, caller reputation, designated shot-caller heuristics, and leadership
-arbitration remain open.
+This establishes structured semantic communication schemas, addressing, visibility rules, dialogue state machines,
+team plans, alignment evaluation, caller reputation tracking, and transmission channel physics;
+designated shot-caller heuristics, centralized vs decentralized leadership baselines, and simultaneous
+private resolution remain open.
 
 ### Deliverables
 
