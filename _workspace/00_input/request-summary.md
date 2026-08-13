@@ -1,41 +1,33 @@
-# Request Summary: Designated Shot-Caller and Decentralized Coordination Baselines (M8)
+# Request Summary: Preserve Private Submissions and Simultaneous Resolution (M8)
 
-**Requested Outcome:** Define and implement designated shot-caller and decentralized coordination baseline leadership policies, consensus arbitration, fallback modes, cohesion evaluation, and canonical leadership catalogs for M8 team communication without violating actor information boundaries or introducing disguised direct control.
-**Roadmap Milestone:** M8 — Team Communication and Shot-Calling
-**Current Evidence:** `src/agent/communication.rs`, `src/agent/team_plan.rs`, `src/agent/trust.rs`.
+## 1. Context & Roadmap Milestone
+- **Milestone:** M8 — Team Communication and Shot-Calling
+- **Task Scope:** Implement private submissions and simultaneous resolution for multi-agent team decision windows.
+- **Preceding Slices:**
+  - `m8-team-communication-v1`: Typed speech acts, envelopes, and zero chain-of-thought validation.
+  - `m8-team-dialogue-v1`: Multi-turn dialogue state machines and condition evaluators.
+  - `m8-team-plan-v1`: Team-plan and individual-plan definitions and deterministic alignment evaluation.
+  - `m8-team-trust-v1`: Caller reputation tracking, transmission channels, and trust-modulated compliance.
+  - `m8-leadership-structure-v1`: Designated shot-caller policies, decentralized consensus arbitration, and leadership evaluation reports.
+- **Active Slice:** Preserve private submissions and simultaneous resolution (`m8-team-simultaneous-submission-v1`, `m8-team-simultaneous-resolution-v1`).
 
-## In Scope
-- `LeadershipStructure`: discrete enum (`DesignatedShotCaller`, `Decentralized`, `SharedLeadership`) defining team authority distribution.
-- `ConsensusRule`: deterministic arbitration rules (`UnanimousConsensus`, `HighestReputationLead`, `UrgencyFirst`, `MajoritySupport`) for decentralized coordination.
-- `FallbackLeadershipMode`: fallback policies when leadership proposals fail (`FallbackToIndividualPlans`, `FallbackToDefaultHold`, `FallbackToSecondaryCaller`).
-- `ShotCallerPolicy`: deterministic evaluation of team plans and issuance of directives/proposals based on observation context and role assignments.
-- `DecentralizedCoordinator`: deterministic consensus arbitration among multiple simultaneous peer proposals, computing aggregate agreement and cohesion in exact integer basis points ($[0..=10,000]$ bp).
-- `LeadershipResolutionOutcome`: discrete resolution states (`ConsensusAchieved`, `SplitDecision`, `FallbackIndividualPlans`, `ConflictedDeadlock`).
-- `LeadershipEvaluationReport`: formatted Markdown inspection of leadership decisions, compliance rates, dissenting roles, and cohesion scores.
-- `LeadershipCatalog`: canonical registered leadership configurations (`leader-designated-anchor-v1`, `leader-designated-jungler-v1`, `leader-decentralized-unanimous-v1`, `leader-decentralized-reputation-v1`, `leader-decentralized-urgency-v1`).
-- Fail-closed validation, zero private chain-of-thought preservation (`chain_of_thought_present == false`), and leak-proof visibility.
-
-## Non-Goals
-- No unconstrained natural-language LLM generation or social roleplaying.
-- No bypassing teammate policy or forcing direct command execution.
-- No floating-point consensus metrics or non-deterministic arbitration.
-- No multi-lane map physics (deferred to M9).
-
-## Project Boundaries Touched
-- `src/agent/leadership.rs` (new module)
-- `src/agent/mod.rs`
-- `src/agent/tests.rs`
-
-## Expected Outputs
-- `src/agent/leadership.rs`
-- Comprehensive unit tests in `src/agent/tests.rs`
-- `_workspace/01_agent-ecology-design.md`
-- `_workspace/03_domain-qa.md`
-- `_workspace/final/handoff.md`
-- Updates to `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `LESSONS.md`, and `README.md`.
-
-## Verification
-- `cargo +1.96.0 fmt --all -- --check`
-- `cargo +1.96.0 clippy --locked --all-targets --all-features -- -D warnings`
-- `cargo +1.96.0 test --locked`
-- `python3 scripts/check_repository.py`
+## 2. Objectives & Acceptance Criteria
+1. **Private Submissions (`TeamSubmissionEnvelope`, `TeamSubmissionReceipt`):**
+   - Each participating role submits an observer-bound intent, target focus, commitment, ping signal, optional message envelope, and optional individual plan.
+   - Enforce zero private chain-of-thought (`chain_of_thought_present == false`).
+   - Debug representation redacts uncommitted intents and private details during the collection phase.
+   - Return lightweight, payload-free receipts confirming acceptance without leaking content to peers.
+2. **Simultaneous Window Lifecycle (`TeamSimultaneousWindow`, `TeamSimultaneousPhase`):**
+   - Manage discrete phases: `CollectingSubmissions`, `Ready`, `Resolved`, `Closed`.
+   - Reject duplicate submissions from the same role, mismatched roles, stale observation/turn IDs, or submissions to closed windows.
+   - Guard submission access: individual submissions cannot be inspected by peers until the window transitions to `Ready` or `Resolved`.
+3. **Simultaneous Resolution (`TeamSimultaneousResolver`, `TeamSimultaneousResolution`):**
+   - Deterministically resolve all collected private submissions in parallel without sequential order bias.
+   - Evaluate multi-role plan alignment, trust-modulated compliance, communicative speech acts, and consensus rules.
+   - Classify discrete coordination outcomes: `FullyCoordinated`, `PartiallyCoordinated`, `DivergentIntents`, `ConflictingDirectives`, `CommunicationFailure`.
+   - Compute exact integer basis-point cohesion scores ($[0..=10,000]$ bp).
+4. **Canonical Catalog (`TeamSimultaneousCatalog`):**
+   - Register canonical scenario fixtures with deterministic expected resolutions covering all coordination outcomes.
+5. **Quality & Verification:**
+   - Pure, deterministic, zero floating-point arithmetic.
+   - Passes `cargo fmt`, `cargo clippy`, `cargo test`, and `python3 scripts/check_repository.py`.

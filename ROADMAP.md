@@ -1596,7 +1596,7 @@ constraints; influence never becomes disguised direct control.
   counterproposal, conditional commitment, withdrawal, and failure reporting.
 - [x] Define team-plan and individual-plan relationships.
 - [x] Add designated shot-caller and decentralized baselines.
-- [ ] Preserve private submissions and simultaneous resolution.
+- [x] Preserve private submissions and simultaneous resolution.
 - [ ] Attribute coordination success and failure separately from execution.
 - [ ] Add high-trust, low-trust, conflicting-call, and missing-message scenarios.
 - [ ] Add communication and leadership debriefs.
@@ -1647,10 +1647,20 @@ constraints; influence never becomes disguised direct control.
   basis-point compliance/cohesion reporting.
 - [x] Provide `TeamTrustCatalog` with 4 registered canonical reference caller profiles (`high-trust-caller`,
   `standard-trust-caller`, `low-trust-caller`, `distrusted-caller`) with fail-closed lookup and validation.
+- [x] Define `m8-team-simultaneous-submission-v1`, `m8-team-simultaneous-resolution-v1`,
+  `m8-team-simultaneous-catalog-v1`, `TeamSimultaneousPhase` (4 discrete states), `TeamCoordinationOutcome`
+  (5 discrete categories: `FullyCoordinated`, `PartiallyCoordinated`, `DivergentIntents`, `ConflictingDirectives`, `CommunicationFailure`),
+  `TeamSubmissionEnvelope` (binding observation ID, turn, intent, target focus, commitment, ping signal, staged message, and individual plan),
+  `TeamSubmissionReceipt` (payload-free receipt), `TeamSimultaneousWindow` (managing up to 4 participating roles with redaction and privacy preservation during collection),
+  `RoleResolvedIntent`, `TeamSimultaneousResolution` (with Markdown reporting), and `TeamSimultaneousResolver` evaluating plan alignment, proposal trust compliance,
+  and leadership consensus/directives into integer basis-point cohesion ($[0..=10,000]$ bp) and deterministic coordination outcomes.
+- [x] Provide `TeamSimultaneousCatalog` with 5 registered reference scenarios (`simultaneous-gank-coordinated-v1`,
+  `simultaneous-defensive-fallback-v1`, `simultaneous-dissent-tradeoff-v1`, `simultaneous-conflicting-directives-v1`,
+  `simultaneous-communication-failure-v1`) with fail-closed lookup and validation.
 
 This establishes structured semantic communication schemas, addressing, visibility rules, dialogue state machines,
 team plans, alignment evaluation, caller reputation tracking, transmission channel physics, designated shot-caller heuristics,
-and decentralized consensus arbitration; simultaneous private resolution across multi-turn match scenarios remains open.
+decentralized consensus arbitration, private submission collection, and simultaneous multi-agent resolution; causal attribution of coordination success/failure separate from execution across multi-turn match scenarios remains open.
 
 ### Deliverables
 

@@ -58,6 +58,7 @@ CORE_RUST_FILES = (
   "src/agent/reference_output.rs",
   "src/agent/replay.rs",
   "src/agent/semantic.rs",
+  "src/agent/simultaneous.rs",
   "src/agent/tally.rs",
   "src/agent/team_plan.rs",
   "src/agent/trust.rs",

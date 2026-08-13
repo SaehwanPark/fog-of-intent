@@ -1553,7 +1553,16 @@ distribution estimation, and parametric fitting remain open.
 - `LeadershipEvaluationReport` defines `m8-leadership-evaluation-report-v1` providing comprehensive markdown summaries of team compliance decisions and dissent reasons.
 - `TeamLeadershipEvaluator` provides deterministic leadership structure evaluation against caller reputation matrices and local observations.
 - `LeadershipCatalog` registers 6 canonical baseline leadership configurations with fail-closed lookup and validation.
-- This contract establishes structured semantic communication schemas, addressing, visibility boundaries, dialogue state machines, team plans, role assignments, deterministic alignment evaluation, caller reputation tracking, transmission channel physics, designated shot-calling heuristics, and decentralized consensus arbitration; simultaneous private resolution across multi-turn match scenarios remains open.
+- `TeamSimultaneousPhase` defines 4 discrete simultaneous decision window states (`CollectingSubmissions`, `Ready`, `Resolved`, `Closed`).
+- `TeamCoordinationOutcome` defines 5 discrete multi-actor coordination outcome classifications (`FullyCoordinated`, `PartiallyCoordinated`, `DivergentIntents`, `ConflictingDirectives`, `CommunicationFailure`).
+- `TeamSubmissionEnvelope` defines `m8-team-simultaneous-submission-v1` binding actor role, observation ID, turn, intent, target focus, commitment, ping signal, staged message envelope, and individual plan definition, strictly rejecting any private chain-of-thought (`chain_of_thought_present == false`).
+- `TeamSubmissionReceipt` provides payload-free receipt confirmation without leaking submitted choices to other actors.
+- `TeamSimultaneousWindow` manages up to 4 registered roles, protecting submission privacy during collection (`get_submission` and `submissions()` error until the window is ready).
+- `RoleResolvedIntent` encapsulates resolved tactical intents per actor role.
+- `TeamSimultaneousResolution` defines `m8-team-simultaneous-resolution-v1` detailing resolved role intents, leadership evaluation reports, alignment evaluations, trust decisions, integer basis-point cohesion ($[0..=10,000]$ bp), and formatted Markdown reports.
+- `TeamSimultaneousResolver` deterministically evaluates multi-agent submissions against team plans, leadership structures, directives, peer proposals, and trust matrices.
+- `TeamSimultaneousCatalog` defines `m8-team-simultaneous-catalog-v1` registering 5 canonical reference simultaneous resolution scenarios with fail-closed lookup and validation.
+- This contract establishes structured semantic communication schemas, addressing, visibility boundaries, dialogue state machines, team plans, role assignments, deterministic alignment evaluation, caller reputation tracking, transmission channel physics, designated shot-calling heuristics, decentralized consensus arbitration, private submission collection, and simultaneous multi-agent resolution; causal attribution of coordination success/failure separate from execution across multi-turn match scenarios remains open.
 
 ## Future
 
