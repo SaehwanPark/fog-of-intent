@@ -2,9 +2,10 @@ use super::*;
 use crate::host::CliScenarioHost;
 use crate::kernel::{DrawId, StreamId};
 use crate::lane::{
-  ALLIED_AUTONOMOUS_ACTOR, JungleThreatTruth, LaneActorRole, LaneCommitment, LaneIntent,
-  LanePingSignal, LaneSnapshot, LaneStatus, LaneTargetFocus, LanerObservation, M2_LANE_RULESET,
-  ObservationId, WavePressure, WaveState, observe_player, validate_lane_request,
+  ALLIED_AUTONOMOUS_ACTOR, JungleThreatTruth, LaneAbortCondition, LaneActorRole, LaneCommitment,
+  LaneFallbackBehavior, LaneHealth, LaneIntent, LanePingSignal, LaneSnapshot, LaneStatus,
+  LaneTargetFocus, LanerObservation, M2_LANE_RULESET, ObservationId, PLAYER_LANER, PlayerLaneState,
+  WavePressure, WaveState, observe_player, validate_lane_request,
 };
 use crate::protocol::{
   ActorActionDto, ActorMessageDto, ActorProtocolCodecError, ActorProtocolIntent,
@@ -7021,4 +7022,346 @@ fn team_dialogue_session_fail_closed_rejections_and_invariants() {
     closed_session.step(post_close_msg),
     Err(TeamCommunicationError::SessionAlreadyClosed)
   );
+}
+
+#[test]
+fn team_plan_and_individual_plan_schemas_and_objective_enums() {
+  assert_eq!(TEAM_PLAN_SCHEMA, "m8-team-plan-v1");
+  assert_eq!(INDIVIDUAL_PLAN_SCHEMA, "m8-individual-plan-v1");
+  assert_eq!(
+    TEAM_PLAN_RELATIONSHIP_SCHEMA,
+    "m8-team-plan-relationship-v1"
+  );
+
+  // Objectives
+  let objectives = TeamStrategicObjective::all();
+  assert_eq!(objectives.len(), 6);
+  for obj in &objectives {
+    assert_eq!(TeamStrategicObjective::parse(obj.as_str()), Some(*obj));
+    assert_eq!(format!("{}", obj), obj.as_str());
+  }
+  assert_eq!(TeamStrategicObjective::parse("unknown-obj"), None);
+
+  // Phases
+  let phases = TeamPlanPhase::all();
+  assert_eq!(phases.len(), 4);
+  for phase in &phases {
+    assert_eq!(TeamPlanPhase::parse(phase.as_str()), Some(*phase));
+    assert_eq!(format!("{}", phase), phase.as_str());
+  }
+  assert_eq!(TeamPlanPhase::parse("unknown-phase"), None);
+
+  // Alignment Types
+  let alignments = [
+    TeamPlanAlignmentType::Aligned,
+    TeamPlanAlignmentType::Divergent,
+    TeamPlanAlignmentType::ConditionalCompliance,
+    TeamPlanAlignmentType::Independent,
+    TeamPlanAlignmentType::Conflicted,
+  ];
+  for align in &alignments {
+    assert_eq!(TeamPlanAlignmentType::parse(align.as_str()), Some(*align));
+    assert_eq!(format!("{}", align), align.as_str());
+  }
+  assert_eq!(TeamPlanAlignmentType::parse("unknown-align"), None);
+
+  // Errors
+  let errors = [
+    TeamPlanError::SchemaMismatch,
+    TeamPlanError::InvalidPlanId,
+    TeamPlanError::EmptyPlanAssignments,
+    TeamPlanError::DuplicateRoleAssignment,
+    TeamPlanError::ChainOfThoughtPresent,
+  ];
+  for err in &errors {
+    assert_eq!(format!("{}", err), err.as_str());
+  }
+}
+
+#[test]
+fn team_plan_catalog_and_definition_validation() {
+  let plans = TeamPlanCatalog::all();
+  assert_eq!(plans.len(), 6);
+
+  for plan in plans {
+    assert_eq!(plan.validate(), Ok(()));
+    assert_eq!(TeamPlanCatalog::lookup(plan.plan_id), Some(plan));
+    assert!(!plan.chain_of_thought_present);
+    assert!(!plan.plan_id.is_empty());
+    assert!(!plan.assignments.is_empty());
+  }
+
+  assert_eq!(TeamPlanCatalog::lookup("non-existent-plan"), None);
+
+  let gank_plans: Vec<_> =
+    TeamPlanCatalog::all_for_objective(TeamStrategicObjective::GankSetup).collect();
+  assert_eq!(gank_plans.len(), 1);
+  assert_eq!(gank_plans[0].plan_id, "plan-gank-setup-v1");
+
+  // Invariant error cases
+  let mut invalid_cot_plan = plans[0];
+  invalid_cot_plan.chain_of_thought_present = true;
+  assert_eq!(
+    invalid_cot_plan.validate(),
+    Err(TeamPlanError::ChainOfThoughtPresent)
+  );
+
+  let mut invalid_empty_id_plan = plans[0];
+  invalid_empty_id_plan.plan_id = "";
+  assert_eq!(
+    invalid_empty_id_plan.validate(),
+    Err(TeamPlanError::InvalidPlanId)
+  );
+
+  let mut invalid_empty_assign_plan = plans[0];
+  invalid_empty_assign_plan.assignments = &[];
+  assert_eq!(
+    invalid_empty_assign_plan.validate(),
+    Err(TeamPlanError::EmptyPlanAssignments)
+  );
+
+  static DUPLICATE_ASSIGNMENTS: [RolePlanAssignment; 2] = [
+    RolePlanAssignment::new(
+      LaneActorRole::HumanLaner,
+      LaneIntent::Contest,
+      LaneTargetFocus::OpposingLaner,
+      LaneCommitment::Standard,
+      LaneFallbackBehavior::RetreatToTower,
+    ),
+    RolePlanAssignment::new(
+      LaneActorRole::HumanLaner,
+      LaneIntent::Stabilize,
+      LaneTargetFocus::Minions,
+      LaneCommitment::Cautious,
+      LaneFallbackBehavior::MaintainPlan,
+    ),
+  ];
+  let mut duplicate_plan = plans[0];
+  duplicate_plan.assignments = &DUPLICATE_ASSIGNMENTS;
+  assert_eq!(
+    duplicate_plan.validate(),
+    Err(TeamPlanError::DuplicateRoleAssignment)
+  );
+}
+
+#[test]
+fn individual_plan_validation_and_chain_of_thought_rejection() {
+  let valid_plan = IndividualPlanDefinition {
+    plan_id: "plan-indiv-human-contest-v1",
+    actor: LaneActorRole::HumanLaner,
+    selected_intent: LaneIntent::Contest,
+    target_focus: LaneTargetFocus::OpposingLaner,
+    commitment: LaneCommitment::Standard,
+    abort_condition: LaneAbortCondition::HealthThreshold,
+    fallback_behavior: LaneFallbackBehavior::RetreatToTower,
+    ping_signal: LanePingSignal::Assist,
+    chain_of_thought_present: false,
+  };
+  assert_eq!(valid_plan.validate(), Ok(()));
+
+  let mut invalid_cot_plan = valid_plan;
+  invalid_cot_plan.chain_of_thought_present = true;
+  assert_eq!(
+    invalid_cot_plan.validate(),
+    Err(TeamPlanError::ChainOfThoughtPresent)
+  );
+
+  let mut invalid_id_plan = valid_plan;
+  invalid_id_plan.plan_id = "";
+  assert_eq!(
+    invalid_id_plan.validate(),
+    Err(TeamPlanError::InvalidPlanId)
+  );
+}
+
+#[test]
+fn team_plan_evaluator_evaluates_aligned_and_divergent_individual_plans() {
+  let gank_plan = TeamPlanCatalog::lookup("plan-gank-setup-v1").unwrap();
+
+  // 1. Aligned human plan
+  let aligned_human_plan = IndividualPlanDefinition {
+    plan_id: "indiv-human-gank-aligned",
+    actor: LaneActorRole::HumanLaner,
+    selected_intent: LaneIntent::Contest,
+    target_focus: LaneTargetFocus::OpposingLaner,
+    commitment: LaneCommitment::Standard,
+    abort_condition: LaneAbortCondition::None,
+    fallback_behavior: LaneFallbackBehavior::RetreatToTower,
+    ping_signal: LanePingSignal::OnMyWay,
+    chain_of_thought_present: false,
+  };
+  let eval = TeamPlanEvaluator::evaluate_alignment(gank_plan, &aligned_human_plan, None).unwrap();
+  assert_eq!(eval.alignment_type, TeamPlanAlignmentType::Aligned);
+  assert!(eval.intent_match);
+  assert!(eval.focus_match);
+  assert!(eval.condition_satisfied);
+  assert_eq!(eval.dissent_reason, None);
+
+  // 2. Divergent human plan (selecting Recall instead of Contest)
+  let divergent_human_plan = IndividualPlanDefinition {
+    plan_id: "indiv-human-gank-divergent",
+    actor: LaneActorRole::HumanLaner,
+    selected_intent: LaneIntent::Recall,
+    target_focus: LaneTargetFocus::Minions,
+    commitment: LaneCommitment::Cautious,
+    abort_condition: LaneAbortCondition::None,
+    fallback_behavior: LaneFallbackBehavior::RetreatToTower,
+    ping_signal: LanePingSignal::Danger,
+    chain_of_thought_present: false,
+  };
+  let eval_div =
+    TeamPlanEvaluator::evaluate_alignment(gank_plan, &divergent_human_plan, None).unwrap();
+  assert_eq!(eval_div.alignment_type, TeamPlanAlignmentType::Divergent);
+  assert!(!eval_div.intent_match);
+  assert_eq!(
+    eval_div.dissent_reason,
+    Some(TeamDissentReason::PostureIncompatible)
+  );
+
+  // 3. Independent actor (OpposingLaner not in team plan assignments)
+  let independent_plan = IndividualPlanDefinition {
+    plan_id: "indiv-opponent-plan",
+    actor: LaneActorRole::OpposingLaner,
+    selected_intent: LaneIntent::Contest,
+    target_focus: LaneTargetFocus::Minions,
+    commitment: LaneCommitment::Standard,
+    abort_condition: LaneAbortCondition::None,
+    fallback_behavior: LaneFallbackBehavior::MaintainPlan,
+    ping_signal: LanePingSignal::None,
+    chain_of_thought_present: false,
+  };
+  let eval_indep =
+    TeamPlanEvaluator::evaluate_alignment(gank_plan, &independent_plan, None).unwrap();
+  assert_eq!(
+    eval_indep.alignment_type,
+    TeamPlanAlignmentType::Independent
+  );
+  assert!(!eval_indep.intent_match);
+}
+
+#[test]
+fn team_plan_evaluator_evaluates_conditional_compliance_with_observation() {
+  let siege_plan = TeamPlanCatalog::lookup("plan-lane-siege-v1").unwrap();
+  // Siege plan requires HealthAboveThreshold (>= 3 hp)
+
+  let human_plan = IndividualPlanDefinition {
+    plan_id: "indiv-human-siege",
+    actor: LaneActorRole::HumanLaner,
+    selected_intent: LaneIntent::Contest,
+    target_focus: LaneTargetFocus::Minions,
+    commitment: LaneCommitment::Standard,
+    abort_condition: LaneAbortCondition::None,
+    fallback_behavior: LaneFallbackBehavior::MaintainPlan,
+    ping_signal: LanePingSignal::Assist,
+    chain_of_thought_present: false,
+  };
+
+  // High health observation (initial = 8 hp >= 3) -> Condition satisfied -> Aligned
+  let high_state = LaneSnapshot::initial();
+  let high_health_obs = observe_player(&high_state, ObservationId::new(901)).observation();
+  let eval_high =
+    TeamPlanEvaluator::evaluate_alignment(siege_plan, &human_plan, Some(&high_health_obs)).unwrap();
+  assert_eq!(eval_high.alignment_type, TeamPlanAlignmentType::Aligned);
+  assert!(eval_high.condition_satisfied);
+
+  // Low health observation (2 hp < 3) -> Condition not satisfied -> ConditionalCompliance
+  let low_state = LaneSnapshot::new(
+    high_state.ruleset,
+    high_state.turn,
+    high_state.status,
+    PlayerLaneState::new(
+      PLAYER_LANER,
+      LaneHealth::new(2).unwrap(),
+      high_state.player.resources,
+      high_state.player.position,
+    ),
+    high_state.opponent,
+    high_state.wave,
+    high_state.jungle_threat,
+  );
+  let low_health_obs = observe_player(&low_state, ObservationId::new(902)).observation();
+  let eval_low =
+    TeamPlanEvaluator::evaluate_alignment(siege_plan, &human_plan, Some(&low_health_obs)).unwrap();
+  assert_eq!(
+    eval_low.alignment_type,
+    TeamPlanAlignmentType::ConditionalCompliance
+  );
+  assert!(!eval_low.condition_satisfied);
+}
+
+#[test]
+fn team_plan_alignment_report_and_cohesion_scoring() {
+  let gank_plan = TeamPlanCatalog::lookup("plan-gank-setup-v1").unwrap();
+
+  let human_plan = IndividualPlanDefinition {
+    plan_id: "indiv-human-gank-v1",
+    actor: LaneActorRole::HumanLaner,
+    selected_intent: LaneIntent::Contest,
+    target_focus: LaneTargetFocus::OpposingLaner,
+    commitment: LaneCommitment::Standard,
+    abort_condition: LaneAbortCondition::None,
+    fallback_behavior: LaneFallbackBehavior::RetreatToTower,
+    ping_signal: LanePingSignal::OnMyWay,
+    chain_of_thought_present: false,
+  };
+
+  let ally_aligned_plan = IndividualPlanDefinition {
+    plan_id: "indiv-ally-gank-v1",
+    actor: LaneActorRole::AlliedAutonomous,
+    selected_intent: LaneIntent::Contest,
+    target_focus: LaneTargetFocus::OpposingLaner,
+    commitment: LaneCommitment::Standard,
+    abort_condition: LaneAbortCondition::None,
+    fallback_behavior: LaneFallbackBehavior::RetreatToTower,
+    ping_signal: LanePingSignal::Assist,
+    chain_of_thought_present: false,
+  };
+
+  let ally_divergent_plan = IndividualPlanDefinition {
+    plan_id: "indiv-ally-gank-div-v1",
+    actor: LaneActorRole::AlliedAutonomous,
+    selected_intent: LaneIntent::Stabilize,
+    target_focus: LaneTargetFocus::Minions,
+    commitment: LaneCommitment::Cautious,
+    abort_condition: LaneAbortCondition::None,
+    fallback_behavior: LaneFallbackBehavior::RetreatToTower,
+    ping_signal: LanePingSignal::Danger,
+    chain_of_thought_present: false,
+  };
+
+  // Case 1: 100% aligned team (2 out of 2 = 10,000 bp)
+  let report_aligned =
+    TeamPlanEvaluator::evaluate_team_alignment(gank_plan, &[human_plan, ally_aligned_plan], None)
+      .unwrap();
+  assert_eq!(
+    report_aligned.overall_alignment,
+    TeamPlanAlignmentType::Aligned
+  );
+  assert_eq!(report_aligned.aligned_actors_count, 2);
+  assert_eq!(report_aligned.divergent_actors_count, 0);
+  assert_eq!(report_aligned.cohesion_score_bp, 10_000);
+  assert_eq!(report_aligned.schema, TEAM_PLAN_RELATIONSHIP_SCHEMA);
+
+  // Markdown rendering
+  let md = report_aligned.render_markdown();
+  assert!(md.contains("# Team Plan Alignment Report"));
+  assert!(md.contains("- **Schema:** `m8-team-plan-relationship-v1`"));
+  assert!(md.contains("- **Team Plan ID:** `plan-gank-setup-v1`"));
+  assert!(md.contains("- **Strategic Objective:** `gank-setup`"));
+  assert!(md.contains("- **Overall Alignment:** `aligned`"));
+  assert!(md.contains("- **Cohesion Score:** 10000 bp (2 aligned, 0 divergent)"));
+  assert!(md.contains("| HumanLaner | `aligned` | yes | yes | satisfied | `none` |"));
+  assert!(md.contains("| AlliedAutonomous | `aligned` | yes | yes | satisfied | `none` |"));
+
+  // Case 2: 50% aligned team (1 out of 2 = 5,000 bp)
+  let report_mixed =
+    TeamPlanEvaluator::evaluate_team_alignment(gank_plan, &[human_plan, ally_divergent_plan], None)
+      .unwrap();
+  assert_eq!(
+    report_mixed.overall_alignment,
+    TeamPlanAlignmentType::ConditionalCompliance
+  );
+  assert_eq!(report_mixed.aligned_actors_count, 1);
+  assert_eq!(report_mixed.divergent_actors_count, 1);
+  assert_eq!(report_mixed.cohesion_score_bp, 5_000);
 }

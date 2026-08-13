@@ -1510,7 +1510,7 @@ distribution estimation, and parametric fitting remain open.
 
 ## Team Communication and Shot-Calling (Phase 8)
 
-**Status:** Versioned typed speech acts, addressing, urgency, confidence, conditions, visibility rules, message envelope schemas, speech act evaluation profiles, and dialogue session state machines defined for reference team communication; multi-agent trust dynamics, caller reputation, and team-plan negotiation remain open.
+**Status:** Versioned typed speech acts, addressing, urgency, confidence, conditions, visibility rules, message envelope schemas, speech act evaluation profiles, dialogue session state machines, team-plan definitions, and deterministic alignment evaluation defined for reference team communication; multi-agent trust dynamics, caller reputation, and shot-calling arbitration remain open.
 
 - `TeamSpeechAct` defines `m8-team-speech-act-v1` covering 8 canonical communicative intents: `Proposal`, `Clarification`, `Confirmation`, `Disagreement`, `CounterProposal`, `ConditionalCommitment`, `Withdrawal`, and `FailureReport`.
 - `TeamRecipient` defines message addressing for team broadcast (`Broadcast`) and directed role targeting (`Direct(LaneActorRole)`).
@@ -1526,7 +1526,16 @@ distribution estimation, and parametric fitting remain open.
 - `TeamSpeechActProfile` provides deterministic, posture-consistent proposal evaluation (`Cautious`, `RiskTaking`, `Yielding`) returning `TeamEvaluationOutcome` (`Accept`, `Dissent`, `Counter`, `Conditional`, `Clarify`, `Withdraw`, `Failure`).
 - `TeamDialogueSession` manages bounded multi-turn dialogue state transitions, message history (max 8), negotiation rounds (max 4), and Markdown export.
 - `TeamDialogueCatalog` registers 7 canonical complete dialogue transcripts covering all 8 speech acts with lookup and validation.
-- This contract establishes structured semantic communication schemas, addressing, visibility boundaries, and dialogue state machines; multi-agent trust dynamics, caller reputation, designated shot-caller heuristics, and team-plan negotiation remain open.
+- `TeamStrategicObjective` defines 6 discrete team strategic objectives (`GankSetup`, `LaneSiege`, `DefensiveHold`, `ResourceFarming`, `ObjectiveContest`, `TacticalReset`).
+- `TeamPlanPhase` defines 4 discrete plan phases (`Preparation`, `Execution`, `Disengagement`, `Contingency`).
+- `RolePlanAssignment` binds actor roles to expected intents, target focuses, commitments, and fallback behaviors.
+- `TeamPlanDefinition` defines `m8-team-plan-v1` for structured team plans with prerequisite conditions, urgency, confidence, role assignments, and strict zero private chain-of-thought enforcement (`chain_of_thought_present == false`).
+- `IndividualPlanDefinition` defines `m8-individual-plan-v1` for individual actor intent requests, focus, commitment, abort conditions, and ping signals.
+- `TeamPlanAlignmentType` defines `m8-team-plan-relationship-v1` tracking 5 discrete alignment states (`Aligned`, `Divergent`, `ConditionalCompliance`, `Independent`, `Conflicted`).
+- `AlignmentEvaluation` evaluates intent matching, focus compatibility, condition satisfaction, and causal dissent reasons (`TeamDissentReason`).
+- `TeamPlanEvaluator` and `TeamPlanAlignmentReport` provide deterministic individual and team-level alignment evaluation with exact integer basis-point cohesion scoring ($[0..=10,000]$ bp) and formatted Markdown summary rendering.
+- `TeamPlanCatalog` registers 6 canonical reference team plans with fail-closed lookup and validation.
+- This contract establishes structured semantic communication schemas, addressing, visibility boundaries, dialogue state machines, team plans, role assignments, and deterministic alignment evaluation; multi-agent trust dynamics, caller reputation, and designated shot-caller heuristics remain open.
 
 ## Future
 

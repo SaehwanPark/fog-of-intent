@@ -58,6 +58,7 @@ CORE_RUST_FILES = (
   "src/agent/replay.rs",
   "src/agent/semantic.rs",
   "src/agent/tally.rs",
+  "src/agent/team_plan.rs",
   "src/agent/uncertainty.rs",
   "src/kernel/command.rs",
   "src/kernel/history.rs",

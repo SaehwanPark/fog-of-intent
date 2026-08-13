@@ -5,6 +5,19 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Keep team plans and individual plans structurally decoupled and alignment evaluations deterministic
+
+- Context: M8 required defining team-plan and individual-plan relationships, role assignments,
+  and cohesion metrics before multi-agent trust dynamics or shot-calling arbitration were authorized.
+- Symptom: Coupling team plan schemas directly to authoritative simulation state or allowing
+  continuous floating-point alignment scoring would violate information privacy, leak latent state,
+  or create non-deterministic divergence checks.
+- Resolution: Decouple `TeamPlanDefinition` and `IndividualPlanDefinition` into discrete structures
+  with zero private chain-of-thought enforcement, evaluate alignment deterministically via
+  `TeamPlanEvaluator`, and represent cohesion scores in exact integer basis points ($[0..=10,000]$ bp).
+- Prevention: Treat team plan structures, role assignments, individual plan bindings, alignment
+  evaluations, and trust dynamics as separate contracts with separate evidence.
+
 ## Keep team dialogue transitions bounded and fail-closed
 
 - Context: M8 required implementing speech act evaluation, condition checking, and multi-turn

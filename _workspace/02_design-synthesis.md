@@ -1,55 +1,43 @@
-# Design Synthesis: M8 Team Communication Speech Act Evaluation & Dialogue Mechanics
+# Design Synthesis: M8 Team-Plan and Individual-Plan Relationships
 
-## Inputs Reviewed
+## Synthesis Overview
 
-- `_workspace/00_input/request-summary.md`
-- `_workspace/01_agent-ecology-design.md`
-- `src/agent/communication.rs`
-- `src/lane/observation.rs`, `src/lane/coordination.rs`
-- `SPEC.md` and `ROADMAP.md` (Phase 8 — Team Communication and Shot-Calling)
+This synthesis unifies the agent-ecology design with simulation and communication authority boundaries for **Team-Plan and Individual-Plan Relationships**.
 
-## Agreed Actor Information
+## Unified Architecture
 
-- Information used in speech act evaluation and condition assessment is strictly actor-visible: `LanerObservation` / `AlliedLaneObservation`, current turn, visible threat reports, and incoming validated `TeamMessageEnvelope`.
-- True world state, hidden opponent status, and hidden enemy jungle coordinates remain completely inaccessible to evaluation functions.
+1. **Module Organization:**
+   - Dedicated submodule `src/agent/team_plan.rs`, re-exported in `src/agent/mod.rs`.
+   - Clear separation between message speech acts (`src/agent/communication.rs`) and strategic team plan definitions / alignment evaluations (`src/agent/team_plan.rs`).
 
-## Agreed Action and Transition Boundary
+2. **Core Domain Types:**
+   - **Schemas:**
+     - `TEAM_PLAN_SCHEMA = "m8-team-plan-v1"`
+     - `INDIVIDUAL_PLAN_SCHEMA = "m8-individual-plan-v1"`
+     - `TEAM_PLAN_RELATIONSHIP_SCHEMA = "m8-team-plan-relationship-v1"`
+   - **Enums & Structs:**
+     - `TeamStrategicObjective`: `GankSetup`, `LaneSiege`, `DefensiveHold`, `ResourceFarming`, `ObjectiveContest`, `TacticalReset`.
+     - `TeamPlanPhase`: `Preparation`, `Execution`, `Disengagement`, `Contingency`.
+     - `RolePlanAssignment`: `actor`, `assigned_intent`, `target_focus`, `commitment`, `fallback`.
+     - `TeamPlanDefinition`: `plan_id`, `objective`, `phase`, `proposed_by`, `prerequisite_condition`, `assignments`, `urgency`, `confidence`, `summary`, `chain_of_thought_present`.
+     - `IndividualPlanDefinition`: `plan_id`, `actor`, `selected_intent`, `target_focus`, `commitment`, `abort_condition`, `fallback_behavior`, `ping_signal`, `chain_of_thought_present`.
+     - `TeamPlanAlignmentType`: `Aligned`, `Divergent`, `ConditionalCompliance`, `Independent`, `Conflicted`.
+     - `AlignmentEvaluation`: `actor`, `alignment_type`, `intent_match`, `focus_match`, `commitment_compatible`, `condition_satisfied`, `dissent_reason`, `explanation`.
+     - `TeamPlanAlignmentReport`: `schema`, `team_plan_id`, `objective`, `overall_alignment`, `evaluations`, `aligned_actors_count`, `divergent_actors_count`, `cohesion_score_bp`, `render_markdown()`.
+     - `TeamPlanCatalog`: Canonical catalog registering 6 reference team plans with fail-closed lookup and validation.
+     - `TeamPlanError`: Typed error variants for schema mismatch, missing role assignments, empty assignments, invalid IDs, and chain-of-thought presence.
 
-- Communication occurs on the coordination layer and does not directly mutate authoritative world state.
-- `TeamDialogueSession` transitions deterministically based on incoming messages and evaluated responses:
-  - `Idle` -> `Proposed` (on `Proposal`)
-  - `Proposed` -> `Clarifying` (on `Clarification`)
-  - `Proposed` / `Negotiating` -> `Agreed` (on `Confirmation`)
-  - `Proposed` / `Negotiating` -> `Diverged` (on `Disagreement`)
-  - `Proposed` / `Clarifying` -> `Negotiating` (on `CounterProposal` or `ConditionalCommitment`)
-  - Any active status -> `Aborted` (on `Withdrawal`)
-  - Any active status -> `Failed` (on `FailureReport`)
-- Rejection of invalid transitions (e.g. confirming an already aborted session, or withdrawing without an active session).
+3. **Authority and Invariants:**
+   - **No Hidden-State Leaks:** Alignment evaluations operate purely on declared plans and optional actor-visible observations (`LanerObservation`). No true-state hashes, opponent private state, or latent threat values are exposed or required.
+   - **Deterministic & Integer-Bounded:** Cohesion score is calculated as integer basis points: $\text{cohesion\_score\_bp} = \frac{\text{aligned\_count} \times 10,000}{\text{total\_assignments}}$.
+   - **Fail-Closed Privacy:** Strict assertion that `chain_of_thought_present == false`.
+   - **Clean Code & Idiomatic Rust:** `const fn` methods, `Display` implementations, modular separation, and zero external dependencies.
 
-## Agreed Randomness Ownership
+## Implementation Steps
 
-- Speech act evaluation and dialogue progression are 100% deterministic functions of actor observation and message envelopes. No unseeded RNG or async operations exist in the core.
-
-## Agent Policy and Execution Boundary
-
-- Three distinct evaluation profiles (`Cautious`, `RiskTaking`, `Yielding` corresponding to `Anchor`, `Duelist`, `Pacer`):
-  - `Cautious`: Rejects `Contest` if health <= 3 or threat is present; confirms `Stabilize`; counters `Contest` with `Stabilize` if wave pressure <= 2.
-  - `RiskTaking`: Confirms `Contest`; counters `Stabilize` with `Contest` if health >= 4 and mana >= 2.
-  - `Yielding`: Confirms incoming proposal unless health <= 1; conditionally commits on `AlliedPresence`.
-
-## Metrics and Evidence Limits
-
-- Bounded capacity: Max 8 messages per session, max 4 negotiation rounds.
-- Zero private chain-of-thought structurally enforced (`chain_of_thought_present == false`).
-- Dialogue state produces inspectable Markdown reports for causal debriefing.
-
-## Conflicts Resolved
-
-- Clarified that `ConditionalCommitment` transitions to `Negotiating` until the condition is evaluated and confirmed or withdrawn.
-- Ensured dissent reasons (`TeamDissentReason`) are discrete enums with canonical strings and parser helpers.
-
-## Production Contract
-
-- File: `src/agent/communication.rs` (expanded with dialogue states, evaluation helpers, dissent reasons, condition evaluator, session runner, catalog, and Markdown formatter).
-- File: `src/agent/tests.rs` (expanded with comprehensive unit tests for all 8 speech act paths, state machine invariants, and catalog lookups).
-- Document synchronization: `SPEC.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `LESSONS.md`, `README.md`.
+1. Create `src/agent/team_plan.rs` implementing all data structures, evaluations, markdown rendering, and the canonical catalog.
+2. Update `src/agent/mod.rs` to declare and re-export `pub mod team_plan;`.
+3. Add unit tests in `src/agent/tests.rs` verifying all types, alignment scenarios, edge cases, error rejections, and catalog integrity.
+4. Execute `cargo fmt`, `cargo clippy`, `cargo test`, and `python3 scripts/check_repository.py`.
+5. Run Domain QA (`_workspace/03_domain-qa.md`) and create final handoff (`_workspace/final/handoff.md`).
+6. Update documentation (`SPEC.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `README.md`, `LESSONS.md`, `Cargo.toml` version increment).

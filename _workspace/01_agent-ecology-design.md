@@ -1,88 +1,96 @@
-# Agent Ecology Design: M8 Team Communication Speech Act Implementation & Dialogue Evaluation
+# Agent Ecology Design: M8 Team-Plan and Individual-Plan Relationships
 
 ## Goal and Roadmap Milestone
 
-- **Goal:** Implement deterministic evaluation, response generation, prerequisite condition checking, and state transitions for the 8 canonical team communication speech acts (`Proposal`, `Clarification`, `Confirmation`, `Disagreement`, `CounterProposal`, `ConditionalCommitment`, `Withdrawal`, `FailureReport`) within bounded dialogue sessions.
-- **Roadmap Milestone:** M8 (Phase 8 — Team Communication and Shot-Calling).
-- **Scope item:** Implement proposal, clarification, confirmation, disagreement, counterproposal, conditional commitment, withdrawal, and failure reporting.
+- **Milestone:** M8 — Coordinated team decision play
+- **Goal:** Define structured representations, role assignments, individual plan bindings, and deterministic alignment evaluation for team plans and individual plans.
 
 ## Behavioral Question and Evidence Boundary
 
-- **Behavioral Question:** How do autonomous agents and human players evaluate, confirm, dissent, counter-propose, conditionally commit, withdraw, and report failures under incomplete information and divergent posture profiles without central control or hidden state leakage?
-- **Evidence Boundary:** This design establishes deterministic speech act evaluation and discrete dialogue state machines across 8 speech acts. It does not establish multi-agent dynamic trust updates, caller reputation scoring, or live natural-language social simulation.
+- **Question:** How do autonomous agents and human players relate their individual tactical intentions to shared team-level strategic plans under bounded rationality and incomplete information?
+- **Evidence Boundary:** This design models explicit, discrete plan structures, role assignments, condition evaluations, and alignment classifications. It establishes algorithmic alignment determination without assuming human team consensus or psychic coordination.
 
 ## Agent Families and Baselines
 
-- **Cautious Profile (`Anchor` / `cautious_v1`):** Prioritizes wave stabilization and defensive withdrawal under threat; dissents or counters aggressive contest proposals when health is low or threat is detected; confirms stabilization proposals.
-- **Risk-Taking Profile (`Duelist` / `risk_taking_v1`):** Prioritizes wave contest and kill pressure; confirms contest proposals; counter-proposes contest over passive stabilize proposals when resources allow.
-- **Yielding Profile (`Pacer` / `yielding_v1`):** Defers readily to allied proposals unless extreme danger is detected; conditionally commits based on allied presence.
+- **Anchor / Cautious Laner:** Tends to maintain defensive hold or resource farming; compliant with defensive team plans, dissents from aggressive siege/contest when health/resources are compromised.
+- **Duelist / Risk-Taking Laner:** Readily aligns with gank setups, lane sieges, and objective contests; may diverge from passive holds.
+- **Supportive / Yielding Ally:** Compliant with gank preparation, objective contests, and tactical resets; provides coverage and follow-through.
 
 ## Observation, Memory, and Policy Inputs
 
-- Inputs to speech act evaluation are strictly actor-visible:
-  - `LanerObservation` / `AlliedLaneObservation` (laner health, mana, gold, experience, cooldown, wave pressure, position, available intents, last-known threat reports).
-  - Incoming `TeamMessageEnvelope` (sender, recipient, speech act, proposed intent, urgency, confidence, condition, visibility, turn, summary).
-- Dialogue session memory is bounded:
-  - Max 8 messages per dialogue session.
-  - Max 4 negotiation rounds before forced resolution (`Agreed`, `Diverged`, or `Aborted`).
+- **Actor-Visible Context:** `LanerObservation` providing health, resources (mana, gold, cooldown), wave pressure, position, and bounded threat reports (`LastKnown` / `Unknown`).
+- **Prerequisite Condition Evaluation:** Leverages `TeamConditionEvaluator` to check whether conditional compliance requirements (e.g. `HealthAboveThreshold`, `ThreatAbsent`, `ResourceSufficient`) are satisfied against visible state.
+- **Privacy Enforcement:** Zero private chain-of-thought permitted (`chain_of_thought_present == false`).
 
 ## Candidate Generation, Evaluation, and Selection
 
-- Given an incoming speech act:
-  1. `Proposal(intent)`:
-     - Check health threshold, threat presence, and posture alignment.
-     - Select response: `Confirmation` (if aligned and safe), `Disagreement` with explicit `TeamDissentReason` (if unsafe), `CounterProposal` with alternative intent (if viable alternative exists), or `ConditionalCommitment` (if contingent on condition).
-  2. `Clarification`:
-     - Provide clarification response updating readiness, threat assessment, or intended fallback.
-  3. `CounterProposal(intent)`:
-     - Evaluate counter-intent against actor profile; select `Confirmation` or `Disagreement`.
-  4. `ConditionalCommitment(intent, condition)`:
-     - Evaluate prerequisite condition against current observation (`TeamConditionEvaluation`). If satisfied -> `Confirmation`; if unsatisfied/broken -> `Withdrawal` or `Disagreement`.
-  5. `Withdrawal`:
-     - Transition dialogue state to `Aborted`.
-  6. `FailureReport`:
-     - Transition dialogue state to `Failed`.
+- **Team Strategic Objectives:**
+  1. `GankSetup` (`"gank-setup"`): Coordinated ambush or flank engagement.
+  2. `LaneSiege` (`"lane-siege"`): Heavy lane pressure targeting tower or wave collapse.
+  3. `DefensiveHold` (`"defensive-hold"`): Risk-averse wave stalling and tower defense.
+  4. `ResourceFarming` (`"resource-farming"`): Prioritizing creep wave collection and gold/XP accumulation.
+  5. `ObjectiveContest` (`"objective-contest"`): Preparing for or fighting over river objectives.
+  6. `TacticalReset` (`"tactical-reset"`): Coordinated retreat and base recall.
+- **Team Plan Phases:**
+  1. `Preparation` (`"preparation"`)
+  2. `Execution` (`"execution"`)
+  3. `Disengagement` (`"disengagement"`)
+  4. `Contingency` (`"contingency"`)
+- **Role Plan Assignments:**
+  - Explicit binding of `LaneActorRole` to expected `LaneIntent`, `LaneTargetFocus`, `LaneCommitment`, and `LaneFallbackBehavior`.
 
 ## Communication, Trust, and Team Coordination
 
-- Visibility boundaries are strictly enforced: `TeamOnly`, `DirectOnly`, `Public`.
-- Fail-closed rejection if `chain_of_thought_present == true` on any message envelope.
-- Self-addressing is rejected (`SelfAddressingForbidden`).
+- **Individual Plan Definition:**
+  - Represents an actor's selected intent (`LaneIntent`), target focus (`LaneTargetFocus`), commitment level (`LaneCommitment`), abort condition (`LaneAbortCondition`), fallback behavior (`LaneFallbackBehavior`), and ping signal (`LanePingSignal`).
+- **Alignment Classifications:**
+  - `Aligned`: Individual intent matches role assignment; conditions satisfied.
+  - `Divergent`: Individual intent contradicts assigned role intent or dissent reasons trigger divergence.
+  - `ConditionalCompliance`: Individual plan matches assignment conditionally, and condition holds.
+  - `Independent`: No role assignment present for actor in team plan.
+  - `Conflicted`: Contradictory assignments or mutually exclusive conditions.
+- **Dissent Reasons:**
+  - Categorizes why an actor diverges: `LowHealth`, `ThreatDetected`, `ManaDeficit`, `CooldownActive`, `AlternativeObjectivePriority`, `PostureIncompatible`.
 
 ## Randomness and Reproducibility
 
-- Evaluation is pure, deterministic, and integer-based.
-- No unseeded randomness or floating-point calculations.
+- Entirely deterministic. Alignment evaluation uses pure functions over discrete typed inputs.
+- No floating-point math; cohesion scores are represented in exact integer basis points ($0..=10,000$ bp).
 
 ## Scenarios, Populations, and Metrics
 
-- Canonical dialogue scenarios:
-  1. `Dialogue-Agreed-Contest`: Proposal -> Confirmation.
-  2. `Dialogue-Dissent-Threat`: Proposal -> Disagreement (due to threat).
-  3. `Dialogue-Counter-Negotiation`: Proposal(Contest) -> CounterProposal(Stabilize) -> Confirmation(Stabilize).
-  4. `Dialogue-Conditional-Commitment`: Proposal(Contest) -> ConditionalCommitment(ThreatAbsent) -> Verified Condition -> Confirmation.
-  5. `Dialogue-Withdrawal-On-Threat`: ConditionalCommitment -> Threat Emerges -> Withdrawal.
-  6. `Dialogue-Failure-Recovery`: Execution Attempt -> FailureReport -> Session Reset.
+- **Canonical Team Plans:**
+  - `plan-gank-setup-v1`: Allied autonomous initiates gank; human laner stabilizes/contests.
+  - `plan-lane-siege-v1`: Allied and human laners push tower aggressively.
+  - `plan-defensive-hold-v1`: Conserve resources and hold wave near tower.
+  - `plan-resource-farming-v1`: Focus minions, cautious commitment.
+  - `plan-objective-contest-v1`: Prepare contest in river with allied presence.
+  - `plan-tactical-reset-v1`: Coordinated recall to base.
+- **Metrics:**
+  - `cohesion_score_bp`: Fraction of assigned roles that are aligned, scaled to integer basis points ($[0..=10,000]$ bp).
+  - Aligned vs divergent actor counts.
 
 ## Calibration or Regression Protocol
 
-- All registered canonical dialogues are validated through `TeamDialogueCatalog`.
-- Invariant tests verify:
-  - Valid transitions and rejection of illegal state jumps.
-  - Dialogue round and history bounds (fail-closed overflow protection).
-  - Non-empty summary strings and correct sender/recipient roles.
+- Fail-closed validation for unknown schemas, empty assignments, duplicate role assignments, and invalid identifiers.
+- Assert fail-closed rejection if `chain_of_thought_present == true`.
 
 ## Expected Effects and Failure Signals
 
-- Cautious agents must reject aggressive proposals when threat is visible (`LastKnown` threat or low health).
-- Risk-taking agents must prefer `Contest` over `Stabilize`.
-- Dialogue sessions must terminate within 4 rounds without deadlocks.
+- **Expected:** Coherent team plans produce high cohesion scores ($10,000$ bp) when all actors follow assigned roles; divergent individual plans reduce cohesion score and generate explicit `TeamDissentReason`.
+- **Failure Signals:** Silent fallback, permissive matching of contradictory intents, information leakage of hidden opponent truth, non-zero private chain-of-thought acceptance.
 
 ## Verification Contract
 
-- Pinned toolchain formatting, clippy, unit tests, repository checks all pass.
-- Zero private chain-of-thought is structurally enforced.
+- Unit tests in `src/agent/tests.rs` covering:
+  - Canonical team plan and individual plan schema validation.
+  - Round-trip parsing and label conversions.
+  - Alignment evaluation: aligned, divergent, conditional compliance, independent, conflicted.
+  - Dissent reason attribution on divergence.
+  - Cohesion score calculation in basis points.
+  - Markdown report rendering.
+  - Catalog lookups and fail-closed error handling.
 
 ## Open Questions
 
-- Multi-agent dynamic trust decay and designated shot-caller arbitration will be integrated in subsequent M8 slices.
+- Dynamic trust tracking and caller reputation scoring are deferred to the next M8 slice.
