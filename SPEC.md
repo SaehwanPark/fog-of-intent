@@ -1584,6 +1584,25 @@ distribution estimation, and parametric fitting remain open.
   5. `scenario-strategic-dissent-survival-v1`: Shot-caller orders contest under lethal threat/low health; actor dissents, preventing a fatal wipe.
 - This contract establishes structured semantic communication schemas, addressing, visibility boundaries, dialogue state machines, team plans, role assignments, deterministic alignment evaluation, caller reputation tracking, transmission channel physics, designated shot-calling heuristics, decentralized consensus arbitration, private submission collection, simultaneous multi-agent resolution, decoupled coordination vs execution attribution, causal communication and leadership debriefs, strategic disagreement proofs, and a 5-case canonical scenario battery. All Phase 8 milestone capabilities are fully specified and verified.
 
+## Bounded Multi-Lane Match Prototype (Phase 9)
+
+**Status:** Abstracted three-lane map topology and deterministic travel model defined; objective cycles, multi-lane combat, and match victory conditions remain open.
+
+- `MapLocation` defines `m9-map-topology-v1` covering 15 discrete map locations: 2 team bases (`AlliedBase`, `OpposingBase`), 9 lane sectors (3 lanes `Top`, `Mid`, `Bot` across 3 sectors `NearTower`, `Center`, `FarSide`), 2 river zones (`TopRiver`, `BotRiver`), and 2 jungle quadrants (`TopJungle`, `BotJungle`).
+- `TravelRoute` and `compute_shortest_route` define `m9-travel-model-v1` using deterministic BFS over a symmetric 15-node adjacency matrix with integer beat durations ($1\text{ beat} = 1\text{ step}$).
+- `ActorLocation` tracks spatial state as either `Stationary(MapLocation)` or `InTransit(TransitState)`.
+- `TransitState` manages route progression, step indexing, remaining beats, and fail-closed abort redirection.
+- `TravelCommand` provides `InitiateRotation { destination }`, `ContinueTransit`, and `AbortRotation { fallback }` with fail-closed validation rejecting same-location rotations, unreachable destinations, and invalid abort fallbacks.
+- `transition_travel` provides pure deterministic transit evaluation, emitting structured causal events (`RotationInitiated`, `TransitAdvanced`, `RotationCompleted`, `RotationAborted`) and attributed effects (`ImmediateMovement`, `TransitProgressed`, `ArrivalAtDestination`).
+- `MatchMapState` maintains authoritative host-owned locations, advancing turns and computing deterministic FNV-1a state hashes.
+- `MatchMapObservation` defines `m9-map-observation-v1` projecting actor-visible locations with strict fog-of-war compliance: allied positions are visible, opponents in the same sector are `Observed`, and unseen opponents are redacted to `Unknown`.
+- `MapTravelCatalog` defines `m9-map-scenario-catalog-v1` registering and executing 4 canonical benchmark scenarios:
+  1. `scenario-top-to-mid-gank-v1`: Top laner rotates through Top River to Mid Center over 2 beats to initiate a gank.
+  2. `scenario-bot-to-river-contest-v1`: Bot duo rotates from Near Tower to Bot River over 2 beats for objective vision setup.
+  3. `scenario-mid-to-base-reset-v1`: Mid laner retreats from enemy tower through mid lane back to base over 3 beats.
+  4. `scenario-aborted-rotation-threat-v1`: Laner rotates toward river, detects threat on beat 1, and aborts back to tower.
+- This contract establishes the spatial topology and deterministic travel/rotation model for the multi-lane match prototype.
+
 ## Future
 
 The detailed and canonical order is in `ROADMAP.md`.

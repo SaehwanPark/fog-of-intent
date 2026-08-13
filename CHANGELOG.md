@@ -100,6 +100,33 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.191 — 2026-08-13
+
+### Added
+
+- Added `m9-map-topology-v1`, `m9-travel-model-v1`, `m9-map-observation-v1`, and `m9-map-scenario-catalog-v1`
+  in `src/map/`, defining the spatial topology and deterministic travel model for M9:
+  - `MapLocation` (`src/map/topology.rs`) covering 15 discrete map locations across 2 team bases (`AlliedBase`, `OpposingBase`),
+    9 lane sectors (3 lanes `Top`, `Mid`, `Bot` across 3 sectors `NearTower`, `Center`, `FarSide`), 2 river zones (`TopRiver`, `BotRiver`),
+    and 2 jungle quadrants (`TopJungle`, `BotJungle`).
+  - `TravelRoute` and `compute_shortest_route` (`src/map/graph.rs`) implementing deterministic BFS pathfinding over a symmetric
+    15-node adjacency matrix with integer beat durations ($1\text{ beat} = 1\text{ step}$).
+  - `ActorLocation` (`Stationary` vs `InTransit`), `TransitState` machine, and `TravelCommand` (`InitiateRotation`, `ContinueTransit`, `AbortRotation`)
+    in `src/map/travel.rs` with fail-closed validation.
+  - `transition_travel` (`src/map/transition.rs`) providing pure deterministic transit progression, arrival handling, abort redirection,
+    and structured `TravelEvent` and `TravelEffect` emissions.
+  - `MatchMapState` (`src/map/state.rs`) managing multi-actor locations, turn ticking, deterministic FNV-1a state hashing, and `MatchMapObservation`
+    projections with strict fog-of-war redactions (unseen opponents in fog are reported as `Unknown`).
+  - `MapTravelCatalog` (`src/map/catalog.rs`) registering and executing 4 canonical benchmark rotation scenarios:
+    1. `scenario-top-to-mid-gank-v1`: Top laner rotates through Top River to Mid Center over 2 beats to execute a gank.
+    2. `scenario-bot-to-river-contest-v1`: Bot duo rotates from Near Tower to Bot River over 2 beats for dragon river vision setup.
+    3. `scenario-mid-to-base-reset-v1`: Mid laner retreats from enemy tower through mid lane back to base over 3 beats.
+    4. `scenario-aborted-rotation-threat-v1`: Laner rotates toward river, spots threat on beat 1, and aborts rotation safely back to tower.
+
+### Known limits
+
+- Objective cycle timers, base destruction victory conditions, and cross-lane combat resolution remain planned for subsequent M9 slices.
+
 ## 0.1.190 — 2026-08-13
 
 ### Added
