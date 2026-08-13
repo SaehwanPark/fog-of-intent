@@ -6680,3 +6680,345 @@ fn team_communication_catalog_is_complete_and_validates_all_speech_acts() {
     Err(TeamCommunicationError::UnknownEnvelopeId)
   );
 }
+
+#[test]
+fn team_dialogue_statuses_reasons_and_condition_evaluators_are_canonical() {
+  // 1. Schema
+  assert_eq!(TEAM_DIALOGUE_SCHEMA, "m8-team-dialogue-v1");
+
+  // 2. Dialogue Statuses
+  let statuses = TeamDialogueStatus::all();
+  assert_eq!(statuses.len(), 8);
+  for status in statuses {
+    let label = status.as_str();
+    assert_eq!(TeamDialogueStatus::parse(label), Some(status));
+  }
+  assert_eq!(TeamDialogueStatus::parse("invalid-status"), None);
+  assert!(!TeamDialogueStatus::Idle.is_terminal());
+  assert!(!TeamDialogueStatus::Proposed.is_terminal());
+  assert!(!TeamDialogueStatus::Clarifying.is_terminal());
+  assert!(!TeamDialogueStatus::Negotiating.is_terminal());
+  assert!(TeamDialogueStatus::Agreed.is_terminal());
+  assert!(TeamDialogueStatus::Diverged.is_terminal());
+  assert!(TeamDialogueStatus::Aborted.is_terminal());
+  assert!(TeamDialogueStatus::Failed.is_terminal());
+
+  // 3. Dissent Reasons
+  let reasons = TeamDissentReason::all();
+  assert_eq!(reasons.len(), 6);
+  for reason in reasons {
+    let label = reason.as_str();
+    assert_eq!(TeamDissentReason::parse(label), Some(reason));
+  }
+  assert_eq!(TeamDissentReason::parse("invalid-reason"), None);
+
+  // 4. Condition Evaluator
+  assert!(TeamConditionEvaluator::is_condition_satisfied(
+    TeamMessageCondition::Unconditional,
+    1,
+    true,
+    false,
+    0
+  ));
+  assert!(TeamConditionEvaluator::is_condition_satisfied(
+    TeamMessageCondition::HealthAboveThreshold,
+    3,
+    true,
+    false,
+    0
+  ));
+  assert!(!TeamConditionEvaluator::is_condition_satisfied(
+    TeamMessageCondition::HealthAboveThreshold,
+    2,
+    false,
+    true,
+    5
+  ));
+  assert!(TeamConditionEvaluator::is_condition_satisfied(
+    TeamMessageCondition::ThreatAbsent,
+    5,
+    false,
+    false,
+    0
+  ));
+  assert!(!TeamConditionEvaluator::is_condition_satisfied(
+    TeamMessageCondition::ThreatAbsent,
+    5,
+    true,
+    true,
+    5
+  ));
+  assert!(TeamConditionEvaluator::is_condition_satisfied(
+    TeamMessageCondition::AlliedPresence,
+    1,
+    true,
+    true,
+    0
+  ));
+  assert!(!TeamConditionEvaluator::is_condition_satisfied(
+    TeamMessageCondition::AlliedPresence,
+    5,
+    false,
+    false,
+    5
+  ));
+  assert!(TeamConditionEvaluator::is_condition_satisfied(
+    TeamMessageCondition::ResourceSufficient,
+    1,
+    true,
+    false,
+    2
+  ));
+  assert!(!TeamConditionEvaluator::is_condition_satisfied(
+    TeamMessageCondition::ResourceSufficient,
+    5,
+    false,
+    true,
+    1
+  ));
+}
+
+#[test]
+fn team_speech_act_profile_evaluation_is_posture_consistent() {
+  // Cautious: dissents under threat, dissents on low health, counters contest when wave is low
+  let cautious = TeamSpeechActProfile::Cautious;
+  assert_eq!(
+    cautious.evaluate_proposal(LaneIntent::Contest, 5, true, 3, 3),
+    TeamEvaluationOutcome::Dissent(TeamDissentReason::ThreatDetected)
+  );
+  assert_eq!(
+    cautious.evaluate_proposal(LaneIntent::Contest, 2, false, 3, 3),
+    TeamEvaluationOutcome::Dissent(TeamDissentReason::LowHealth)
+  );
+  assert_eq!(
+    cautious.evaluate_proposal(LaneIntent::Contest, 5, false, 1, 3),
+    TeamEvaluationOutcome::Counter(LaneIntent::Stabilize)
+  );
+  assert_eq!(
+    cautious.evaluate_proposal(LaneIntent::Contest, 5, false, 3, 3),
+    TeamEvaluationOutcome::Conditional(LaneIntent::Contest, TeamMessageCondition::ThreatAbsent)
+  );
+  assert_eq!(
+    cautious.evaluate_proposal(LaneIntent::Stabilize, 5, false, 3, 3),
+    TeamEvaluationOutcome::Accept(LaneIntent::Stabilize)
+  );
+
+  // RiskTaking: counters stabilize when healthy, accepts contest
+  let risk_taking = TeamSpeechActProfile::RiskTaking;
+  assert_eq!(
+    risk_taking.evaluate_proposal(LaneIntent::Stabilize, 5, false, 2, 3),
+    TeamEvaluationOutcome::Counter(LaneIntent::Contest)
+  );
+  assert_eq!(
+    risk_taking.evaluate_proposal(LaneIntent::Contest, 4, true, 3, 2),
+    TeamEvaluationOutcome::Accept(LaneIntent::Contest)
+  );
+  assert_eq!(
+    risk_taking.evaluate_proposal(LaneIntent::Contest, 1, false, 3, 2),
+    TeamEvaluationOutcome::Dissent(TeamDissentReason::LowHealth)
+  );
+
+  // Yielding: defers readily, conditional on presence under threat
+  let yielding = TeamSpeechActProfile::Yielding;
+  assert_eq!(
+    yielding.evaluate_proposal(LaneIntent::Contest, 4, false, 2, 2),
+    TeamEvaluationOutcome::Accept(LaneIntent::Contest)
+  );
+  assert_eq!(
+    yielding.evaluate_proposal(LaneIntent::Contest, 4, true, 2, 2),
+    TeamEvaluationOutcome::Conditional(LaneIntent::Contest, TeamMessageCondition::AlliedPresence)
+  );
+  assert_eq!(
+    yielding.evaluate_proposal(LaneIntent::Stabilize, 1, false, 2, 2),
+    TeamEvaluationOutcome::Dissent(TeamDissentReason::LowHealth)
+  );
+}
+
+#[test]
+fn team_dialogue_session_state_transitions_and_catalog_validation() {
+  // Test all canonical dialogues from catalog
+  let dialogues = TeamDialogueCatalog::all_dialogues();
+  assert_eq!(dialogues.len(), 7);
+
+  // 1. Agreed Contest
+  let agreed = TeamDialogueCatalog::dialogue_agreed_contest_v1().unwrap();
+  assert_eq!(agreed.status(), TeamDialogueStatus::Agreed);
+  assert_eq!(agreed.active_intent(), Some(LaneIntent::Contest));
+  assert_eq!(agreed.history().len(), 2);
+  assert_eq!(agreed.schema(), TEAM_DIALOGUE_SCHEMA);
+  assert_eq!(agreed.session_id(), "dialogue-agreed-contest-v1");
+  assert_eq!(agreed.round(), 0);
+
+  // Markdown format test
+  let md = agreed.format_markdown();
+  assert!(md.contains("## Team Dialogue `dialogue-agreed-contest-v1`"));
+  assert!(md.contains("**Status:** agreed"));
+  assert!(md.contains("**Active Intent:** contest"));
+  assert!(md.contains("1. [proposal]"));
+  assert!(md.contains("2. [confirmation]"));
+
+  // 2. Dissent Threat
+  let dissent = TeamDialogueCatalog::dialogue_dissent_threat_v1().unwrap();
+  assert_eq!(dissent.status(), TeamDialogueStatus::Diverged);
+  assert_eq!(dissent.history().len(), 2);
+
+  // 3. Counter Negotiation
+  let counter = TeamDialogueCatalog::dialogue_counter_negotiation_v1().unwrap();
+  assert_eq!(counter.status(), TeamDialogueStatus::Agreed);
+  assert_eq!(counter.active_intent(), Some(LaneIntent::Stabilize));
+  assert_eq!(counter.round(), 1);
+  assert_eq!(counter.history().len(), 3);
+
+  // 4. Clarification
+  let clarification = TeamDialogueCatalog::dialogue_clarification_v1().unwrap();
+  assert_eq!(clarification.status(), TeamDialogueStatus::Agreed);
+  assert_eq!(clarification.history().len(), 3);
+
+  // 5. Conditional Commitment
+  let cond = TeamDialogueCatalog::dialogue_conditional_commitment_v1().unwrap();
+  assert_eq!(cond.status(), TeamDialogueStatus::Agreed);
+  assert_eq!(cond.round(), 1);
+  assert_eq!(cond.history().len(), 3);
+
+  // 6. Withdrawal
+  let withdrawal = TeamDialogueCatalog::dialogue_withdrawal_v1().unwrap();
+  assert_eq!(withdrawal.status(), TeamDialogueStatus::Aborted);
+  assert_eq!(withdrawal.history().len(), 3);
+
+  // 7. Failure Recovery
+  let failure = TeamDialogueCatalog::dialogue_failure_recovery_v1().unwrap();
+  assert_eq!(failure.status(), TeamDialogueStatus::Failed);
+  assert_eq!(failure.history().len(), 3);
+
+  // Lookup validation
+  for d in &dialogues {
+    assert_eq!(TeamDialogueCatalog::lookup(d.session_id()), Some(d.clone()));
+    assert_eq!(
+      TeamDialogueCatalog::validate_dialogue(d.session_id()),
+      Ok(d.clone())
+    );
+  }
+  assert_eq!(TeamDialogueCatalog::lookup("non-existent-dialogue"), None);
+  assert_eq!(
+    TeamDialogueCatalog::validate_dialogue("non-existent-dialogue"),
+    Err(TeamCommunicationError::UnknownDialogueId)
+  );
+}
+
+#[test]
+fn team_dialogue_session_fail_closed_rejections_and_invariants() {
+  let mut session = TeamDialogueSession::new(
+    "dialogue-test-invariants-v1",
+    LaneActorRole::HumanLaner,
+    LaneActorRole::AlliedAutonomous,
+    1,
+  );
+
+  // 1. Invalid start with confirmation
+  let confirm = TeamCommunicationCatalog::confirmation_contest_v1();
+  assert_eq!(
+    session.step(confirm),
+    Err(TeamCommunicationError::InvalidTransition)
+  );
+
+  // 2. Actor mismatch: message from OpposingLaner
+  let opposing_msg = TeamMessageEnvelope::new(
+    "msg-opposing-leak-v1",
+    LaneActorRole::OpposingLaner,
+    TeamRecipient::Direct(LaneActorRole::HumanLaner),
+    TeamSpeechAct::Proposal,
+    Some(LaneIntent::Contest),
+    TeamMessageUrgency::Standard,
+    TeamConfidenceLevel::Confident,
+    TeamMessageCondition::Unconditional,
+    TeamMessageVisibility::Public,
+    1,
+    "Opponent message",
+  );
+  assert_eq!(
+    session.step(opposing_msg),
+    Err(TeamCommunicationError::ActorMismatch)
+  );
+
+  // 3. Step valid proposal
+  let prop = TeamMessageEnvelope::new(
+    "msg-test-prop-v1",
+    LaneActorRole::HumanLaner,
+    TeamRecipient::Direct(LaneActorRole::AlliedAutonomous),
+    TeamSpeechAct::Proposal,
+    Some(LaneIntent::Contest),
+    TeamMessageUrgency::Standard,
+    TeamConfidenceLevel::Confident,
+    TeamMessageCondition::Unconditional,
+    TeamMessageVisibility::TeamOnly,
+    1,
+    "Valid proposal",
+  );
+  assert_eq!(session.step(prop), Ok(TeamDialogueStatus::Proposed));
+
+  // 4. Multiple counter-proposals exceeding MAX_DIALOGUE_ROUNDS (4)
+  let mut neg_session = session.clone();
+  for i in 0..4 {
+    let counter_ally = TeamMessageEnvelope::new(
+      "msg-counter-ally-v1",
+      LaneActorRole::AlliedAutonomous,
+      TeamRecipient::Direct(LaneActorRole::HumanLaner),
+      TeamSpeechAct::CounterProposal,
+      Some(if i % 2 == 0 {
+        LaneIntent::Stabilize
+      } else {
+        LaneIntent::Contest
+      }),
+      TeamMessageUrgency::Standard,
+      TeamConfidenceLevel::Confident,
+      TeamMessageCondition::Unconditional,
+      TeamMessageVisibility::TeamOnly,
+      1,
+      "Counter back and forth",
+    );
+    assert_eq!(
+      neg_session.step(counter_ally),
+      Ok(TeamDialogueStatus::Negotiating)
+    );
+  }
+  assert_eq!(neg_session.round(), 4);
+  // 5th round exceeds limit
+  let counter_over = TeamMessageEnvelope::new(
+    "msg-counter-over-v1",
+    LaneActorRole::HumanLaner,
+    TeamRecipient::Direct(LaneActorRole::AlliedAutonomous),
+    TeamSpeechAct::CounterProposal,
+    Some(LaneIntent::Contest),
+    TeamMessageUrgency::Standard,
+    TeamConfidenceLevel::Confident,
+    TeamMessageCondition::Unconditional,
+    TeamMessageVisibility::TeamOnly,
+    1,
+    "Over limit counter",
+  );
+  assert_eq!(
+    neg_session.step(counter_over),
+    Err(TeamCommunicationError::MaxRoundsExceeded)
+  );
+
+  // 5. Session already closed rejection
+  let mut closed_session = TeamDialogueCatalog::dialogue_dissent_threat_v1().unwrap();
+  assert_eq!(closed_session.status(), TeamDialogueStatus::Diverged);
+  let post_close_msg = TeamMessageEnvelope::new(
+    "msg-post-close-v1",
+    LaneActorRole::AlliedAutonomous,
+    TeamRecipient::Direct(LaneActorRole::HumanLaner),
+    TeamSpeechAct::Confirmation,
+    Some(LaneIntent::Contest),
+    TeamMessageUrgency::Standard,
+    TeamConfidenceLevel::Confident,
+    TeamMessageCondition::Unconditional,
+    TeamMessageVisibility::TeamOnly,
+    1,
+    "Post close attempt",
+  );
+  assert_eq!(
+    closed_session.step(post_close_msg),
+    Err(TeamCommunicationError::SessionAlreadyClosed)
+  );
+}

@@ -370,8 +370,12 @@ recalibration policy rules, and zero private chain-of-thought constraints.
 `TeamMessageCondition` (`Unconditional`, `HealthAboveThreshold`, `ThreatAbsent`, `AlliedPresence`, `ResourceSufficient`),
 `TeamMessageVisibility` (`TeamOnly`, `DirectOnly`, `Public`) with actor/team visibility predicate rules,
 `TeamMessageEnvelope` (`m8-team-message-envelope-v1`) with fail-closed zero private chain-of-thought enforcement,
-and `TeamCommunicationCatalog` (`m8-team-communication-v1`) with registered canonical example envelopes across
-all speech acts.
+`TeamCommunicationCatalog` (`m8-team-communication-v1`) with registered canonical example envelopes across
+all speech acts, `TeamDialogueStatus` (`m8-team-dialogue-v1`) covering 8 discrete dialogue states,
+`TeamDissentReason` covering 6 discrete causal dissent reasons, `TeamConditionEvaluator` evaluating prerequisite
+conditions against actor-visible context, `TeamSpeechActProfile` evaluating proposals across cautious, risk-taking,
+and yielding postures, `TeamDialogueSession` managing bounded multi-turn dialogue state transitions (max 4 rounds,
+max 8 messages), and `TeamDialogueCatalog` providing 7 canonical complete dialogue session transcripts.
 
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/

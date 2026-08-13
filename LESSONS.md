@@ -5,6 +5,19 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Keep team dialogue transitions bounded and fail-closed
+
+- Context: M8 required implementing speech act evaluation, condition checking, and multi-turn
+  dialogue state transitions across all 8 canonical speech acts before multi-agent trust dynamics
+  or shot-calling arbitration were authorized.
+- Symptom: Unbounded back-and-forth negotiation or permissive state jumps could create infinite loops,
+  leak private chain-of-thought, or let actors confirm contradictory proposals.
+- Resolution: Define `TeamDialogueSession` with a strict message capacity (max 8 messages), negotiation
+  round limits (max 4 rounds), fail-closed transition checks, and deterministic prerequisite condition
+  evaluation (`TeamConditionEvaluator`).
+- Prevention: Treat speech act evaluation, prerequisite condition checks, and dialogue state machines
+  as separate contracts with separate evidence before adding trust dynamics or leadership election.
+
 ## Keep team speech acts typed, discrete, and visibility-bounded
 
 - Context: M8 required defining speech acts, recipients, urgency, confidence, conditions,

@@ -1592,7 +1592,7 @@ constraints; influence never becomes disguised direct control.
 
 - [x] Define typed speech acts, recipients, urgency, confidence, conditions, and
   message visibility.
-- [ ] Implement proposal, clarification, confirmation, disagreement,
+- [x] Implement proposal, clarification, confirmation, disagreement,
   counterproposal, conditional commitment, withdrawal, and failure reporting.
 - [ ] Define team-plan and individual-plan relationships.
 - [ ] Implement trust, caller reputation, communication clarity, delay,
@@ -1618,8 +1618,13 @@ constraints; influence never becomes disguised direct control.
   rejection (`chain_of_thought_present == false`) and leak-proof visibility predicates.
 - [x] Provide a canonical catalog (`TeamCommunicationCatalog`) with registered examples for all 8
   speech acts and fail-closed lookup.
+- [x] Define `m8-team-dialogue-v1`, `TeamDialogueStatus`, `TeamDissentReason`, `TeamConditionEvaluator`,
+  `TeamSpeechActProfile`, and `TeamDialogueSession` managing bounded multi-turn dialogue state transitions,
+  max 4 negotiation rounds, max 8 messages capacity, and zero chain-of-thought preservation.
+- [x] Provide `TeamDialogueCatalog` with 7 registered canonical dialogue transcripts covering all 8
+  speech acts (`Agreed`, `Dissent`, `CounterNegotiation`, `Clarification`, `ConditionalCommitment`, `Withdrawal`, `FailureRecovery`).
 
-This establishes structured semantic communication schemas, addressing, and visibility rules;
+This establishes structured semantic communication schemas, addressing, visibility rules, and dialogue state machines;
 multi-agent trust dynamics, caller reputation, designated shot-caller heuristics, and team-plan
 negotiation remain open.
 

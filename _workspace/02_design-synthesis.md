@@ -1,33 +1,55 @@
-# Design Synthesis: M8 Team Communication Speech Acts & Envelope Schema
+# Design Synthesis: M8 Team Communication Speech Act Evaluation & Dialogue Mechanics
 
 ## Inputs Reviewed
 
 - `_workspace/00_input/request-summary.md`
 - `_workspace/01_agent-ecology-design.md`
-- `ROADMAP.md` Phase 8 (M8 — Team Communication and Shot-Calling)
-- `SPEC.md` and `docs/harness/fog-of-intent/team-spec.md`
+- `src/agent/communication.rs`
+- `src/lane/observation.rs`, `src/lane/coordination.rs`
+- `SPEC.md` and `ROADMAP.md` (Phase 8 — Team Communication and Shot-Calling)
 
 ## Agreed Actor Information
 
-- Communication envelopes do not leak latent world state, hidden opponent posture/health, exact entity positions, or private receipts.
-- Information visibility is governed by explicit mode (`TeamOnly`, `DirectOnly`, `Public`) and checked via `is_visible_to(viewer, is_same_team)`.
+- Information used in speech act evaluation and condition assessment is strictly actor-visible: `LanerObservation` / `AlliedLaneObservation`, current turn, visible threat reports, and incoming validated `TeamMessageEnvelope`.
+- True world state, hidden opponent status, and hidden enemy jungle coordinates remain completely inaccessible to evaluation functions.
 
 ## Agreed Action and Transition Boundary
 
-- Communication envelopes are communicative proposals, queries, and reports; they do NOT directly mutate authoritative world state or bypass host legality validation.
-- All proposals, commitments, and responses remain subject to actor-specific beliefs, trust, and validation.
+- Communication occurs on the coordination layer and does not directly mutate authoritative world state.
+- `TeamDialogueSession` transitions deterministically based on incoming messages and evaluated responses:
+  - `Idle` -> `Proposed` (on `Proposal`)
+  - `Proposed` -> `Clarifying` (on `Clarification`)
+  - `Proposed` / `Negotiating` -> `Agreed` (on `Confirmation`)
+  - `Proposed` / `Negotiating` -> `Diverged` (on `Disagreement`)
+  - `Proposed` / `Clarifying` -> `Negotiating` (on `CounterProposal` or `ConditionalCommitment`)
+  - Any active status -> `Aborted` (on `Withdrawal`)
+  - Any active status -> `Failed` (on `FailureReport`)
+- Rejection of invalid transitions (e.g. confirming an already aborted session, or withdrawing without an active session).
 
 ## Agreed Randomness Ownership
 
-- Speech acts, addressing, urgency, confidence, and conditions are pure deterministic schemas. No unseeded randomness or hidden RNG is introduced.
+- Speech act evaluation and dialogue progression are 100% deterministic functions of actor observation and message envelopes. No unseeded RNG or async operations exist in the core.
 
 ## Agent Policy and Execution Boundary
 
-- Private chain-of-thought is strictly forbidden (`chain_of_thought_present == false`), failing closed with `TeamCommunicationError::ChainOfThoughtForbidden` if violated.
-- Semantic speech acts cover the 8 canonical modes: `Proposal`, `Clarification`, `Confirmation`, `Disagreement`, `CounterProposal`, `ConditionalCommitment`, `Withdrawal`, and `FailureReport`.
+- Three distinct evaluation profiles (`Cautious`, `RiskTaking`, `Yielding` corresponding to `Anchor`, `Duelist`, `Pacer`):
+  - `Cautious`: Rejects `Contest` if health <= 3 or threat is present; confirms `Stabilize`; counters `Contest` with `Stabilize` if wave pressure <= 2.
+  - `RiskTaking`: Confirms `Contest`; counters `Stabilize` with `Contest` if health >= 4 and mana >= 2.
+  - `Yielding`: Confirms incoming proposal unless health <= 1; conditionally commits on `AlliedPresence`.
+
+## Metrics and Evidence Limits
+
+- Bounded capacity: Max 8 messages per session, max 4 negotiation rounds.
+- Zero private chain-of-thought structurally enforced (`chain_of_thought_present == false`).
+- Dialogue state produces inspectable Markdown reports for causal debriefing.
+
+## Conflicts Resolved
+
+- Clarified that `ConditionalCommitment` transitions to `Negotiating` until the condition is evaluated and confirmed or withdrawn.
+- Ensured dissent reasons (`TeamDissentReason`) are discrete enums with canonical strings and parser helpers.
 
 ## Production Contract
 
-- `src/agent/communication.rs` defines `TeamSpeechAct`, `TeamRecipient`, `TeamMessageUrgency`, `TeamConfidenceLevel`, `TeamMessageCondition`, `TeamMessageVisibility`, `TeamMessageEnvelope`, `TeamCommunicationError`, and `TeamCommunicationCatalog`.
-- Full canonical example suite registered in `TeamCommunicationCatalog` and verified by unit tests.
-- Re-exported via `src/agent/mod.rs`.
+- File: `src/agent/communication.rs` (expanded with dialogue states, evaluation helpers, dissent reasons, condition evaluator, session runner, catalog, and Markdown formatter).
+- File: `src/agent/tests.rs` (expanded with comprehensive unit tests for all 8 speech act paths, state machine invariants, and catalog lookups).
+- Document synchronization: `SPEC.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `LESSONS.md`, `README.md`.
