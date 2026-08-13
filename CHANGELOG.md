@@ -100,6 +100,39 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.188 — 2026-08-13
+
+### Added
+
+- Added `m8-team-simultaneous-submission-v1`, `m8-team-simultaneous-resolution-v1`,
+  `m8-team-simultaneous-catalog-v1`, `TeamSimultaneousPhase`, `TeamCoordinationOutcome`,
+  `TeamSubmissionEnvelope`, `TeamSubmissionReceipt`, `TeamSimultaneousWindow`,
+  `RoleResolvedIntent`, `TeamSimultaneousResolution`, `TeamSimultaneousResolver`,
+  `TeamSimultaneousCatalog`, `TeamSimultaneousScenario`, and `TeamSimultaneousError`
+  in `src/agent/simultaneous.rs`, preserving private multi-agent submissions and enabling
+  deterministic simultaneous resolution for M8:
+  - `TeamSubmissionEnvelope` encapsulating actor role, observation ID, turn, intent,
+    target focus, commitment, ping signal, optional staged message, optional individual plan,
+    and strict fail-closed rejection of private chain-of-thought (`chain_of_thought_present == false`).
+  - `TeamSubmissionReceipt` providing lightweight, payload-free receipt confirmation without
+    echoing submitted choices to peers.
+  - `TeamSimultaneousWindow` managing a bounded multi-agent collection window (up to 4 roles)
+    with strict privacy protection during the `CollectingSubmissions` phase (`get_submission`
+    and `submissions()` fail closed, and `Debug` redacts uncommitted choices).
+  - `TeamSimultaneousResolver` evaluating multi-actor plan alignment (`TeamPlanEvaluator`),
+    proposal trust compliance (`TeamTrustEvaluator`), and leadership consensus/directives
+    (`TeamLeadershipEvaluator`) into integer basis-point cohesion ($[0..=10,000]$ bp) and
+    discrete `TeamCoordinationOutcome` classifications (`FullyCoordinated`, `PartiallyCoordinated`,
+    `DivergentIntents`, `ConflictingDirectives`, `CommunicationFailure`).
+  - `TeamSimultaneousCatalog` defining 5 canonical reference simultaneous resolution scenarios
+    (`simultaneous-gank-coordinated-v1`, `simultaneous-defensive-fallback-v1`,
+    `simultaneous-dissent-tradeoff-v1`, `simultaneous-conflicting-directives-v1`,
+    `simultaneous-communication-failure-v1`) with fail-closed lookup and validation.
+
+### Known limits
+
+- This contract establishes private submission collection and simultaneous multi-agent resolution; causal attribution of coordination success/failure separate from execution and multi-turn match scenarios remain open.
+
 ## 0.1.187 — 2026-08-12
 
 ### Added

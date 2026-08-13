@@ -588,12 +588,17 @@ replay/debrief path is inspected and verified without exposing hidden state.
 
 Team communication contracts in M8 (`m8-team-communication-v1`, `m8-team-dialogue-v1`,
 `m8-team-plan-v1`, `m8-team-plan-relationship-v1`, `m8-team-trust-v1`, `m8-caller-reputation-v1`,
-`m8-communication-channel-v1`) define structured speech acts, visibility boundaries,
+`m8-communication-channel-v1`, `m8-leadership-structure-v1`, `m8-shot-caller-policy-v1`,
+`m8-decentralized-coordination-v1`, `m8-leadership-evaluation-report-v1`,
+`m8-team-simultaneous-submission-v1`, `m8-team-simultaneous-resolution-v1`,
+`m8-team-simultaneous-catalog-v1`) define structured speech acts, visibility boundaries,
 multi-turn dialogue state machines, structured team plans, deterministic individual/team
-alignment evaluation, caller reputation tracking, and transmission channel physics. All message envelopes,
-dialogues, plans, and trust reports strictly enforce zero private chain-of-thought, and alignment/trust
-evaluations operate purely over actor-safe projections with exact integer basis-point scoring ($[0..=10,000]$ bp)
-and deterministic queue progression.
+alignment evaluation, caller reputation tracking, transmission channel physics, designated
+shot-caller directives, decentralized peer consensus arbitration, and simultaneous multi-agent
+submission collection and resolution. All message envelopes, dialogues, plans, leadership
+proposals, submissions, and resolution reports strictly enforce zero private chain-of-thought,
+and evaluations operate purely over actor-safe projections with exact integer basis-point scoring
+($[0..=10,000]$ bp), redacted debug views during collection, and pure deterministic resolution.
 
 ## Consequential Type Boundaries
 

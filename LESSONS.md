@@ -1471,7 +1471,6 @@ canonical policy instead of duplicating it.
   game logic, ground truth, or essential calibration targets.
 - Cause: Treating non-verifiable internal model reasoning as simulation artifacts leaks
   uninspectable state and violates the principle that AI policies are reference empirical
-  distributions rather than human ground truth.
 - Resolution: Preserve only observable action outputs (`LaneIntent`, `LaneTargetFocus`,
   `LaneCommitment`, `LanePingSignal`) alongside bounded `StructuredRationale` category tags,
   and fail closed (`ReferenceOutputError::PrivateChainOfThoughtForbidden`) if private
@@ -1479,4 +1478,13 @@ canonical policy instead of duplicating it.
 - Prevention: Enforce `chain_of_thought_free: true` across all preservation reports and keep
   live model execution, online recalibration, and human ground truth claims explicitly out
   of simulation contracts.
+
+## Preserve submission privacy during collection and evaluate multi-agent decisions simultaneously
+
+- Context: M8 requires autonomous teammates to privately formulate decisions (intents, communication, individual plans) without leaking uncommitted choices to peers before simultaneous host resolution.
+- Symptom: Inspecting or querying submissions while collection is in progress allows peers or outer layers to condition choices on uncommitted teammate intents, turning simultaneous decisions into sequential ones.
+- Cause: Exposing submission lookup methods or raw debug formatting during the `CollectingSubmissions` phase leaks private actor state.
+- Resolution: Gate submission inspection behind the `Ready` phase, redact private intents in `Debug` during collection, return payload-free receipts upon acceptance, and evaluate multi-agent decisions simultaneously across plan alignment, proposal trust compliance, and leadership consensus into exact integer basis-point cohesion.
+- Prevention: Strictly enforce zero private chain-of-thought (`chain_of_thought_present == false`) and maintain clear lifecycle state machines (`CollectingSubmissions` -> `Ready` -> `Resolved` -> `Closed`).
+
 
