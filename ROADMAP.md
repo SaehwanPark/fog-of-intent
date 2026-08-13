@@ -1717,7 +1717,7 @@ match-level debriefing while routine execution remains delegated.
 
 ### Scope
 
-- [ ] Define an abstracted three-lane map and travel model.
+- [x] Define an abstracted three-lane map and travel model.
 - [ ] Add objective cycles, map-level vision, rotations, and resource tradeoffs.
 - [ ] Add the minimum role and team-composition abstractions needed for match
   strategy.
@@ -1730,6 +1730,19 @@ match-level debriefing while routine execution remains delegated.
 - [ ] Expand scenario and property tests without weakening M1/M2 fixtures.
 - [ ] Measure strategy diversity, role activity, communication, and unused
   mechanics.
+
+### Current M9 abstracted three-lane map and travel model evidence
+
+- [x] Define `m9-map-topology-v1`, `m9-travel-model-v1`, `m9-map-observation-v1`, and `m9-map-scenario-catalog-v1`
+  covering 15 discrete map locations (`Base(2)`, `Lane(9)`, `River(2)`, `Jungle(2)`), symmetric adjacency matrix,
+  deterministic BFS shortest-path calculation, integer beat durations, validated `TravelRoute`, `ActorLocation`
+  (`Stationary` vs `InTransit`), `TransitState` machine, `TravelCommand` (`InitiateRotation`, `ContinueTransit`, `AbortRotation`),
+  deterministic transition progress ticking, arrival handling, abort redirection, `TravelEvent` and `TravelEffect`
+  emission, `MatchMapState` FNV-1a state hashing, `MatchMapObservation` with strict fog-of-war redaction (unseen rotating
+  opponents remain `Unknown`), and `MapTravelCatalog` registering 4 canonical benchmark scenarios (`top_to_mid_gank`,
+  `bot_to_river_contest`, `mid_to_base_reset`, `aborted_rotation_threat`) with reproducible execution and replay hash verification.
+
+This establishes the spatial topology and deterministic rotation/travel model for the multi-lane match prototype. Objective cycles, combat resolution, and match victory conditions remain deferred to subsequent M9 slices.
 
 ### Deliverables
 
