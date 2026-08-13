@@ -100,6 +100,34 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.187 — 2026-08-12
+
+### Added
+
+- Added `m8-leadership-structure-v1`, `m8-shot-caller-policy-v1`, `m8-decentralized-coordination-v1`,
+  `m8-leadership-evaluation-report-v1`, `ConsensusRule`, `FallbackLeadershipMode`, `LeadershipStructure`,
+  `LeadershipResolutionOutcome`, `ShotCallerDirective`, `ShotCallerPolicy`, `PeerPlanProposal`,
+  `DecentralizedCoordinator`, `LeadershipEvaluationReport`, `TeamLeadershipEvaluator`,
+  `LeadershipCatalog`, and `TeamLeadershipError` in `src/agent/leadership.rs`, establishing designated
+  shot-caller and decentralized coordination baseline policies for M8:
+  - `ConsensusRule` providing 4 discrete peer proposal arbitration algorithms (`UnanimousConsensus`,
+    `HighestReputationLead`, `UrgencyFirst`, `MajoritySupport`).
+  - `FallbackLeadershipMode` providing 3 predictable fallback mechanisms (`FallbackToIndividualPlans`,
+    `FallbackToDefaultHold`, `FallbackToSecondaryCaller`) when directives or consensus fail.
+  - `LeadershipStructure` modeling `DesignatedShotCaller`, `Decentralized`, and `SharedLeadership` team
+    authority configurations.
+  - `ShotCallerDirective` and `ShotCallerPolicy` enabling designated leaders to evaluate local observations
+    and issue structured communicative team plan proposals.
+  - `PeerPlanProposal` and `DecentralizedCoordinator` enabling leaderless peer teams to submit bounded plan
+    proposals with exact basis-point reputation ratings and zero chain-of-thought enforcement.
+  - `TeamLeadershipEvaluator` simulating and evaluating compliance, dissent reasons, and cohesion across
+    evaluating teammates against trust matrices and local observations.
+  - `LeadershipCatalog` defining and validating 6 canonical reference leadership baseline configurations.
+
+### Known limits
+
+- This contract establishes designated shot-caller heuristics and decentralized consensus arbitration baselines; simultaneous private submission resolution across multi-turn match scenarios remains open.
+
 ## 0.1.186 — 2026-08-12
 
 ### Added

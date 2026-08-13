@@ -5,6 +5,18 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Keep leadership structures discrete, consensus rules deterministic, and influence distinct from direct control
+
+- Context: M8 required implementing designated shot-caller heuristics, leaderless decentralized peer coordination,
+  and shared leadership baselines without turning leadership into disguised direct actor control or introducing floating-point math.
+- Symptom: Hardcoding leadership as authoritative command execution would bypass autonomous actor evaluation, while continuous
+  voting or unbounded consensus loops would compromise determinism and causal debrief inspectability.
+- Resolution: Structure leadership directives and peer proposals as communicative speech acts (`ShotCallerDirective`, `PeerPlanProposal`),
+  evaluate compliance deterministically via `TeamTrustEvaluator` and local observations, arbitrate decentralized proposals via discrete
+  `ConsensusRule` algorithms, and represent cohesion/compliance in exact integer basis points ($[0..=10,000]$ bp).
+- Prevention: Enforce that leadership in Fog of Intent represents communicative influence and bounded consensus arbitration rather
+  than direct control or privileged simulation authority.
+
 ## Keep team trust dynamics basis-point bounded and transmission channels deterministic
 
 - Context: M8 required implementing caller reputation scoring, trust-modulated proposal compliance,

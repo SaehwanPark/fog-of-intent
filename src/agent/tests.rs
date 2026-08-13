@@ -7852,3 +7852,374 @@ fn test_team_trust_catalog_and_reference_profiles() {
   );
   assert_eq!(TeamTrustCatalog::get_reference_caller("non-existent"), None);
 }
+
+#[test]
+fn test_leadership_enums_and_display() {
+  // ConsensusRule
+  for rule in ConsensusRule::all() {
+    assert_eq!(ConsensusRule::parse(rule.as_str()), Some(rule));
+    assert_eq!(format!("{}", rule), rule.as_str());
+  }
+  assert_eq!(ConsensusRule::parse("invalid"), None);
+
+  // FallbackLeadershipMode
+  for mode in FallbackLeadershipMode::all() {
+    assert_eq!(FallbackLeadershipMode::parse(mode.as_str()), Some(mode));
+    assert_eq!(format!("{}", mode), mode.as_str());
+  }
+  assert_eq!(FallbackLeadershipMode::parse("invalid"), None);
+
+  // LeadershipStructure
+  let designated = LeadershipStructure::DesignatedShotCaller {
+    caller: LaneActorRole::HumanLaner,
+    fallback_mode: FallbackLeadershipMode::FallbackToDefaultHold,
+  };
+  assert_eq!(designated.as_str(), "designated-shot-caller");
+  assert_eq!(designated.caller_role(), Some(LaneActorRole::HumanLaner));
+
+  let decentralized = LeadershipStructure::Decentralized {
+    consensus_rule: ConsensusRule::UnanimousConsensus,
+    min_cohesion_bp: 10_000,
+  };
+  assert_eq!(decentralized.as_str(), "decentralized-coordination");
+  assert_eq!(decentralized.caller_role(), None);
+
+  let shared = LeadershipStructure::SharedLeadership {
+    primary_caller: LaneActorRole::HumanLaner,
+    secondary_caller: LaneActorRole::AlliedAutonomous,
+    fallback_mode: FallbackLeadershipMode::FallbackToSecondaryCaller,
+  };
+  assert_eq!(shared.as_str(), "shared-leadership");
+  assert_eq!(shared.caller_role(), Some(LaneActorRole::HumanLaner));
+
+  // LeadershipResolutionOutcome
+  let res_consensus = LeadershipResolutionOutcome::ConsensusAchieved {
+    agreed_plan_id: "plan-gank-setup-v1",
+    objective: TeamStrategicObjective::GankSetup,
+    cohesion_bp: 10_000,
+    compliance_bp: 10_000,
+  };
+  assert_eq!(res_consensus.as_str(), "consensus-achieved");
+  assert_eq!(res_consensus.compliance_bp(), 10_000);
+  assert!(res_consensus.is_consensus());
+
+  let res_split = LeadershipResolutionOutcome::SplitDecision {
+    primary_plan_id: "plan-lane-siege-v1",
+    objective: TeamStrategicObjective::LaneSiege,
+    dissenting_roles: vec![(
+      LaneActorRole::AlliedAutonomous,
+      TeamDissentReason::LowHealth,
+    )],
+    compliance_bp: 5_000,
+  };
+  assert_eq!(res_split.as_str(), "split-decision");
+  assert_eq!(res_split.compliance_bp(), 5_000);
+  assert!(!res_split.is_consensus());
+
+  let res_fallback = LeadershipResolutionOutcome::FallbackIndividualPlans {
+    trigger_reason: TeamDissentReason::ThreatDetected,
+    compliance_bp: 0,
+  };
+  assert_eq!(res_fallback.as_str(), "fallback-individual-plans");
+  assert_eq!(res_fallback.compliance_bp(), 0);
+  assert!(!res_fallback.is_consensus());
+
+  let res_deadlock = LeadershipResolutionOutcome::ConflictedDeadlock {
+    colliding_objectives: vec![
+      TeamStrategicObjective::LaneSiege,
+      TeamStrategicObjective::ObjectiveContest,
+    ],
+    compliance_bp: 0,
+  };
+  assert_eq!(res_deadlock.as_str(), "conflicted-deadlock");
+  assert_eq!(res_deadlock.compliance_bp(), 0);
+  assert!(!res_deadlock.is_consensus());
+}
+
+#[test]
+fn test_shot_caller_directive_and_policy() {
+  let directive = ShotCallerDirective::new(
+    LaneActorRole::HumanLaner,
+    "plan-lane-siege-v1",
+    TeamStrategicObjective::LaneSiege,
+    TeamMessageUrgency::Standard,
+    TeamConfidenceLevel::Confident,
+    TeamMessageCondition::HealthAboveThreshold,
+    "Siege tower while healthy.",
+  )
+  .unwrap();
+
+  assert_eq!(directive.schema, SHOT_CALLER_POLICY_SCHEMA);
+  assert_eq!(directive.caller, LaneActorRole::HumanLaner);
+  assert_eq!(directive.plan_id, "plan-lane-siege-v1");
+
+  let envelope = directive.to_message_envelope(1).unwrap();
+  assert_eq!(envelope.sender(), LaneActorRole::HumanLaner);
+  assert_eq!(envelope.recipient(), TeamRecipient::Broadcast);
+  assert_eq!(envelope.speech_act(), TeamSpeechAct::Proposal);
+  assert_eq!(envelope.proposed_intent(), Some(LaneIntent::Contest));
+
+  // Fail-closed on empty or unknown plan
+  assert_eq!(
+    ShotCallerDirective::new(
+      LaneActorRole::HumanLaner,
+      "",
+      TeamStrategicObjective::LaneSiege,
+      TeamMessageUrgency::Standard,
+      TeamConfidenceLevel::Confident,
+      TeamMessageCondition::Unconditional,
+      "Rationale",
+    ),
+    Err(TeamLeadershipError::EmptyPlanId)
+  );
+  assert_eq!(
+    ShotCallerDirective::new(
+      LaneActorRole::HumanLaner,
+      "unknown-plan-id",
+      TeamStrategicObjective::LaneSiege,
+      TeamMessageUrgency::Standard,
+      TeamConfidenceLevel::Confident,
+      TeamMessageCondition::Unconditional,
+      "Rationale",
+    ),
+    Err(TeamLeadershipError::CatalogPlanNotFound("unknown-plan-id"))
+  );
+
+  // Policy evaluation
+  let policy = ShotCallerPolicy::new(
+    LaneActorRole::HumanLaner,
+    TeamStrategicObjective::LaneSiege,
+    "plan-lane-siege-v1",
+    TeamMessageUrgency::Standard,
+    TeamConfidenceLevel::Confident,
+    TeamMessageCondition::HealthAboveThreshold,
+  )
+  .unwrap();
+
+  let initial = LaneSnapshot::initial();
+  let safe_obs = observe_player(&initial, ObservationId::new(999)).observation();
+  let evaluated_dir = policy.evaluate_directive(&safe_obs).unwrap();
+  assert_eq!(evaluated_dir.plan_id, "plan-lane-siege-v1");
+  assert_eq!(evaluated_dir.objective, TeamStrategicObjective::LaneSiege);
+}
+
+#[test]
+fn test_peer_plan_proposal_and_decentralized_coordinator() {
+  let proposal1 = PeerPlanProposal::new(
+    LaneActorRole::HumanLaner,
+    "plan-gank-setup-v1",
+    TeamStrategicObjective::GankSetup,
+    TeamMessageUrgency::Critical,
+    TeamConfidenceLevel::Definite,
+    TeamMessageCondition::ThreatAbsent,
+    8_500,
+  )
+  .unwrap();
+
+  let proposal2 = PeerPlanProposal::new(
+    LaneActorRole::AlliedAutonomous,
+    "plan-gank-setup-v1",
+    TeamStrategicObjective::GankSetup,
+    TeamMessageUrgency::Critical,
+    TeamConfidenceLevel::Definite,
+    TeamMessageCondition::ThreatAbsent,
+    7_500,
+  )
+  .unwrap();
+
+  let initial = LaneSnapshot::initial();
+  let safe_obs = observe_player(&initial, ObservationId::new(999)).observation();
+
+  // 1. Unanimous consensus success
+  let res_unanimous = DecentralizedCoordinator::arbitrate_proposals(
+    ConsensusRule::UnanimousConsensus,
+    &[proposal1.clone(), proposal2.clone()],
+    10_000,
+    &safe_obs,
+  )
+  .unwrap();
+  assert!(res_unanimous.is_consensus());
+  assert_eq!(res_unanimous.compliance_bp(), 10_000);
+
+  // 2. Highest reputation lead
+  let proposal_diff = PeerPlanProposal::new(
+    LaneActorRole::AlliedAutonomous,
+    "plan-defensive-hold-v1",
+    TeamStrategicObjective::DefensiveHold,
+    TeamMessageUrgency::Standard,
+    TeamConfidenceLevel::Tentative,
+    TeamMessageCondition::Unconditional,
+    4_000,
+  )
+  .unwrap();
+
+  let res_rep = DecentralizedCoordinator::arbitrate_proposals(
+    ConsensusRule::HighestReputationLead,
+    &[proposal1.clone(), proposal_diff.clone()],
+    5_000,
+    &safe_obs,
+  )
+  .unwrap();
+  assert_eq!(res_rep.as_str(), "consensus-achieved");
+  assert_eq!(res_rep.compliance_bp(), 5_000);
+
+  // 3. Urgency first
+  let res_urgency = DecentralizedCoordinator::arbitrate_proposals(
+    ConsensusRule::UrgencyFirst,
+    &[proposal1.clone(), proposal_diff.clone()],
+    5_000,
+    &safe_obs,
+  )
+  .unwrap();
+  assert_eq!(res_urgency.as_str(), "consensus-achieved");
+
+  // 4. Majority tie deadlock
+  let res_deadlock = DecentralizedCoordinator::arbitrate_proposals(
+    ConsensusRule::MajoritySupport,
+    &[proposal1.clone(), proposal_diff.clone()],
+    5_000,
+    &safe_obs,
+  )
+  .unwrap();
+  assert_eq!(res_deadlock.as_str(), "conflicted-deadlock");
+
+  // 5. Chain of thought fail-closed rejection
+  let mut cot_prop = proposal1.clone();
+  cot_prop.chain_of_thought_present = true;
+  assert_eq!(
+    cot_prop.to_message_envelope(1),
+    Err(TeamLeadershipError::ChainOfThoughtForbidden)
+  );
+  assert_eq!(
+    DecentralizedCoordinator::arbitrate_proposals(
+      ConsensusRule::UnanimousConsensus,
+      &[cot_prop],
+      10_000,
+      &safe_obs,
+    ),
+    Err(TeamLeadershipError::ChainOfThoughtForbidden)
+  );
+}
+
+#[test]
+fn test_team_leadership_evaluator_and_reports() {
+  let initial = LaneSnapshot::initial();
+  let safe_obs = observe_player(&initial, ObservationId::new(999)).observation();
+  let mut trust_matrix = TeamTrustMatrix::new();
+  trust_matrix
+    .get_mut(LaneActorRole::HumanLaner)
+    .reputation_bp = 8_500;
+
+  let directive = ShotCallerDirective::new(
+    LaneActorRole::HumanLaner,
+    "plan-lane-siege-v1",
+    TeamStrategicObjective::LaneSiege,
+    TeamMessageUrgency::Standard,
+    TeamConfidenceLevel::Confident,
+    TeamMessageCondition::HealthAboveThreshold,
+    "Siege tower while healthy.",
+  )
+  .unwrap();
+
+  let designated = LeadershipStructure::DesignatedShotCaller {
+    caller: LaneActorRole::HumanLaner,
+    fallback_mode: FallbackLeadershipMode::FallbackToDefaultHold,
+  };
+
+  let report = TeamLeadershipEvaluator::evaluate_leadership(
+    &designated,
+    core::slice::from_ref(&directive),
+    &[],
+    &trust_matrix,
+    &safe_obs,
+  )
+  .unwrap();
+
+  assert_eq!(report.schema, LEADERSHIP_EVALUATION_REPORT_SCHEMA);
+  assert_eq!(report.overall_compliance_bp, 10_000);
+  assert!(report.resolution.is_consensus());
+  assert_eq!(report.role_decisions.len(), 2);
+
+  // Markdown formatting verification
+  let md = report.to_markdown_summary();
+  assert!(md.contains("# Team Leadership & Coordination Evaluation Report"));
+  assert!(md.contains("**Overall Compliance:** 10000 bp (100.00%)"));
+  assert!(md.contains("`human-laner`"));
+  assert!(md.contains("`allied-autonomous`"));
+
+  // Shared leadership evaluation
+  let shared = LeadershipStructure::SharedLeadership {
+    primary_caller: LaneActorRole::HumanLaner,
+    secondary_caller: LaneActorRole::AlliedAutonomous,
+    fallback_mode: FallbackLeadershipMode::FallbackToSecondaryCaller,
+  };
+  let shared_report = TeamLeadershipEvaluator::evaluate_leadership(
+    &shared,
+    core::slice::from_ref(&directive),
+    &[],
+    &trust_matrix,
+    &safe_obs,
+  )
+  .unwrap();
+  assert_eq!(shared_report.overall_compliance_bp, 10_000);
+  assert!(shared_report.resolution.is_consensus());
+}
+
+#[test]
+fn test_leadership_catalog_validation() {
+  LeadershipCatalog::validate_catalog().unwrap();
+  assert!(LeadershipCatalog::all().len() >= 6);
+
+  let anchor_lead = LeadershipCatalog::get("leader-designated-anchor-v1").unwrap();
+  assert_eq!(anchor_lead.name, "Designated Human Laner Anchor Lead");
+  assert_eq!(anchor_lead.expected_compliance_bp, 8_500);
+
+  let jungler_lead = LeadershipCatalog::get("leader-designated-jungler-v1").unwrap();
+  assert_eq!(jungler_lead.name, "Designated Allied Jungler Lead");
+  assert_eq!(jungler_lead.expected_compliance_bp, 7_500);
+
+  let decentralized_unanimous =
+    LeadershipCatalog::get("leader-decentralized-unanimous-v1").unwrap();
+  assert_eq!(
+    decentralized_unanimous.name,
+    "Decentralized Unanimous Consensus"
+  );
+
+  assert_eq!(LeadershipCatalog::get("unknown-leader-id"), None);
+}
+
+#[test]
+fn test_leadership_error_formatting() {
+  let err_cot = TeamLeadershipError::ChainOfThoughtForbidden;
+  assert_eq!(
+    format!("{}", err_cot),
+    "private chain-of-thought is strictly forbidden in leadership contracts"
+  );
+
+  let err_empty = TeamLeadershipError::EmptyPlanId;
+  assert_eq!(format!("{}", err_empty), "target plan ID cannot be empty");
+
+  let err_plan = TeamLeadershipError::CatalogPlanNotFound("test-plan");
+  assert_eq!(
+    format!("{}", err_plan),
+    "team plan `test-plan` not found in catalog"
+  );
+
+  let err_cat = TeamLeadershipError::CatalogEntryNotFound;
+  assert_eq!(format!("{}", err_cat), "leadership catalog entry not found");
+
+  let err_bp = TeamLeadershipError::BasisPointOutOfRange {
+    bp: 12_000,
+    max: 10_000,
+  };
+  assert_eq!(
+    format!("{}", err_bp),
+    "basis points 12000 exceeded maximum allowed bound 10000"
+  );
+
+  let err_missing = TeamLeadershipError::CallerDirectiveMissing(LaneActorRole::HumanLaner);
+  assert_eq!(
+    format!("{}", err_missing),
+    "shot-caller directive missing for designated role `human-laner`"
+  );
+}
