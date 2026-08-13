@@ -5,6 +5,18 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Keep team speech acts typed, discrete, and visibility-bounded
+
+- Context: M8 required defining speech acts, recipients, urgency, confidence, conditions,
+  and message visibility before multi-agent trust dynamics or shot-calling arbitration were authorized.
+- Symptom: Free-form conversational text or unstructured chat strings would bypass actor information
+  boundaries, leak private chain-of-thought, or turn communicative proposals into disguised direct control.
+- Resolution: Define `TeamSpeechAct` over 8 closed variants, `TeamRecipient` (broadcast vs direct),
+  `TeamMessageUrgency`, `TeamConfidenceLevel`, `TeamMessageCondition`, and `TeamMessageVisibility` with
+  leak-proof visibility predicates and fail-closed rejection if `chain_of_thought_present == true`.
+- Prevention: Treat communicative speech acts, addressing, visibility redaction, trust dynamics,
+  and leadership arbitration as separate contracts with separate evidence.
+
 ## Keep recalibration triggers discrete and urgency-classified
 
 - Context: M7 required defining recalibration triggers upon model family or prompt protocol changes

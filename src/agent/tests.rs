@@ -2,9 +2,9 @@ use super::*;
 use crate::host::CliScenarioHost;
 use crate::kernel::{DrawId, StreamId};
 use crate::lane::{
-  ALLIED_AUTONOMOUS_ACTOR, JungleThreatTruth, LaneCommitment, LaneIntent, LanePingSignal,
-  LaneSnapshot, LaneStatus, LaneTargetFocus, LanerObservation, M2_LANE_RULESET, ObservationId,
-  WavePressure, WaveState, observe_player, validate_lane_request,
+  ALLIED_AUTONOMOUS_ACTOR, JungleThreatTruth, LaneActorRole, LaneCommitment, LaneIntent,
+  LanePingSignal, LaneSnapshot, LaneStatus, LaneTargetFocus, LanerObservation, M2_LANE_RULESET,
+  ObservationId, WavePressure, WaveState, observe_player, validate_lane_request,
 };
 use crate::protocol::{
   ActorActionDto, ActorMessageDto, ActorProtocolCodecError, ActorProtocolIntent,
@@ -6420,4 +6420,263 @@ fn recalibration_triggers_and_calibration_model_card_contract_holds() {
   assert!(card_md.contains("## Recalibration Trigger Policy"));
   assert!(card_md.contains("## Observability and Chain-of-Thought Policy"));
   assert!(card_md.contains("## Evidence and Claim Limits"));
+}
+
+#[test]
+fn team_communication_speech_acts_and_vocabularies_are_canonical_and_parseable() {
+  // 1. Schema constants
+  assert_eq!(TEAM_COMMUNICATION_SCHEMA, "m8-team-communication-v1");
+  assert_eq!(TEAM_SPEECH_ACT_SCHEMA, "m8-team-speech-act-v1");
+  assert_eq!(TEAM_MESSAGE_ENVELOPE_SCHEMA, "m8-team-message-envelope-v1");
+
+  // 2. Speech Acts: all 8 variants
+  let speech_acts = TeamSpeechAct::all();
+  assert_eq!(speech_acts.len(), 8);
+  for act in speech_acts {
+    let label = act.as_str();
+    assert_eq!(TeamSpeechAct::parse(label), Some(act));
+  }
+  assert_eq!(TeamSpeechAct::parse("invalid-act"), None);
+
+  // 3. Recipients
+  assert_eq!(TeamRecipient::Broadcast.as_str(), "broadcast");
+  assert_eq!(
+    TeamRecipient::parse("broadcast"),
+    Some(TeamRecipient::Broadcast)
+  );
+  assert_eq!(TeamRecipient::parse("all"), Some(TeamRecipient::Broadcast));
+
+  let direct_human = TeamRecipient::Direct(LaneActorRole::HumanLaner);
+  assert_eq!(direct_human.as_str(), "direct:human-laner");
+  assert_eq!(
+    TeamRecipient::parse("direct:human-laner"),
+    Some(direct_human)
+  );
+  assert!(direct_human.matches_recipient(LaneActorRole::HumanLaner));
+  assert!(!direct_human.matches_recipient(LaneActorRole::AlliedAutonomous));
+  assert!(TeamRecipient::Broadcast.matches_recipient(LaneActorRole::HumanLaner));
+  assert!(TeamRecipient::Broadcast.matches_recipient(LaneActorRole::OpposingLaner));
+  assert_eq!(TeamRecipient::parse("direct:unknown-actor"), None);
+
+  // 4. Urgency
+  let urgencies = TeamMessageUrgency::all();
+  assert_eq!(urgencies.len(), 3);
+  for u in urgencies {
+    let label = u.as_str();
+    assert_eq!(TeamMessageUrgency::parse(label), Some(u));
+  }
+  assert_eq!(TeamMessageUrgency::parse("super-critical"), None);
+
+  // 5. Confidence
+  let confidences = TeamConfidenceLevel::all();
+  assert_eq!(confidences.len(), 3);
+  for c in confidences {
+    let label = c.as_str();
+    assert_eq!(TeamConfidenceLevel::parse(label), Some(c));
+  }
+  assert_eq!(TeamConfidenceLevel::parse("unsure"), None);
+
+  // 6. Conditions
+  let conditions = TeamMessageCondition::all();
+  assert_eq!(conditions.len(), 5);
+  for cond in conditions {
+    let label = cond.as_str();
+    assert_eq!(TeamMessageCondition::parse(label), Some(cond));
+  }
+  assert_eq!(TeamMessageCondition::parse("weather-clear"), None);
+
+  // 7. Visibility
+  assert_eq!(TeamMessageVisibility::TeamOnly.as_str(), "team-only");
+  assert_eq!(
+    TeamMessageVisibility::parse("team-only"),
+    Some(TeamMessageVisibility::TeamOnly)
+  );
+  assert_eq!(TeamMessageVisibility::DirectOnly.as_str(), "direct-only");
+  assert_eq!(
+    TeamMessageVisibility::parse("direct-only"),
+    Some(TeamMessageVisibility::DirectOnly)
+  );
+  assert_eq!(TeamMessageVisibility::Public.as_str(), "public");
+  assert_eq!(
+    TeamMessageVisibility::parse("public"),
+    Some(TeamMessageVisibility::Public)
+  );
+  assert_eq!(TeamMessageVisibility::parse("secret"), None);
+
+  // Visibility checks
+  let sender = LaneActorRole::HumanLaner;
+  let ally = LaneActorRole::AlliedAutonomous;
+  let opponent = LaneActorRole::OpposingLaner;
+  let recipient_ally = TeamRecipient::Direct(ally);
+
+  // Public: visible to all
+  assert!(TeamMessageVisibility::Public.is_visible_to(sender, sender, recipient_ally, true));
+  assert!(TeamMessageVisibility::Public.is_visible_to(ally, sender, recipient_ally, true));
+  assert!(TeamMessageVisibility::Public.is_visible_to(opponent, sender, recipient_ally, false));
+
+  // TeamOnly: visible to teammates, hidden from opponents
+  assert!(TeamMessageVisibility::TeamOnly.is_visible_to(sender, sender, recipient_ally, true));
+  assert!(TeamMessageVisibility::TeamOnly.is_visible_to(ally, sender, recipient_ally, true));
+  assert!(!TeamMessageVisibility::TeamOnly.is_visible_to(opponent, sender, recipient_ally, false));
+
+  // DirectOnly: visible only to sender and recipient
+  assert!(TeamMessageVisibility::DirectOnly.is_visible_to(sender, sender, recipient_ally, true));
+  assert!(TeamMessageVisibility::DirectOnly.is_visible_to(ally, sender, recipient_ally, true));
+  assert!(!TeamMessageVisibility::DirectOnly.is_visible_to(
+    opponent,
+    sender,
+    recipient_ally,
+    false
+  ));
+}
+
+#[test]
+fn team_message_envelope_validation_and_rejection_paths() {
+  let valid = TeamMessageEnvelope::new(
+    "msg-test-valid-v1",
+    LaneActorRole::AlliedAutonomous,
+    TeamRecipient::Direct(LaneActorRole::HumanLaner),
+    TeamSpeechAct::Proposal,
+    Some(LaneIntent::Contest),
+    TeamMessageUrgency::Standard,
+    TeamConfidenceLevel::Confident,
+    TeamMessageCondition::ThreatAbsent,
+    TeamMessageVisibility::TeamOnly,
+    1,
+    "Valid proposal test message.",
+  );
+
+  assert_eq!(valid.validate(), Ok(()));
+  assert_eq!(valid.schema(), TEAM_MESSAGE_ENVELOPE_SCHEMA);
+  assert_eq!(valid.message_id(), "msg-test-valid-v1");
+  assert_eq!(valid.sender(), LaneActorRole::AlliedAutonomous);
+  assert_eq!(
+    valid.recipient(),
+    TeamRecipient::Direct(LaneActorRole::HumanLaner)
+  );
+  assert_eq!(valid.speech_act(), TeamSpeechAct::Proposal);
+  assert_eq!(valid.proposed_intent(), Some(LaneIntent::Contest));
+  assert_eq!(valid.urgency(), TeamMessageUrgency::Standard);
+  assert_eq!(valid.confidence(), TeamConfidenceLevel::Confident);
+  assert_eq!(valid.condition(), TeamMessageCondition::ThreatAbsent);
+  assert_eq!(valid.visibility(), TeamMessageVisibility::TeamOnly);
+  assert_eq!(valid.turn(), 1);
+  assert_eq!(valid.content_summary(), "Valid proposal test message.");
+  assert!(!valid.chain_of_thought_present());
+
+  // Markdown formatting
+  let md = valid.format_markdown();
+  assert!(md.contains("### Message `msg-test-valid-v1`"));
+  assert!(md.contains("**Sender:** allied-autonomous"));
+  assert!(md.contains("**Recipient:** direct:human-laner"));
+  assert!(md.contains("**Speech Act:** proposal"));
+  assert!(md.contains("**Proposed Intent:** contest"));
+  assert!(md.contains("**Chain-of-Thought Free:** true"));
+
+  // Fail-closed rejection: Chain-of-Thought present
+  let cot_invalid = TeamMessageEnvelope::with_chain_of_thought_flag(
+    "msg-test-cot-v1",
+    LaneActorRole::AlliedAutonomous,
+    TeamRecipient::Direct(LaneActorRole::HumanLaner),
+    TeamSpeechAct::Proposal,
+    Some(LaneIntent::Contest),
+    TeamMessageUrgency::Standard,
+    TeamConfidenceLevel::Confident,
+    TeamMessageCondition::ThreatAbsent,
+    TeamMessageVisibility::TeamOnly,
+    1,
+    "CoT test",
+    true,
+  );
+  assert_eq!(
+    cot_invalid.validate(),
+    Err(TeamCommunicationError::ChainOfThoughtForbidden)
+  );
+
+  // Fail-closed rejection: Empty message ID
+  let empty_id = TeamMessageEnvelope::new(
+    "",
+    LaneActorRole::AlliedAutonomous,
+    TeamRecipient::Direct(LaneActorRole::HumanLaner),
+    TeamSpeechAct::Proposal,
+    Some(LaneIntent::Contest),
+    TeamMessageUrgency::Standard,
+    TeamConfidenceLevel::Confident,
+    TeamMessageCondition::ThreatAbsent,
+    TeamMessageVisibility::TeamOnly,
+    1,
+    "Empty ID test",
+  );
+  assert_eq!(
+    empty_id.validate(),
+    Err(TeamCommunicationError::EmptyMessageId)
+  );
+
+  // Fail-closed rejection: Self-addressing direct recipient
+  let self_addressed = TeamMessageEnvelope::new(
+    "msg-self-addressed-v1",
+    LaneActorRole::HumanLaner,
+    TeamRecipient::Direct(LaneActorRole::HumanLaner),
+    TeamSpeechAct::Clarification,
+    None,
+    TeamMessageUrgency::Low,
+    TeamConfidenceLevel::Tentative,
+    TeamMessageCondition::Unconditional,
+    TeamMessageVisibility::DirectOnly,
+    1,
+    "Self addressing test",
+  );
+  assert_eq!(
+    self_addressed.validate(),
+    Err(TeamCommunicationError::SelfAddressingForbidden)
+  );
+}
+
+#[test]
+fn team_communication_catalog_is_complete_and_validates_all_speech_acts() {
+  let envelopes = TeamCommunicationCatalog::all_envelopes();
+  assert_eq!(envelopes.len(), 8);
+
+  // Every canonical envelope must validate cleanly
+  for env in envelopes {
+    assert_eq!(
+      env.validate(),
+      Ok(()),
+      "envelope {} must validate",
+      env.message_id()
+    );
+    assert_eq!(
+      TeamCommunicationCatalog::lookup(env.message_id()),
+      Some(env),
+      "lookup must match envelope {}",
+      env.message_id()
+    );
+    assert_eq!(
+      TeamCommunicationCatalog::validate_message_id(env.message_id()),
+      Ok(env)
+    );
+  }
+
+  // Check that all 8 speech acts are covered by the catalog
+  let speech_acts_represented = envelopes
+    .iter()
+    .map(|env| env.speech_act())
+    .collect::<Vec<_>>();
+  for act in TeamSpeechAct::all() {
+    assert!(
+      speech_acts_represented.contains(&act),
+      "speech act {:?} must be present in canonical catalog",
+      act
+    );
+  }
+
+  // Unknown ID lookup fails closed
+  assert_eq!(
+    TeamCommunicationCatalog::lookup("non-existent-msg-id"),
+    None
+  );
+  assert_eq!(
+    TeamCommunicationCatalog::validate_message_id("non-existent-msg-id"),
+    Err(TeamCommunicationError::UnknownEnvelopeId)
+  );
 }

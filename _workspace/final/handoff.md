@@ -1,25 +1,38 @@
-# Final Handoff — M7 Recalibration Triggers and Calibration Model Card
+# Final Handoff: M8 Team Communication Speech Acts & Envelope Schema
 
-## Summary
+## Outcome
 
-This slice completes Milestone 7 (Phase 7 — Semantic-to-Parametric Calibration Proof) by implementing deterministic recalibration triggers, evaluation reports, and the canonical calibration model card.
+Delivered the initial foundational slice of **Phase 8 (M8 — Team Communication and Shot-Calling)**:
+- Typed speech acts (`TeamSpeechAct`) covering 8 canonical communicative intents.
+- Addressing and recipients (`TeamRecipient`) for broadcast and direct role targeting.
+- Urgency levels (`TeamMessageUrgency`) and confidence ratings (`TeamConfidenceLevel`).
+- Tactical conditions (`TeamMessageCondition`) for contingency communication.
+- Message visibility boundaries (`TeamMessageVisibility`) with leak-proof actor/team predicates.
+- Structured message envelopes (`TeamMessageEnvelope`) under `m8-team-communication-v1` with zero private chain-of-thought enforcement.
+- Canonical message envelope catalog (`TeamCommunicationCatalog`) covering all 8 speech acts with fail-closed validation.
 
-## Key Changes
+## Changed Files
 
-1. **Recalibration Schema & Reason Taxonomy (`src/agent/recalibration.rs`):**
-   - Added `RECALIBRATION_TRIGGER_SCHEMA` (`m7-recalibration-trigger-v1`), `RECALIBRATION_EVALUATION_SCHEMA` (`m7-recalibration-evaluation-v1`), and `CALIBRATION_MODEL_CARD_SCHEMA` (`m7-calibration-model-card-v1`).
-   - Defined `RecalibrationTriggerReason` with 9 discrete reasons: `ModelVersionChanged`, `PromptProtocolChanged`, `TotalVariationDistanceBreach`, `ModalChoiceDisagreement`, `UnidentifiableParameterDetected`, `UnstableSemanticLabel`, `HeldOutLossBreach`, `CounterfactualCoherenceFailure`, and `ChainOfThoughtLeakage`.
-   - Defined `RecalibrationUrgency` (`Immediate`, `Scheduled`, `None`).
+- `src/agent/communication.rs`: New module implementing speech acts, envelopes, catalog, and error types.
+- `src/agent/mod.rs`: Re-exports `communication` module.
+- `src/agent/tests.rs`: Comprehensive unit tests for all speech acts, envelopes, validation, and catalog lookups.
+- `src/lane/intent.rs`: Added `as_str()` helper to `LaneIntent`.
+- `src/lane/values.rs`: Added `as_str()` helper to `LaneActorRole`.
+- `scripts/check_repository.py`: Added `src/agent/communication.rs` to `CORE_RUST_FILES`.
+- `Cargo.toml`: Package version incremented to `0.1.183`.
+- `README.md`, `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `LESSONS.md`: Synchronized documentation.
 
-2. **Policy & Trigger Evaluation (`RecalibrationPolicy`, `RecalibrationTriggerCondition`, `RecalibrationEvaluationReport`):**
-   - Configurable integer basis-point thresholds: TVD threshold ($1,500$ bp), max modal choice disagreements ($1$), max held-out loss ($2,500$ bp), min held-out accuracy ($7,000$ bp).
-   - Evaluates multi-model comparison, uncertainty report, held-out evaluation, and reference output preservation to compute active trigger conditions and overall action urgency.
-   - Built-in canonical baseline evaluation reports for `cautious_v1`, `risk_taking_v1`, and `yielding_v1`.
-   - Formatted Markdown export with calibration disclaimer.
+## Verification
 
-3. **Calibration Proof Model Card (`CalibrationModelCardReport`):**
-   - Documents intended use, evidence limits, evaluated profiles, generalization status, uncertainty findings, recalibration policy summary, and chain-of-thought free contract.
-   - Fulfills the canonical M7 model card deliverable.
+- `cargo +1.96.0 fmt --all -- --check`: PASS
+- `cargo +1.96.0 clippy --locked --all-targets --all-features -- -D warnings`: PASS
+- `cargo +1.96.0 test --locked`: PASS (275 unit tests, 7 binary tests, 3 doctests)
+- `python3 scripts/check_repository.py`: PASS
 
-4. **Exhaustive Testing & Verification (`src/agent/tests.rs`):**
-   - 272 unit tests passing cleanly with 100% assertion coverage across schemas, enums, trigger condition validations, baseline evaluations, error paths, and Markdown renderings.
+## Domain QA Disposition
+
+`pass` (documented in `_workspace/03_domain-qa.md`).
+
+## Known Limits
+
+- Trust dynamics, caller reputation, designated shot-caller heuristics, and multi-agent plan coordination algorithms remain deferred to subsequent M8 follow-ups.

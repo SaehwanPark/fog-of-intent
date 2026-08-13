@@ -1508,6 +1508,20 @@ distribution estimation, and parametric fitting remain open.
   recalibration triggers, and the calibration proof model card;
   it does not claim full match scenario execution or human behavioral completeness.
 
+## Team Communication and Shot-Calling (Phase 8)
+
+**Status:** Versioned typed speech acts, addressing, urgency, confidence, conditions, visibility rules, and message envelope schemas defined for reference team communication; multi-agent trust dynamics, caller reputation, and team-plan negotiation remain open.
+
+- `TeamSpeechAct` defines `m8-team-speech-act-v1` covering 8 canonical communicative intents: `Proposal`, `Clarification`, `Confirmation`, `Disagreement`, `CounterProposal`, `ConditionalCommitment`, `Withdrawal`, and `FailureReport`.
+- `TeamRecipient` defines message addressing for team broadcast (`Broadcast`) and directed role targeting (`Direct(LaneActorRole)`).
+- `TeamMessageUrgency` defines 3 operational urgency levels: `Low`, `Standard`, and `Critical`.
+- `TeamConfidenceLevel` defines 3 certainty ratings: `Tentative`, `Confident`, and `Definite`.
+- `TeamMessageCondition` defines 5 tactical prerequisite conditions: `Unconditional`, `HealthAboveThreshold`, `ThreatAbsent`, `AlliedPresence`, and `ResourceSufficient`.
+- `TeamMessageVisibility` defines 3 visibility boundary modes: `TeamOnly`, `DirectOnly`, and `Public` with actor/team visibility predicate rules preventing unauthorized information leakage.
+- `TeamMessageEnvelope` defines `m8-team-message-envelope-v1` representing structured communication containers with actor provenance, proposed intents, metadata validation, Markdown formatting, and strict fail-closed rejection if private chain-of-thought is present (`chain_of_thought_present == true`).
+- `TeamCommunicationCatalog` defines `m8-team-communication-v1` providing registered canonical example envelopes across all 8 speech acts with fail-closed lookup and validation.
+- This contract establishes structured semantic communication schemas, addressing, and visibility boundaries; multi-agent trust dynamics, caller reputation, designated shot-caller heuristics, and team-plan negotiation remain open.
+
 ## Future
 
 The detailed and canonical order is in `ROADMAP.md`.

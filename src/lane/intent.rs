@@ -9,6 +9,18 @@ pub enum LaneIntent {
   Withdraw,
 }
 
+impl LaneIntent {
+  pub const fn as_str(self) -> &'static str {
+    match self {
+      Self::Stabilize => "stabilize",
+      Self::Contest => "contest",
+      Self::Yield => "yield",
+      Self::Recall => "recall",
+      Self::Withdraw => "withdraw",
+    }
+  }
+}
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct LaneIntentRequest {
   pub(crate) actor: ActorId,

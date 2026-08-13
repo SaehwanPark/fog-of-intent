@@ -1590,7 +1590,7 @@ constraints; influence never becomes disguised direct control.
 
 ### Scope
 
-- [ ] Define typed speech acts, recipients, urgency, confidence, conditions, and
+- [x] Define typed speech acts, recipients, urgency, confidence, conditions, and
   message visibility.
 - [ ] Implement proposal, clarification, confirmation, disagreement,
   counterproposal, conditional commitment, withdrawal, and failure reporting.
@@ -1603,6 +1603,25 @@ constraints; influence never becomes disguised direct control.
 - [ ] Add high-trust, low-trust, conflicting-call, and missing-message scenarios.
 - [ ] Add communication and leadership debriefs.
 - [ ] Test that disagreement can be strategically legitimate.
+
+### Current bounded team-communication evidence
+
+- [x] Define `m8-team-communication-v1`, `m8-team-speech-act-v1`, and
+  `m8-team-message-envelope-v1` covering 8 canonical communicative speech acts
+  (`Proposal`, `Clarification`, `Confirmation`, `Disagreement`, `CounterProposal`,
+  `ConditionalCommitment`, `Withdrawal`, `FailureReport`).
+- [x] Define `TeamRecipient` (broadcast vs direct role addressing), `TeamMessageUrgency`
+  (`Low`, `Standard`, `Critical`), `TeamConfidenceLevel` (`Tentative`, `Confident`, `Definite`),
+  `TeamMessageCondition` (`Unconditional`, `HealthAboveThreshold`, `ThreatAbsent`, `AlliedPresence`,
+  `ResourceSufficient`), and `TeamMessageVisibility` (`TeamOnly`, `DirectOnly`, `Public`).
+- [x] Enforce fail-closed message envelope validation with strict zero private chain-of-thought
+  rejection (`chain_of_thought_present == false`) and leak-proof visibility predicates.
+- [x] Provide a canonical catalog (`TeamCommunicationCatalog`) with registered examples for all 8
+  speech acts and fail-closed lookup.
+
+This establishes structured semantic communication schemas, addressing, and visibility rules;
+multi-agent trust dynamics, caller reputation, designated shot-caller heuristics, and team-plan
+negotiation remain open.
 
 ### Deliverables
 
