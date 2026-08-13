@@ -1598,9 +1598,9 @@ constraints; influence never becomes disguised direct control.
 - [x] Add designated shot-caller and decentralized baselines.
 - [x] Preserve private submissions and simultaneous resolution.
 - [x] Attribute coordination success and failure separately from execution.
-- [ ] Add high-trust, low-trust, conflicting-call, and missing-message scenarios.
-- [ ] Add communication and leadership debriefs.
-- [ ] Test that disagreement can be strategically legitimate.
+- [x] Add high-trust, low-trust, conflicting-call, and missing-message scenarios.
+- [x] Add communication and leadership debriefs.
+- [x] Test that disagreement can be strategically legitimate.
 
 ### Current bounded team-communication evidence
 
@@ -1665,10 +1665,23 @@ constraints; influence never becomes disguised direct control.
   sum conservation $10,000$ bp), `CoordinationExecutionAttribution`, `CoordinationExecutionAttributionReport` (with Markdown debrief rendering),
   `AttributionEvaluationInput`, `TeamAttributionEvaluator`, `AttributionScenario`, and `CoordinationAttributionCatalog` (6 registered benchmark scenarios)
   decoupling team coordination success/failure from mechanical execution outcomes to eliminate outcome bias.
+- [x] Define `m8-team-communication-debrief-v1`, `m8-team-leadership-debrief-v1`, `m8-team-encounter-debrief-v1`,
+  `CommunicationDebriefSummary`, `LeadershipDebriefSummary`, and `TeamEncounterDebriefReport` providing
+  structured post-encounter causal debriefs over packet delivery metrics, channel reliability ($[0..=10,000]$ bp),
+  clarity degradation, dialogue rounds, directive compliance/dissent rates, consensus deadlocks, fallback activations,
+  and caller reputation updates with Markdown rendering and zero private chain-of-thought enforcement.
+- [x] Define `m8-strategic-disagreement-v1`, `DisagreementLegitimacyClassification` (`LegitimateDissent`,
+  `ConstructiveAlternative`, `UnjustifiedInsubordination`), `DisagreementLegitimacyEvaluation`, and
+  `TeamDisagreementEvaluator` quantifying counterfactual value deltas ($[-10,000..=10,000]$ bp) and proving
+  that autonomous actor insubordination under adverse health/threat conditions is strategically legitimate and value-accretive.
+- [x] Define `m8-team-scenarios-v1`, `m8-team-scenario-catalog-v1`, `TeamScenarioDefinition`,
+  `TeamScenarioExecutionResult`, and `TeamScenarioCatalog` registering and executing 5 canonical benchmark
+  scenarios (`scenario-high-trust-gank-v1`, `scenario-low-trust-dissent-v1`, `scenario-conflicting-calls-arbitration-v1`,
+  `scenario-missing-message-fallback-v1`, `scenario-strategic-dissent-survival-v1`) with fail-closed validation.
 
 This establishes structured semantic communication schemas, addressing, visibility rules, dialogue state machines,
 team plans, alignment evaluation, caller reputation tracking, transmission channel physics, designated shot-caller heuristics,
-decentralized consensus arbitration, private submission collection, simultaneous multi-agent resolution, and decoupled coordination vs execution attribution; high-trust/low-trust/conflicting-call scenario batteries and debriefs across multi-turn match scenarios remain open.
+decentralized consensus arbitration, private submission collection, simultaneous multi-agent resolution, decoupled coordination vs execution attribution, causal communication and leadership debriefs, strategic disagreement proofs, and a 5-case canonical scenario battery. All M8 capabilities are fully implemented and verified.
 
 ### Deliverables
 

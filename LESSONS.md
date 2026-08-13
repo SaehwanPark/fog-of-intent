@@ -5,6 +5,13 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Disagreement in team strategy can be strategically legitimate and must be evaluated through counterfactual value deltas
+
+- Context: M8 required proving and testing that autonomous teammate disagreement with shot-caller directives or peer proposals can be strategically legitimate rather than simple insubordination or coordination failure.
+- Symptom: Treating all compliance as good and all dissent as bad penalizes autonomous actors for refusing suicidal orders (such as contesting an objective while at critically low health under active jungle threat).
+- Resolution: Formalize `DisagreementLegitimacyClassification` (`LegitimateDissent`, `ConstructiveAlternative`, `UnjustifiedInsubordination`) and compute exact basis-point counterfactual value deltas ($[-10,000..=10,000]$ bp) measuring the net payoff difference between dissenting vs complying.
+- Prevention: In causal debriefs and team evaluation systems, never equate compliance with strategic correctness; evaluate dissent against local threat conditions and counterfactual payoffs.
+
 ## Decouple coordination effectiveness from mechanical execution in causal debriefs
 
 - Context: M8 required attributing team coordination success and failure separately from physical execution outcomes to eliminate outcome bias in debriefs.

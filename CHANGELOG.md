@@ -100,6 +100,37 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.190 — 2026-08-13
+
+### Added
+
+- Added `m8-team-communication-debrief-v1`, `m8-team-leadership-debrief-v1`, `m8-team-encounter-debrief-v1`,
+  `CommunicationDebriefSummary`, `LeadershipDebriefSummary`, `TeamEncounterDebriefReport`, and `TeamDebriefError`
+  in `src/agent/debrief.rs`, delivering post-encounter causal debrief reporting for team communication and leadership:
+  - `CommunicationDebriefSummary` tracking packet delivery counts (sent, delivered, delayed, dropped overload, suppressed distrusted),
+    basis-point transmission reliability ($[0..=10,000]$ bp), clarity degradation, dialogue rounds, and categorical dissent breakdowns (`TeamDissentReason`).
+  - `LeadershipDebriefSummary` tracking directive compliance/dissent counts, compliance rates in basis points, consensus deadlocks,
+    fallback activations, and caller reputation updates ($[-10,000..=10,000]$ bp).
+  - `TeamEncounterDebriefReport` synthesizing multi-agent simultaneous resolutions, decoupled strategic attribution, communication debriefs,
+    leadership debriefs, and strategic takeaways into structured Markdown reports with strict zero private chain-of-thought enforcement (`chain_of_thought_present == false`).
+- Added `m8-strategic-disagreement-v1`, `DisagreementLegitimacyClassification`, `DisagreementLegitimacyEvaluation`,
+  `TeamDisagreementEvaluator`, and `TeamDisagreementError` in `src/agent/disagreement.rs`, formally proving and evaluating the strategic legitimacy of disagreement:
+  - `DisagreementLegitimacyClassification` distinguishing `LegitimateDissent` (dissent prevents disaster), `ConstructiveAlternative`
+    (dissent offers better value), and `UnjustifiedInsubordination` (dissent actively harms the team).
+  - `TeamDisagreementEvaluator` computing counterfactual value deltas ($[-10,000..=10,000]$ bp) and proving that dissent is value-accretive
+    under adverse health and threat conditions.
+- Added `m8-team-scenarios-v1`, `m8-team-scenario-catalog-v1`, `TeamScenarioDefinition`, `TeamScenarioExecutionResult`,
+  `TeamScenarioCatalog`, and `TeamScenarioError` in `src/agent/scenarios.rs`, registering and executing 5 canonical benchmark scenarios:
+  1. `scenario-high-trust-gank-v1`: High-reputation caller, crisp channel, unanimous compliance resulting in `CoordinatedTriumph`.
+  2. `scenario-low-trust-dissent-v1`: Distrusted caller, autonomous actor dissents to protect wave position (`UncoordinatedBailout`).
+  3. `scenario-conflicting-calls-arbitration-v1`: Competing peer proposals arbitrated deterministically via `HighestReputationLead` consensus rule without deadlocks.
+  4. `scenario-missing-message-fallback-v1`: Channel loss drops proposal packet; receiver safely activates fallback routine (`FallbackToDefaultHold`).
+  5. `scenario-strategic-dissent-survival-v1`: Caller orders reckless contest under low health; teammate legitimately dissents to yield, preventing lethal wipe (+8,000 bp counterfactual delta).
+
+### Known limits
+
+- This completes Phase 8 (M8); bounded multi-lane match mechanics and cross-lane rotations remain planned for Phase 9 (M9).
+
 ## 0.1.189 — 2026-08-13
 
 ### Added
