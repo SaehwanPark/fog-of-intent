@@ -1510,7 +1510,7 @@ distribution estimation, and parametric fitting remain open.
 
 ## Team Communication and Shot-Calling (Phase 8)
 
-**Status:** Versioned typed speech acts, addressing, urgency, confidence, conditions, visibility rules, message envelope schemas, speech act evaluation profiles, dialogue session state machines, team-plan definitions, deterministic alignment evaluation, caller reputation tracking, and transmission channel dynamics defined for reference team communication; designated shot-caller arbitration and decentralized baselines remain open.
+**Status:** Versioned typed speech acts, addressing, urgency, confidence, conditions, visibility rules, message envelope schemas, speech act evaluation profiles, dialogue session state machines, team-plan definitions, deterministic alignment evaluation, caller reputation tracking, transmission channel dynamics, designated shot-caller heuristics, decentralized peer coordination, and leadership catalog configurations defined for reference team communication; simultaneous private resolution across multi-turn match scenarios remains open.
 
 - `TeamSpeechAct` defines `m8-team-speech-act-v1` covering 8 canonical communicative intents: `Proposal`, `Clarification`, `Confirmation`, `Disagreement`, `CounterProposal`, `ConditionalCommitment`, `Withdrawal`, and `FailureReport`.
 - `TeamRecipient` defines message addressing for team broadcast (`Broadcast`) and directed role targeting (`Direct(LaneActorRole)`).
@@ -1545,7 +1545,15 @@ distribution estimation, and parametric fitting remain open.
 - `TrustComplianceDecision` and `TrustEvaluationReport` define `m8-team-trust-v1` representing deterministic proposal compliance decisions, clarification requests, and dissent attributions under caller reputation and local observation constraints.
 - `TeamTrustEvaluator` evaluates incoming proposals against caller reputation, message clarity, and local conditions.
 - `TeamTrustCatalog` registers 4 canonical reference caller reputation records with fail-closed lookup and validation.
-- This contract establishes structured semantic communication schemas, addressing, visibility boundaries, dialogue state machines, team plans, role assignments, deterministic alignment evaluation, caller reputation tracking, and transmission channel physics; designated shot-caller heuristics, centralized vs decentralized leadership baselines, and simultaneous private resolution remain open.
+- `ConsensusRule` defines 4 discrete peer proposal arbitration algorithms (`UnanimousConsensus`, `HighestReputationLead`, `UrgencyFirst`, `MajoritySupport`).
+- `FallbackLeadershipMode` defines 3 predictable fallback mechanisms (`FallbackToIndividualPlans`, `FallbackToDefaultHold`, `FallbackToSecondaryCaller`).
+- `LeadershipStructure` defines `m8-leadership-structure-v1` modeling `DesignatedShotCaller`, `Decentralized`, and `SharedLeadership` team structures.
+- `ShotCallerDirective` and `ShotCallerPolicy` define `m8-shot-caller-policy-v1` enabling designated leaders to issue structured team plan proposals based on local observation evaluation.
+- `PeerPlanProposal` and `DecentralizedCoordinator` define `m8-decentralized-coordination-v1` for peer proposal arbitration, deadlock detection, and exact integer basis-point cohesion calculations.
+- `LeadershipEvaluationReport` defines `m8-leadership-evaluation-report-v1` providing comprehensive markdown summaries of team compliance decisions and dissent reasons.
+- `TeamLeadershipEvaluator` provides deterministic leadership structure evaluation against caller reputation matrices and local observations.
+- `LeadershipCatalog` registers 6 canonical baseline leadership configurations with fail-closed lookup and validation.
+- This contract establishes structured semantic communication schemas, addressing, visibility boundaries, dialogue state machines, team plans, role assignments, deterministic alignment evaluation, caller reputation tracking, transmission channel physics, designated shot-calling heuristics, and decentralized consensus arbitration; simultaneous private resolution across multi-turn match scenarios remains open.
 
 ## Future
 

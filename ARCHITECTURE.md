@@ -377,6 +377,33 @@ conditions against actor-visible context, `TeamSpeechActProfile` evaluating prop
 and yielding postures, `TeamDialogueSession` managing bounded multi-turn dialogue state transitions (max 4 rounds,
 max 8 messages), and `TeamDialogueCatalog` providing 7 canonical complete dialogue session transcripts.
 
+`src/agent/team_plan.rs` defines the structured team-plan and individual-plan contracts:
+`TeamStrategicObjective` (6 discrete strategic objectives), `TeamPlanPhase` (4 discrete plan phases),
+`RolePlanAssignment`, `TeamPlanDefinition` (`m8-team-plan-v1`), `IndividualPlanDefinition` (`m8-individual-plan-v1`),
+`TeamPlanAlignmentType` (`m8-team-plan-relationship-v1`), `AlignmentEvaluation`, `TeamPlanAlignmentReport`,
+`TeamPlanEvaluator` managing deterministic alignment evaluation with exact integer basis-point cohesion scoring
+($[0..=10,000]$ bp) and Markdown summary export, and `TeamPlanCatalog` registering 6 canonical reference team plans.
+
+`src/agent/trust.rs` defines multi-agent trust dynamics, caller reputation, and communication channel physics:
+`TeamTrustLevel` (4 discrete tiers derived from basis points), `CallOutcome`, `CallerReputationRecord`
+(`m8-caller-reputation-v1`) with exact basis-point score updates, `TeamTrustMatrix`, `CommunicationClarity`
+(4 clarity tiers with basis-point multipliers), `TransmissionDelay` (0..=2 beat delays), `DeliveryStatus`,
+`ChannelPacket`, `TeamCommunicationChannel` (`m8-communication-channel-v1`) with bounded FIFO queue (capacity 16)
+and turn-tick progression, `TrustComplianceDecision` and `TrustEvaluationReport` (`m8-team-trust-v1`),
+`TeamTrustEvaluator` evaluating proposal compliance against caller reputation and local observations, and
+`TeamTrustCatalog` registering 4 canonical reference caller reputation records.
+
+`src/agent/leadership.rs` defines designated shot-caller and decentralized coordination baseline policies:
+`ConsensusRule` (4 discrete arbitration algorithms: `UnanimousConsensus`, `HighestReputationLead`, `UrgencyFirst`,
+`MajoritySupport`), `FallbackLeadershipMode` (3 fallback policies: `FallbackToIndividualPlans`, `FallbackToDefaultHold`,
+`FallbackToSecondaryCaller`), `LeadershipStructure` (`m8-leadership-structure-v1`) covering `DesignatedShotCaller`,
+`Decentralized`, and `SharedLeadership`, `ShotCallerDirective` and `ShotCallerPolicy` (`m8-shot-caller-policy-v1`)
+for observation-conditioned directive generation, `PeerPlanProposal` and `DecentralizedCoordinator`
+(`m8-decentralized-coordination-v1`) for proposal arbitration and tie deadlock detection, `LeadershipEvaluationReport`
+(`m8-leadership-evaluation-report-v1`), `TeamLeadershipEvaluator` evaluating compliance decisions and dissent reasons
+across teammates against trust matrices and local observations, `LeadershipCatalog` defining 6 canonical baseline
+configurations, and `TeamLeadershipError`.
+
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/
 draft-status/draft-clear/draft-commit-receipt/replay-record/replay-debrief-record/transcript DTO

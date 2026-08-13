@@ -1,81 +1,61 @@
-# Agent Ecology Design: M8 Team Trust, Caller Reputation, Communication Clarity, Delay, Missingness, and Overload
+# Agent Ecology Design: Designated Shot-Caller and Decentralized Coordination Baselines (M8)
 
 ## Goal and Roadmap Milestone
-
-Define the domain contracts, multi-agent trust dynamics, caller reputation scoring, transmission channel physics, and deterministic response policies for Milestone M8: Team Communication and Shot-Calling.
+Formalize leadership structures and coordination baselines for Phase 8 (M8 — Team Communication and Shot-Calling). The objective is to define how designated shot-callers and decentralized peer groups formulate, broadcast, and arbitrate team plans among autonomous teammates without turning leadership into disguised direct control.
 
 ## Behavioral Question and Evidence Boundary
-
-- **Behavioral Question**: How do autonomous simulated teammates modulate their willingness to follow, clarify, or reject strategic proposals based on the proposing caller's reputation, message clarity, transmission delay, channel packet loss, and local observable conditions without sacrificing actor autonomy?
-- **Evidence Boundary**: This design establishes deterministic, inspectable rules for trust-based compliance and channel physics. It does not claim to model human emotional trust, team psychology, or unrestricted communication.
+- **Behavioral Question:** How do autonomous teammates with local observations and bounded trust respond to designated shot-caller directives versus peer proposals in a decentralized setting, and when does decentralized consensus outperform a designated caller?
+- **Evidence Boundary:** Teammates remain autonomous agents that evaluate proposals against local conditions and trust matrices. A shot-caller proposal is a communicative speech act (`Proposal` or directive), never an authoritative simulation command. AI team behavior represents deterministic reference policy distributions, not human psychological ground truth.
 
 ## Agent Families and Baselines
-
-1. **High-Trust Caller**: Proposer with reputation $\ge 7,500$ bp. Teammates default to compliance unless explicit local obstacles are observed.
-2. **Standard-Trust Caller**: Proposer with reputation in $[4,000..7,500)$ bp. Teammates verify prerequisite conditions; ambiguous plans trigger clarification requests.
-3. **Low-Trust Caller**: Proposer with reputation in $[1,500..4,000)$ bp. Teammates require both condition satisfaction and high message clarity; otherwise they dissent.
-4. **Distrusted Caller**: Proposer with reputation $< 1,500$ bp. Teammates reject proposals with `DissentReason::InsufficientTrust`.
+1. **Designated Shot-Caller Baseline (`LeadershipStructure::DesignatedShotCaller`):**
+   - One designated role (`LaneActorRole`) acts as team shot-caller.
+   - The shot-caller evaluates team state from its observation and dispatches proposals.
+   - Teammates evaluate proposals via `TeamTrustEvaluator` and local prerequisite checks.
+   - If a teammate dissents or trust is low, the teammate executes its individual default plan.
+2. **Decentralized Coordination Baseline (`LeadershipStructure::Decentralized`):**
+   - All participating roles broadcast individual or team plan proposals.
+   - `DecentralizedCoordinator` evaluates consensus using a configured `ConsensusRule` (`UnanimousConsensus`, `HighestReputationLead`, `UrgencyFirst`, `MajoritySupport`).
+   - If consensus is reached, actors align to the agreed plan; otherwise, actors fall back to individual plans (`FallbackIndividualPlans`) or detect deadlock (`ConflictedDeadlock`).
+3. **Shared Leadership Baseline (`LeadershipStructure::SharedLeadership`):**
+   - Primary and secondary callers share coordination responsibility with deterministic fallback.
 
 ## Observation, Memory, and Policy Inputs
-
-- **Caller Reputation State**: Integer basis points in $[0..=10,000]$ bp, tracked via `CallerReputationRecord`.
-- **Call Outcome Attribution**:
-  - `SuccessfulExecution`: $+1,000$ bp boost.
-  - `FailedExecution`: $-1,500$ bp penalty.
-  - `AbandonedCall`: $-500$ bp penalty.
-- **Teammate Local Observation**: `LanerObservation` providing actor-authorized visible wave pressure, self health, and threat sightings.
-- **Prerequisite Condition Evaluation**: Evaluated strictly through `TeamConditionEvaluator` using only local observation.
+- Inputs: `LanerObservation`, `CallerReputationRecord` / `TeamTrustMatrix`, `TeamPlanDefinition`, `TeamMessageEnvelope`.
+- Memory: Bounded caller reputation history ($[0..=10,000]$ bp) and channel delivery status.
+- Zero private chain-of-thought preservation (`chain_of_thought_present == false`).
 
 ## Candidate Generation, Evaluation, and Selection
-
-- Teammates evaluate incoming proposal envelopes through `TeamTrustEvaluator::evaluate_compliance`.
-- **Decision Space**:
-  - `TrustComplianceDecision::Comply`: Accept proposal and align individual plan.
-  - `TrustComplianceDecision::Clarify`: Request clarification due to ambiguous conditions or degraded message clarity.
-  - `TrustComplianceDecision::Dissent(TeamDissentReason)`: Reject proposal due to `InsufficientTrust`, `PrerequisiteNotMet`, `ContradictsBelief`, or `LowConfidence`.
+- **Plan Proposal Generation:** Candidate team plans are sourced from `TeamPlanCatalog` or dynamically generated with discrete objectives (`TeamStrategicObjective`).
+- **Prerequisite Validation:** Prerequisites (`TeamMessageCondition`) are evaluated deterministically via `TeamConditionEvaluator`.
+- **Arbitration:** `DecentralizedCoordinator` scores proposals based on vote count, reputation weights, and urgency ranking.
 
 ## Communication, Trust, and Team Coordination
-
-- **Transmission Channel**:
-  - `CommunicationClarity`: `Crisp` (10,000 bp), `Ambiguous` (7,000 bp), `Degraded` (4,000 bp), `Garbled` (1,000 bp).
-  - `TransmissionDelay`: `Immediate` (0 beats), `OneBeat` (1 beat), `TwoBeats` (2 beats).
-  - `DeliveryStatus`: Tracks packet lifecycle (`Delivered`, `Delayed`, `DroppedMissing`, `DroppedOverload`, `SuppressedDistrusted`).
-  - `TeamCommunicationChannel`: FIFO bounded queue (capacity 16 packets).
-  - Turn advancement decrements delay counters deterministically and delivers mature packets.
+- Messages are transmitted via `TeamCommunicationChannel` (capacity 16, deterministic packet delivery/delay).
+- Teammate compliance is governed by `TrustComplianceDecision` derived from `TeamTrustLevel` (`HighTrust`, `StandardTrust`, `LowTrust`, `Distrusted`).
+- Cohesion and compliance rates are calculated in integer basis points ($[0..=10,000]$ bp).
 
 ## Randomness and Reproducibility
-
-- Zero implicit runtime randomness.
-- All reputation updates and compliance decisions are exact integer basis-point arithmetic ($[0..=10,000]$ bp).
-- Packet queueing and delivery follow strict deterministic order.
+- Purely deterministic arbitration with stable tie-breaking rules.
+- No stochastic sampling inside leadership evaluations or consensus resolution.
 
 ## Scenarios, Populations, and Metrics
-
-- **Scenarios**:
-  - `scenario-high-trust-gank-v1`: Allied laner confirms high-reputation caller's gank call.
-  - `scenario-low-trust-dissent-v1`: Allied laner rejects low-reputation caller's risky call.
-  - `scenario-delayed-alert-v1`: Urgent warning delayed by 1 turn, delivered on next beat.
-  - `scenario-channel-overload-v1`: Excess messages in 1 turn trigger overload drop.
-  - `scenario-reputation-lifecycle-v1`: Reputation increases on success and drops on failure.
+- **Metrics:**
+  - Compliance Rate ($[0..=10,000]$ bp)
+  - Team Cohesion Score ($[0..=10,000]$ bp)
+  - Dissent Distribution across `TeamDissentReason` categories
+  - Resolution Category (`ConsensusAchieved`, `SplitDecision`, `FallbackIndividualPlans`, `ConflictedDeadlock`)
 
 ## Calibration or Regression Protocol
-
-- Validate that caller reputation changes monotonically with success/failure outcomes.
-- Validate that compliance rate scales monotonically with caller reputation and message clarity.
-- Validate that delayed packets never become visible before their delay beats expire.
-- Validate that channel capacity limits fail closed on overload.
+- Verified against canonical leadership catalog fixtures (`leader-designated-anchor-v1`, `leader-designated-jungler-v1`, `leader-decentralized-unanimous-v1`, `leader-decentralized-reputation-v1`, `leader-decentralized-urgency-v1`).
 
 ## Expected Effects and Failure Signals
-
-- **Expected**: Higher reputation callers achieve higher plan compliance; lower clarity increases clarification requests; overload drops excess packets.
-- **Failure Signals**: Low-trust proposals accepted without checks; delayed messages delivered prematurely; overflow beyond capacity without error; chain-of-thought leaked.
+- High-trust designated caller yields $\ge 8,000$ bp compliance on safe conditions.
+- Distrusted or dangerous proposals trigger explicit dissent (`ThreatDetected`, `LowHealth`, `ManaDeficit`).
+- Decentralized conflicting calls with equal support resolve to `ConflictedDeadlock` or fallback to individual plans.
 
 ## Verification Contract
-
-- Every struct implements `validate()`.
-- Strict enforcement of `chain_of_thought_present == false`.
-- All tests pass in `src/agent/tests.rs`.
+- 100% unit test coverage of leadership structures, shot-caller policies, decentralized consensus arbitration, fallback modes, catalog lookup, and Markdown reporting.
 
 ## Open Questions
-
-- Integration with centralized shot-caller arbitration vs decentralized voting mechanisms in subsequent M8 milestones.
+- Simultaneous private decision resolution and multi-turn negotiation rounds across complete match scenarios (deferred to later M8/M9 slices).

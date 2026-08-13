@@ -1595,9 +1595,7 @@ constraints; influence never becomes disguised direct control.
 - [x] Implement proposal, clarification, confirmation, disagreement,
   counterproposal, conditional commitment, withdrawal, and failure reporting.
 - [x] Define team-plan and individual-plan relationships.
-- [x] Implement trust, caller reputation, communication clarity, delay,
-  missingness, and overload only as demonstrated needs.
-- [ ] Add designated shot-caller and decentralized baselines.
+- [x] Add designated shot-caller and decentralized baselines.
 - [ ] Preserve private submissions and simultaneous resolution.
 - [ ] Attribute coordination success and failure separately from execution.
 - [ ] Add high-trust, low-trust, conflicting-call, and missing-message scenarios.
@@ -1638,13 +1636,21 @@ constraints; influence never becomes disguised direct control.
   `DeliveryStatus` (5 delivery states), `ChannelPacket`, `TeamCommunicationChannel` (capacity 16 queue with
   turn-tick progression and overload/noise dropping), `TrustComplianceDecision`, `TrustEvaluationReport`,
   and `TeamTrustEvaluator` managing deterministic proposal compliance and dissent attribution under trust constraints.
+- [x] Provide `TeamTrustCatalog` with 4 registered canonical caller reputation profiles with fail-closed lookup and validation.
+- [x] Define `m8-leadership-structure-v1`, `m8-shot-caller-policy-v1`, `m8-decentralized-coordination-v1`,
+  `m8-leadership-evaluation-report-v1`, `ConsensusRule` (4 discrete algorithms: `UnanimousConsensus`,
+  `HighestReputationLead`, `UrgencyFirst`, `MajoritySupport`), `FallbackLeadershipMode` (3 fallback policies),
+  `LeadershipStructure` (`DesignatedShotCaller`, `Decentralized`, `SharedLeadership`), `ShotCallerDirective`,
+  `ShotCallerPolicy`, `PeerPlanProposal`, `DecentralizedCoordinator`, `LeadershipEvaluationReport`,
+  `TeamLeadershipEvaluator`, and `LeadershipCatalog` (6 registered baseline configurations) managing
+  deterministic leadership evaluation, peer consensus arbitration, tie deadlock detection, and exact integer
+  basis-point compliance/cohesion reporting.
 - [x] Provide `TeamTrustCatalog` with 4 registered canonical reference caller profiles (`high-trust-caller`,
   `standard-trust-caller`, `low-trust-caller`, `distrusted-caller`) with fail-closed lookup and validation.
 
 This establishes structured semantic communication schemas, addressing, visibility rules, dialogue state machines,
-team plans, alignment evaluation, caller reputation tracking, and transmission channel physics;
-designated shot-caller heuristics, centralized vs decentralized leadership baselines, and simultaneous
-private resolution remain open.
+team plans, alignment evaluation, caller reputation tracking, transmission channel physics, designated shot-caller heuristics,
+and decentralized consensus arbitration; simultaneous private resolution across multi-turn match scenarios remains open.
 
 ### Deliverables
 
