@@ -41,7 +41,8 @@ The durable project-specific task classes are:
 2. actor-visible information and decision-contract design;
 3. bounded-rational agent and communication design;
 4. AI-first playtest, regression, and calibration design;
-5. cross-boundary domain QA for authority, replay, behavior, and debriefs.
+5. interactive showcase playtesting, visual inspection, and gameplay feel evaluation;
+6. cross-boundary domain QA for authority, replay, behavior, and debriefs.
 
 Generic Rust implementation, functional programming, UX, accessibility,
 security, code review, comments, spec maintenance, planning, releases, and git
@@ -103,6 +104,7 @@ is optional runtime behavior, not a repository dependency.
 | Orchestrator and synthesis owner | Frame the milestone slice, route specialists, resolve conflicts, and reconcile final project state | `.agents/skills/fog-intent-orchestrator/SKILL.md` | `_workspace/00_input/request-summary.md`, `_workspace/02_design-synthesis.md`, `_workspace/final/handoff.md` |
 | Simulation designer | Define authoritative mechanics, actor information, scenarios, transitions, replay, and debrief contracts | `.agents/skills/fog-intent-simulation-designer/SKILL.md` | `_workspace/01_simulation-design.md` |
 | Agent-ecology designer | Define bounded policies, communication, populations, behavioral metrics, experiments, and calibration | `.agents/skills/fog-intent-agent-ecology-designer/SKILL.md` | `_workspace/01_agent-ecology-design.md` |
+| Showcase test player | Play runnable showcases interactively, visually inspect feature correctness, and evaluate gameplay feel | `.agents/skills/foi-test-player/SKILL.md` | `_workspace/04_playtest-report.md` |
 | Domain QA reviewer | Cross-check scope, authority, information, reproducibility, behavior, gameplay, debrief, and evidence boundaries | `.agents/skills/fog-intent-domain-qa/SKILL.md` | `_workspace/03_domain-qa.md` |
 
 An implementer or document producer is not a durable local role. The
@@ -115,6 +117,7 @@ ownership.
 | --- | --- |
 | State, rules, scenario, decision window, command, event, effect, observation, replay, branch, or debrief | Simulation designer, then domain QA for substantial output |
 | Agent profile, bounded rationality, communication policy, behavioral metric, population test, LLM playtest, or calibration | Agent-ecology designer, then domain QA for substantial output |
+| Interactive showcase playtesting, visual feature inspection, or gameplay feel evaluation | Showcase test player (`foi-test-player`) |
 | Mechanics and agent behavior change together | Both designers, orchestrator synthesis, production, then domain QA |
 | Generic Rust refactor with no domain-contract change | No local specialist; use global implementation and review skills |
 | Small docs correction with no project-state change | Direct work; no `_workspace` artifacts |

@@ -27,9 +27,9 @@ Keep this file short and repo-wide. Detailed project workflows live in
 
 - Before substantial work, read `SPEC.md`, the active milestone in `ROADMAP.md`,
   and `docs/harness/fog-of-intent/team-spec.md` when domain judgment is involved.
-- Use the repo-local `fog-intent-*` skills only for project-specific simulation,
-  agent-ecology, playtest, or domain-QA work. Use global skills for generic Rust,
-  testing, UX, documentation, review, release, and git workflows.
+- Use the repo-local `fog-intent-*` and `foi-test-player` skills only for project-specific
+  simulation, agent-ecology, playtest, or domain-QA work. Use global skills for
+  generic Rust, testing, UX, documentation, review, release, and git workflows.
 - Read [LESSONS.md](LESSONS.md) before coding and add only verified, reusable
   lessons after resolving a recurring project trap.
 - Keep the authoritative transition synchronous and deterministic. Resolve

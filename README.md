@@ -249,7 +249,7 @@ complete playable reference client.
 2. Select the smallest complete slice and state its observable verification and
    non-goals.
 3. Read `AGENTS.md`; for substantial domain work, use the `fog-intent-*`
-   repo-local skills and the harness team spec.
+   and `foi-test-player` repo-local skills and the harness team spec.
 4. Keep I/O, async work, persistence, rendering, model providers, and randomness
    outside the deterministic transition boundary.
 5. Add focused tests or inspection evidence and reconcile affected project-state

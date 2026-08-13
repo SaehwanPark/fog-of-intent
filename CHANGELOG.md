@@ -23,6 +23,8 @@ not increment the package version.
   the current placeholder from planned capabilities.
 - Repo-wide `AGENTS.md` guidance and a portable Fog of Intent agent harness for
   simulation design, agent-ecology design, synthesis, and domain QA.
+- Repo-local `foi-test-player` agent skill for interactive showcase playtesting,
+  early-stage feature/functional verification, and late-stage gameplay feel evaluation.
 - Deterministic `_workspace/` handoff conventions for substantial work.
 
 ### Changed
