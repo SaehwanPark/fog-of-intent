@@ -1510,7 +1510,7 @@ distribution estimation, and parametric fitting remain open.
 
 ## Team Communication and Shot-Calling (Phase 8)
 
-**Status:** Versioned typed speech acts, addressing, urgency, confidence, conditions, visibility rules, and message envelope schemas defined for reference team communication; multi-agent trust dynamics, caller reputation, and team-plan negotiation remain open.
+**Status:** Versioned typed speech acts, addressing, urgency, confidence, conditions, visibility rules, message envelope schemas, speech act evaluation profiles, and dialogue session state machines defined for reference team communication; multi-agent trust dynamics, caller reputation, and team-plan negotiation remain open.
 
 - `TeamSpeechAct` defines `m8-team-speech-act-v1` covering 8 canonical communicative intents: `Proposal`, `Clarification`, `Confirmation`, `Disagreement`, `CounterProposal`, `ConditionalCommitment`, `Withdrawal`, and `FailureReport`.
 - `TeamRecipient` defines message addressing for team broadcast (`Broadcast`) and directed role targeting (`Direct(LaneActorRole)`).
@@ -1520,7 +1520,13 @@ distribution estimation, and parametric fitting remain open.
 - `TeamMessageVisibility` defines 3 visibility boundary modes: `TeamOnly`, `DirectOnly`, and `Public` with actor/team visibility predicate rules preventing unauthorized information leakage.
 - `TeamMessageEnvelope` defines `m8-team-message-envelope-v1` representing structured communication containers with actor provenance, proposed intents, metadata validation, Markdown formatting, and strict fail-closed rejection if private chain-of-thought is present (`chain_of_thought_present == true`).
 - `TeamCommunicationCatalog` defines `m8-team-communication-v1` providing registered canonical example envelopes across all 8 speech acts with fail-closed lookup and validation.
-- This contract establishes structured semantic communication schemas, addressing, and visibility boundaries; multi-agent trust dynamics, caller reputation, designated shot-caller heuristics, and team-plan negotiation remain open.
+- `TeamDialogueStatus` defines `m8-team-dialogue-v1` tracking 8 discrete dialogue states (`Idle`, `Proposed`, `Clarifying`, `Negotiating`, `Agreed`, `Diverged`, `Aborted`, `Failed`).
+- `TeamDissentReason` defines 6 discrete causal dissent reasons (`LowHealth`, `ThreatDetected`, `ManaDeficit`, `CooldownActive`, `AlternativeObjectivePriority`, `PostureIncompatible`).
+- `TeamConditionEvaluator` evaluates tactical prerequisite conditions from actor-visible context.
+- `TeamSpeechActProfile` provides deterministic, posture-consistent proposal evaluation (`Cautious`, `RiskTaking`, `Yielding`) returning `TeamEvaluationOutcome` (`Accept`, `Dissent`, `Counter`, `Conditional`, `Clarify`, `Withdraw`, `Failure`).
+- `TeamDialogueSession` manages bounded multi-turn dialogue state transitions, message history (max 8), negotiation rounds (max 4), and Markdown export.
+- `TeamDialogueCatalog` registers 7 canonical complete dialogue transcripts covering all 8 speech acts with lookup and validation.
+- This contract establishes structured semantic communication schemas, addressing, visibility boundaries, and dialogue state machines; multi-agent trust dynamics, caller reputation, designated shot-caller heuristics, and team-plan negotiation remain open.
 
 ## Future
 

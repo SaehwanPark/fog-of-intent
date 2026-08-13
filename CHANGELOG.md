@@ -100,6 +100,32 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.184 — 2026-08-12
+
+### Added
+
+- Added `m8-team-dialogue-v1`, `TeamDialogueStatus`, `TeamDissentReason`,
+  `TeamConditionEvaluator`, `TeamSpeechActProfile`, `TeamEvaluationOutcome`,
+  `TeamDialogueSession`, and `TeamDialogueCatalog` in `src/agent/communication.rs`,
+  establishing speech act evaluation and multi-turn dialogue session state machines:
+  - `TeamDialogueStatus` tracking 8 discrete dialogue states (`Idle`, `Proposed`, `Clarifying`,
+    `Negotiating`, `Agreed`, `Diverged`, `Aborted`, `Failed`).
+  - `TeamDissentReason` covering 6 discrete causal dissent reasons (`LowHealth`, `ThreatDetected`,
+    `ManaDeficit`, `CooldownActive`, `AlternativeObjectivePriority`, `PostureIncompatible`).
+  - `TeamConditionEvaluator` deterministically evaluating tactical prerequisite conditions
+    (`Unconditional`, `HealthAboveThreshold`, `ThreatAbsent`, `AlliedPresence`, `ResourceSufficient`)
+    against actor-visible observation state.
+  - `TeamSpeechActProfile` evaluating incoming proposals across `Cautious`, `RiskTaking`, and
+    `Yielding` strategic postures with posture-consistent evaluation outcomes.
+  - `TeamDialogueSession` managing bounded multi-turn dialogue transitions (max 4 rounds,
+    max 8 messages), participant validation, and Markdown transcript formatting.
+  - `TeamDialogueCatalog` registering 7 canonical complete dialogue transcripts covering all 8
+    speech acts with fail-closed lookup and validation.
+
+### Known limits
+
+- This contract establishes structured speech act evaluations, prerequisite condition checks, and dialogue state machines; multi-agent trust dynamics, caller reputation, designated shot-caller heuristics, and team-plan negotiation remain open.
+
 ## 0.1.183 — 2026-08-12
 
 ### Added

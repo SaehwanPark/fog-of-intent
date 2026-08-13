@@ -1,91 +1,88 @@
-# Agent Ecology Design: M8 Team Communication Speech Acts & Envelope Schema
+# Agent Ecology Design: M8 Team Communication Speech Act Implementation & Dialogue Evaluation
 
-## Design Objective
+## Goal and Roadmap Milestone
 
-Define typed, bounded, and interpretable communication primitives for team interaction, proposal exchange, and shot-calling. These primitives allow autonomous agents and human players to negotiate intent, express confidence and conditions, and establish transparent speech acts without leaking private chain-of-thought or authoritative simulation state.
+- **Goal:** Implement deterministic evaluation, response generation, prerequisite condition checking, and state transitions for the 8 canonical team communication speech acts (`Proposal`, `Clarification`, `Confirmation`, `Disagreement`, `CounterProposal`, `ConditionalCommitment`, `Withdrawal`, `FailureReport`) within bounded dialogue sessions.
+- **Roadmap Milestone:** M8 (Phase 8 — Team Communication and Shot-Calling).
+- **Scope item:** Implement proposal, clarification, confirmation, disagreement, counterproposal, conditional commitment, withdrawal, and failure reporting.
 
-## Core Schema Contracts
+## Behavioral Question and Evidence Boundary
 
-### 1. Version Identifiers
+- **Behavioral Question:** How do autonomous agents and human players evaluate, confirm, dissent, counter-propose, conditionally commit, withdraw, and report failures under incomplete information and divergent posture profiles without central control or hidden state leakage?
+- **Evidence Boundary:** This design establishes deterministic speech act evaluation and discrete dialogue state machines across 8 speech acts. It does not establish multi-agent dynamic trust updates, caller reputation scoring, or live natural-language social simulation.
 
-```rust
-pub const TEAM_COMMUNICATION_SCHEMA: &str = "m8-team-communication-v1";
-pub const TEAM_SPEECH_ACT_SCHEMA: &str = "m8-team-speech-act-v1";
-pub const TEAM_MESSAGE_ENVELOPE_SCHEMA: &str = "m8-team-message-envelope-v1";
-```
+## Agent Families and Baselines
 
-### 2. Speech Acts (`TeamSpeechAct`)
+- **Cautious Profile (`Anchor` / `cautious_v1`):** Prioritizes wave stabilization and defensive withdrawal under threat; dissents or counters aggressive contest proposals when health is low or threat is detected; confirms stabilization proposals.
+- **Risk-Taking Profile (`Duelist` / `risk_taking_v1`):** Prioritizes wave contest and kill pressure; confirms contest proposals; counter-proposes contest over passive stabilize proposals when resources allow.
+- **Yielding Profile (`Pacer` / `yielding_v1`):** Defers readily to allied proposals unless extreme danger is detected; conditionally commits based on allied presence.
 
-Eight discrete communicative speech acts:
-- `Proposal` (`"proposal"`): Proposes an objective, tactical maneuver, or intent (e.g. contest wave, gank).
-- `Clarification` (`"clarification"`): Queries or clarifies target priority, timing, or resource readiness.
-- `Confirmation` (`"confirmation"`): Acknowledges and confirms agreement with an active proposal.
-- `Disagreement` (`"disagreement"`): Explicitly dissents or communicates an inability to support a call.
-- `CounterProposal` (`"counter-proposal"`): Offers an alternative intent or contingency.
-- `ConditionalCommitment` (`"conditional-commitment"`): Pledges support contingent upon a prerequisite condition.
-- `Withdrawal` (`"withdrawal"`): Cancels or rescinds a prior call or commitment.
-- `FailureReport` (`"failure-report"`): Reports an aborted attempt, execution breakdown, or loss of advantage.
+## Observation, Memory, and Policy Inputs
 
-### 3. Addressing and Recipients (`TeamRecipient`)
+- Inputs to speech act evaluation are strictly actor-visible:
+  - `LanerObservation` / `AlliedLaneObservation` (laner health, mana, gold, experience, cooldown, wave pressure, position, available intents, last-known threat reports).
+  - Incoming `TeamMessageEnvelope` (sender, recipient, speech act, proposed intent, urgency, confidence, condition, visibility, turn, summary).
+- Dialogue session memory is bounded:
+  - Max 8 messages per dialogue session.
+  - Max 4 negotiation rounds before forced resolution (`Agreed`, `Diverged`, or `Aborted`).
 
-- `Broadcast` (`"broadcast"`): Message addressed to all allied team members.
-- `Direct(LaneActorRole)` (`"direct:<role>"`): Directed to a specific actor role (e.g. `HumanLaner`, `AlliedAutonomous`).
+## Candidate Generation, Evaluation, and Selection
 
-### 4. Urgency Levels (`TeamMessageUrgency`)
+- Given an incoming speech act:
+  1. `Proposal(intent)`:
+     - Check health threshold, threat presence, and posture alignment.
+     - Select response: `Confirmation` (if aligned and safe), `Disagreement` with explicit `TeamDissentReason` (if unsafe), `CounterProposal` with alternative intent (if viable alternative exists), or `ConditionalCommitment` (if contingent on condition).
+  2. `Clarification`:
+     - Provide clarification response updating readiness, threat assessment, or intended fallback.
+  3. `CounterProposal(intent)`:
+     - Evaluate counter-intent against actor profile; select `Confirmation` or `Disagreement`.
+  4. `ConditionalCommitment(intent, condition)`:
+     - Evaluate prerequisite condition against current observation (`TeamConditionEvaluation`). If satisfied -> `Confirmation`; if unsatisfied/broken -> `Withdrawal` or `Disagreement`.
+  5. `Withdrawal`:
+     - Transition dialogue state to `Aborted`.
+  6. `FailureReport`:
+     - Transition dialogue state to `Failed`.
 
-- `Low` (`"low"`): Informational or long-term positioning.
-- `Standard` (`"standard"`): Default operational pace.
-- `Critical` (`"critical"`): Immediate emergency (e.g. imminent gank, low-health collapse).
+## Communication, Trust, and Team Coordination
 
-### 5. Confidence Ratings (`TeamConfidenceLevel`)
+- Visibility boundaries are strictly enforced: `TeamOnly`, `DirectOnly`, `Public`.
+- Fail-closed rejection if `chain_of_thought_present == true` on any message envelope.
+- Self-addressing is rejected (`SelfAddressingForbidden`).
 
-- `Tentative` (`"tentative"`): Exploratory or uncertain recommendation.
-- `Confident` (`"confident"`): Solid tactical basis.
-- `Definite` (`"definite"`): High-certainty command or uncompromised commitment.
+## Randomness and Reproducibility
 
-### 6. Tactical Conditions (`TeamMessageCondition`)
+- Evaluation is pure, deterministic, and integer-based.
+- No unseeded randomness or floating-point calculations.
 
-- `Unconditional` (`"unconditional"`): Execute immediately regardless of state.
-- `HealthAboveThreshold` (`"health-above-threshold"`): Requires sufficient health pool.
-- `ThreatAbsent` (`"threat-absent"`): Requires jungle/gank threat to be absent or clear.
-- `AlliedPresence` (`"allied-presence"`): Requires ally in proximity.
-- `ResourceSufficient` (`"resource-sufficient"`): Requires mana/cooldowns ready.
+## Scenarios, Populations, and Metrics
 
-### 7. Information Visibility & Redaction (`TeamMessageVisibility`)
+- Canonical dialogue scenarios:
+  1. `Dialogue-Agreed-Contest`: Proposal -> Confirmation.
+  2. `Dialogue-Dissent-Threat`: Proposal -> Disagreement (due to threat).
+  3. `Dialogue-Counter-Negotiation`: Proposal(Contest) -> CounterProposal(Stabilize) -> Confirmation(Stabilize).
+  4. `Dialogue-Conditional-Commitment`: Proposal(Contest) -> ConditionalCommitment(ThreatAbsent) -> Verified Condition -> Confirmation.
+  5. `Dialogue-Withdrawal-On-Threat`: ConditionalCommitment -> Threat Emerges -> Withdrawal.
+  6. `Dialogue-Failure-Recovery`: Execution Attempt -> FailureReport -> Session Reset.
 
-- `TeamOnly` (`"team-only"`): Visible to all actors on the same team.
-- `DirectOnly` (`"direct-only"`): Visible only to sender and designated recipient.
-- `Public` (`"public"`): Visible across teams (e.g. general broadcast).
+## Calibration or Regression Protocol
 
-Visibility rules are enforced via:
-`is_visible_to(viewer: LaneActorRole, is_same_team: bool) -> bool`
+- All registered canonical dialogues are validated through `TeamDialogueCatalog`.
+- Invariant tests verify:
+  - Valid transitions and rejection of illegal state jumps.
+  - Dialogue round and history bounds (fail-closed overflow protection).
+  - Non-empty summary strings and correct sender/recipient roles.
 
-### 8. Message Envelope (`TeamMessageEnvelope`)
+## Expected Effects and Failure Signals
 
-Structured message container:
-```rust
-pub struct TeamMessageEnvelope {
-  schema: &'static str,
-  message_id: &'static str,
-  sender: LaneActorRole,
-  recipient: TeamRecipient,
-  speech_act: TeamSpeechAct,
-  proposed_intent: Option<LaneIntent>,
-  urgency: TeamMessageUrgency,
-  confidence: TeamConfidenceLevel,
-  condition: TeamMessageCondition,
-  visibility: TeamMessageVisibility,
-  turn: u32,
-  content_summary: &'static str,
-  chain_of_thought_present: bool,
-}
-```
+- Cautious agents must reject aggressive proposals when threat is visible (`LastKnown` threat or low health).
+- Risk-taking agents must prefer `Contest` over `Stabilize`.
+- Dialogue sessions must terminate within 4 rounds without deadlocks.
 
-### 9. Validation & Catalog (`TeamCommunicationCatalog`)
+## Verification Contract
 
-- Strict validation ensuring:
-  - Valid non-empty message ID.
-  - Correct schema tag.
-  - `chain_of_thought_present == false` (fail closed with `TeamCommunicationError::ChainOfThoughtForbidden`).
-  - Proposed intent aligns with speech acts (e.g. `Proposal` / `CounterProposal` / `ConditionalCommitment` typically provide intent).
-- Canonical catalog containing registered standard examples for all 8 speech acts.
+- Pinned toolchain formatting, clippy, unit tests, repository checks all pass.
+- Zero private chain-of-thought is structurally enforced.
+
+## Open Questions
+
+- Multi-agent dynamic trust decay and designated shot-caller arbitration will be integrated in subsequent M8 slices.
