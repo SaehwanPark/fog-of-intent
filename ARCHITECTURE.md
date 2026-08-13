@@ -559,6 +559,14 @@ bounded delayed resolution, state hashing, and replay identity. `LaneOutcome`
 and objective review remain separate read models, and the complete two-window
 replay/debrief path is inspected and verified without exposing hidden state.
 
+Team communication contracts in M8 (`m8-team-communication-v1`, `m8-team-dialogue-v1`,
+`m8-team-plan-v1`, `m8-team-plan-relationship-v1`) define structured speech acts,
+visibility boundaries, multi-turn dialogue state machines, structured team plans,
+and deterministic individual/team alignment evaluation. All message envelopes,
+dialogues, and plans strictly enforce zero private chain-of-thought, and alignment
+evaluation operates purely over actor-safe projections with exact integer basis-point
+cohesion scoring ($[0..=10,000]$ bp).
+
 ## Consequential Type Boundaries
 
 Future types and public contracts must preserve these distinctions:

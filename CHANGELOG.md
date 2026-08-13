@@ -100,6 +100,30 @@ not increment the package version.
 - Run IDs remain adapter syntax only; generation, persistence, uniqueness,
   resume behavior, and human discoverability remain deferred.
 
+## 0.1.185 — 2026-08-12
+
+### Added
+
+- Added `m8-team-plan-v1`, `m8-individual-plan-v1`, `m8-team-plan-relationship-v1`,
+  `TeamStrategicObjective`, `TeamPlanPhase`, `RolePlanAssignment`, `TeamPlanDefinition`,
+  `IndividualPlanDefinition`, `TeamPlanAlignmentType`, `AlignmentEvaluation`,
+  `TeamPlanEvaluator`, `TeamPlanAlignmentReport`, `TeamPlanCatalog`, and `TeamPlanError`
+  in `src/agent/team_plan.rs`, establishing team-plan definitions and deterministic alignment evaluation:
+  - `TeamStrategicObjective` covering 6 discrete tactical objectives (`GankSetup`, `LaneSiege`,
+    `DefensiveHold`, `ResourceFarming`, `ObjectiveContest`, `TacticalReset`).
+  - `TeamPlanPhase` covering 4 discrete plan phases (`Preparation`, `Execution`, `Disengagement`, `Contingency`).
+  - `RolePlanAssignment` binding actor roles to assigned intents, target focuses, commitments, and fallback behaviors.
+  - `TeamPlanDefinition` and `IndividualPlanDefinition` with strict zero private chain-of-thought enforcement (`chain_of_thought_present == false`).
+  - `TeamPlanAlignmentType` tracking 5 discrete alignment relationships (`Aligned`, `Divergent`,
+    `ConditionalCompliance`, `Independent`, `Conflicted`).
+  - `AlignmentEvaluation` assessing intent matches, target focus compatibility, prerequisite condition satisfaction, and causal dissent reasons (`TeamDissentReason`).
+  - `TeamPlanEvaluator` deterministically evaluating individual and whole-team alignment with exact integer basis-point cohesion scoring ($[0..=10,000]$ bp) and formatted Markdown reporting.
+  - `TeamPlanCatalog` providing discovery and validation helpers for 6 canonical reference team plans.
+
+### Known limits
+
+- This contract establishes structured team plans, role assignments, individual plan bindings, and deterministic alignment evaluation; multi-agent trust dynamics, caller reputation, designated shot-caller heuristics, and leadership arbitration remain open.
+
 ## 0.1.184 — 2026-08-12
 
 ### Added

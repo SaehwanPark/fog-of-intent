@@ -20,6 +20,7 @@ pub mod reference_output;
 pub mod replay;
 pub mod semantic;
 pub mod tally;
+pub mod team_plan;
 pub mod uncertainty;
 
 #[cfg(test)]
@@ -42,4 +43,5 @@ pub use reference_output::*;
 pub use replay::*;
 pub use semantic::*;
 pub use tally::*;
+pub use team_plan::*;
 pub use uncertainty::*;

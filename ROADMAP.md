@@ -1594,7 +1594,7 @@ constraints; influence never becomes disguised direct control.
   message visibility.
 - [x] Implement proposal, clarification, confirmation, disagreement,
   counterproposal, conditional commitment, withdrawal, and failure reporting.
-- [ ] Define team-plan and individual-plan relationships.
+- [x] Define team-plan and individual-plan relationships.
 - [ ] Implement trust, caller reputation, communication clarity, delay,
   missingness, and overload only as demonstrated needs.
 - [ ] Add designated shot-caller and decentralized baselines.
@@ -1623,10 +1623,19 @@ constraints; influence never becomes disguised direct control.
   max 4 negotiation rounds, max 8 messages capacity, and zero chain-of-thought preservation.
 - [x] Provide `TeamDialogueCatalog` with 7 registered canonical dialogue transcripts covering all 8
   speech acts (`Agreed`, `Dissent`, `CounterNegotiation`, `Clarification`, `ConditionalCommitment`, `Withdrawal`, `FailureRecovery`).
+- [x] Define `m8-team-plan-v1`, `m8-individual-plan-v1`, `m8-team-plan-relationship-v1`,
+  `TeamStrategicObjective` (6 discrete objectives), `TeamPlanPhase` (4 discrete phases),
+  `RolePlanAssignment`, `TeamPlanDefinition`, `IndividualPlanDefinition`, `TeamPlanAlignmentType`
+  (5 discrete relationships), `AlignmentEvaluation`, and `TeamPlanEvaluator` managing deterministic
+  alignment evaluations with exact integer basis-point cohesion scoring ($[0..=10,000]$ bp) and
+  formatted Markdown summary reporting.
+- [x] Provide `TeamPlanCatalog` with 6 registered canonical team plans (`plan-gank-setup-v1`,
+  `plan-lane-siege-v1`, `plan-defensive-hold-v1`, `plan-resource-farming-v1`, `plan-objective-contest-v1`,
+  `plan-tactical-reset-v1`) with fail-closed lookup and validation.
 
-This establishes structured semantic communication schemas, addressing, visibility rules, and dialogue state machines;
-multi-agent trust dynamics, caller reputation, designated shot-caller heuristics, and team-plan
-negotiation remain open.
+This establishes structured semantic communication schemas, addressing, visibility rules, dialogue state machines, team plans, and alignment evaluation;
+multi-agent trust dynamics, caller reputation, designated shot-caller heuristics, and leadership
+arbitration remain open.
 
 ### Deliverables
 
