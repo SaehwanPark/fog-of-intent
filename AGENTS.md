@@ -11,8 +11,10 @@ Keep this file short and repo-wide. Detailed project workflows live in
 - Canonical project state lives in `README.md`, `ROADMAP.md`, `SPEC.md`,
   `ARCHITECTURE.md`, and `CHANGELOG.md`. The longer proposal and stack analysis
   under `docs/` are design sources, not implementation evidence.
-- The repository currently contains a single placeholder binary. Do not describe
-  planned simulation, CLI, MCP, replay, research, or GUI capabilities as shipped.
+- The repository currently contains a bounded two-window fixture command loop
+  (`--scenario m3-two-window-fixture-v1`). Do not describe a complete match,
+  MCP server, persistence service, GUI, or other unshipped capabilities as
+  playable from that runner.
 
 ## Why
 

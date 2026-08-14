@@ -1,7 +1,8 @@
 # Harness Workspace
 
 This directory is the inspectable handoff surface for substantial Fog of Intent
-work. The reusable contracts live in
+work. Player-facing Quickstart and the current runner walkthrough live in
+`README.md` and `HOW_TO_PLAY.md`. The reusable contracts live in
 `docs/harness/fog-of-intent/team-spec.md`; task-specific files are created only
 when they add resumption, review, audit, or cross-agent value.
 
