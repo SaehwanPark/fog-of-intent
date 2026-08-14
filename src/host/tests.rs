@@ -3,7 +3,7 @@
 use super::scenario_host::{CliScenarioHost, fixture_inputs, forced_out_inputs};
 use super::types::{
   ActorIllegalCommandPopulationError, ActorIllegalCommandPopulationReport, CLI_HOST_SCHEMA,
-  CliHostError, CliHostOutput, MAX_ACTOR_ILLEGAL_COMMAND_POPULATION, SavedRun,
+  CliHostError, CliHostOutput, CliSessionWindow, MAX_ACTOR_ILLEGAL_COMMAND_POPULATION, SavedRun,
 };
 use crate::cli::CliRunId;
 use crate::host_artifact::CliHostArtifact;
@@ -101,6 +101,35 @@ fn fixture_transcript_completes_save_load_replay_and_debrief() {
     matches!(output, CliHostOutput::Debrief(report) if report.windows().len() == 2)
   }));
   assert!(matches!(outputs.last(), Some(CliHostOutput::Quit)));
+}
+
+#[test]
+fn session_view_is_actor_safe_and_tracks_draft_commit() {
+  let mut host = CliScenarioHost::fixture();
+  let empty = host.session_view();
+  assert_eq!(empty.window(), CliSessionWindow::First);
+  assert!(empty.draft_fields().is_empty());
+  assert_eq!(empty.committed_intent(), None);
+  assert_eq!(empty.suggested_next(), ["observe", "plan", "commit"]);
+  assert!(!format!("{empty:?}").contains("hash"));
+
+  host.apply_line("plan contest").expect("plan");
+  let staged = host.session_view();
+  assert_eq!(staged.draft_fields(), ["plan"]);
+  assert_eq!(staged.suggested_next(), ["commit", "undo", "observe"]);
+
+  host.apply_line("commit").expect("commit");
+  let committed = host.session_view();
+  assert_eq!(committed.committed_intent(), Some(LaneIntent::Contest));
+  assert!(committed.draft_fields().is_empty());
+  assert_eq!(committed.suggested_next(), ["advance", "observe", "quit"]);
+  assert!(!format!("{committed:?}").contains("hash"));
+
+  let unknown = host.apply_line("help wat").expect_err("unknown topic");
+  assert!(matches!(
+    unknown,
+    CliHostError::UnknownHelpTopic { topic } if topic == "wat"
+  ));
 }
 
 #[test]

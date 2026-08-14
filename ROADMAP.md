@@ -3,7 +3,7 @@
 **Document role:** Canonical milestone order, scope, and promotion gates
 **Status:** Active
 **Current milestone:** M2 — One-Lane Vertical Slice
-**Last reviewed:** 2026-08-08
+**Last reviewed:** 2026-08-13
 
 This document is the authoritative execution roadmap. The project proposal
 explains the broader vision and preserves the original roadmap concept; when its
@@ -31,8 +31,8 @@ sequencing or checklist differs from this file, this file governs current work.
 | --- | --- | --- |
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
-| Executable | `src/main.rs`, `src/command_loop.rs` | Standalone package version reporting plus a documented line-oriented bounded fixture transcript with one explicit versioned `--scenario m3-two-window-fixture-v1` ID and optional `--run-dir` artifact storage |
-| Package | `Cargo.toml` | Version `0.1.134`, no dependencies |
+| Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs` | Standalone package version reporting plus a bounded fixture transcript with `--scenario m3-two-window-fixture-v1`, optional `--run-dir`, TTY prompt/completion, and `--color` |
+| Package | `Cargo.toml` | Version `0.1.192`, one deferred edge crate (`reedline`) |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -988,7 +988,11 @@ the complete M3 reference client or human accessibility evidence.
 - [x] Sanitize control characters in echoed user context and keep domain
   failures redacted to the bounded host error categories.
 - [x] Check representative output and command-loop error lines for stable
-  lowercase labels, newline structure, and absence of ANSI/control characters.
+  lowercase labels, newline structure, and absence of ANSI/control characters
+  on the labeled pipe path.
+- [x] Add a TTY presentation edge with `> ` prompt, Tab completion, optional
+  ANSI, `help`/`?` topics, and actor-safe session chrome; piped labeled text
+  remains the script contract.
 - [ ] Validate complete interactive behavior, keyboard/focus behavior, and
   screen-reader semantics with human-oriented inspection.
 

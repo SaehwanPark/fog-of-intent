@@ -1,9 +1,9 @@
-use std::io;
+use std::io::{self, IsTerminal, Write};
 use std::process::ExitCode;
 
 use fog_of_intent::command_loop::{
   CLI_APPLICATION_HELP, CLI_APPLICATION_VERSION, CliApplicationCommand, CliApplicationScenario,
-  CliCommandLoop, parse_application_args,
+  CliColorMode, CliCommandLoop, parse_application_args, resolve_color,
 };
 use fog_of_intent::run_store::CliRunStore;
 
@@ -37,19 +37,31 @@ fn main() -> ExitCode {
     };
   }
 
-  let mut command_loop = match application_command {
-    CliApplicationCommand::Run(options) => match (options.scenario(), options.run_dir()) {
-      (CliApplicationScenario::M3TwoWindowFixture, Some(path)) => {
-        CliCommandLoop::fixture_with_store(CliRunStore::new(path))
-      }
-      (CliApplicationScenario::M3TwoWindowFixture, None) => CliCommandLoop::fixture(),
-    },
-    CliApplicationCommand::Help => unreachable!("help handled above"),
-    CliApplicationCommand::Version => unreachable!("version handled above"),
+  let CliApplicationCommand::Run(options) = application_command else {
+    unreachable!("help and version are handled above");
   };
-  let stdin = io::stdin();
-  let mut stdout = io::stdout().lock();
-  match command_loop.run(stdin.lock(), &mut stdout) {
+  let stdin_is_terminal = io::stdin().is_terminal();
+  let stdout_is_terminal = io::stdout().is_terminal();
+  let no_color = std::env::var_os("NO_COLOR").is_some();
+  let color_enabled = resolve_color(options.color(), stdout_is_terminal, no_color);
+  let mut command_loop = match (options.scenario(), options.run_dir()) {
+    (CliApplicationScenario::M3TwoWindowFixture, Some(path)) => {
+      CliCommandLoop::fixture_with_store(CliRunStore::new(path))
+    }
+    (CliApplicationScenario::M3TwoWindowFixture, None) => CliCommandLoop::fixture(),
+  };
+  let result = if stdin_is_terminal && stdout_is_terminal {
+    command_loop.run_repl(color_enabled)
+  } else if options.color() == CliColorMode::Always {
+    let stdin = io::stdin();
+    let mut stdout = io::stdout().lock();
+    command_loop.run_presented(stdin.lock(), &mut stdout, color_enabled)
+  } else {
+    let stdin = io::stdin();
+    let mut stdout = io::stdout().lock();
+    command_loop.run(stdin.lock(), &mut stdout)
+  };
+  match result {
     Ok(_) => ExitCode::SUCCESS,
     Err(error) => {
       eprintln!("command loop failed: {error}");
@@ -59,8 +71,6 @@ fn main() -> ExitCode {
 }
 
 fn write_metadata(metadata: &str) -> io::Result<()> {
-  use std::io::Write;
-
   let stdout = io::stdout();
   let mut stdout = stdout.lock();
   stdout.write_all(metadata.as_bytes())?;

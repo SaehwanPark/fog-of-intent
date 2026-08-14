@@ -1,4 +1,4 @@
-//! Pure, dependency-free simulation contracts used by the bounded fixtures.
+//! Simulation contracts and fixture adapters for Fog of Intent.
 
 pub mod agent;
 pub mod agent_batch_store;
@@ -10,7 +10,9 @@ pub mod host_artifact;
 pub mod kernel;
 pub mod lane;
 pub mod map;
+pub mod presentation;
 pub mod protocol;
+pub mod repl;
 pub mod run_store;
 pub mod serialization;
 pub mod session;

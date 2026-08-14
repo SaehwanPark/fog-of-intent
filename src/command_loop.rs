@@ -10,6 +10,10 @@ use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};
 
 use crate::host::{CliHostOutput, CliScenarioHost};
+use crate::presentation::{
+  PresentationStyle, render_banner, render_chrome, render_presented_error, render_presented_output,
+};
+use crate::repl::{ReadLine, create_editor, read_line};
 use crate::run_store::CliRunStore;
 use crate::terminal::{render_error, render_output};
 
@@ -24,7 +28,7 @@ pub const CLI_APPLICATION_VERSION: &str =
   concat!("fog-of-intent ", env!("CARGO_PKG_VERSION"), "\n");
 
 /// Bounded process-level usage for the executable wrapper.
-pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--run-dir <path>]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1\n  --run-dir <path>  store bounded run artifacts in this directory\n  --help            show this help\n  --version, -V     show package version\n";
+pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1\n  --run-dir <path>  store bounded run artifacts in this directory\n  --color <mode>    auto, always, or never (default auto)\n  --help            show this help\n  --version, -V     show package version\n";
 
 /// Closed set of executable fixture constructors.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
@@ -43,6 +47,10 @@ pub enum CliApplicationArgsError {
   MissingRunDirectory,
   EmptyRunDirectory,
   DuplicateRunDirectory,
+  MissingColor,
+  EmptyColor,
+  DuplicateColor,
+  UnsupportedColor,
   UnsupportedScenario,
   UnexpectedArgument,
 }
@@ -57,13 +65,47 @@ impl CliApplicationArgsError {
       Self::MissingRunDirectory => "--run-dir needs a path",
       Self::EmptyRunDirectory => "--run-dir path must not be empty",
       Self::DuplicateRunDirectory => "--run-dir may be provided only once",
+      Self::MissingColor => "--color needs auto, always, or never",
+      Self::EmptyColor => "--color mode must not be empty",
+      Self::DuplicateColor => "--color may be provided only once",
+      Self::UnsupportedColor => "unsupported --color mode; use auto, always, or never",
       Self::UnsupportedScenario => "unsupported --scenario ID; use --help",
       Self::UnexpectedArgument => "unexpected executable argument; use --help",
     }
   }
 }
 
-/// Process-level command selected before stdin reaches the session grammar.
+/// Closed color policy for interactive presentation.
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+pub enum CliColorMode {
+  /// Color TTY sessions unless `NO_COLOR` is set.
+  #[default]
+  Auto,
+  /// Color presentation even on a pipe.
+  Always,
+  /// Never emit ANSI.
+  Never,
+}
+
+impl CliColorMode {
+  fn parse(value: &str) -> Option<Self> {
+    match value {
+      "auto" => Some(Self::Auto),
+      "always" => Some(Self::Always),
+      "never" => Some(Self::Never),
+      _ => None,
+    }
+  }
+}
+
+/// Resolve whether presentation ANSI is enabled.
+pub fn resolve_color(mode: CliColorMode, stdout_is_terminal: bool, no_color: bool) -> bool {
+  match mode {
+    CliColorMode::Never => false,
+    CliColorMode::Always => true,
+    CliColorMode::Auto => stdout_is_terminal && !no_color,
+  }
+}
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum CliApplicationCommand {
   Run(CliApplicationOptions),
@@ -76,6 +118,7 @@ pub enum CliApplicationCommand {
 pub struct CliApplicationOptions {
   scenario: CliApplicationScenario,
   run_dir: Option<PathBuf>,
+  color: CliColorMode,
 }
 
 impl CliApplicationOptions {
@@ -88,6 +131,11 @@ impl CliApplicationOptions {
   pub fn run_dir(&self) -> Option<&Path> {
     self.run_dir.as_deref()
   }
+
+  /// Return the process-level color policy.
+  pub const fn color(&self) -> CliColorMode {
+    self.color
+  }
 }
 
 /// Parse process arguments without changing the line-oriented session grammar.
@@ -96,6 +144,7 @@ pub fn parse_application_args(
 ) -> Result<CliApplicationCommand, CliApplicationArgsError> {
   let mut scenario = None;
   let mut run_dir = None;
+  let mut color = None;
   let mut index = 0;
   while index < args.len() {
     match args[index].as_os_str() {
@@ -146,6 +195,25 @@ pub fn parse_application_args(
         }
         run_dir = Some(PathBuf::from(&args[index]));
       }
+      value if value == "--color" => {
+        if color.is_some() {
+          return Err(CliApplicationArgsError::DuplicateColor);
+        }
+        index += 1;
+        if index == args.len() {
+          return Err(CliApplicationArgsError::MissingColor);
+        }
+        if args[index].is_empty() {
+          return Err(CliApplicationArgsError::EmptyColor);
+        }
+        let Some(mode) = args[index].to_str().and_then(CliColorMode::parse) else {
+          if args[index].to_string_lossy().starts_with('-') {
+            return Err(CliApplicationArgsError::UnexpectedArgument);
+          }
+          return Err(CliApplicationArgsError::UnsupportedColor);
+        };
+        color = Some(mode);
+      }
       _ => return Err(CliApplicationArgsError::UnexpectedArgument),
     }
     index += 1;
@@ -153,6 +221,7 @@ pub fn parse_application_args(
   Ok(CliApplicationCommand::Run(CliApplicationOptions {
     scenario: scenario.unwrap_or_default(),
     run_dir,
+    color: color.unwrap_or_default(),
   }))
 }
 
@@ -206,6 +275,72 @@ impl CliCommandLoop {
     }
     Ok(CliLoopExit::EndOfInput)
   }
+
+  /// Render friendlier presentation for `--color always` pipes without reedline.
+  pub fn run_presented<R: BufRead, W: Write>(
+    &mut self,
+    input: R,
+    mut output: W,
+    color_enabled: bool,
+  ) -> io::Result<CliLoopExit> {
+    let style = PresentationStyle::from_enabled(color_enabled);
+    output.write_all(render_banner(style).as_bytes())?;
+    for line in input.lines() {
+      let line = line?;
+      output.write_all(render_chrome(&self.host.session_view(), style).as_bytes())?;
+      if apply_presented(&mut self.host, &line, &mut output, style)? {
+        return Ok(CliLoopExit::Quit);
+      }
+    }
+    Ok(CliLoopExit::EndOfInput)
+  }
+
+  /// Interactive TTY loop with prompt, completion, and session chrome.
+  pub fn run_repl(&mut self, color_enabled: bool) -> io::Result<CliLoopExit> {
+    let style = PresentationStyle::from_enabled(color_enabled);
+    let mut editor = create_editor(color_enabled);
+    let mut stdout = std::io::stdout();
+    stdout.write_all(render_banner(style).as_bytes())?;
+    stdout.flush()?;
+    loop {
+      stdout.write_all(render_chrome(&self.host.session_view(), style).as_bytes())?;
+      stdout.flush()?;
+      match read_line(&mut editor)? {
+        ReadLine::Quit => {
+          let _ = self.host.apply_line("quit");
+          stdout.write_all(render_presented_output(&CliHostOutput::Quit, style).as_bytes())?;
+          stdout.flush()?;
+          return Ok(CliLoopExit::Quit);
+        }
+        ReadLine::Line(line) => {
+          if apply_presented(&mut self.host, &line, &mut stdout, style)? {
+            return Ok(CliLoopExit::Quit);
+          }
+        }
+      }
+    }
+  }
+}
+
+fn apply_presented<W: Write>(
+  host: &mut CliScenarioHost,
+  line: &str,
+  output: &mut W,
+  style: PresentationStyle,
+) -> io::Result<bool> {
+  match host.apply_line(line) {
+    Ok(result) => {
+      let should_quit = matches!(result, CliHostOutput::Quit);
+      output.write_all(render_presented_output(&result, style).as_bytes())?;
+      output.flush()?;
+      Ok(should_quit)
+    }
+    Err(error) => {
+      output.write_all(render_presented_error(&error, style).as_bytes())?;
+      output.flush()?;
+      Ok(false)
+    }
+  }
 }
 
 #[cfg(test)]
@@ -220,7 +355,8 @@ mod tests {
       parse_application_args(&[]),
       Ok(CliApplicationCommand::Run(CliApplicationOptions {
         scenario: CliApplicationScenario::M3TwoWindowFixture,
-        run_dir: None
+        run_dir: None,
+        color: CliColorMode::Auto,
       }))
     );
 
@@ -247,7 +383,7 @@ mod tests {
     );
     assert_eq!(
       CLI_APPLICATION_HELP,
-      "usage: fog-of-intent [--scenario <id>] [--run-dir <path>]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1\n  --run-dir <path>  store bounded run artifacts in this directory\n  --help            show this help\n  --version, -V     show package version\n"
+      "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1\n  --run-dir <path>  store bounded run artifacts in this directory\n  --color <mode>    auto, always, or never (default auto)\n  --help            show this help\n  --version, -V     show package version\n"
     );
     assert_eq!(
       parse_application_args(&[OsString::from("--version")]),
@@ -321,6 +457,31 @@ mod tests {
         Err(CliApplicationArgsError::UnexpectedArgument)
       );
     }
+    assert_eq!(
+      parse_application_args(&[OsString::from("--color")]),
+      Err(CliApplicationArgsError::MissingColor)
+    );
+    assert_eq!(
+      parse_application_args(&[OsString::from("--color"), OsString::new()]),
+      Err(CliApplicationArgsError::EmptyColor)
+    );
+    assert_eq!(
+      parse_application_args(&[OsString::from("--color"), OsString::from("rainbow")]),
+      Err(CliApplicationArgsError::UnsupportedColor)
+    );
+    assert_eq!(
+      parse_application_args(&[
+        OsString::from("--color"),
+        OsString::from("auto"),
+        OsString::from("--color"),
+        OsString::from("never"),
+      ]),
+      Err(CliApplicationArgsError::DuplicateColor)
+    );
+    assert_eq!(
+      parse_application_args(&[OsString::from("--color"), OsString::from("--never")]),
+      Err(CliApplicationArgsError::UnexpectedArgument)
+    );
   }
 
   #[test]
@@ -419,5 +580,72 @@ mod tests {
       .expect_err("fatal output errors must reach the process boundary");
 
     assert_eq!(error.kind(), io::ErrorKind::BrokenPipe);
+  }
+
+  #[test]
+  fn color_mode_parses_and_resolves() {
+    let command = parse_application_args(&[OsString::from("--color"), OsString::from("always")])
+      .expect("always");
+    match command {
+      CliApplicationCommand::Run(options) => {
+        assert_eq!(options.color(), CliColorMode::Always);
+        assert!(resolve_color(options.color(), false, true));
+      }
+      _ => panic!("color must select a run"),
+    }
+    let never =
+      parse_application_args(&[OsString::from("--color"), OsString::from("never")]).expect("never");
+    match never {
+      CliApplicationCommand::Run(options) => {
+        assert!(!resolve_color(options.color(), true, false));
+      }
+      _ => panic!("color must select a run"),
+    }
+    assert!(!resolve_color(CliColorMode::Auto, true, true));
+    assert!(resolve_color(CliColorMode::Auto, true, false));
+    assert!(!resolve_color(CliColorMode::Auto, false, false));
+  }
+
+  #[test]
+  fn pipe_loop_keeps_labeled_help_without_prompt_or_ansi() {
+    let mut output = Vec::new();
+    CliCommandLoop::fixture()
+      .run(
+        Cursor::new("help\nobserve\nplan contest\ncommit\nadvance\nquit\n"),
+        &mut output,
+      )
+      .expect("pipe loop");
+    let output = String::from_utf8(output).expect("utf8");
+    assert!(output.contains("help: commands"));
+    assert!(output.contains("observation: schema="));
+    assert!(output.contains("draft: status=staged field=plan"));
+    assert!(output.contains("commit: status=committed intent=contest"));
+    assert!(output.contains("advanced: window=first"));
+    assert!(!output.contains('\u{1b}'));
+    assert!(
+      !output
+        .lines()
+        .any(|line| line == ">" || line.starts_with("> "))
+    );
+  }
+
+  #[test]
+  fn presented_always_color_keeps_labels() {
+    let mut output = Vec::new();
+    CliCommandLoop::fixture()
+      .run_presented(
+        Cursor::new("help plan\n? observe\nobserve\nquit\n"),
+        &mut output,
+        true,
+      )
+      .expect("presented loop");
+    let output = String::from_utf8(output).expect("utf8");
+    assert!(output.contains('\u{1b}'));
+    assert!(output.contains("help: command=plan"));
+    assert!(output.contains("help: command=observe"));
+    assert!(output.contains("when:"));
+    assert!(output.contains("example: plan contest"));
+    assert!(output.contains("observation: schema="));
+    assert!(!output.contains("source_state_hash"));
   }
 }

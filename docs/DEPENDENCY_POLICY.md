@@ -48,14 +48,15 @@ review.
 
 ## Enforcement status
 
-The current package has no third-party dependencies, so the policy has no
-dependency exceptions to record. `.github/workflows/ci.yml` runs the pinned
-format, lint, test, metadata, link, currentness, and dependency-free package
-guard. A future dependency change remains blocked until an approved advisory
-and license scanner is added or a machine-readable
-`docs/dependency-exceptions.toml` defer record is added with owner, rationale,
-security/license status, and a future expiry date. The guard treats registry,
-Git, and path dependencies identically.
+The package currently records one deferred edge crate, `reedline`, in
+`docs/dependency-exceptions.toml`. That crate is confined to the TTY command
+loop; kernel, lane, host, and labeled terminal-text modules stay free of it.
+`.github/workflows/ci.yml` runs the pinned format, lint, test, metadata, link,
+currentness, and package-policy guard. Additional dependency changes remain
+blocked until an approved advisory and license scanner is added or a complete
+defer record is committed with owner, rationale, security/license status, and
+a future expiry date. The guard treats registry, Git, and path dependencies
+identically. This defer is not a clean security or license result.
 
 The defer record uses this shape and must be committed with the dependency
 change:

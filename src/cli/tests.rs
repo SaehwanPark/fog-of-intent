@@ -7,7 +7,7 @@ use super::session_grammar::{
   CliCommand, CliCommandAvailability, CliInspectTarget, CliParseError, CliProcessError,
   CliProcessRequest, CliReadError, CliReadRequest, CliSessionError, CliSessionRequest,
   CliWriteError, CliWriteRequest, help_catalog, parse_command, process_request, read_request,
-  session_request, write_request,
+  session_request, suggest_command_names, write_request,
 };
 use super::top_level_grammar::{
   CliInteractionMode, CliPrivilegeLevel, CliTopLevelCommand, CliTopLevelError,
@@ -89,7 +89,7 @@ fn grammar_transcript_maps_documented_commands_in_order() {
     let command = parse_command(line).unwrap();
     assert_eq!(command.canonical_name(), expected_name);
     match command {
-      CliCommand::Help | CliCommand::Observe | CliCommand::Inspect(_) => {
+      CliCommand::Help(_) | CliCommand::Observe | CliCommand::Inspect(_) => {
         read_request(command).unwrap();
       }
       CliCommand::Message(_)
@@ -265,7 +265,16 @@ fn information_values_preserve_labels_when_borrowed_and_extract_payloads() {
 
 #[test]
 fn canonical_commands_parse_without_domain_access() {
-  assert_eq!(parse_command("help"), Ok(CliCommand::Help));
+  assert_eq!(parse_command("help"), Ok(CliCommand::Help(None)));
+  assert_eq!(parse_command("?"), Ok(CliCommand::Help(None)));
+  assert_eq!(
+    parse_command("help plan"),
+    Ok(CliCommand::Help(Some("plan")))
+  );
+  assert_eq!(
+    parse_command("? observe"),
+    Ok(CliCommand::Help(Some("observe")))
+  );
   assert_eq!(parse_command(" observe "), Ok(CliCommand::Observe));
   assert_eq!(
     parse_command("inspect history"),
@@ -325,7 +334,7 @@ fn malformed_grammar_is_rejected_with_bounded_errors() {
 
 #[test]
 fn canonical_names_are_stable() {
-  assert_eq!(CliCommand::Help.canonical_name(), "help");
+  assert_eq!(CliCommand::Help(None).canonical_name(), "help");
   assert_eq!(CliCommand::Message("text").canonical_name(), "message");
   assert_eq!(CliCommand::Branch(None).canonical_name(), "branch");
   assert_eq!(CliCommand::Quit.canonical_name(), "quit");
@@ -333,7 +342,16 @@ fn canonical_names_are_stable() {
 
 #[test]
 fn read_commands_map_to_bounded_requests() {
-  assert_eq!(read_request(CliCommand::Help), Ok(CliReadRequest::Help));
+  assert_eq!(
+    read_request(CliCommand::Help(None)),
+    Ok(CliReadRequest::Help { topic: None })
+  );
+  assert_eq!(
+    read_request(CliCommand::Help(Some("plan"))),
+    Ok(CliReadRequest::Help {
+      topic: Some("plan")
+    })
+  );
   assert_eq!(
     read_request(CliCommand::Observe),
     Ok(CliReadRequest::Observe)
@@ -378,6 +396,8 @@ fn help_catalog_lists_every_stable_grammar_verb() {
   assert!(names.contains(&"quit"));
   let entries = help_catalog().entries();
   assert_eq!(entries[1].usage, "observe");
+  assert_eq!(entries[4].examples[0], "plan contest");
+  assert!(entries[4].when.contains("stabilize"));
   assert_eq!(entries[2].context, "read-only adapter");
   assert_eq!(
     entries[3].availability,
@@ -399,6 +419,14 @@ fn help_catalog_lists_every_stable_grammar_verb() {
       .all(|entry| entry.availability == CliCommandAvailability::SessionAdapter)
   );
   assert!(entries.iter().all(|entry| !entry.summary.is_empty()));
+}
+
+#[test]
+fn help_topics_and_question_alias_are_bounded() {
+  assert_eq!(suggest_command_names("pla"), vec!["plan", "replay"]);
+  assert_eq!(suggest_command_names("q"), vec!["quit"]);
+  assert!(suggest_command_names("wat").is_empty());
+  assert_eq!(parse_command("help wat"), Ok(CliCommand::Help(Some("wat"))));
 }
 
 #[test]

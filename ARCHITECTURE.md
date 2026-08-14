@@ -1,6 +1,6 @@
 # Architecture
 
-**Last reviewed:** 2026-08-08
+**Last reviewed:** 2026-08-13
 **Status:** Partially verified — M1 kernel and fixture codec are implemented;
 M2 remains an internal bounded target under construction. The current M2 v3
 contract includes the lane decision window, retained-resource aggregate,
@@ -14,14 +14,15 @@ surface.
 
 ## Overview
 
-Fog of Intent is currently a single Rust 2024 package with no dependencies. The
-binary reports package metadata through standalone `--version`/`-V` and runs
-the bounded line-oriented fixture loop with one versioned
-`--scenario m3-two-window-fixture-v1` ID plus an explicit `--run-dir` storage
-option; internal `kernel` and
-`lane` modules provide bounded deterministic transitions, in-memory history, replay,
-branching, coordination, objective, and debrief fixtures. No playable scenario,
-MCP, research, or GUI component exists yet; an injected
+Fog of Intent is currently a single Rust 2024 package. The binary reports
+package metadata through standalone `--version`/`-V` and runs the bounded
+fixture loop with `--scenario m3-two-window-fixture-v1`, optional `--run-dir`,
+and `--color auto|always|never`. One deferred edge crate, `reedline`, is used
+only for TTY line editing. Kernel, lane, host, CLI grammar, and labeled
+terminal-text modules remain free of that crate. Internal `kernel` and `lane`
+modules provide bounded deterministic transitions, in-memory history, replay,
+branching, coordination, objective, and debrief fixtures. No playable complete
+match, MCP, research, or GUI component exists yet; an injected
 persistent file store now exists as a library boundary, and the binary injects
 it only when that option is supplied. M1 is complete as an internal fixture; M2
 remains a bounded lane contract, and M3 now adds a bounded two-window host
@@ -63,8 +64,9 @@ projection consumes host-projected actor-valid values at the edge and must not
 authorize commands, infer hidden state, or mutate history. The kernel, lane,
 pure CLI grammar, and terminal projection modules own no terminal I/O or
 rendering loop; `src/command_loop.rs` owns the explicit outer stdin/stdout
-adapter, while the CLI's static modes, verbosity policies, and help metadata
-remain adapter contracts.
+adapter; `src/presentation.rs` and `src/repl.rs` are TTY-only presentation
+edges that cannot authorize commands. The CLI's static modes, verbosity
+policies, and help metadata remain adapter contracts.
 
 The target architecture is one authoritative Rust simulation product with thin
 human, agent, and research adapters. The strongest boundary is:
@@ -97,6 +99,8 @@ src/host.rs
 src/host_artifact.rs
 src/run_store.rs
 src/terminal.rs
+src/presentation.rs
+src/repl.rs
 src/command_loop.rs
 src/protocol.rs
 src/session.rs
@@ -114,10 +118,11 @@ docs/
 _workspace/
 ```
 
-`src/lib.rs`, `src/cli.rs`, `src/agent_batch_store.rs`, `src/agent_operational_store.rs`, `src/host.rs`, `src/host_artifact.rs`, `src/run_store.rs`, `src/terminal.rs`, `src/protocol.rs`, `src/session.rs`, `src/kernel.rs`,
+`src/lib.rs`, `src/cli.rs`, `src/agent_batch_store.rs`, `src/agent_operational_store.rs`, `src/host.rs`, `src/host_artifact.rs`, `src/run_store.rs`, `src/terminal.rs`, `src/presentation.rs`, `src/repl.rs`, `src/protocol.rs`, `src/session.rs`, `src/kernel.rs`,
 `src/lane/`, and `src/serialization.rs` are the current internal
 kernel/adapter/fixture surface;
-`src/main.rs` parses bounded process options and runs the fixture loop. The lane surface is split into private responsibility-oriented
+`src/main.rs` parses bounded process options and runs the fixture loop, using
+reedline only when stdin and stdout are terminals. The lane surface is split into private responsibility-oriented
 modules behind the existing `crate::lane::*` facade: `evaluation.rs` owns
 authoritative state evaluation, `projection.rs` owns ordered event/effect
 projection, `result.rs` owns transition result/debrief assembly, and

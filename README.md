@@ -48,11 +48,11 @@ The full invariant list is in [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md).
 | --- | --- |
 | Current roadmap milestone | M2 — One-Lane Vertical Slice (Active) |
 | Repository governance and canonical docs | Complete — M0 |
-| Rust package | `0.1.191`, edition 2024, Rust `1.96`, no dependencies, single package |
-| Executable behavior | Standalone `--version`/`-V`, or the line-oriented two-window fixture with `--scenario m3-two-window-fixture-v1` and optional `--run-dir` |
+| Rust package | `0.1.192`, edition 2024, Rust `1.96`, one deferred edge crate (`reedline`), single package |
+| Executable behavior | Standalone `--version`/`-V`, or the two-window fixture with `--scenario m3-two-window-fixture-v1`, optional `--run-dir`, and `--color auto/always/never` |
 | Deterministic kernel | M1 complete; M2 v3 lane-window, roster, intent, observation, branch, replay, and debrief contracts implemented internally |
 | One-lane scenario | Bounded diagnostic windows and fixtures; full scenario not complete |
-| CLI reference experience | One-fixture command loop with labeled text, draft/undo, and optional file artifacts; broader scenario selection remains open |
+| CLI reference experience | TTY prompt, Tab completion, optional color, and `help`/`?` topics; pipes stay labeled plain text. Broader scenario selection remains open |
 | Agent ecology and MCP | Library-only M4–M6 scripted-policy, protocol DTO, and experiment-fixture evidence; no MCP server |
 | Behavioral experiments and calibration | Library-only M6/M7 fixture evidence; live provider calibration remains open |
 | Team communication and shot-calling | Library-only M8 contracts; not reachable from the runner |
@@ -72,9 +72,10 @@ Install a Rust toolchain with Rust 2024 edition support (this repository pins
 cargo run -- --scenario m3-two-window-fixture-v1
 ```
 
-Type `help`, then one command per line (`observe`, `plan contest`, `commit`,
-`advance`, …). There is no prompt character. The [How to Play](HOW_TO_PLAY.md)
-guide walks through a full two-window session.
+On a terminal you get a `> ` prompt, a one-line status, and Tab completion.
+Type `?` or `help`, then commands such as `observe`, `plan contest`, `commit`,
+and `advance`. Piped input has no prompt and prints labeled plain text. The
+[How to Play](HOW_TO_PLAY.md) guide walks through a full two-window session.
 
 Optional:
 
@@ -103,8 +104,8 @@ python3 -m unittest discover -s scripts -p 'test_*.py'
 
 ## What a run looks like
 
-Live capture of `m3-two-window-fixture-v1` (trimmed). You type the bare
-command; the runner prints the labeled lines.
+On a TTY the runner prints a short banner and `> `. Piped captures stay labeled
+(trimmed live capture of `m3-two-window-fixture-v1`):
 
 ```text
 observe

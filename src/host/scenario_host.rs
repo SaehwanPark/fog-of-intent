@@ -740,6 +740,37 @@ impl CliScenarioHost {
     self.history.records().len() == 2
   }
 
+  /// Return actor-safe session chrome without inspecting true state.
+  pub fn session_view(&self) -> crate::host::CliSessionView {
+    let window = match self.history.records().len() {
+      0 => crate::host::CliSessionWindow::First,
+      1 => crate::host::CliSessionWindow::Second,
+      _ => crate::host::CliSessionWindow::Complete,
+    };
+    let mut draft_fields = Vec::new();
+    if self.draft.plan.is_some() {
+      draft_fields.push("plan");
+    }
+    if self.draft.message.is_some() {
+      draft_fields.push("message");
+    }
+    if self.draft.contingency.is_some() {
+      draft_fields.push("contingency");
+    }
+    crate::host::CliSessionView::new(
+      window,
+      self.record_count(),
+      draft_fields,
+      self.committed_intent,
+      self.store.is_some(),
+      suggested_next(
+        window,
+        self.committed_intent.is_some(),
+        self.draft.plan.is_some(),
+      ),
+    )
+  }
+
   /// Apply one parsed-and-mapped CLI line at the host boundary.
   pub fn apply_line<'a>(&mut self, line: &'a str) -> Result<CliHostOutput, CliHostError<'a>> {
     if self.closed {
@@ -747,7 +778,7 @@ impl CliScenarioHost {
     }
     let command = parse_command(line).map_err(CliHostError::Parse)?;
     match command {
-      CliCommand::Help | CliCommand::Observe | CliCommand::Inspect(_) => {
+      CliCommand::Help(_) | CliCommand::Observe | CliCommand::Inspect(_) => {
         let request = read_request(command).map_err(CliHostError::Read)?;
         self.apply_read(request)
       }
@@ -770,9 +801,17 @@ impl CliScenarioHost {
     }
   }
 
-  fn apply_read(&self, request: CliReadRequest) -> Result<CliHostOutput, CliHostError<'static>> {
+  fn apply_read<'a>(&self, request: CliReadRequest<'a>) -> Result<CliHostOutput, CliHostError<'a>> {
     match request {
-      CliReadRequest::Help => Ok(CliHostOutput::Help),
+      CliReadRequest::Help { topic: None } => Ok(CliHostOutput::Help { topic: None }),
+      CliReadRequest::Help { topic: Some(name) } => crate::cli::help_catalog()
+        .entry(name)
+        .map(|entry| CliHostOutput::Help {
+          topic: Some(entry.name),
+        })
+        .ok_or_else(|| CliHostError::UnknownHelpTopic {
+          topic: name.to_owned(),
+        }),
       CliReadRequest::Observe
       | CliReadRequest::Inspect(crate::cli::CliInspectTarget::CurrentObservation) => {
         Ok(CliHostOutput::Observation(self.observation()))
@@ -1096,6 +1135,24 @@ impl CliScenarioHost {
   #[cfg(test)]
   pub(crate) fn history_for_artifact_test(&self) -> &LaneScenarioHistory {
     &self.history
+  }
+}
+
+fn suggested_next(
+  window: crate::host::CliSessionWindow,
+  committed: bool,
+  plan_staged: bool,
+) -> Vec<&'static str> {
+  match window {
+    crate::host::CliSessionWindow::Complete => {
+      vec!["debrief", "review", "replay", "quit"]
+    }
+    _ if committed => vec!["advance", "observe", "quit"],
+    crate::host::CliSessionWindow::Second if plan_staged => {
+      vec!["commit", "branch", "undo", "observe"]
+    }
+    _ if plan_staged => vec!["commit", "undo", "observe"],
+    _ => vec!["observe", "plan", "commit"],
   }
 }
 
