@@ -8,6 +8,8 @@ not increment the package version.
 
 ### Added
 
+- Beginner [How to Play](HOW_TO_PLAY.md) walkthrough of the current
+  `m3-two-window-fixture-v1` runner commands.
 - Explicit MIT source license, contributor policy, code of conduct, and
   unofficial/noncommercial project notice with an original-setting fallback and
   conservative distribution boundary.
@@ -29,6 +31,8 @@ not increment the package version.
 
 ### Changed
 
+- Condensed `README.md` into a short entry point with a human Quickstart and a
+  live fixture transcript; M3–M8 library inventory remains in `SPEC.md`.
 - M0 is promoted to complete after the hosted clean-checkout CI run passed; the
   first bounded M1 deterministic-kernel fixture is now the active project-state
   slice.
