@@ -61,7 +61,8 @@ impl FogCompleter {
       .next()
       .unwrap_or("")
       .to_ascii_lowercase();
-    let candidates: &[&str] = if start == 0 || verb == "help" || verb == "?" {
+    let token_is_first = prefix[..start].chars().all(char::is_whitespace);
+    let candidates: &[&str] = if token_is_first || verb == "help" || verb == "?" {
       &CLI_COMMAND_NAMES
     } else if verb == "inspect" {
       &CLI_INSPECT_TARGETS
@@ -79,7 +80,7 @@ impl FogCompleter {
       .map(|candidate| Suggestion {
         value: (*candidate).to_owned(),
         span: Span::new(start, pos),
-        append_whitespace: start == 0,
+        append_whitespace: token_is_first,
         ..Suggestion::default()
       })
       .collect()
@@ -180,6 +181,14 @@ mod tests {
     );
     let inspect = completer.suggestions_for("inspect ", 8);
     assert!(inspect.iter().any(|item| item.value == "history"));
+    let leading = completer.suggestions_for("  ob", 4);
+    assert_eq!(
+      leading
+        .iter()
+        .map(|item| item.value.as_str())
+        .collect::<Vec<_>>(),
+      vec!["observe"]
+    );
     let branch = completer.suggestions_for("branch ", 7);
     assert_eq!(
       branch
