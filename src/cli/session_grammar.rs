@@ -4,7 +4,7 @@ use super::run_id::{CliRunId, CliRunIdError};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum CliCommand<'a> {
-  Help,
+  Help(Option<&'a str>),
   Observe,
   Inspect(Option<&'a str>),
   Message(&'a str),
@@ -25,7 +25,7 @@ pub enum CliCommand<'a> {
 impl CliCommand<'_> {
   pub const fn canonical_name(self) -> &'static str {
     match self {
-      Self::Help => "help",
+      Self::Help(_) => "help",
       Self::Observe => "observe",
       Self::Inspect(_) => "inspect",
       Self::Message(_) => "message",
@@ -60,8 +60,8 @@ pub enum CliInspectTarget {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub enum CliReadRequest {
-  Help,
+pub enum CliReadRequest<'a> {
+  Help { topic: Option<&'a str> },
   Observe,
   Inspect(CliInspectTarget),
 }
@@ -129,6 +129,8 @@ pub struct CliHelpEntry {
   pub name: &'static str,
   pub usage: &'static str,
   pub summary: &'static str,
+  pub when: &'static str,
+  pub examples: &'static [&'static str],
   pub context: &'static str,
   pub availability: CliCommandAvailability,
 }
@@ -155,11 +157,17 @@ pub static CLI_COMMAND_NAMES: [&str; 16] = [
   "quit",
 ];
 
+pub static CLI_PLAN_INTENTS: [&str; 4] = ["stabilize", "contest", "yield", "recall"];
+
+pub static CLI_INSPECT_TARGETS: [&str; 2] = ["observation", "history"];
+
 pub static CLI_HELP_ENTRIES: [CliHelpEntry; 16] = [
   CliHelpEntry {
     name: "help",
-    usage: "help",
+    usage: "help [command]",
     summary: "show command help",
+    when: "Anytime. `?` is the same command.",
+    examples: &["help", "help plan", "? observe"],
     context: "read-only adapter",
     availability: CliCommandAvailability::ReadOnlyAdapter,
   },
@@ -167,6 +175,8 @@ pub static CLI_HELP_ENTRIES: [CliHelpEntry; 16] = [
     name: "observe",
     usage: "observe",
     summary: "request the actor-visible observation",
+    when: "Anytime you need a fresh look at the lane.",
+    examples: &["observe"],
     context: "read-only adapter",
     availability: CliCommandAvailability::ReadOnlyAdapter,
   },
@@ -174,6 +184,8 @@ pub static CLI_HELP_ENTRIES: [CliHelpEntry; 16] = [
     name: "inspect",
     usage: "inspect [observation|history]",
     summary: "inspect bounded actor-visible projections",
+    when: "Use after observe, or to reread committed window counts.",
+    examples: &["inspect observation", "inspect history"],
     context: "read-only adapter",
     availability: CliCommandAvailability::ReadOnlyAdapter,
   },
@@ -181,6 +193,8 @@ pub static CLI_HELP_ENTRIES: [CliHelpEntry; 16] = [
     name: "message",
     usage: "message <text>",
     summary: "stage a bounded message payload",
+    when: "Before commit, while the current window is still open.",
+    examples: &["message ping ally"],
     context: "write adapter",
     availability: CliCommandAvailability::WriteAdapter,
   },
@@ -188,6 +202,8 @@ pub static CLI_HELP_ENTRIES: [CliHelpEntry; 16] = [
     name: "plan",
     usage: "plan <text>",
     summary: "stage a plan payload",
+    when: "Before commit. Legal intents: stabilize, contest, yield, recall.",
+    examples: &["plan contest", "plan stabilize"],
     context: "write adapter",
     availability: CliCommandAvailability::WriteAdapter,
   },
@@ -195,6 +211,8 @@ pub static CLI_HELP_ENTRIES: [CliHelpEntry; 16] = [
     name: "contingency",
     usage: "contingency <text>",
     summary: "stage a contingency payload",
+    when: "Before commit, alongside an optional message and plan.",
+    examples: &["contingency retreat if threat"],
     context: "write adapter",
     availability: CliCommandAvailability::WriteAdapter,
   },
@@ -202,6 +220,8 @@ pub static CLI_HELP_ENTRIES: [CliHelpEntry; 16] = [
     name: "commit",
     usage: "commit",
     summary: "commit staged choices",
+    when: "After staging a legal plan, before advance.",
+    examples: &["commit"],
     context: "write adapter",
     availability: CliCommandAvailability::WriteAdapter,
   },
@@ -209,6 +229,8 @@ pub static CLI_HELP_ENTRIES: [CliHelpEntry; 16] = [
     name: "advance",
     usage: "advance",
     summary: "request window advancement",
+    when: "After commit. The host resolves the window; you do not aim.",
+    examples: &["advance"],
     context: "write adapter",
     availability: CliCommandAvailability::WriteAdapter,
   },
@@ -216,6 +238,8 @@ pub static CLI_HELP_ENTRIES: [CliHelpEntry; 16] = [
     name: "review",
     usage: "review",
     summary: "request immediate review",
+    when: "After at least one window has been advanced.",
+    examples: &["review"],
     context: "process adapter",
     availability: CliCommandAvailability::ProcessAdapter,
   },
@@ -223,6 +247,8 @@ pub static CLI_HELP_ENTRIES: [CliHelpEntry; 16] = [
     name: "debrief",
     usage: "debrief",
     summary: "request a committed debrief",
+    when: "After both windows are complete.",
+    examples: &["debrief"],
     context: "process adapter",
     availability: CliCommandAvailability::ProcessAdapter,
   },
@@ -230,6 +256,8 @@ pub static CLI_HELP_ENTRIES: [CliHelpEntry; 16] = [
     name: "replay",
     usage: "replay [id]",
     summary: "request replay inspection",
+    when: "On the current run, or a saved id after save/load.",
+    examples: &["replay", "replay run"],
     context: "process adapter",
     availability: CliCommandAvailability::ProcessAdapter,
   },
@@ -237,6 +265,8 @@ pub static CLI_HELP_ENTRIES: [CliHelpEntry; 16] = [
     name: "branch",
     usage: "branch [id]",
     summary: "request a bounded branch",
+    when: "After the first window, with an alternate plan staged.",
+    examples: &["branch first"],
     context: "process adapter",
     availability: CliCommandAvailability::ProcessAdapter,
   },
@@ -244,6 +274,8 @@ pub static CLI_HELP_ENTRIES: [CliHelpEntry; 16] = [
     name: "save",
     usage: "save <id>",
     summary: "save a run identifier",
+    when: "Anytime. File storage requires --run-dir.",
+    examples: &["save run"],
     context: "session adapter",
     availability: CliCommandAvailability::SessionAdapter,
   },
@@ -251,6 +283,8 @@ pub static CLI_HELP_ENTRIES: [CliHelpEntry; 16] = [
     name: "load",
     usage: "load <id>",
     summary: "load a run identifier",
+    when: "Anytime a matching saved id exists.",
+    examples: &["load run"],
     context: "session adapter",
     availability: CliCommandAvailability::SessionAdapter,
   },
@@ -258,6 +292,8 @@ pub static CLI_HELP_ENTRIES: [CliHelpEntry; 16] = [
     name: "undo",
     usage: "undo",
     summary: "edit uncommitted local choices",
+    when: "Before commit, when a draft is staged.",
+    examples: &["undo"],
     context: "session adapter",
     availability: CliCommandAvailability::SessionAdapter,
   },
@@ -265,6 +301,8 @@ pub static CLI_HELP_ENTRIES: [CliHelpEntry; 16] = [
     name: "quit",
     usage: "quit",
     summary: "end the adapter session",
+    when: "Anytime. The session then closes.",
+    examples: &["quit"],
     context: "session adapter",
     availability: CliCommandAvailability::SessionAdapter,
   },
@@ -278,15 +316,43 @@ impl CliHelpCatalog {
   pub const fn entries(self) -> &'static [CliHelpEntry; 16] {
     &CLI_HELP_ENTRIES
   }
+
+  pub fn entry(self, name: &str) -> Option<&'static CliHelpEntry> {
+    CLI_HELP_ENTRIES.iter().find(|entry| entry.name == name)
+  }
 }
 
 pub const fn help_catalog() -> CliHelpCatalog {
   CliHelpCatalog
 }
 
-pub fn read_request(command: CliCommand<'_>) -> Result<CliReadRequest, CliReadError<'_>> {
+pub fn suggest_command_names(input: &str) -> Vec<&'static str> {
+  let needle = input.trim().to_ascii_lowercase();
+  if needle.is_empty() {
+    return CLI_COMMAND_NAMES.iter().copied().take(4).collect();
+  }
+  let mut ranked = Vec::new();
+  for name in CLI_COMMAND_NAMES {
+    let rank = if name == needle {
+      0
+    } else if name.starts_with(&needle) {
+      1
+    } else if name.contains(&needle) {
+      2
+    } else if name.as_bytes().first() == needle.as_bytes().first() {
+      3
+    } else {
+      continue;
+    };
+    ranked.push((rank, name));
+  }
+  ranked.sort_unstable();
+  ranked.into_iter().map(|(_, name)| name).take(4).collect()
+}
+
+pub fn read_request(command: CliCommand<'_>) -> Result<CliReadRequest<'_>, CliReadError<'_>> {
   match command {
-    CliCommand::Help => Ok(CliReadRequest::Help),
+    CliCommand::Help(topic) => Ok(CliReadRequest::Help { topic }),
     CliCommand::Observe => Ok(CliReadRequest::Observe),
     CliCommand::Inspect(None) | CliCommand::Inspect(Some("observation")) => Ok(
       CliReadRequest::Inspect(CliInspectTarget::CurrentObservation),
@@ -376,7 +442,7 @@ pub fn parse_command(line: &str) -> Result<CliCommand<'_>, CliParseError<'_>> {
   };
   let tail = parts.next().unwrap_or("").trim();
   match verb {
-    "help" => no_arguments(verb, tail, CliCommand::Help),
+    "help" | "?" => optional_identifier(verb, tail, CliCommand::Help),
     "observe" => no_arguments(verb, tail, CliCommand::Observe),
     "inspect" => optional_identifier(verb, tail, CliCommand::Inspect),
     "message" => required_payload(verb, tail, CliCommand::Message),

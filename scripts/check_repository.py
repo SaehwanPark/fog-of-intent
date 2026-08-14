@@ -123,6 +123,8 @@ CORE_EDGE_RUST_FILES = frozenset(
     "src/command_loop.rs",
     "src/host_artifact.rs",
     "src/main.rs",
+    "src/presentation.rs",
+    "src/repl.rs",
     "src/run_store.rs",
     "src/terminal.rs",
   }

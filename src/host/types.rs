@@ -131,7 +131,9 @@ pub(crate) struct SavedRun {
 /// Actor-valid results returned by [`CliScenarioHost::apply_line`].
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum CliHostOutput {
-  Help,
+  Help {
+    topic: Option<&'static str>,
+  },
   Observation(crate::lane::LanerObservation),
   History {
     records: u8,
@@ -199,4 +201,68 @@ pub enum CliHostError<'a> {
   DebriefUnavailable,
   ScenarioComplete,
   StorageUnavailable,
+  UnknownHelpTopic { topic: String },
+}
+
+/// Actor-safe chrome for the interactive presentation edge.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CliSessionView {
+  window: CliSessionWindow,
+  records: u8,
+  draft_fields: Vec<&'static str>,
+  committed_intent: Option<LaneIntent>,
+  store_configured: bool,
+  suggested_next: Vec<&'static str>,
+}
+
+impl CliSessionView {
+  pub(crate) fn new(
+    window: CliSessionWindow,
+    records: u8,
+    draft_fields: Vec<&'static str>,
+    committed_intent: Option<LaneIntent>,
+    store_configured: bool,
+    suggested_next: Vec<&'static str>,
+  ) -> Self {
+    Self {
+      window,
+      records,
+      draft_fields,
+      committed_intent,
+      store_configured,
+      suggested_next,
+    }
+  }
+
+  pub const fn window(&self) -> CliSessionWindow {
+    self.window
+  }
+
+  pub const fn records(&self) -> u8 {
+    self.records
+  }
+
+  pub fn draft_fields(&self) -> &[&'static str] {
+    &self.draft_fields
+  }
+
+  pub const fn committed_intent(&self) -> Option<LaneIntent> {
+    self.committed_intent
+  }
+
+  pub const fn store_configured(&self) -> bool {
+    self.store_configured
+  }
+
+  pub fn suggested_next(&self) -> &[&'static str] {
+    &self.suggested_next
+  }
+}
+
+/// Which bounded window the actor-visible session is in.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum CliSessionWindow {
+  First,
+  Second,
+  Complete,
 }

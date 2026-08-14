@@ -1,7 +1,7 @@
 # Project Specification
 
 **Status:** Active project-state index
-**Last reviewed:** 2026-08-08
+**Last reviewed:** 2026-08-13
 
 This file records verified past, the small active slice, and intentionally
 deferred future work. It is not the product proposal, roadmap, issue tracker, or
@@ -800,8 +800,13 @@ remain open.
   echoing values, plus standalone `--version`/`-V` metadata reporting;
   `src/main.rs` maps the closed scenario enum to the existing fixture, injects
   the configured artifact store, and handles metadata before host construction.
-  It does not authorize host actions, add prompts/styling, or load external
-  scenario data.
+  It does not authorize host actions or load external scenario data. On a TTY,
+  `src/repl.rs` adds a `> ` prompt, Tab completion, and live verb coloring via
+  deferred `reedline`; `src/presentation.rs` adds optional ANSI, friendlier copy,
+  and actor-safe session chrome. Piped sessions keep labeled `m3-cli-terminal-text-v1`
+  with no prompt. `--color auto|always|never` and `NO_COLOR` select presentation
+  coloring without changing host legality. `help [command]` and `?` are session
+  grammar aliases. This is not complete-client or human accessibility evidence.
 - `CliRunId<'a>` is the versioned `m3-cli-run-id-v1` borrowed identifier for
   save/load/replay/export requests. It accepts bounded human-readable ASCII
   forms and rejects malformed values before host execution; it does not create

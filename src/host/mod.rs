@@ -15,5 +15,5 @@ pub use scenario_host::CliScenarioHost;
 pub use types::{
   ACTOR_ILLEGAL_COMMAND_POPULATION_SCHEMA, ActorIllegalCommandPopulationError,
   ActorIllegalCommandPopulationReport, CLI_HOST_SCHEMA, CliHostError, CliHostOutput,
-  MAX_ACTOR_ILLEGAL_COMMAND_POPULATION,
+  CliSessionView, CliSessionWindow, MAX_ACTOR_ILLEGAL_COMMAND_POPULATION,
 };

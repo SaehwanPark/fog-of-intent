@@ -17,10 +17,11 @@ pub use draft::{CLI_DRAFT_SCHEMA, CliCommittedDraft, CliDraft, CliDraftStageErro
 pub use information::{CLI_INFORMATION_LABEL_SCHEMA, CliInformation, CliInformationLabel};
 pub use run_id::{CLI_RUN_ID_SCHEMA, CliRunId, CliRunIdError, MAX_CLI_RUN_ID_BYTES};
 pub use session_grammar::{
-  CLI_COMMAND_NAMES, CLI_HELP_ENTRIES, CliCommand, CliCommandAvailability, CliHelpCatalog,
-  CliHelpEntry, CliInspectTarget, CliParseError, CliProcessError, CliProcessRequest, CliReadError,
-  CliReadRequest, CliSessionError, CliSessionRequest, CliWriteError, CliWriteRequest, help_catalog,
-  parse_command, process_request, read_request, session_request, write_request,
+  CLI_COMMAND_NAMES, CLI_HELP_ENTRIES, CLI_INSPECT_TARGETS, CLI_PLAN_INTENTS, CliCommand,
+  CliCommandAvailability, CliHelpCatalog, CliHelpEntry, CliInspectTarget, CliParseError,
+  CliProcessError, CliProcessRequest, CliReadError, CliReadRequest, CliSessionError,
+  CliSessionRequest, CliWriteError, CliWriteRequest, help_catalog, parse_command, process_request,
+  read_request, session_request, suggest_command_names, write_request,
 };
 pub use top_level_grammar::{
   CliInteractionMode, CliPrivilegeLevel, CliTopLevelCommand, CliTopLevelError,

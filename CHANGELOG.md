@@ -8,6 +8,9 @@ not increment the package version.
 
 ### Added
 
+- TTY `> ` prompt, Tab completion, live verb coloring, optional ANSI, richer
+  `help`/`?` topics, and actor-safe session chrome for
+  `m3-two-window-fixture-v1`. Piped sessions stay labeled plain text.
 - Beginner [How to Play](HOW_TO_PLAY.md) walkthrough of the current
   `m3-two-window-fixture-v1` runner commands.
 - Explicit MIT source license, contributor policy, code of conduct, and
@@ -31,6 +34,8 @@ not increment the package version.
 
 ### Changed
 
+- Package `0.1.192` records one deferred edge crate, `reedline`, for TTY line
+  editing only. `--color auto|always|never` selects presentation coloring.
 - Condensed `README.md` into a short entry point with a human Quickstart and a
   live fixture transcript; M3–M8 library inventory remains in `SPEC.md`.
 - M0 is promoted to complete after the hosted clean-checkout CI run passed; the

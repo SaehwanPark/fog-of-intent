@@ -22,7 +22,7 @@ pub const CLI_TERMINAL_TEXT_SCHEMA: &str = "m3-cli-terminal-text-v1";
 pub fn render_output(output: &CliHostOutput) -> String {
   let mut text = String::new();
   match output {
-    CliHostOutput::Help => {
+    CliHostOutput::Help { topic: None } => {
       line(&mut text, "help: commands");
       for entry in crate::cli::CLI_HELP_ENTRIES {
         line(
@@ -32,6 +32,22 @@ pub fn render_output(output: &CliHostOutput) -> String {
             entry.name, entry.usage, entry.summary
           ),
         );
+      }
+    }
+    CliHostOutput::Help { topic: Some(name) } => {
+      let entry = crate::cli::help_catalog()
+        .entry(name)
+        .expect("host only emits catalogued help topics");
+      line(
+        &mut text,
+        format_args!(
+          "help: command={} usage={} summary={}",
+          entry.name, entry.usage, entry.summary
+        ),
+      );
+      line(&mut text, format_args!("when: {}", entry.when));
+      for example in entry.examples {
+        line(&mut text, format_args!("example: {example}"));
       }
     }
     CliHostOutput::Observation(observation) => {
@@ -256,6 +272,25 @@ pub fn render_error(error: &CliHostError<'_>) -> String {
     }
     CliHostError::StorageUnavailable => {
       "saved run storage is unavailable; check the configured run directory".to_owned()
+    }
+    CliHostError::UnknownHelpTopic { topic } => {
+      let suggestions = crate::cli::suggest_command_names(topic);
+      if suggestions.is_empty() {
+        format!(
+          "unknown help topic {}; use help to list available commands",
+          safe_text(topic)
+        )
+      } else {
+        format!(
+          "unknown help topic {}; try {}",
+          safe_text(topic),
+          suggestions
+            .into_iter()
+            .map(|name| format!("help {name}"))
+            .collect::<Vec<_>>()
+            .join(", ")
+        )
+      }
     }
   };
   format!("error: {message}")

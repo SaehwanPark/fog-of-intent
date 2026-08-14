@@ -1,8 +1,9 @@
 # How to Play
 
 This is a beginner walkthrough of the **current runner**: a bounded two-window
-lane fixture. Type one command per line. The runner prints labeled plain text;
-there is no prompt character, GUI, or second scenario.
+lane fixture. On a terminal you see a `> ` prompt, a status line, and Tab
+completion. Piped input has no prompt and prints labeled plain text. There is
+no GUI or second scenario.
 
 It does not prove enjoyment, accessibility, or human-valid behavior. It is a
 fixture, not a complete match.
@@ -41,10 +42,15 @@ Install a Rust toolchain with Rust 2024 edition support (this repository pins
 cargo run -- --scenario m3-two-window-fixture-v1
 ```
 
-Type `help` and press Enter. The catalog lists the sixteen verbs in the cheat
-sheet below. `cargo run -- --help` prints process flags (`--scenario`,
-`--run-dir`, `--version`). `cargo run -- --version` prints the package version
-without opening a session.
+On a TTY, a banner lists `observe  plan  commit  advance  help  quit` and the
+prompt is `> `. Type `?` or `help` and press Enter. `help plan` (or `? plan`)
+explains one command. Tab completes verbs, `inspect` targets, and plan intents.
+
+Pipes skip the prompt. `cargo run -- --help` prints process flags (`--scenario`,
+`--run-dir`, `--color`, `--version`). `--color auto` (default) colors a TTY
+unless `NO_COLOR` is set; `--color never` disables ANSI; `--color always` colors
+even a pipe. `cargo run -- --version` prints the package version without opening
+a session.
 
 ## Read the observation
 
@@ -201,7 +207,8 @@ history: records=1 status=open
 
 | Command | What it does |
 | --- | --- |
-| `help` | List the sixteen runner verbs |
+| `help` / `?` | List the sixteen runner verbs |
+| `help <command>` / `? <command>` | Explain one verb |
 | `observe` | Print the actor-visible observation |
 | `inspect [observation\|history]` | Reprint the observation or visible history |
 | `message <text>` | Stage a message draft |
