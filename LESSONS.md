@@ -5,6 +5,13 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Quantify cross-map objective concessions through bounded integer basis-point tradeoffs to prevent outcome bias in macro decisions
+
+- Context: M9 required implementing neutral objective spawning cycles and cross-map contest mechanics where teams choose between fighting directly for an objective or conceding it to trade for opposite map pressure (Herald for Dragon, tower pushes, jungle camps).
+- Symptom: Evaluating objective losses solely as tactical failures penalizes teams for executing high-value cross-map macro trades, collapsing macro evaluation into binary contest win/loss outcomes.
+- Resolution: Formalize `TradeoffEvaluation` and `TradeClassification` (`FavorableTrade`, `EvenTrade`, `UnfavorableConcession`, `DesperationSacrifice`) with exact integer basis-point delta scaling ($[-10,000..=10,000]$ bp) measuring the net strategic difference between conceded and secured assets.
+- Prevention: In match-level evaluation and debrief systems, always separate local objective concessions from cross-map tradeoff gains; evaluate macro decisions against multi-lane value deltas.
+
 ## Disagreement in team strategy can be strategically legitimate and must be evaluated through counterfactual value deltas
 
 - Context: M8 required proving and testing that autonomous teammate disagreement with shot-caller directives or peer proposals can be strategically legitimate rather than simple insubordination or coordination failure.

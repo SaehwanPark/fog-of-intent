@@ -448,13 +448,17 @@ strategically legitimate and value-accretive.
 registering and executing 5 canonical benchmark scenarios (`scenario-high-trust-gank-v1`, `scenario-low-trust-dissent-v1`,
 `scenario-conflicting-calls-arbitration-v1`, `scenario-missing-message-fallback-v1`, `scenario-strategic-dissent-survival-v1`).
 
-`src/map/` defines the foundational spatial topology, graph pathfinding, and deterministic travel/rotation model for M9:
+`src/map/` defines the foundational spatial topology, graph pathfinding, deterministic travel/rotation model, neutral objective cycles, vision control, and cross-map tradeoff mechanics for M9:
 - `topology.rs`: `MapLocation` (`m9-map-topology-v1`) covering 15 discrete map locations (2 bases `AlliedBase`, `OpposingBase`, 9 lane sectors across `Top`, `Mid`, `Bot` lanes, 2 river zones `TopRiver`, `BotRiver`, and 2 jungle quadrants `TopJungle`, `BotJungle`).
 - `graph.rs`: Adjacency matrix, deterministic BFS shortest-path calculation, integer beat durations ($1\text{ beat} = 1\text{ step}$), and validated `TravelRoute`.
 - `travel.rs`: `ActorLocation` (`Stationary` vs `InTransit`), `TransitState` machine, `TravelCommand` (`InitiateRotation`, `ContinueTransit`, `AbortRotation`), and fail-closed validation.
 - `transition.rs`: Pure deterministic `transition_travel` function advancing transit progress by integer beats, handling arrivals and aborts, and emitting structured `TravelEvent`s and `TravelEffect`s.
 - `state.rs`: `MatchMapState` with turn counter, multi-actor locations, deterministic FNV-1a state hashing, and `MatchMapObservation` projection with strict fog-of-war redaction (unseen rotating opponents are reported as `Unknown`).
 - `catalog.rs`: `MapScenarioDefinition` and `MapTravelCatalog` (`m9-map-scenario-catalog-v1`) with 4 canonical benchmark scenarios (`top_to_mid_gank`, `bot_to_river_contest`, `mid_to_base_reset`, `aborted_rotation_threat`).
+- `objective.rs`: `ObjectiveKind` (`TopRiverObjective`, `BotRiverObjective`), `ObjectiveStatus` (`Unspawned`, `Active`, `Secured`), and `MatchObjectiveState` (`m9-objective-cycles-v1`) with spawn/respawn turn countdowns and health pools.
+- `vision.rs`: `VisionWard`, `VisionCoverage` (`FullVision`, `LastKnown`, `ConcealedInFog`), `MapVisionState`, `VisionCommand` (`PlaceWard`, `ClearWard`), and `MapVisionGrid` (`m9-vision-control-v1`) with fog-of-war resolution and ward expiration.
+- `contest.rs`: `ObjectiveIntent` (`Engage`, `SecureBurst`, `ZoneOpponents`, `ConcedeAndTrade`), `CrossMapTradeTarget`, `TradeClassification`, `TradeoffEvaluation` (`m9-objective-contest-v1`), and pure deterministic `transition_objective_contest` emitting `ObjectiveEvent` and `ObjectiveEffect`.
+- `objective_catalog.rs`: `ObjectiveScenarioDefinition`, `ObjectiveScenarioExecutionResult`, and `ObjectiveScenarioCatalog` (`m9-objective-catalog-v1`) registering 4 canonical benchmark scenarios (`dragon_contest`, `cross_map_trade`, `vision_setup_and_catch`, `stealth_objective_sneak`) with replay hash verification.
 
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/

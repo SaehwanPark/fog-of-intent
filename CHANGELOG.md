@@ -8,6 +8,16 @@ not increment the package version.
 
 ### Added
 
+- `m9-objective-cycles-v1`, `m9-vision-control-v1`, `m9-objective-contest-v1`, and
+  `m9-objective-catalog-v1` defining neutral objective spawning state machines
+  (`TopRiverObjective` Herald/Baron, `BotRiverObjective` Drake) with `Unspawned`,
+  `Active`, and `Secured` statuses, health pools (3500-5000 HP), deterministic
+  turn-tick countdowns, dynamic vision control (`VisionWard`, `VisionCoverage`,
+  `MapVisionState`, `VisionCommand` with range/capacity validation), cross-map
+  tradeoff evaluations (`TradeoffEvaluation`, `TradeClassification` with exact
+  $[-10,000..=10,000]$ bp net deltas), and `ObjectiveScenarioCatalog` with 4
+  canonical benchmark scenarios (`dragon_contest`, `cross_map_trade`,
+  `vision_setup_and_catch`, `stealth_objective_sneak`).
 - TTY `> ` prompt, Tab completion, live verb coloring, optional ANSI, richer
   `help`/`?` topics, and actor-safe session chrome for
   `m3-two-window-fixture-v1`. Piped sessions stay labeled plain text.
@@ -34,6 +44,8 @@ not increment the package version.
 
 ### Changed
 
+- Package `0.1.193` defines M9 neutral objective cycles, vision control, and
+  cross-map tradeoff evaluation contracts with deterministic FNV-1a state hashing.
 - Package `0.1.192` records one deferred edge crate, `reedline`, for TTY line
   editing only. `--color auto|always|never` selects presentation coloring.
 - Condensed `README.md` into a short entry point with a human Quickstart and a
