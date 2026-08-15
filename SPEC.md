@@ -1591,7 +1591,7 @@ distribution estimation, and parametric fitting remain open.
 
 ## Bounded Multi-Lane Match Prototype (Phase 9)
 
-**Status:** Abstracted three-lane map topology and deterministic travel model defined; objective cycles, multi-lane combat, and match victory conditions remain open.
+**Status:** Abstracted three-lane map topology, deterministic travel model, neutral objective spawning cycles, map-level vision control, and cross-map tradeoff mechanics defined; multi-lane combat and match victory conditions remain open.
 
 - `MapLocation` defines `m9-map-topology-v1` covering 15 discrete map locations: 2 team bases (`AlliedBase`, `OpposingBase`), 9 lane sectors (3 lanes `Top`, `Mid`, `Bot` across 3 sectors `NearTower`, `Center`, `FarSide`), 2 river zones (`TopRiver`, `BotRiver`), and 2 jungle quadrants (`TopJungle`, `BotJungle`).
 - `TravelRoute` and `compute_shortest_route` define `m9-travel-model-v1` using deterministic BFS over a symmetric 15-node adjacency matrix with integer beat durations ($1\text{ beat} = 1\text{ step}$).
@@ -1606,7 +1606,15 @@ distribution estimation, and parametric fitting remain open.
   2. `scenario-bot-to-river-contest-v1`: Bot duo rotates from Near Tower to Bot River over 2 beats for objective vision setup.
   3. `scenario-mid-to-base-reset-v1`: Mid laner retreats from enemy tower through mid lane back to base over 3 beats.
   4. `scenario-aborted-rotation-threat-v1`: Laner rotates toward river, detects threat on beat 1, and aborts back to tower.
-- This contract establishes the spatial topology and deterministic travel/rotation model for the multi-lane match prototype.
+- `ObjectiveKind` and `ObjectiveStatus` define `m9-objective-cycles-v1` covering neutral objective state machines (`TopRiverObjective` Herald/Baron, `BotRiverObjective` Drake) with `Unspawned`, `Active`, and `Secured` statuses, health pools (3500-5000 HP), and deterministic turn-tick spawn/respawn countdowns.
+- `VisionWard`, `VisionCoverage`, and `MapVisionState` define `m9-vision-control-v1` providing dynamic fog-of-war visibility grids, ward placement and clearing (`VisionCommand`), range/capacity validation, and ward duration expiration.
+- `ObjectiveIntent`, `CrossMapTradeTarget`, and `TradeoffEvaluation` define `m9-objective-contest-v1` resolving objective engagement damage, burst execution secures, and cross-map tradeoff calculations in exact integer basis points ($[-10,000..=10,000]$ bp) classified into `FavorableTrade`, `EvenTrade`, `UnfavorableConcession`, and `DesperationSacrifice`.
+- `ObjectiveScenarioCatalog` defines `m9-objective-catalog-v1` registering and executing 4 canonical benchmark scenarios:
+  1. `scenario-dragon-contest-v1`: Bot Drake contest with vision ward setup and secure burst execution.
+  2. `scenario-cross-map-trade-v1`: Conceding Bot Drake to secure Top Herald and mid lane pressure, evaluated as a favorable trade (+500 bp).
+  3. `scenario-vision-setup-and-catch-v1`: River ward detects enemy rotation, enabling safe defensive abort.
+  4. `scenario-stealth-objective-sneak-v1`: De-warding river and sneaking Drake under fog-of-war cover.
+- This contract establishes the spatial topology, travel model, neutral objective spawning cycles, vision control, and cross-map tradeoff mechanics for the multi-lane match prototype.
 
 ## Future
 

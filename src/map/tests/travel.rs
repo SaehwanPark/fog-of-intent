@@ -1,15 +1,15 @@
 //! Unit and invariant tests for the M9 map topology, graph pathfinding, travel model, and scenarios.
 
-use super::catalog::MapTravelCatalog;
-use super::graph::{
+use crate::kernel::ActorId;
+use crate::map::catalog::MapTravelCatalog;
+use crate::map::graph::{
   MapGraphError, TravelRoute, adjacent_neighbors, compute_shortest_route, distance_in_beats,
   is_adjacent,
 };
-use super::state::{MatchMapState, OpponentSighting};
-use super::topology::{LaneId, LaneSector, MapLocation, TeamSide};
-use super::transition::{TravelEffect, TravelEvent, transition_travel};
-use super::travel::{ActorLocation, TransitState, TravelCommand, TravelError};
-use crate::kernel::ActorId;
+use crate::map::state::{MatchMapState, OpponentSighting};
+use crate::map::topology::{LaneId, LaneSector, MapLocation, TeamSide};
+use crate::map::transition::{TravelEffect, TravelEvent, transition_travel};
+use crate::map::travel::{ActorLocation, TransitState, TravelCommand, TravelError};
 
 #[test]
 fn topology_locations_index_and_reverse_lookup_round_trip() {

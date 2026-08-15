@@ -1722,7 +1722,7 @@ match-level debriefing while routine execution remains delegated.
 ### Scope
 
 - [x] Define an abstracted three-lane map and travel model.
-- [ ] Add objective cycles, map-level vision, rotations, and resource tradeoffs.
+- [x] Add objective cycles, map-level vision, rotations, and resource tradeoffs.
 - [ ] Add the minimum role and team-composition abstractions needed for match
   strategy.
 - [ ] Define match victory and terminal conditions.
@@ -1746,7 +1746,22 @@ match-level debriefing while routine execution remains delegated.
   opponents remain `Unknown`), and `MapTravelCatalog` registering 4 canonical benchmark scenarios (`top_to_mid_gank`,
   `bot_to_river_contest`, `mid_to_base_reset`, `aborted_rotation_threat`) with reproducible execution and replay hash verification.
 
-This establishes the spatial topology and deterministic rotation/travel model for the multi-lane match prototype. Objective cycles, combat resolution, and match victory conditions remain deferred to subsequent M9 slices.
+### Current M9 neutral objective cycles, vision control, and cross-map tradeoff evidence
+
+- [x] Define `m9-objective-cycles-v1`, `m9-vision-control-v1`, `m9-objective-contest-v1`, and `m9-objective-catalog-v1`
+  covering neutral objective state machines (`TopRiverObjective` Herald/Baron, `BotRiverObjective` Drake) with `Unspawned`,
+  `Active`, and `Secured` statuses, health pools (3500-5000 HP), deterministic spawn/respawn turn countdowns, dynamic vision control
+  (`VisionWard`, `VisionCoverage` `FullVision`/`LastKnown`/`ConcealedInFog`, `MapVisionState`, `VisionCommand` `PlaceWard`/`ClearWard` with
+  range and capacity validation), cross-map objective contest and tradeoff resolution (`ObjectiveIntent` `Engage`, `SecureBurst`,
+  `ZoneOpponents`, `ConcedeAndTrade`, `CrossMapTradeTarget` opposite objective, tower push, or jungle invade), exact integer basis-point
+  tradeoff evaluations ($[-10,000..=10,000]$ bp) classified into `FavorableTrade`, `EvenTrade`, `UnfavorableConcession`, and
+  `DesperationSacrifice`, causal events (`ObjectiveSpawned`, `ObjectiveDamageDealt`, `ObjectiveSecured`, `ObjectiveConceded`,
+  `CrossMapTradeExecuted`, `WardPlaced`, `WardExpired`, `WardCleared`), attributed effects (`ObjectiveBuffApplied`, `CrossMapPressureShifted`,
+  `VisionGranted`), deterministic FNV-1a state hashing, and `ObjectiveScenarioCatalog` registering 4 canonical benchmark scenarios
+  (`scenario-dragon-contest-v1`, `scenario-cross-map-trade-v1`, `scenario-vision-setup-and-catch-v1`, `scenario-stealth-objective-sneak-v1`)
+  with reproducible execution and replay hash verification.
+
+This establishes the spatial topology, deterministic rotation/travel model, neutral objective cycles, vision control, and cross-map tradeoff mechanics for the multi-lane match prototype. Combat resolution and match victory conditions remain deferred to subsequent M9 slices.
 
 ### Deliverables
 
