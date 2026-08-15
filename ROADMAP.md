@@ -1723,9 +1723,9 @@ match-level debriefing while routine execution remains delegated.
 
 - [x] Define an abstracted three-lane map and travel model.
 - [x] Add objective cycles, map-level vision, rotations, and resource tradeoffs.
-- [ ] Add the minimum role and team-composition abstractions needed for match
+- [x] Add the minimum role and team-composition abstractions needed for match
   strategy.
-- [ ] Define match victory and terminal conditions.
+- [x] Define match victory and terminal conditions.
 - [ ] Add role-specific observations, actions, and debrief perspectives.
 - [ ] Add comeback and variance-seeking mechanics with explicit inputs.
 - [ ] Add match-level pivotal-decision detection.
@@ -1761,7 +1761,20 @@ match-level debriefing while routine execution remains delegated.
   (`scenario-dragon-contest-v1`, `scenario-cross-map-trade-v1`, `scenario-vision-setup-and-catch-v1`, `scenario-stealth-objective-sneak-v1`)
   with reproducible execution and replay hash verification.
 
-This establishes the spatial topology, deterministic rotation/travel model, neutral objective cycles, vision control, and cross-map tradeoff mechanics for the multi-lane match prototype. Combat resolution and match victory conditions remain deferred to subsequent M9 slices.
+### Current M9 team composition, structures hierarchy, and match victory evidence
+
+- [x] Define `m9-team-composition-v1`, `m9-match-structures-v1`, `m9-match-victory-v1`, and `m9-match-scenario-catalog-v1`
+  covering 5 canonical match roles (`TopLaner`, `Jungler`, `MidLaner`, `BotCarry`, `Support`), 4 strategic composition archetypes
+  (`EarlyPick`, `TeamfightScaling`, `SplitPush`, `PokeSiege`), integer basis-point power scaling curves (`PowerScalingCurve` across
+  `EarlyGame`, `MidGame`, `LateGame`), matchup evaluations (`CompositionMatchupEvaluation` with $[-10,000..=10,000]$ bp deltas and
+  `RecommendedPosture`), full 26-structure map hierarchy (`MatchStructureState` tracking Outer, Inner, Inhibitor turrets, Inhibitors,
+  and Nexus for Allied and Opposing sides), deterministic vulnerability hierarchy enforcement, siege resolution (`transition_structure_siege`),
+  inhibitor respawn countdown ticking (`tick_turn`), super minion wave spawning (`has_super_minions`), match terminal status evaluation
+  (`MatchStatus`, `MatchTerminalEvaluation` with `NexusDemolished` and `MatchConceded` victory conditions), FNV-1a state hashing, and
+  `MatchScenarioCatalog` registering 4 canonical benchmark match scenarios (`scenario-early-pick-snowball-v1`, `scenario-split-push-base-race-v1`,
+  `scenario-late-game-scaling-comeback-v1`, `scenario-siege-inhibitor-concession-v1`) with reproducible execution and replay hash verification.
+
+This establishes the spatial topology, deterministic rotation/travel model, neutral objective cycles, vision control, cross-map tradeoff mechanics, team composition archetypes, structures hierarchy, super minion pressure, and match victory terminal conditions for the multi-lane match prototype. Role-specific observations and combat resolution remain deferred to subsequent M9 slices.
 
 ### Deliverables
 

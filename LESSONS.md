@@ -5,6 +5,13 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Enforce defensive structure vulnerability hierarchies and inhibitor countdowns deterministically to model lane progression
+
+- Context: M9 required implementing 3-lane match structures (26 turrets, inhibitors, nexus) and super minion spawning while preserving pure deterministic transitions and replay hashing.
+- Symptom: Allowing arbitrary or out-of-order structure targeting or modeling continuous HP regeneration would create non-deterministic siege states or bypass lane macro sequencing.
+- Resolution: Formalize discrete `StructureTier` hierarchy with strict vulnerability predicates (`is_vulnerable`: Outer -> Inner -> Inhibitor Turret -> Inhibitor -> Nexus), deterministic siege resolution (`transition_structure_siege`), turn-ticked inhibitor respawn countdowns, and integer basis-point defense mitigation.
+- Prevention: In match-level structure and base siege mechanics, always enforce strict defense dependency trees before applying damage and compute deterministic FNV-1a state hashes across all structure statuses.
+
 ## Quantify cross-map objective concessions through bounded integer basis-point tradeoffs to prevent outcome bias in macro decisions
 
 - Context: M9 required implementing neutral objective spawning cycles and cross-map contest mechanics where teams choose between fighting directly for an objective or conceding it to trade for opposite map pressure (Herald for Dragon, tower pushes, jungle camps).

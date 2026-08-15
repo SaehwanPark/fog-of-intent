@@ -1614,7 +1614,16 @@ distribution estimation, and parametric fitting remain open.
   2. `scenario-cross-map-trade-v1`: Conceding Bot Drake to secure Top Herald and mid lane pressure, evaluated as a favorable trade (+500 bp).
   3. `scenario-vision-setup-and-catch-v1`: River ward detects enemy rotation, enabling safe defensive abort.
   4. `scenario-stealth-objective-sneak-v1`: De-warding river and sneaking Drake under fog-of-war cover.
-- This contract establishes the spatial topology, travel model, neutral objective spawning cycles, vision control, and cross-map tradeoff mechanics for the multi-lane match prototype.
+- `MatchRole` (5 discrete roles), `CompositionArchetype` (4 discrete archetypes: `EarlyPick`, `TeamfightScaling`, `SplitPush`, `PokeSiege`), and `PowerScalingCurve` define `m9-team-composition-v1` modeling phase-dependent power ratings across `EarlyGame`, `MidGame`, and `LateGame` in integer basis points ($[0..=10,000]$ bp).
+- `CompositionMatchupEvaluation` deterministically calculates net power deltas ($[-10,000..=10,000]$ bp), favored team sides, and recommended tactical postures (`ForceEarlyFights`, `StallAndScale`, `SplitPushCrossMap`, `PokeAndControlVision`).
+- `StructureTier` (Outer Turret, Inner Turret, Inhibitor Turret, Inhibitor, Nexus), `StructureStatus`, and `MatchStructureState` define `m9-match-structures-v1` managing the full 26-structure defense hierarchy for Allied and Opposing teams, with fail-closed vulnerability checking, siege resolution (`transition_structure_siege`), inhibitor respawn ticking (`tick_turn`), and super minion pressure spawning (`has_super_minions`).
+- `MatchVictoryCondition` (`NexusDemolished`, `MatchConceded`, `DecisiveAce`), `MatchStatus`, and `MatchTerminalEvaluation` define `m9-match-victory-v1` assessing structural and objective milestones into conclusive match outcomes with human-readable Markdown reporting and zero private chain-of-thought.
+- `MatchScenarioCatalog` defines `m9-match-scenario-catalog-v1` registering and executing 4 canonical benchmark match scenarios:
+  1. `scenario-early-pick-snowball-v1`: Early pick comp tears down Mid defenses, demolishing Opposing Nexus at turn 18.
+  2. `scenario-split-push-base-race-v1`: Split-push comp trades Baron concession for Bot inhibitor + Nexus demolition in an uncontested base race at turn 22.
+  3. `scenario-late-game-scaling-comeback-v1`: Scaling comp holds Tier 3 high ground, scales to late game, wins decisive ace and marches to victory at turn 28.
+  4. `scenario-siege-inhibitor-concession-v1`: Poke/siege comp breaks all 3 inhibitors, forcing match concession from overwhelming super minion pressure at turn 24.
+- This contract establishes the spatial topology, travel model, neutral objective spawning cycles, vision control, cross-map tradeoff mechanics, team composition archetypes, structures hierarchy, super minion pressure, and match victory terminal conditions for the multi-lane match prototype.
 
 ## Future
 

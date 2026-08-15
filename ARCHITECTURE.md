@@ -448,7 +448,7 @@ strategically legitimate and value-accretive.
 registering and executing 5 canonical benchmark scenarios (`scenario-high-trust-gank-v1`, `scenario-low-trust-dissent-v1`,
 `scenario-conflicting-calls-arbitration-v1`, `scenario-missing-message-fallback-v1`, `scenario-strategic-dissent-survival-v1`).
 
-`src/map/` defines the foundational spatial topology, graph pathfinding, deterministic travel/rotation model, neutral objective cycles, vision control, and cross-map tradeoff mechanics for M9:
+`src/map/` defines the foundational spatial topology, graph pathfinding, deterministic travel/rotation model, neutral objective cycles, vision control, cross-map tradeoff mechanics, team compositions, structures hierarchy, and match victory conditions for M9:
 - `topology.rs`: `MapLocation` (`m9-map-topology-v1`) covering 15 discrete map locations (2 bases `AlliedBase`, `OpposingBase`, 9 lane sectors across `Top`, `Mid`, `Bot` lanes, 2 river zones `TopRiver`, `BotRiver`, and 2 jungle quadrants `TopJungle`, `BotJungle`).
 - `graph.rs`: Adjacency matrix, deterministic BFS shortest-path calculation, integer beat durations ($1\text{ beat} = 1\text{ step}$), and validated `TravelRoute`.
 - `travel.rs`: `ActorLocation` (`Stationary` vs `InTransit`), `TransitState` machine, `TravelCommand` (`InitiateRotation`, `ContinueTransit`, `AbortRotation`), and fail-closed validation.
@@ -459,6 +459,10 @@ registering and executing 5 canonical benchmark scenarios (`scenario-high-trust-
 - `vision.rs`: `VisionWard`, `VisionCoverage` (`FullVision`, `LastKnown`, `ConcealedInFog`), `MapVisionState`, `VisionCommand` (`PlaceWard`, `ClearWard`), and `MapVisionGrid` (`m9-vision-control-v1`) with fog-of-war resolution and ward expiration.
 - `contest.rs`: `ObjectiveIntent` (`Engage`, `SecureBurst`, `ZoneOpponents`, `ConcedeAndTrade`), `CrossMapTradeTarget`, `TradeClassification`, `TradeoffEvaluation` (`m9-objective-contest-v1`), and pure deterministic `transition_objective_contest` emitting `ObjectiveEvent` and `ObjectiveEffect`.
 - `objective_catalog.rs`: `ObjectiveScenarioDefinition`, `ObjectiveScenarioExecutionResult`, and `ObjectiveScenarioCatalog` (`m9-objective-catalog-v1`) registering 4 canonical benchmark scenarios (`dragon_contest`, `cross_map_trade`, `vision_setup_and_catch`, `stealth_objective_sneak`) with replay hash verification.
+- `composition.rs`: `MatchRole` (5 discrete positions), `CompositionArchetype` (`EarlyPick`, `TeamfightScaling`, `SplitPush`, `PokeSiege`), `PowerScalingCurve` (`EarlyGame`, `MidGame`, `LateGame`), `CompositionMatchupEvaluation` with integer basis-point power deltas ($[-10,000..=10,000]$ bp) and `RecommendedPosture`, and `CompositionCatalog` (`m9-team-composition-v1`).
+- `structures.rs`: `StructureTier` (`OuterTurret`, `InnerTurret`, `InhibitorTurret`, `Inhibitor`, `Nexus`), `StructureStatus`, `MatchStructureState` (`m9-match-structures-v1`) with 26-structure defense hierarchy, vulnerability checks, siege resolution (`transition_structure_siege`), inhibitor respawn ticking (`tick_turn`), super minion wave spawning (`has_super_minions`), `StructureEvent`, and `StructureEffect`.
+- `victory.rs`: `MatchVictoryCondition` (`NexusDemolished`, `MatchConceded`, `DecisiveAce`), `MatchStatus`, and `MatchTerminalEvaluation` (`m9-match-victory-v1`) evaluating match conclusion milestones with structured Markdown summaries.
+- `match_catalog.rs`: `MatchScenarioDefinition`, `MatchScenarioExecutionResult`, and `MatchScenarioCatalog` (`m9-match-scenario-catalog-v1`) registering and executing 4 canonical benchmark match scenarios (`early_pick_snowball`, `split_push_base_race`, `late_game_scaling_comeback`, `siege_inhibitor_concession`) with replay hash verification.
 
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/

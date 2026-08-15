@@ -8,6 +8,29 @@ not increment the package version.
 
 ### Added
 
+- `m9-team-composition-v1`, `m9-match-structures-v1`, `m9-match-victory-v1`, and
+  `m9-match-scenario-catalog-v1` defining team composition archetypes, match roles,
+  power scaling curves, structures defense hierarchy, super minion pressure, and
+  match victory terminal conditions for M9:
+  - `MatchRole` (5 discrete roles: `TopLaner`, `Jungler`, `MidLaner`, `BotCarry`, `Support`).
+  - `CompositionArchetype` (4 discrete archetypes: `EarlyPick`, `TeamfightScaling`, `SplitPush`, `PokeSiege`).
+  - `PowerScalingCurve` and `CompositionMatchupEvaluation` with integer basis-point
+    power scaling ($[0..=10,000]$ bp) across `EarlyGame`, `MidGame`, and `LateGame`, net power
+    deltas ($[-10,000..=10,000]$ bp), and `RecommendedPosture`.
+  - `StructureTier` (`OuterTurret`, `InnerTurret`, `InhibitorTurret`, `Inhibitor`, `Nexus`),
+    `StructureStatus`, and `MatchStructureState` tracking all 26 defensive structures across
+    Allied and Opposing sides with deterministic vulnerability hierarchy enforcement.
+  - `transition_structure_siege` resolving attack damage, defense mitigation, structure destruction,
+    super minion wave spawning (`has_super_minions`), inhibitor respawn ticking (`tick_turn`),
+    `StructureEvent`, and `StructureEffect`.
+  - `MatchVictoryCondition` (`NexusDemolished`, `MatchConceded`, `DecisiveAce`), `MatchStatus`,
+    and `MatchTerminalEvaluation` evaluating match conclusion milestones with structured Markdown
+    summaries and zero private chain-of-thought.
+  - `MatchScenarioCatalog` registering and executing 4 canonical benchmark match scenarios:
+    1. `scenario-early-pick-snowball-v1`: Early pick comp tears down Mid defenses, demolishing Opposing Nexus at turn 18.
+    2. `scenario-split-push-base-race-v1`: Split-push comp trades Baron concession for Bot inhibitor + Nexus demolition in an uncontested base race at turn 22.
+    3. `scenario-late-game-scaling-comeback-v1`: Scaling comp holds Tier 3 high ground, scales to late game, wins decisive ace and marches to victory at turn 28.
+    4. `scenario-siege-inhibitor-concession-v1`: Poke/siege comp breaks all 3 inhibitors, forcing match concession from overwhelming super minion pressure at turn 24.
 - `m9-objective-cycles-v1`, `m9-vision-control-v1`, `m9-objective-contest-v1`, and
   `m9-objective-catalog-v1` defining neutral objective spawning state machines
   (`TopRiverObjective` Herald/Baron, `BotRiverObjective` Drake) with `Unspawned`,
@@ -43,7 +66,9 @@ not increment the package version.
 - Deterministic `_workspace/` handoff conventions for substantial work.
 
 ### Changed
-
+ 
+- Package `0.1.194` defines M9 team composition archetypes, match structures hierarchy,
+  super minion pressure, and match victory terminal conditions with deterministic FNV-1a state hashing.
 - Package `0.1.193` defines M9 neutral objective cycles, vision control, and
   cross-map tradeoff evaluation contracts with deterministic FNV-1a state hashing.
 - Package `0.1.192` records one deferred edge crate, `reedline`, for TTY line
