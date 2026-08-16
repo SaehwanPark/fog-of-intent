@@ -1727,8 +1727,8 @@ match-level debriefing while routine execution remains delegated.
   strategy.
 - [x] Define match victory and terminal conditions.
 - [x] Add role-specific observations, actions, and debrief perspectives.
-- [ ] Add comeback and variance-seeking mechanics with explicit inputs.
-- [ ] Add match-level pivotal-decision detection.
+- [x] Add comeback and variance-seeking mechanics with explicit inputs.
+  - [ ] Add match-level pivotal-decision detection.
 - [ ] Preserve meaningful decision density through automatic routine execution.
 - [ ] Profile transition, replay, projection, and batch-run costs.
 - [ ] Expand scenario and property tests without weakening M1/M2 fixtures.
@@ -1786,7 +1786,29 @@ match-level debriefing while routine execution remains delegated.
   5 canonical benchmark scenarios (`scenario-top-teleport-flank-v1`, `scenario-jungler-objective-steal-v1`, `scenario-mid-roam-conversion-v1`,
   `scenario-bot-hypercarry-scaling-v1`, `scenario-support-vision-setup-peel-v1`) with reproducible execution and state hash verification.
 
-This establishes the spatial topology, deterministic rotation/travel model, neutral objective cycles, vision control, cross-map tradeoff mechanics, team composition archetypes, structures hierarchy, super minion pressure, match victory terminal conditions, and role-specific observation, action, and debrief contracts for the multi-lane match prototype. Comeback mechanics, variance-seeking behavior, and match-level pivotal-decision detection remain deferred to subsequent M9 slices.
+### Current M9 bounded comeback and variance-seeking evidence
+
+- [x] Define `m9-comeback-mechanics-v1` and `m9-comeback-catalog-v1` covering
+  `DeficitLevel` (4 discrete tiers: `Ahead`, `Parity`, `Deficit`, `SevereDeficit`)
+  classified from explicit structural/objective net-delta inputs
+  (`[-10,000..=10,000]` bp), `VarianceSeekingBehavior` (4 discrete strategies:
+  `ConservativePlay`, `BalancedApproach`, `HighRiskEngage`, `DesperationAllIn`)
+  recommended deterministically from deficit level, match phase, composition power
+  curves, and recent high-value objective presence, `ComebackOpportunityInputs`
+  (fully explicit caller-supplied snapshot — no hidden authoritative state),
+  `evaluate_comeback_opportunity` (pure function), and `ComebackCatalog` with 3
+  canonical benchmark scenarios (`scenario-teamfight-comeback-v1`,
+  `scenario-desperation-all-in-v1`, `scenario-ahead-conservative-v1`) with
+  reproducible execution and expectation verification.
+- [x] Cover deficit classification, variance multiplier monotonicity,
+  reproducibility, Allied/Opposing perspective symmetry, net-delta clamping,
+  all catalog scenarios, and Markdown rendering in 20 focused tests.
+
+This establishes a bounded deterministic comeback evaluation boundary with explicit
+inputs. It does not establish automatic comeback detection from true match state,
+match-level pivotal-decision detection, or decision density optimization.
+
+This establishes the spatial topology, deterministic rotation/travel model, neutral objective cycles, vision control, cross-map tradeoff mechanics, team composition archetypes, structures hierarchy, super minion pressure, match victory terminal conditions, role-specific observation/action/debrief contracts, and comeback/variance-seeking evaluation for the multi-lane match prototype. Match-level pivotal-decision detection, decision density, profiling, and broader test expansion remain deferred.
 
 ### Deliverables
 
