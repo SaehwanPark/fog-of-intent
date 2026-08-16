@@ -6,6 +6,28 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.203] - 2026-08-16
+
+### Added
+
+- `m9-complete-match-replay-v1`: a second executable scenario printing a
+  replay-verified M9 complete-match transcript:
+  - `--scenario m9-complete-match-replay-v1` executes both canonical
+    composed complete matches, replay-verifies each by full re-execution
+    and hash comparison, prints a stable labeled plain-text transcript
+    (scenario, winner, condition, final turn, objective counts,
+    phase/event/effect totals, categorical `initial-hash-match=yes` /
+    `final-hash-match=yes` flags — never raw hash values), and exits.
+  - Pure projection at the adapter edge (`src/cli/match_replay.rs`, no
+    I/O); `write_match_replay_transcript` writes at the executable
+    boundary. Fail-closed: replay mismatch or execution failure prints
+    nothing and fails the process; `--run-dir` is rejected (no run
+    artifacts); unknown scenario ids keep failing closed.
+  - `--help` now lists both executable scenarios.
+  - 7 focused tests: transcript content and determinism, hash-value-free
+    labeled output, scenario parsing, run-dir rejection, help text, writer
+    output, and a clean-checkout binary run through the real executable.
+
 ## [0.1.202] - 2026-08-16
 
 ### Added
@@ -28,7 +50,7 @@ not increment the package version.
     wrapped travel/vision/siege errors.
   - `CompleteMatchCatalog` with 2 canonical complete matches:
     `scenario-complete-allied-snowball-v1` (river vision, a secured Drake, a
-    full Mid siege, `NexusDemolished` at turn 15) and
+    full Mid siege, `NexusDemolished` at turn 14) and
     `scenario-complete-comeback-concession-v1` (an opposing objective lead
     answered by three Allied objective cycles and all three inhibitors taken
     inside the five-turn respawn window; `MatchConceded` at turn 29 with

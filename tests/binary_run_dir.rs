@@ -178,7 +178,7 @@ fn binary_help_is_successful_and_bounded() {
   assert!(output.status.success());
   assert_eq!(
     String::from_utf8(output.stdout).expect("help UTF-8 output"),
-    "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1\n  --run-dir <path>  store bounded run artifacts in this directory\n  --color <mode>    auto, always, or never (default auto)\n  --help            show this help\n  --version, -V     show package version\n"
+    "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1 or m9-complete-match-replay-v1\n  --run-dir <path>  store bounded run artifacts in this directory (fixture only)\n  --color <mode>    auto, always, or never (default auto)\n  --help            show this help\n  --version, -V     show package version\n"
   );
   assert!(output.stderr.is_empty());
 }
@@ -270,4 +270,23 @@ fn binary_without_run_directory_remains_in_memory() {
   assert_eq!(fs::read_dir(&root).expect("isolated directory").count(), 0);
 
   let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn binary_prints_replay_verified_complete_match_transcript() {
+  let binary = binary_path();
+
+  let output = run_scenario_binary(&binary, "m9-complete-match-replay-v1", "");
+  assert!(output.status.success(), "stderr: {:?}", output.stderr);
+  let stdout = String::from_utf8(output.stdout).expect("UTF-8 transcript");
+  let lines: Vec<&str> = stdout.lines().collect();
+  assert_eq!(lines.len(), 6, "full transcript: {stdout}");
+  assert_eq!(lines[0], "match-replay: begin");
+  assert!(lines[1].starts_with(
+    "match: scenario=scenario-complete-allied-snowball-v1 winner=allied condition=nexus-demolished"
+  ));
+  assert!(lines[3].starts_with(
+    "match: scenario=scenario-complete-comeback-concession-v1 winner=allied condition=match-conceded"
+  ));
+  assert_eq!(lines[5], "match-replay: complete");
 }

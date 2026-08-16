@@ -6,6 +6,7 @@
 
 mod draft;
 mod information;
+mod match_replay;
 mod run_id;
 mod session_grammar;
 mod top_level_grammar;
@@ -15,6 +16,9 @@ mod tests;
 
 pub use draft::{CLI_DRAFT_SCHEMA, CliCommittedDraft, CliDraft, CliDraftStageError};
 pub use information::{CLI_INFORMATION_LABEL_SCHEMA, CliInformation, CliInformationLabel};
+pub use match_replay::{
+  CLI_MATCH_REPLAY_SCENARIO_ID, MatchReplayTranscript, build_match_replay_transcript,
+};
 pub use run_id::{CLI_RUN_ID_SCHEMA, CliRunId, CliRunIdError, MAX_CLI_RUN_ID_BYTES};
 pub use session_grammar::{
   CLI_COMMAND_NAMES, CLI_HELP_ENTRIES, CLI_INSPECT_TARGETS, CLI_PLAN_INTENTS, CliCommand,

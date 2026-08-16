@@ -1848,7 +1848,7 @@ deferred.
   contest contract.
 - `m9-complete-match-catalog-v1` registers 2 canonical complete matches:
   `scenario-complete-allied-snowball-v1` (secured Drake, full Mid siege,
-  `NexusDemolished` at turn 15) and
+  `NexusDemolished` at turn 14) and
   `scenario-complete-comeback-concession-v1` (opposing objective lead
   answered by three Allied objective cycles and all three inhibitors taken
   inside the five-turn respawn window; `MatchConceded` at turn 29,
@@ -1857,9 +1857,25 @@ deferred.
   hygiene.
 
 This establishes the M9 exit evidence that a complete match terminates and
-replays to an identical final hash at the library boundary. Reference-CLI
-surfacing of the composed replay, MCP match replays, multi-match
-tournaments, and human pacing evidence remain deferred.
+replays to an identical final hash at the library boundary.
+
+#### Delivered in the bounded reference-CLI match replay follow-up
+
+- `--scenario m9-complete-match-replay-v1` is the second executable
+  scenario: it executes both canonical composed complete matches,
+  replay-verifies each by full re-execution and hash comparison, prints a
+  stable labeled plain-text transcript with categorical replay-match flags
+  (never raw hash values), and exits. Fail-closed on replay mismatch or
+  execution failure.
+- The projection is pure at the adapter edge (`src/cli/match_replay.rs`, no
+  I/O); the writer lives at the executable boundary. `--run-dir` is
+  rejected for this scenario (no run artifacts are created) and unknown ids
+  keep failing closed. 7 focused tests cover transcript content,
+  determinism, hash-value-free output, parsing, run-dir rejection, help
+  text, writer output, and a clean-checkout binary run.
+
+MCP match replays, interactive match play, save/load of match replays, and
+human pacing evidence remain deferred.
 
 ## Future
 
