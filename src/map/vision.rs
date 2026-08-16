@@ -101,6 +101,13 @@ impl MapVisionState {
     }
   }
 
+  /// The next ward id the state will assign; committing it distinguishes
+  /// states whose active-ward sets coincide but whose placement histories
+  /// differ.
+  pub const fn next_ward_id(&self) -> u32 {
+    self.next_ward_id
+  }
+
   pub fn active_wards(&self) -> &[VisionWard] {
     &self.active_wards
   }

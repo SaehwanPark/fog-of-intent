@@ -91,6 +91,8 @@ CORE_RUST_FILES = (
   "src/lane/validation.rs",
   "src/lane/values.rs",
   "src/map/catalog.rs",
+  "src/map/complete_match.rs",
+  "src/map/complete_match_catalog.rs",
   "src/map/comeback.rs",
   "src/map/comeback_catalog.rs",
   "src/map/composition.rs",

@@ -6,6 +6,38 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.202] - 2026-08-16
+
+### Added
+
+- `m9-complete-match-v1` and `m9-complete-match-catalog-v1` composing a
+  complete M9 match that terminates and replays to an identical final hash:
+  - `CompleteMatchState` — one integrated authoritative state sequencing the
+    map, objective, vision, and structure state machines; every
+    `CompleteMatchAction` (`Rotate`, `PlaceWard`, `ContestObjectives`,
+    `SiegeStructure`, `EvaluateTerminal`) drives its real subsystem
+    transition without re-implementing subsystem rules.
+  - One combined FNV-1a hash committing the map hash, structure hash,
+    serialized objective and ward state (including the ward-id sequence and
+    per-actor team membership), secure counters, and turn; identical plans
+    replay to identical results and final hashes. A Nexus fall mid-plan
+    fails the plan closed for any non-evaluation follow-up and the reported
+    final turn is the turn the Nexus fell.
+  - `CompleteMatchPlan::execute` fails closed on `EmptyPlan`,
+    `MatchDidNotTerminate`, `MatchAlreadyConcluded`, `UntrackedActor`, and
+    wrapped travel/vision/siege errors.
+  - `CompleteMatchCatalog` with 2 canonical complete matches:
+    `scenario-complete-allied-snowball-v1` (river vision, a secured Drake, a
+    full Mid siege, `NexusDemolished` at turn 15) and
+    `scenario-complete-comeback-concession-v1` (an opposing objective lead
+    answered by three Allied objective cycles and all three inhibitors taken
+    inside the five-turn respawn window; `MatchConceded` at turn 29 with
+    objectives 3-1).
+  - 14 focused tests: termination conditions and winners, replay
+    determinism, combined-hash commitment of vision, team membership, and
+    ward-id history, phase-kind coverage, fail-closed behavior (including
+    post-Nexus actions), error Display coverage, and Markdown hygiene.
+
 ## [0.1.201] - 2026-08-16
 
 ### Added

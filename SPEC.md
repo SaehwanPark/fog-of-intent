@@ -1828,6 +1828,39 @@ deferred.
   only. Property tests for objective/structure transition step sequences,
   mutation-based fuzzing, and benchmark harnesses remain deferred.
 
+#### Delivered in the bounded complete-match composition follow-up
+
+- `m9-complete-match-v1` composes the delivered M9 mechanic families — map
+  rotations, vision warding, neutral objective contests, and structure
+  sieges — into one deterministic match run. `CompleteMatchState` sequences
+  the four subsystem state machines; every `CompleteMatchAction` drives its
+  real subsystem transition, and `CompleteMatchPlan::execute` fails closed
+  on empty plans, unterminated plan ends, post-conclusion actions,
+  untracked-actor rotations, and subsystem rejections.
+- One combined FNV-1a hash commits the map hash, structure hash, serialized
+  objective and ward state (including the ward-id sequence and per-actor
+  team membership), secure counters, and turn; identical plans replay to
+  identical results and final hashes. A Nexus fall mid-plan fails the plan
+  closed for any non-evaluation follow-up, and the reported final turn is
+  the turn the Nexus fell. The tick model is explicit: every action advances
+  the shared turn, the map turn, and structure respawns, while objective
+  spawn/respawn and ward expiry tick inside contest actions per the existing
+  contest contract.
+- `m9-complete-match-catalog-v1` registers 2 canonical complete matches:
+  `scenario-complete-allied-snowball-v1` (secured Drake, full Mid siege,
+  `NexusDemolished` at turn 15) and
+  `scenario-complete-comeback-concession-v1` (opposing objective lead
+  answered by three Allied objective cycles and all three inhibitors taken
+  inside the five-turn respawn window; `MatchConceded` at turn 29,
+  objectives 3-1). 12 focused tests cover termination, replay determinism,
+  hash commitment, phase coverage, fail-closed behavior, and Markdown
+  hygiene.
+
+This establishes the M9 exit evidence that a complete match terminates and
+replays to an identical final hash at the library boundary. Reference-CLI
+surfacing of the composed replay, MCP match replays, multi-match
+tournaments, and human pacing evidence remain deferred.
+
 ## Future
 
 The detailed and canonical order is in `ROADMAP.md`.

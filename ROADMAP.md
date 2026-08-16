@@ -2010,6 +2010,42 @@ those remain deferred.
 
 This establishes the spatial topology, deterministic rotation/travel model, neutral objective cycles, vision control, cross-map tradeoff mechanics, team composition archetypes, structures hierarchy, super minion pressure, match victory terminal conditions, role-specific observation/action/debrief contracts, comeback/variance-seeking evaluation, pivotal-decision detection, decision-density classification for automatic routine execution, deterministic operation-count cost profiling, population-validation measurement, and expanded property/scenario coverage for the multi-lane match prototype. All M9 scope items are delivered; milestone promotion still requires the remaining deliverable evidence (complete reference-interface match replays) and exit-evidence review.
 
+### Current M9 composed complete-match evidence
+
+- [x] Define `m9-complete-match-v1` covering `CompleteMatchState` (one
+  integrated authoritative state sequencing the map, objective, vision, and
+  structure state machines), `CompleteMatchAction` (`Rotate`, `PlaceWard`,
+  `ContestObjectives`, `SiegeStructure`, `EvaluateTerminal`), and
+  `CompleteMatchPlan::execute`, which drives each action through its real
+  subsystem transition (`transition_travel`, `transition_objective_contest`,
+  `place_ward`, `transition_structure_siege`, `MatchTerminalEvaluation`)
+  without re-implementing subsystem rules.
+- [x] Commit every subsystem in one deterministic combined FNV-1a hash (map
+  hash, structure hash, serialized objective and ward state including the
+  ward-id sequence, per-actor team membership, secure counters, turn);
+  identical plans replay to identical results and hashes. A mid-plan Nexus
+  fall fails the plan closed for any non-evaluation follow-up and the
+  reported final turn is the turn the Nexus fell.
+- [x] Fail closed on empty plans, plans that end in progress, actions after
+  conclusion, untracked-actor rotations, and subsystem rejections
+  (`EmptyPlan`, `MatchDidNotTerminate`, `MatchAlreadyConcluded`,
+  `UntrackedActor`, wrapped travel/vision/siege errors).
+- [x] Define `m9-complete-match-catalog-v1` with 2 canonical complete-match
+  plans: `scenario-complete-allied-snowball-v1` (rotations, river vision, a
+  secured Drake, a full Mid siege, `NexusDemolished` at turn 15) and
+  `scenario-complete-comeback-concession-v1` (an opposing objective lead,
+  three Allied objective cycles, all three inhibitor lanes taken inside the
+  respawn window, `MatchConceded` at turn 29 with objectives 3-1).
+- [x] Cover termination conditions and winners, replay determinism, combined
+  hash commitment of vision state, team membership, and ward-id history,
+  phase-kind coverage, fail-closed behavior (including post-Nexus actions),
+  and Markdown hygiene in 14 focused tests.
+
+This establishes the M9 exit-evidence bullet that a complete match
+terminates and replays to an identical final hash, at the library boundary. Reference-CLI
+surfacing of the composed replay, MCP match replays, multi-match
+tournaments, and human pacing evidence remain deferred.
+
 ### Deliverables
 
 - Versioned match scenario and ruleset.
