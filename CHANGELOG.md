@@ -31,10 +31,11 @@ not increment the package version.
     without sharing authoritative state; `execute` delegates unchanged.
   - Fail-closed `CostProfileError` (`EmptyProbeScript`, `ProbeMapUnavailable`,
     wrapped transition errors) before any counting.
-  - 13 focused tests: scenario-count derivation, replay pass semantics, batch
-    sums and exact bp averages, probe linearity and hash constancy, exact
-    marginal cost, fail-closed validation, error wrapping, reproducibility,
-    and Markdown hygiene.
+  - 15 focused tests: scenario-count derivation, replay pass semantics,
+    independently derived batch totals and exact bp averages, probe linearity
+    and hash constancy, exact marginal cost, fail-closed validation, error
+    Display coverage for every variant, terminal-state verification of
+    `execute_with_state`, reproducibility, and Markdown hygiene.
 
 ## [0.1.198] - 2026-08-16
 

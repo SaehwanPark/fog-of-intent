@@ -1907,9 +1907,10 @@ live CLI/MCP surfacing of absorbed windows, or human pacing evidence.
 - [x] Fail closed on malformed profiling requests (`EmptyProbeScript`,
   `ProbeMapUnavailable`, wrapped transition errors) before any counting.
 - [x] Cover scenario-count derivation from script and roster shape, replay
-  pass semantics, batch-total sums and exact bp averages, probe linearity and
-  hash constancy, exact marginal cost, fail-closed validation, transition
-  error wrapping, reproducibility, and Markdown hygiene in 13 focused tests.
+  pass semantics, independently derived batch totals and exact bp averages,
+  probe linearity and hash constancy, exact marginal cost, fail-closed
+  validation, error Display coverage, terminal-state verification,
+  reproducibility, and Markdown hygiene in 15 focused tests.
 
 This establishes a bounded deterministic cost-accounting boundary over the
 canonical map-travel path. It does not establish wall-clock timing evidence,

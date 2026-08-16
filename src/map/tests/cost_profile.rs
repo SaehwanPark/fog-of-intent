@@ -108,25 +108,20 @@ fn batch_totals_equal_scenario_sum_with_exact_averages() {
   }
   assert_eq!(report.batch_totals, expected);
 
-  // Each scenario replays exactly once: one replay per entry is a full
-  // 10,000 bp (1.0x) per-entry average.
+  // Independently derived batch totals: the four catalog scripts sum to 11
+  // transitions, each executed twice (execution plus replay) = 22; every pass
+  // computes 2 hashes over 8 passes = 16; the terminal projection pass covers
+  // 6 allied actors across the catalog; each entry replays exactly once.
+  assert_eq!(report.batch_totals.transitions_executed, 22);
+  assert_eq!(report.batch_totals.state_hashes_computed, 16);
+  assert_eq!(report.batch_totals.observation_projections, 6);
+  assert_eq!(report.batch_totals.replay_verifications, 4);
+
+  // Per-entry averages follow from those totals over four entries.
+  assert_eq!(report.per_entry_transitions_bp, 55_000);
+  assert_eq!(report.per_entry_hashes_bp, 40_000);
+  assert_eq!(report.per_entry_projections_bp, 15_000);
   assert_eq!(report.per_entry_replays_bp, 10_000);
-  let entries = u64::from(report.batch_entry_count);
-  assert_eq!(
-    report.per_entry_transitions_bp,
-    u32::try_from(u64::from(report.batch_totals.transitions_executed) * 10_000 / entries)
-      .expect("fits u32")
-  );
-  assert_eq!(
-    report.per_entry_hashes_bp,
-    u32::try_from(u64::from(report.batch_totals.state_hashes_computed) * 10_000 / entries)
-      .expect("fits u32")
-  );
-  assert_eq!(
-    report.per_entry_projections_bp,
-    u32::try_from(u64::from(report.batch_totals.observation_projections) * 10_000 / entries)
-      .expect("fits u32")
-  );
 }
 
 #[test]
@@ -196,6 +191,48 @@ fn zero_step_probe_is_rejected() {
     profile_scaling_probe(0),
     Err(CostProfileError::EmptyProbeScript)
   );
+}
+
+#[test]
+fn error_display_covers_every_variant() {
+  use crate::map::topology::MapLocation;
+  use crate::map::travel::TravelError;
+
+  assert_eq!(
+    CostProfileError::EmptyProbeScript.to_string(),
+    "empty probe script: at least one transition step is required"
+  );
+  assert_eq!(
+    CostProfileError::ProbeMapUnavailable.to_string(),
+    "probe map unavailable: the allied base has no adjacent location"
+  );
+  // Defensive topology guard: unreachable under the current fixed map but
+  // documented so a future map revision cannot silently drop base adjacency.
+  let wrapped = CostProfileError::Transition(TravelError::AlreadyAtDestination {
+    location: MapLocation::ALLIED_BASE,
+  });
+  assert!(
+    wrapped
+      .to_string()
+      .contains("map transition failed during profiling")
+  );
+}
+
+#[test]
+fn execute_with_state_returns_the_genuine_terminal_state() {
+  let definition = MapTravelCatalog::all()[0].clone();
+  let (result, terminal_state) = definition.execute_with_state().expect("valid scenario");
+  assert_eq!(terminal_state.hash(), result.terminal_hash);
+  assert_eq!(terminal_state.turn(), result.turns_elapsed);
+  for (actor, location) in result.terminal_locations {
+    assert_eq!(
+      terminal_state
+        .get_actor_location(actor)
+        .expect("actor placed")
+        .current_location(),
+      location
+    );
+  }
 }
 
 #[test]

@@ -1759,10 +1759,12 @@ absorbed windows, and human pacing evidence remain deferred.
 - `CostProfileReport` renders structured Markdown without wall-clock
   measurements or hidden state. `EmptyProbeScript`, `ProbeMapUnavailable`, and
   wrapped transition errors fail closed before any counting.
-- 13 focused tests cover scenario-count derivation from script and roster
-  shape, replay pass semantics, batch-total sums and exact bp averages, probe
-  linearity and hash constancy, exact marginal cost, fail-closed validation,
-  transition error wrapping, reproducibility, and Markdown hygiene.
+- 15 focused tests cover scenario-count derivation from script and roster
+  shape, replay pass semantics, independently derived batch totals and exact
+  bp averages, probe linearity and hash constancy, exact marginal cost,
+  fail-closed validation, error Display coverage for every variant,
+  terminal-state verification of `execute_with_state`, reproducibility, and
+  Markdown hygiene.
 
 This establishes a bounded deterministic cost-accounting boundary over the
 canonical map-travel path. Wall-clock timing evidence, profiling of the

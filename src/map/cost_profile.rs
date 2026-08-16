@@ -36,8 +36,9 @@ pub const M9_COST_PROFILE_SCHEMA_V1: &str = "m9-cost-profile-v1";
 
 /// Scaling probe script lengths (transition steps) run by the batch profile.
 ///
-/// The spacing keeps every consecutive gap large enough that the marginal
-/// cost per step is an exact integer for a linear workload.
+/// The ladder spans three orders of magnitude so a linear workload's marginal
+/// cost is unambiguous and any super-linear term would surface in the
+/// first-to-last difference.
 pub const SCALING_PROBE_STEPS: [u32; 4] = [1, 8, 64, 512];
 
 /// Exact counts of profiled operations for one execution pass or workload.

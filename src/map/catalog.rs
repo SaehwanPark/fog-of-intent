@@ -37,6 +37,10 @@ impl MapScenarioDefinition {
   /// callers (for example cost profiling) can perform projection work against
   /// the real terminal state. The state leaves this function as an owned copy;
   /// no shared authoritative state is exposed.
+  ///
+  /// Cost-profile contract: this pass performs exactly two state hash
+  /// evaluations (initial and terminal); `cost_profile::OperationCounts`
+  /// counts them, so any change here must update that counter.
   pub fn execute_with_state(
     &self,
   ) -> Result<(MapScenarioExecutionResult, MatchMapState), TravelError> {
