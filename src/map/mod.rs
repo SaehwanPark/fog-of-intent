@@ -5,6 +5,8 @@
 pub mod catalog;
 pub mod comeback;
 pub mod comeback_catalog;
+pub mod complete_match;
+pub mod complete_match_catalog;
 pub mod composition;
 pub mod contest;
 pub mod cost_profile;
@@ -58,6 +60,8 @@ pub const M9_PIVOTAL_DECISION_SCHEMA_V1: &str = "m9-pivotal-decision-v1";
 pub const M9_PIVOTAL_CATALOG_SCHEMA_V1: &str = "m9-pivotal-catalog-v1";
 pub const M9_DECISION_DENSITY_SCHEMA_V1: &str = "m9-decision-density-v1";
 pub const M9_DECISION_DENSITY_CATALOG_SCHEMA_V1: &str = "m9-decision-density-catalog-v1";
+pub const M9_COMPLETE_MATCH_SCHEMA_V1: &str = "m9-complete-match-v1";
+pub const M9_COMPLETE_MATCH_CATALOG_SCHEMA_V1: &str = "m9-complete-match-catalog-v1";
 pub const M9_POPULATION_VALIDATION_SCHEMA_V1: &str = "m9-population-validation-v1";
 pub const M9_POPULATION_VALIDATION_CATALOG_SCHEMA_V1: &str = "m9-population-validation-catalog-v1";
 
@@ -69,6 +73,11 @@ pub use comeback::{
 pub use comeback_catalog::{
   ComebackCatalog, ComebackScenarioDefinition, ComebackScenarioExecutionResult,
 };
+pub use complete_match::{
+  CompleteMatchAction, CompleteMatchError, CompleteMatchPlan, CompleteMatchResult,
+  CompleteMatchState, MatchPhaseKind, MatchPhaseRecord,
+};
+pub use complete_match_catalog::CompleteMatchCatalog;
 pub use composition::{
   CompositionArchetype, CompositionCatalog, CompositionMatchupEvaluation, MatchPhase, MatchRole,
   PowerScalingCurve, RecommendedPosture, TeamComposition,
