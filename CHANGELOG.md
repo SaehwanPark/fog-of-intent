@@ -20,8 +20,9 @@ not increment the package version.
   - `RoutineWindowCandidate` — explicit caller-declared window snapshot (id,
     strictly increasing turn, kind, value stakes in `[0..=10,000]` bp,
     threat/objective presence flags); no authoritative match state consulted.
-  - `EscalationTrigger` (`StrategicKind`, `StakesAtThreshold` at the 500 bp
-    threshold mirroring the pivotal `Routine` tier ceiling, `ThreatPresent`,
+  - `EscalationTrigger` (`StrategicKind`, `StakesAboveThreshold` strictly
+    above the 500 bp `ROUTINE_STAKES_CEILING_BP` mirroring the pivotal
+    `ROUTINE_MAX_SWING_BP` routine tier ceiling, `ThreatPresent`,
     `ObjectiveActive`) evaluated in fixed priority order; untriggered routine
     windows resolve as `AutomaticallyExecuted` without forcing a decision
     window.
@@ -40,10 +41,10 @@ not increment the package version.
     trigger exercised, density holds at the 5,000 bp ceiling),
     `scenario-decision-overload-v1` (8,333 bp share exceeds the band;
     targets missed as the failure mode automatic execution prevents).
-  - 24 focused tests: kind classification, escalation triggers and priority,
-    the exact 500 bp threshold boundary, share arithmetic, band and gap
-    boundaries, fail-closed validation, reproducibility, catalog outcomes,
-    and Markdown hygiene.
+  - 28 focused tests: kind classification, escalation triggers and priority,
+    the exact 500 bp ceiling boundary and inclusive stakes bound, share
+    arithmetic, band and gap boundaries, fail-closed validation,
+    reproducibility, catalog outcomes, and Markdown hygiene.
 
 ## [0.1.197] - 2026-08-16
 

@@ -1708,10 +1708,12 @@ deferred.
   `RotationChoice`, `SiegeCommit`, `ThreatResponse`, `TeamCoordination`) that
   always require an actor decision.
 - Routine windows escalate into decisions only through a concrete
-  `EscalationTrigger` in fixed priority order: stakes at or above the 500 bp
-  threshold (mirroring the pivotal `Routine` tier ceiling), a visible threat,
-  or an active neutral objective; untriggered routine windows resolve as
-  `AutomaticallyExecuted` without forcing a decision window.
+  `EscalationTrigger` in fixed priority order: stakes strictly above the 500 bp
+  `ROUTINE_STAKES_CEILING_BP` (mirroring the pivotal `ROUTINE_MAX_SWING_BP`
+  routine tier ceiling, so a window whose stakes stay at or below the ceiling
+  remains as routine as a realized swing of the same magnitude), a visible
+  threat, or an active neutral objective; untriggered routine windows resolve
+  as `AutomaticallyExecuted` without forcing a decision window.
 - `evaluate_decision_density` is a pure function; `EmptyTrajectory`,
   `StakesOutOfRange`, and `NonMonotonicTurn` fail closed with the offending
   candidate index before any classification.
@@ -1728,10 +1730,10 @@ deferred.
      every trigger; density still holds exactly at the 5,000 bp ceiling.
   3. `scenario-decision-overload-v1`: only one window absorbed; the 8,333 bp
      share exceeds the band and the evaluation reports missed targets.
-- 24 focused tests cover kind classification, escalation triggers and
-  priority, the exact 500 bp threshold boundary, share arithmetic, band and
-  gap evaluation, fail-closed validation, reproducibility, catalog outcomes,
-  and Markdown hygiene.
+- 28 focused tests cover kind classification, escalation triggers and
+  priority, the exact 500 bp ceiling boundary and inclusive stakes bound,
+  share arithmetic, band and gap evaluation, fail-closed validation,
+  reproducibility, catalog outcomes, and Markdown hygiene.
 
 This establishes a bounded deterministic classification and density-evaluation
 boundary over declared window streams. Host-side window scheduling, automatic

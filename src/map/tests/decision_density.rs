@@ -12,9 +12,10 @@
 //! - Markdown rendering contains density labels without hidden state
 
 use crate::map::decision_density::{
-  CandidateWindowKind, DECISION_SHARE_MAX_BP, DECISION_SHARE_MIN_BP, DECISION_STAKES_THRESHOLD_BP,
-  DecisionDensityError, EscalationTrigger, M9_DECISION_DENSITY_SCHEMA_V1, MAX_DECISION_GAP_TURNS,
-  RoutineWindowCandidate, STAKES_BOUND_BP, WindowDisposition, evaluate_decision_density,
+  CandidateWindowKind, DECISION_SHARE_MAX_BP, DECISION_SHARE_MIN_BP, DecisionDensityError,
+  EscalationTrigger, M9_DECISION_DENSITY_SCHEMA_V1, MAX_DECISION_GAP_TURNS,
+  ROUTINE_STAKES_CEILING_BP, RoutineWindowCandidate, STAKES_BOUND_BP, WindowDisposition,
+  evaluate_decision_density,
 };
 use crate::map::decision_density_catalog::DecisionDensityCatalog;
 
@@ -38,7 +39,9 @@ fn decision_candidate(
     window_id: id,
     turn,
     kind,
-    value_stakes_bp: 1_500,
+    // Strategic kinds force the decision regardless of stakes; keep stakes
+    // low so the kind, not the stakes, is the tested cause.
+    value_stakes_bp: 100,
     threat_present: false,
     objective_active: false,
   }
@@ -107,27 +110,30 @@ fn strategic_windows_always_require_decisions() {
 // --- Routine escalation triggers ---
 
 #[test]
-fn stakes_threshold_boundary_escalates_at_exactly_500() {
-  let below = RoutineWindowCandidate {
-    value_stakes_bp: DECISION_STAKES_THRESHOLD_BP - 1,
-    ..candidate("below", 1, CandidateWindowKind::WaveClear)
-  };
+fn stakes_ceiling_boundary_absorbs_at_exactly_500() {
+  // Mirrors pivotal: a realized swing <= 500 bp stays Routine, so window
+  // stakes <= 500 bp stay absorbable; only strictly larger stakes escalate.
   let at = RoutineWindowCandidate {
-    value_stakes_bp: DECISION_STAKES_THRESHOLD_BP,
-    ..candidate("at", 2, CandidateWindowKind::WaveClear)
+    value_stakes_bp: ROUTINE_STAKES_CEILING_BP,
+    ..candidate("at", 1, CandidateWindowKind::WaveClear)
   };
-  let report = evaluate_decision_density(&[below, at]).expect("valid candidates");
+  let above = RoutineWindowCandidate {
+    value_stakes_bp: ROUTINE_STAKES_CEILING_BP + 1,
+    ..candidate("above", 2, CandidateWindowKind::WaveClear)
+  };
+  let report = evaluate_decision_density(&[at, above]).expect("valid candidates");
   assert_eq!(
     report.findings[0].disposition,
     WindowDisposition::AutomaticallyExecuted
   );
+  assert_eq!(report.findings[0].escalation, None);
   assert_eq!(
     report.findings[1].disposition,
     WindowDisposition::DecisionRequired
   );
   assert_eq!(
     report.findings[1].escalation,
-    Some(EscalationTrigger::StakesAtThreshold)
+    Some(EscalationTrigger::StakesAboveThreshold)
   );
 }
 
@@ -165,7 +171,7 @@ fn escalation_priority_is_stakes_then_threat_then_objective() {
     window_id: "all",
     turn: 1,
     kind: CandidateWindowKind::WaveClear,
-    value_stakes_bp: DECISION_STAKES_THRESHOLD_BP + 100,
+    value_stakes_bp: ROUTINE_STAKES_CEILING_BP + 100,
     threat_present: true,
     objective_active: true,
   };
@@ -180,7 +186,7 @@ fn escalation_priority_is_stakes_then_threat_then_objective() {
   let report = evaluate_decision_density(&[all, threat_only]).expect("valid candidates");
   assert_eq!(
     report.findings[0].escalation,
-    Some(EscalationTrigger::StakesAtThreshold)
+    Some(EscalationTrigger::StakesAboveThreshold)
   );
   assert_eq!(
     report.findings[1].escalation,
@@ -205,6 +211,20 @@ fn stakes_out_of_range_is_rejected_with_index() {
   assert_eq!(
     evaluate_decision_density(&[candidate("ok", 1, CandidateWindowKind::WaveClear), overflow]),
     Err(DecisionDensityError::StakesOutOfRange { index: 1 })
+  );
+}
+
+#[test]
+fn stakes_at_exactly_ten_thousand_are_accepted() {
+  let at_bound = RoutineWindowCandidate {
+    value_stakes_bp: STAKES_BOUND_BP,
+    ..candidate("at-bound", 1, CandidateWindowKind::WaveClear)
+  };
+  let report = evaluate_decision_density(&[at_bound]).expect("inclusive stakes bound");
+  assert_eq!(report.decision_count, 1);
+  assert_eq!(
+    report.findings[0].escalation,
+    Some(EscalationTrigger::StakesAboveThreshold)
   );
 }
 
@@ -445,7 +465,7 @@ fn catalog_objective_spike_escalates_through_every_trigger() {
     .iter()
     .map(|f| f.escalation)
     .collect();
-  assert!(triggers.contains(&Some(EscalationTrigger::StakesAtThreshold)));
+  assert!(triggers.contains(&Some(EscalationTrigger::StakesAboveThreshold)));
   assert!(triggers.contains(&Some(EscalationTrigger::ThreatPresent)));
   assert!(triggers.contains(&Some(EscalationTrigger::ObjectiveActive)));
   assert!(triggers.contains(&Some(EscalationTrigger::StrategicKind)));
@@ -459,7 +479,10 @@ fn catalog_decision_overload_misses_density_targets() {
     .expect("registered scenario");
   assert!(result.all_expectations_met);
   assert_eq!(result.report.decision_count, 5);
+  // 5/6 truncates to 8,333 bp; the complement absorbs the truncation so the
+  // two shares still sum to exactly 10,000 bp.
   assert_eq!(result.report.decision_share_bp, 8_333);
+  assert_eq!(result.report.routine_absorption_bp, 1_667);
   assert!(!result.report.meets_density_targets);
 }
 
@@ -490,8 +513,11 @@ fn markdown_contains_labels_without_hidden_state() {
   let report = evaluate_decision_density(&candidates).expect("valid candidates");
   let markdown = report.render_markdown();
   assert!(markdown.contains("# Decision Density Report"));
+  assert!(markdown.contains("**Candidate Windows**: 3"));
   assert!(markdown.contains("**Automatically Executed**"));
   assert!(markdown.contains("**Decision Windows**"));
+  // Threat (turn 2) and siege (turn 3) are consecutive decisions: gap 1.
+  assert!(markdown.contains("**Max Decision Gap**: 1 turns (bound 6)"));
   assert!(markdown.contains("**Density Targets Met**"));
   assert!(markdown.contains("`automatically-executed`"));
   assert!(markdown.contains("`decision-required`"));

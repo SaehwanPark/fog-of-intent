@@ -12,8 +12,8 @@
 //!
 //! Classification is pure and deterministic over explicit inputs: strategic
 //! window kinds always require a decision, and routine kinds escalate only
-//! when a concrete trigger holds — value stakes at or above the decision
-//! threshold, a visible threat, or an active neutral objective. Density
+//! when a concrete trigger holds — value stakes strictly above the routine
+//! ceiling, a visible threat, or an active neutral objective. Density
 //! targets are explicit: the decision share of all windows must stay inside
 //! `[1,000..=5,000]` bp and no gap between consecutive decision windows may
 //! exceed 6 turns. All arithmetic is exact integer math; no floating point,
@@ -28,11 +28,15 @@ pub const M9_DECISION_DENSITY_SCHEMA_V1: &str = "m9-decision-density-v1";
 
 /// Inclusive bound for declared window value stakes (`[0..=STAKES_BOUND_BP]` bp).
 pub const STAKES_BOUND_BP: u32 = 10_000;
-/// Stakes at or above this level escalate a routine window into a decision.
+/// Stakes at or below this ceiling stay absorbable by automatic routine
+/// execution; stakes strictly above it escalate a routine window into a
+/// decision.
 ///
-/// Mirrors the pivotal-decision `Routine` tier ceiling so "material enough to
-/// decide" is consistent across both M9 evaluations.
-pub const DECISION_STAKES_THRESHOLD_BP: u32 = 500;
+/// Mirrors the pivotal-decision `ROUTINE_MAX_SWING_BP` ceiling so "material
+/// enough to decide" is consistent across both M9 evaluations: a realized
+/// swing of the same magnitude stays `Routine` there, and a window whose
+/// stakes cannot exceed it stays absorbed here.
+pub const ROUTINE_STAKES_CEILING_BP: u32 = 500;
 /// Minimum decision share of all windows for density to stay meaningful (bp).
 pub const DECISION_SHARE_MIN_BP: u16 = 1_000;
 /// Maximum decision share of all windows before windows become excessive (bp).
@@ -112,8 +116,8 @@ impl fmt::Display for CandidateWindowKind {
 pub enum EscalationTrigger {
   /// The window's kind is strategic, so a decision is inherent.
   StrategicKind,
-  /// Value stakes reached `DECISION_STAKES_THRESHOLD_BP`.
-  StakesAtThreshold,
+  /// Value stakes exceeded `ROUTINE_STAKES_CEILING_BP`.
+  StakesAboveThreshold,
   /// A visible threat is present in the window.
   ThreatPresent,
   /// A neutral objective is active in the window.
@@ -124,7 +128,7 @@ impl EscalationTrigger {
   pub const fn as_str(self) -> &'static str {
     match self {
       Self::StrategicKind => "strategic-kind",
-      Self::StakesAtThreshold => "stakes-at-threshold",
+      Self::StakesAboveThreshold => "stakes-above-threshold",
       Self::ThreatPresent => "threat-present",
       Self::ObjectiveActive => "objective-active",
     }
@@ -141,9 +145,11 @@ impl fmt::Display for EscalationTrigger {
 /// must surface an actor decision window.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum WindowDisposition {
-  /// Delegated routine execution resolved the window; no decision forced.
+  /// The window is absorbable by automatic routine execution; no actor
+  /// decision window is forced. This is a classification of the window, not
+  /// an execution result produced here.
   AutomaticallyExecuted,
-  /// The window surfaced a decision the actor must make.
+  /// The window must surface a decision the actor makes.
   DecisionRequired,
 }
 
@@ -327,8 +333,8 @@ const fn classify_window(candidate: &RoutineWindowCandidate) -> WindowFinding {
   }
 
   // Fixed priority: stakes, then threat, then objective.
-  let escalation = if candidate.value_stakes_bp >= DECISION_STAKES_THRESHOLD_BP {
-    Some(EscalationTrigger::StakesAtThreshold)
+  let escalation = if candidate.value_stakes_bp > ROUTINE_STAKES_CEILING_BP {
+    Some(EscalationTrigger::StakesAboveThreshold)
   } else if candidate.threat_present {
     Some(EscalationTrigger::ThreatPresent)
   } else if candidate.objective_active {

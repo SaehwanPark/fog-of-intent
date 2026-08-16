@@ -73,8 +73,8 @@ pub use contest::{
   TradeClassification, TradeoffEvaluation, transition_objective_contest,
 };
 pub use decision_density::{
-  CandidateWindowKind, DECISION_SHARE_MAX_BP, DECISION_SHARE_MIN_BP, DECISION_STAKES_THRESHOLD_BP,
-  DecisionDensityError, DecisionDensityReport, EscalationTrigger, MAX_DECISION_GAP_TURNS,
+  CandidateWindowKind, DECISION_SHARE_MAX_BP, DECISION_SHARE_MIN_BP, DecisionDensityError,
+  DecisionDensityReport, EscalationTrigger, MAX_DECISION_GAP_TURNS, ROUTINE_STAKES_CEILING_BP,
   RoutineWindowCandidate, STAKES_BOUND_BP, WindowDisposition, WindowFinding,
   evaluate_decision_density,
 };

@@ -1853,8 +1853,9 @@ decision quality claims.
   (explicit caller-declared snapshot: id, strictly increasing turn, kind, value
   stakes in `[0..=10,000]` bp, threat/objective presence flags — no hidden
   authoritative state), `EscalationTrigger` (`StrategicKind`,
-  `StakesAtThreshold` at the 500 bp threshold mirroring the pivotal `Routine`
-  tier ceiling, `ThreatPresent`, `ObjectiveActive`) in fixed priority order,
+  `StakesAboveThreshold` strictly above the 500 bp `ROUTINE_STAKES_CEILING_BP`
+  mirroring the pivotal `ROUTINE_MAX_SWING_BP` routine tier ceiling,
+  `ThreatPresent`, `ObjectiveActive`) in fixed priority order,
   `WindowDisposition` (`AutomaticallyExecuted` vs `DecisionRequired`), and
   `evaluate_decision_density` as a pure function with fail-closed typed errors
   (`EmptyTrajectory`, `StakesOutOfRange`, `NonMonotonicTurn`) validated before
@@ -1871,16 +1872,16 @@ decision quality claims.
   `scenario-decision-overload-v1`) with fail-closed lookup, verifiable
   expectations, and reproducible execution.
 - [x] Cover kind classification, escalation triggers and priority, the exact
-  500 bp threshold boundary, share arithmetic and band boundaries, gap
-  evaluation, fail-closed validation, reproducibility, catalog outcomes, and
-  Markdown hygiene in 24 focused tests.
+  500 bp ceiling boundary and inclusive stakes bound, share arithmetic and
+  band boundaries, gap evaluation, fail-closed validation, reproducibility,
+  catalog outcomes, and Markdown hygiene in 28 focused tests.
 
 This establishes a bounded deterministic classification and density-evaluation
 boundary over declared window streams. It does not establish host-side window
 scheduling, automatic candidate derivation from authoritative match state,
 live CLI/MCP surfacing of absorbed windows, or human pacing evidence.
 
-This establishes the spatial topology, deterministic rotation/travel model, neutral objective cycles, vision control, cross-map tradeoff mechanics, team composition archetypes, structures hierarchy, super minion pressure, match victory terminal conditions, role-specific observation/action/debrief contracts, comeback/variance-seeking evaluation, pivotal-decision detection, and decision-density classification with automatic routine execution for the multi-lane match prototype. Cost profiling, broader test expansion, and strategy-diversity measurement remain deferred.
+This establishes the spatial topology, deterministic rotation/travel model, neutral objective cycles, vision control, cross-map tradeoff mechanics, team composition archetypes, structures hierarchy, super minion pressure, match victory terminal conditions, role-specific observation/action/debrief contracts, comeback/variance-seeking evaluation, pivotal-decision detection, and decision-density classification for automatic routine execution for the multi-lane match prototype. Cost profiling, broader test expansion, and strategy-diversity measurement remain deferred.
 
 ### Deliverables
 
