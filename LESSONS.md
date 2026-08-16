@@ -5,6 +5,14 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Register new deterministic-core modules in the repository checker's boundary list
+
+- Context: New pure simulation modules under `src/map/` (and other deterministic-core paths) must be classified in `scripts/check_repository.py`'s core boundary file list, which scans classified modules for async, wall-clock, and network-transport primitives.
+- Symptom: Local `fmt`/`clippy`/`test` pass, but CI's `verify` job fails `python3 scripts/check_repository.py` with `unclassified core boundary file: src/map/<new>.rs`, requiring a follow-up "Fix CI issues" commit after the PR.
+- Cause: The checker fail-closes on any unlisted file in core module directories, and the three cargo verification commands do not include it.
+- Resolution: Add each new core module (and its catalog/tests wiring when applicable) to the alphabetical list in `scripts/check_repository.py` in the same commit as the module, then run `python3 scripts/check_repository.py` locally before pushing.
+- Prevention: Treat the repository checker as a fourth local verification command alongside fmt, clippy, and test whenever the change adds files under `src/`.
+
 ## Keep role-specific observations, actions, and debrief perspectives decoupled from state authority and bounded by role validation
 
 - Context: M9 required implementing 5 distinct match roles (`TopLaner`, `Jungler`, `MidLaner`, `BotCarry`, `Support`) with specialized situational contexts, tactical intents, and causal performance reviews without polluting authoritative match state with role-private heuristics or leaking fog-of-war truth.
