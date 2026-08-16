@@ -9,6 +9,10 @@ pub mod graph;
 pub mod match_catalog;
 pub mod objective;
 pub mod objective_catalog;
+pub mod role_action;
+pub mod role_catalog;
+pub mod role_debrief;
+pub mod role_observation;
 pub mod state;
 pub mod structures;
 pub mod topology;
@@ -35,6 +39,10 @@ pub const M9_TEAM_COMPOSITION_SCHEMA_V1: &str = "m9-team-composition-v1";
 pub const M9_MATCH_STRUCTURES_SCHEMA_V1: &str = "m9-match-structures-v1";
 pub const M9_MATCH_VICTORY_SCHEMA_V1: &str = "m9-match-victory-v1";
 pub const M9_MATCH_SCENARIO_CATALOG_SCHEMA_V1: &str = "m9-match-scenario-catalog-v1";
+pub const M9_ROLE_OBSERVATION_SCHEMA_V1: &str = "m9-role-observation-v1";
+pub const M9_ROLE_ACTION_SCHEMA_V1: &str = "m9-role-action-v1";
+pub const M9_ROLE_DEBRIEF_SCHEMA_V1: &str = "m9-role-debrief-v1";
+pub const M9_ROLE_SCENARIO_CATALOG_SCHEMA_V1: &str = "m9-role-scenario-catalog-v1";
 
 pub use catalog::{MapScenarioDefinition, MapScenarioExecutionResult, MapTravelCatalog};
 pub use composition::{
@@ -58,6 +66,16 @@ pub use objective::{
 };
 pub use objective_catalog::{
   ObjectiveScenarioCatalog, ObjectiveScenarioDefinition, ObjectiveScenarioExecutionResult,
+};
+pub use role_action::{
+  BotCarryIntent, JungleIntent, MidIntent, RoleAction, RoleActionError, RoleIntent, SupportIntent,
+  TopIntent, validate_role_action,
+};
+pub use role_catalog::{RoleScenarioCatalog, RoleScenarioDefinition, RoleScenarioExecutionResult};
+pub use role_debrief::{RoleCausalFactor, RoleDebriefPerspective, RoleKpis, RolePerformanceTier};
+pub use role_observation::{
+  BotCarryContext, JunglerContext, MidLanerContext, RoleMatchObservation, RoleSpecificContext,
+  SupportContext, TopLanerContext, WaveStateSummary,
 };
 pub use state::{MatchMapObservation, MatchMapState, OpponentSighting};
 pub use structures::{

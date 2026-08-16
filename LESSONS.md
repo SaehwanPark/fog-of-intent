@@ -5,6 +5,13 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Keep role-specific observations, actions, and debrief perspectives decoupled from state authority and bounded by role validation
+
+- Context: M9 required implementing 5 distinct match roles (`TopLaner`, `Jungler`, `MidLaner`, `BotCarry`, `Support`) with specialized situational contexts, tactical intents, and causal performance reviews without polluting authoritative match state with role-private heuristics or leaking fog-of-war truth.
+- Symptom: Defining open-ended unstructured action payloads or hardcoding role logic into the authoritative transition would create hidden state channels, bypass actor observation boundaries, or introduce non-deterministic role evaluation.
+- Resolution: Define `RoleMatchObservation` wrapping spatial map observations with role-typed context, `RoleIntent` closed enums validated via `validate_role_action`, and `RoleDebriefPerspective` computing exact integer basis-point KPIs ($[0..=10,000]$ bp) and discrete causal factors (`RoleCausalFactor`) with zero private chain-of-thought enforcement.
+- Prevention: In multi-role simulations, always keep role specialization in observation projections and intent validation gates, ensuring the simulation transition operates on verified spatial state.
+
 ## Enforce defensive structure vulnerability hierarchies and inhibitor countdowns deterministically to model lane progression
 
 - Context: M9 required implementing 3-lane match structures (26 turrets, inhibitors, nexus) and super minion spawning while preserving pure deterministic transitions and replay hashing.
