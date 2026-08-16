@@ -1737,9 +1737,12 @@ match-level debriefing while routine execution remains delegated.
   - [x] Count exact operations (transitions, state hashes, projections, replay
     verifications) over the canonical travel catalog batch with deterministic
     scaling probes; wall-clock timing remains at repository edges.
-- [ ] Expand scenario and property tests without weakening M1/M2 fixtures.
-- [ ] Measure strategy diversity, role activity, communication, and unused
+- [x] Measure strategy diversity, role activity, communication, and unused
   mechanics.
+  - [x] Measure caller-declared validation populations for strategy-share
+    diversity, role activity, communication usage, and unused-mechanic
+    justification with explicit exemption reasons.
+- [ ] Expand scenario and property tests without weakening M1/M2 fixtures.
 
 ### Current M9 abstracted three-lane map and travel model evidence
 
@@ -1918,7 +1921,51 @@ profiling of the objective/structure/role transition families, actor-count
 scaling, memory accounting, or integration with the M6 batch harness; those
 remain at repository edges or deferred.
 
-This establishes the spatial topology, deterministic rotation/travel model, neutral objective cycles, vision control, cross-map tradeoff mechanics, team composition archetypes, structures hierarchy, super minion pressure, match victory terminal conditions, role-specific observation/action/debrief contracts, comeback/variance-seeking evaluation, pivotal-decision detection, decision-density classification for automatic routine execution, and deterministic operation-count cost profiling for the multi-lane match prototype. Broader test expansion and strategy-diversity measurement remain deferred.
+### Current M9 population-validation measurement evidence
+
+- [x] Define `m9-population-validation-v1` covering `MechanicKind` (the
+  closed 8-mechanic M9 catalog: `Rotation`, `ObjectiveContest`,
+  `VisionControl`, `StructureSiege`, `ComebackPlay`, `RoleTactics`,
+  `TeamCommunication`, `PivotalReview`), `ReplaySummary` (explicit
+  caller-declared replay summary: unique id, strategy archetype over the
+  4-archetype composition catalog, active roles, communication-event count,
+  mechanics used — no hidden authoritative state), and `MechanicExemption`
+  (an unused mechanic is acceptable only with an explicit declared reason).
+- [x] Measure with `measure_validation_population`, a pure function with
+  fail-closed typed errors (`EmptyPopulation`, `DuplicateReplayId`,
+  `ReplayWithoutActiveRoles`, `ExemptionWithoutReason` for empty exemption
+  reasons) validated before measurement — distinct-strategy counting uses raw
+  archetype presence so share truncation cannot hide an observed strategy —
+  producing a
+  `PopulationValidationReport` with distinct-strategy count and per-archetype
+  shares (bp), per-role activity shares (bp) with the 1,000 bp activity floor,
+  communication usage (bp) with the 2,500 bp floor, unused and
+  unexplained-unused mechanic lists, and four explicit gate outcomes
+  (`strategy_diversity_passes` at the 2-archetype minimum mirroring the M9
+  exit evidence, `role_activity_passes`, `communication_usage_passes`,
+  `all_required_mechanics_justified`) plus a structured Markdown rendering
+  with zero private chain-of-thought.
+- [x] Define `m9-population-validation-catalog-v1` registering 3 canonical
+  benchmark scenarios (`scenario-diverse-engaged-population-v1` where every
+  gate passes, `scenario-narrow-passive-population-v1` where every gate
+  fails, `scenario-exempted-unused-mechanic-v1` separating an exempted unused
+  mechanic from an unexplained one) with fail-closed lookup, verifiable
+  expectations, and reproducible execution.
+- [x] Cover strategy shares and distinct counting (including the
+  10,001-replay truncation edge), role-activity floors at the exact boundary,
+  communication floors at the exact boundary, unused-mechanic complement and
+  exemption separation, fail-closed validation, error Display coverage,
+  reproducibility, catalog outcomes, and Markdown hygiene in 24 focused tests.
+
+This establishes a bounded deterministic measurement boundary over declared
+validation populations. The activity and communication floors are explicit
+working targets, not calibrated pacing evidence, and the only populations
+measured to date are the synthetic catalog fixtures. It does not establish
+automatic replay-summarization from authoritative histories, population
+sampling, human strategy-quality evidence, or M6/M9 harness integration;
+those remain deferred.
+
+This establishes the spatial topology, deterministic rotation/travel model, neutral objective cycles, vision control, cross-map tradeoff mechanics, team composition archetypes, structures hierarchy, super minion pressure, match victory terminal conditions, role-specific observation/action/debrief contracts, comeback/variance-seeking evaluation, pivotal-decision detection, decision-density classification for automatic routine execution, deterministic operation-count cost profiling, and population-validation measurement for the multi-lane match prototype. Broader test expansion remains deferred.
 
 ### Deliverables
 

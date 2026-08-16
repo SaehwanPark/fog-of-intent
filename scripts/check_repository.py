@@ -105,6 +105,8 @@ CORE_RUST_FILES = (
   "src/map/objective_catalog.rs",
   "src/map/pivotal.rs",
   "src/map/pivotal_catalog.rs",
+  "src/map/population_validation.rs",
+  "src/map/population_validation_catalog.rs",
   "src/map/role_action.rs",
   "src/map/role_catalog.rs",
   "src/map/role_debrief.rs",

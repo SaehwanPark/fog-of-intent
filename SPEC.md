@@ -1772,6 +1772,45 @@ objective/structure/role transition families, actor-count scaling, memory
 accounting, and M6 batch-harness integration remain at repository edges or
 deferred.
 
+#### Delivered in the bounded population-validation follow-up
+
+- `m9-population-validation-v1` measures strategy diversity, role activity,
+  communication usage, and unused-mechanic justification over an explicit
+  caller-declared validation population of `ReplaySummary` summaries
+  (unique replay id, strategy archetype, active roles, communication-event
+  count, mechanics used); no authoritative match state is consulted.
+- `MechanicKind` is the closed 8-mechanic M9 catalog (rotation, objective
+  contest, vision control, structure siege, comeback play, role tactics, team
+  communication, pivotal review). A mechanic left unused is acceptable only
+  through a `MechanicExemption` carrying an explicit reason; unexplained
+  unused mechanics fail `all_required_mechanics_justified`.
+- `measure_validation_population` is a pure function; `EmptyPopulation`,
+  `DuplicateReplayId`, `ReplayWithoutActiveRoles`, and
+  `ExemptionWithoutReason` (empty exemption reasons) fail closed before
+  measurement. Distinct-strategy counting uses raw archetype presence so
+  share truncation cannot hide an observed strategy. The report carries per-archetype strategy shares, per-role
+  activity shares against the 1,000 bp floor, communication usage against the
+  2,500 bp floor, distinct-strategy count against the 2-archetype minimum
+  (mirroring the M9 exit evidence), unused and unexplained-unused mechanic
+  lists, and renders structured Markdown without private chain-of-thought.
+- `m9-population-validation-catalog-v1` registers 3 canonical benchmark
+  scenarios: a diverse engaged population passing every gate, a narrow
+  passive population failing every gate, and an exempted-unused-mechanic
+  population separating justified from unexplained gaps.
+- 24 focused tests cover strategy shares and distinct counting (including
+  the 10,001-replay truncation edge), exact role-activity and communication
+  floor boundaries, unused-mechanic complement and exemption separation,
+  fail-closed validation, error Display coverage, reproducibility, catalog
+  outcomes, and Markdown hygiene.
+
+This establishes a bounded deterministic measurement boundary over declared
+validation populations. The activity and communication floors are explicit
+working targets, not calibrated pacing evidence; the only populations
+measured to date are the synthetic catalog fixtures. Automatic
+replay-summarization from authoritative histories, population sampling,
+human strategy-quality evidence, and M6/M9 harness integration remain
+deferred.
+
 ## Future
 
 The detailed and canonical order is in `ROADMAP.md`.
