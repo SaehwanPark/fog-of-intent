@@ -6,6 +6,31 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.201] - 2026-08-16
+
+### Added
+
+- Expanded M9 scenario and property tests (`src/map/tests/properties.rs`, 15
+  tests, M1/M2 fixtures untouched):
+  - Exhaustive map-graph properties over all 15×15 location pairs: distance
+    symmetry, adjacency-valid shortest routes with matching beat counts, and
+    distance bounds.
+  - Whole-catalog replay-determinism sweep executing every registered
+    scenario across all eight M9 catalogs (map travel, objective, match,
+    role, comeback, pivotal, decision-density, population-validation) twice
+    with identical results, expectation verification for
+    expectation-carrying catalogs, and state-advance checks for hash-bearing
+    catalogs.
+  - Generated-input conservation properties from an in-test deterministic
+    LCG: state-hash determinism and perturbation distinctness, the fog-of-war
+    observation invariant (Observed enemies are team-visible with their true
+    location; Unknown enemies are not), decision-density count/share
+    conservation, pivotal aggregate consistency, and population-validation
+    raw-membership consistency.
+  - Comeback classification sweep across the full `[-10,000..=10,000]` bp
+    delta range (2,857 cases), variance-multiplier monotonic ordering, and
+    fixed-input evaluation determinism.
+
 ## [0.1.200] - 2026-08-16
 
 ### Added

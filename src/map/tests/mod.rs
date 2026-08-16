@@ -1,4 +1,4 @@
-//! Tests for map topology, travel model, objective cycles, vision control, team compositions, structures, match scenarios, comeback mechanics, pivotal-decision detection, decision density, cost profiling, and population validation.
+//! Tests for map topology, travel model, objective cycles, vision control, team compositions, structures, match scenarios, comeback mechanics, pivotal-decision detection, decision density, cost profiling, population validation, and expanded properties.
 
 mod comeback;
 mod composition;
@@ -8,6 +8,7 @@ mod match_scenarios;
 mod objective;
 mod pivotal;
 mod population_validation;
+mod properties;
 mod role;
 mod structures;
 mod travel;
