@@ -16,6 +16,8 @@ pub mod objective;
 pub mod objective_catalog;
 pub mod pivotal;
 pub mod pivotal_catalog;
+pub mod population_validation;
+pub mod population_validation_catalog;
 pub mod role_action;
 pub mod role_catalog;
 pub mod role_debrief;
@@ -56,6 +58,8 @@ pub const M9_PIVOTAL_DECISION_SCHEMA_V1: &str = "m9-pivotal-decision-v1";
 pub const M9_PIVOTAL_CATALOG_SCHEMA_V1: &str = "m9-pivotal-catalog-v1";
 pub const M9_DECISION_DENSITY_SCHEMA_V1: &str = "m9-decision-density-v1";
 pub const M9_DECISION_DENSITY_CATALOG_SCHEMA_V1: &str = "m9-decision-density-catalog-v1";
+pub const M9_POPULATION_VALIDATION_SCHEMA_V1: &str = "m9-population-validation-v1";
+pub const M9_POPULATION_VALIDATION_CATALOG_SCHEMA_V1: &str = "m9-population-validation-catalog-v1";
 
 pub use catalog::{MapScenarioDefinition, MapScenarioExecutionResult, MapTravelCatalog};
 pub use comeback::{
@@ -108,6 +112,14 @@ pub use pivotal::{
 };
 pub use pivotal_catalog::{
   PivotalCatalog, PivotalScenarioDefinition, PivotalScenarioExecutionResult,
+};
+pub use population_validation::{
+  COMMUNICATION_USAGE_FLOOR_BP, MIN_DISTINCT_STRATEGIES, MechanicExemption, MechanicKind,
+  PopulationValidationError, PopulationValidationReport, ROLE_ACTIVITY_FLOOR_BP, ReplayObservation,
+  measure_validation_population,
+};
+pub use population_validation_catalog::{
+  PopulationScenarioDefinition, PopulationScenarioExecutionResult, PopulationValidationCatalog,
 };
 pub use role_action::{
   BotCarryIntent, JungleIntent, MidIntent, RoleAction, RoleActionError, RoleIntent, SupportIntent,

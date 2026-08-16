@@ -6,6 +6,43 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.200] - 2026-08-16
+
+### Added
+
+- `m9-population-validation-v1` and `m9-population-validation-catalog-v1`
+  measuring strategy diversity, role activity, communication usage, and
+  unused-mechanic justification for M9 validation populations:
+  - `ReplayObservation` — explicit caller-declared replay summary (unique
+    replay id, strategy archetype over the 4-archetype composition catalog,
+    active roles, communication-event count, mechanics used); no
+    authoritative match state consulted.
+  - `MechanicKind` — the closed 8-mechanic M9 catalog: rotation, objective
+    contest, vision control, structure siege, comeback play, role tactics,
+    team communication, pivotal review.
+  - `MechanicExemption` — an unused mechanic is acceptable only with an
+    explicit declared reason; unexplained unused mechanics fail
+    `all_required_mechanics_justified`.
+  - `measure_validation_population` — pure function with fail-closed typed
+    errors (`EmptyPopulation`, `DuplicateReplayId`,
+    `ReplayWithoutActiveRoles`) validated before measurement.
+  - `PopulationValidationReport` — per-archetype strategy shares and
+    distinct-strategy count against the 2-archetype minimum (mirroring the
+    M9 exit evidence), per-role activity shares against the 1,000 bp floor,
+    communication usage against the 2,500 bp floor, unused and
+    unexplained-unused mechanic lists, four explicit gate outcomes, and
+    structured Markdown rendering without private chain-of-thought.
+  - `PopulationValidationCatalog` with 3 canonical benchmark scenarios:
+    `scenario-diverse-engaged-population-v1` (every gate passes),
+    `scenario-narrow-passive-population-v1` (every gate fails),
+    `scenario-exempted-unused-mechanic-v1` (an exempted unused mechanic
+    beside an unexplained one).
+  - 21 focused tests: strategy shares and distinct counting, exact
+    role-activity and communication floor boundaries, unused-mechanic
+    complement and exemption separation, fail-closed validation, error
+    Display coverage, reproducibility, catalog outcomes, and Markdown
+    hygiene.
+
 ## [0.1.199] - 2026-08-16
 
 ### Added
