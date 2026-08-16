@@ -95,6 +95,8 @@ CORE_RUST_FILES = (
   "src/map/comeback_catalog.rs",
   "src/map/composition.rs",
   "src/map/contest.rs",
+  "src/map/decision_density.rs",
+  "src/map/decision_density_catalog.rs",
   "src/map/graph.rs",
   "src/map/match_catalog.rs",
   "src/map/mod.rs",

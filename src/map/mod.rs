@@ -7,6 +7,8 @@ pub mod comeback;
 pub mod comeback_catalog;
 pub mod composition;
 pub mod contest;
+pub mod decision_density;
+pub mod decision_density_catalog;
 pub mod graph;
 pub mod match_catalog;
 pub mod objective;
@@ -51,6 +53,8 @@ pub const M9_COMEBACK_MECHANICS_SCHEMA_V1: &str = "m9-comeback-mechanics-v1";
 pub const M9_COMEBACK_CATALOG_SCHEMA_V1: &str = "m9-comeback-catalog-v1";
 pub const M9_PIVOTAL_DECISION_SCHEMA_V1: &str = "m9-pivotal-decision-v1";
 pub const M9_PIVOTAL_CATALOG_SCHEMA_V1: &str = "m9-pivotal-catalog-v1";
+pub const M9_DECISION_DENSITY_SCHEMA_V1: &str = "m9-decision-density-v1";
+pub const M9_DECISION_DENSITY_CATALOG_SCHEMA_V1: &str = "m9-decision-density-catalog-v1";
 
 pub use catalog::{MapScenarioDefinition, MapScenarioExecutionResult, MapTravelCatalog};
 pub use comeback::{
@@ -67,6 +71,15 @@ pub use composition::{
 pub use contest::{
   ContestTransitionResult, CrossMapTradeTarget, ObjectiveEffect, ObjectiveEvent, ObjectiveIntent,
   TradeClassification, TradeoffEvaluation, transition_objective_contest,
+};
+pub use decision_density::{
+  CandidateWindowKind, DECISION_SHARE_MAX_BP, DECISION_SHARE_MIN_BP, DecisionDensityError,
+  DecisionDensityReport, EscalationTrigger, MAX_DECISION_GAP_TURNS, ROUTINE_STAKES_CEILING_BP,
+  RoutineWindowCandidate, STAKES_BOUND_BP, WindowDisposition, WindowFinding,
+  evaluate_decision_density,
+};
+pub use decision_density_catalog::{
+  DecisionDensityCatalog, DecisionDensityScenarioDefinition, DecisionDensityScenarioExecutionResult,
 };
 pub use graph::{
   MapGraphError, TravelRoute, adjacent_neighbors, compute_shortest_route, distance_in_beats,
