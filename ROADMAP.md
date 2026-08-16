@@ -1733,7 +1733,10 @@ match-level debriefing while routine execution remains delegated.
   - [x] Classify candidate windows as automatic or decision-required with
     explicit escalation triggers and evaluate density against explicit share
     and gap targets.
-- [ ] Profile transition, replay, projection, and batch-run costs.
+- [x] Profile transition, replay, projection, and batch-run costs.
+  - [x] Count exact operations (transitions, state hashes, projections, replay
+    verifications) over the canonical travel catalog batch with deterministic
+    scaling probes; wall-clock timing remains at repository edges.
 - [ ] Expand scenario and property tests without weakening M1/M2 fixtures.
 - [ ] Measure strategy diversity, role activity, communication, and unused
   mechanics.
@@ -1881,7 +1884,40 @@ boundary over declared window streams. It does not establish host-side window
 scheduling, automatic candidate derivation from authoritative match state,
 live CLI/MCP surfacing of absorbed windows, or human pacing evidence.
 
-This establishes the spatial topology, deterministic rotation/travel model, neutral objective cycles, vision control, cross-map tradeoff mechanics, team composition archetypes, structures hierarchy, super minion pressure, match victory terminal conditions, role-specific observation/action/debrief contracts, comeback/variance-seeking evaluation, pivotal-decision detection, and decision-density classification for automatic routine execution for the multi-lane match prototype. Cost profiling, broader test expansion, and strategy-diversity measurement remain deferred.
+### Current M9 cost-profiling evidence
+
+- [x] Define `m9-cost-profile-v1` covering `OperationCounts` (exact
+  transitions-executed, state-hashes-computed, observation-projections, and
+  replay-verifications counters), `ScenarioCostProfile`, `ScalingProbe`, and
+  `CostProfileReport` with per-entry bp averages, marginal transition cost per
+  probe step, hash-constancy, and replay-doubling findings plus a structured
+  Markdown rendering without wall-clock measurements or hidden state.
+- [x] Count deterministically instead of timing: every counted projection and
+  replay is actually performed by the profiler over the canonical
+  `MapTravelCatalog` batch (execution pass, terminal observation projection for
+  every allied actor, then a replay pass compared by initial/terminal hash);
+  state-hash counts follow the versioned executor contract of one initial plus
+  one terminal hash per pass. `MapScenarioDefinition::execute_with_state`
+  exposes the terminal state for the projection work without sharing
+  authoritative state.
+- [x] Run scaling probes at explicit step ladder [1, 8, 64, 512]: transition
+  and replay work grows linearly with match length (exact marginal cost of 2
+  transitions per step including replay) while per-pass hash work stays
+  constant at 2 evaluations, independent of match length.
+- [x] Fail closed on malformed profiling requests (`EmptyProbeScript`,
+  `ProbeMapUnavailable`, wrapped transition errors) before any counting.
+- [x] Cover scenario-count derivation from script and roster shape, replay
+  pass semantics, batch-total sums and exact bp averages, probe linearity and
+  hash constancy, exact marginal cost, fail-closed validation, transition
+  error wrapping, reproducibility, and Markdown hygiene in 13 focused tests.
+
+This establishes a bounded deterministic cost-accounting boundary over the
+canonical map-travel path. It does not establish wall-clock timing evidence,
+profiling of the objective/structure/role transition families, actor-count
+scaling, memory accounting, or integration with the M6 batch harness; those
+remain at repository edges or deferred.
+
+This establishes the spatial topology, deterministic rotation/travel model, neutral objective cycles, vision control, cross-map tradeoff mechanics, team composition archetypes, structures hierarchy, super minion pressure, match victory terminal conditions, role-specific observation/action/debrief contracts, comeback/variance-seeking evaluation, pivotal-decision detection, decision-density classification for automatic routine execution, and deterministic operation-count cost profiling for the multi-lane match prototype. Broader test expansion and strategy-diversity measurement remain deferred.
 
 ### Deliverables
 

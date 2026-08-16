@@ -30,6 +30,16 @@ pub struct MapScenarioDefinition {
 impl MapScenarioDefinition {
   /// Execute the scenario deterministically and verify the outcome.
   pub fn execute(&self) -> Result<MapScenarioExecutionResult, TravelError> {
+    self.execute_with_state().map(|(result, _)| result)
+  }
+
+  /// Execute the scenario and also return the terminal authoritative state so
+  /// callers (for example cost profiling) can perform projection work against
+  /// the real terminal state. The state leaves this function as an owned copy;
+  /// no shared authoritative state is exposed.
+  pub fn execute_with_state(
+    &self,
+  ) -> Result<(MapScenarioExecutionResult, MatchMapState), TravelError> {
     let mut state = self.initial_state.clone();
     let initial_hash = state.hash();
 
@@ -50,13 +60,16 @@ impl MapScenarioDefinition {
       terminal_locations.push((*id, loc.current_location()));
     }
 
-    Ok(MapScenarioExecutionResult {
-      scenario_id: self.scenario_id,
-      initial_hash,
-      terminal_hash,
-      turns_elapsed: state.turn(),
-      terminal_locations,
-    })
+    Ok((
+      MapScenarioExecutionResult {
+        scenario_id: self.scenario_id,
+        initial_hash,
+        terminal_hash,
+        turns_elapsed: state.turn(),
+        terminal_locations,
+      },
+      state,
+    ))
   }
 }
 

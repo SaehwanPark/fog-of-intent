@@ -6,6 +6,36 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.199] - 2026-08-16
+
+### Added
+
+- `m9-cost-profile-v1` deterministic cost profiling for M9 transition, replay,
+  projection, and batch-run work:
+  - `OperationCounts` — exact counters for transitions executed, state hashes
+    computed (per the versioned executor contract: one initial plus one
+    terminal hash per pass), observation projections actually performed, and
+    replay verifications; no wall-clock measurement in the deterministic core.
+  - `profile_travel_scenario` — executes each canonical `MapTravelCatalog`
+    scenario, projects a terminal observation for every allied actor, then
+    replay-verifies by re-execution and initial/terminal hash comparison.
+  - `profile_catalog_batch` — aggregates per-entry bp averages over the
+    four-entry catalog batch; `CostProfileReport` renders structured Markdown
+    without wall-clock measurements or hidden state.
+  - Scaling probes at the explicit [1, 8, 64, 512] step ladder: transition and
+    replay work grows linearly with match length (exact marginal cost of 2
+    transitions per step including replay) while per-pass hash work stays
+    constant at 2 evaluations regardless of match length.
+  - `MapScenarioDefinition::execute_with_state` — new catalog boundary
+    returning the terminal state so profiling performs real projections
+    without sharing authoritative state; `execute` delegates unchanged.
+  - Fail-closed `CostProfileError` (`EmptyProbeScript`, `ProbeMapUnavailable`,
+    wrapped transition errors) before any counting.
+  - 13 focused tests: scenario-count derivation, replay pass semantics, batch
+    sums and exact bp averages, probe linearity and hash constancy, exact
+    marginal cost, fail-closed validation, error wrapping, reproducibility,
+    and Markdown hygiene.
+
 ## [0.1.198] - 2026-08-16
 
 ### Added
