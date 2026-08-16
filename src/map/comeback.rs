@@ -154,7 +154,7 @@ pub struct ComebackEvaluation {
   pub perspective: TeamSide,
   pub deficit_level: DeficitLevel,
   pub recommended_behavior: VarianceSeekingBehavior,
-  /// Net structural/objective value delta from Allied perspective (`[-10,000..=10,000]` bp).
+  /// Net structural/objective value delta from the evaluated `perspective` (`[-10,000..=10,000]` bp).
   pub net_value_delta_bp: i32,
   /// Opportunity window value before variance is applied (`[0..=10,000]` bp).
   pub base_opportunity_bp: u32,
@@ -186,9 +186,10 @@ impl ComebackEvaluation {
       self.base_opportunity_bp
     ));
     out.push_str(&format!(
-      "- **Variance Multiplier**: {} bp ({}×)\n",
+      "- **Variance Multiplier**: {} bp ({}.{}×)\n",
       self.variance_multiplier_bp,
-      self.variance_multiplier_bp / 10_000
+      self.variance_multiplier_bp / 10_000,
+      (self.variance_multiplier_bp % 10_000) / 1_000
     ));
     out.push_str(&format!(
       "- **Variance Play Recommended**: {}\n",
@@ -264,12 +265,27 @@ pub fn evaluate_comeback_opportunity(
   };
 
   // --- Recommend variance-seeking behavior ---
+  // Swap compositions and flip the recent-objective flag so that the behavior
+  // recommendation is made relative to the *evaluated* team, not always Allied.
+  // `eval_comp` is the composition of the team we are evaluating; `enemy_comp`
+  // is the opponent's composition from that team's viewpoint.
+  // `eval_recent_objective` reflects whether the *evaluated* team recently
+  // secured a high-value objective (Allied's flag stays; Opposing gets `false`
+  // because the flag in `ComebackOpportunityInputs` is defined as Allied-centric).
+  let (eval_comp, enemy_comp, eval_recent_objective) = match perspective {
+    TeamSide::Allied => (
+      allied_comp,
+      opposing_comp,
+      inputs.recent_high_value_objective,
+    ),
+    TeamSide::Opposing => (opposing_comp, allied_comp, false),
+  };
   let recommended_behavior = recommend_variance_behavior(
     deficit_level,
     inputs.current_phase,
-    inputs.recent_high_value_objective,
-    allied_comp,
-    opposing_comp,
+    eval_recent_objective,
+    eval_comp,
+    enemy_comp,
   );
 
   let variance_multiplier_bp = recommended_behavior.variance_multiplier_bp();
