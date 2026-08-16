@@ -866,3 +866,43 @@ fn top_level_help_catalog_documents_every_subcommand() {
     assert!(!entry.summary.is_empty());
   }
 }
+
+// --- M9 complete-match replay transcript ---
+
+#[test]
+fn match_replay_transcript_lists_both_replay_verified_matches() {
+  let transcript = super::match_replay::build_match_replay_transcript()
+    .expect("canonical matches execute and replay");
+  let lines = transcript.lines();
+  assert_eq!(lines.len(), 6);
+  assert_eq!(lines[0], "match-replay: begin");
+  assert!(lines[1].starts_with(
+    "match: scenario=scenario-complete-allied-snowball-v1 winner=allied condition=nexus-demolished final-turn=14 objectives-allied=1 objectives-opposing=0"
+  ));
+  assert_eq!(
+    lines[2],
+    "replay: scenario=scenario-complete-allied-snowball-v1 initial-hash-match=yes final-hash-match=yes"
+  );
+  assert!(lines[3].starts_with(
+    "match: scenario=scenario-complete-comeback-concession-v1 winner=allied condition=match-conceded final-turn=29 objectives-allied=3 objectives-opposing=1"
+  ));
+  assert_eq!(
+    lines[4],
+    "replay: scenario=scenario-complete-comeback-concession-v1 initial-hash-match=yes final-hash-match=yes"
+  );
+  assert_eq!(lines[5], "match-replay: complete");
+}
+
+#[test]
+fn match_replay_transcript_is_deterministic_and_hash_value_free() {
+  let first = super::match_replay::build_match_replay_transcript().expect("first transcript");
+  let second = super::match_replay::build_match_replay_transcript().expect("second transcript");
+  assert_eq!(first, second);
+  for line in first.lines() {
+    // Hash commitment is reported as a categorical match flag, never as a
+    // raw hash value.
+    assert!(!line.contains("StateHash"));
+    assert!(line.is_ascii());
+    assert!(!line.contains('\u{1b}'));
+  }
+}

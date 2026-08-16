@@ -12,9 +12,10 @@ Keep this file short and repo-wide. Detailed project workflows live in
   `ARCHITECTURE.md`, and `CHANGELOG.md`. The longer proposal and stack analysis
   under `docs/` are design sources, not implementation evidence.
 - The repository currently contains a bounded two-window fixture command loop
-  (`--scenario m3-two-window-fixture-v1`). Do not describe a complete match,
-  MCP server, persistence service, GUI, or other unshipped capabilities as
-  playable from that runner.
+  (`--scenario m3-two-window-fixture-v1`) and a print-and-exit replay-verified
+  M9 complete-match transcript (`--scenario m9-complete-match-replay-v1`).
+  Do not describe an interactive complete match, MCP server, persistence
+  service, GUI, or other unshipped capabilities as playable from that runner.
 
 ## Why
 

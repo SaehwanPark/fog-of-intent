@@ -28,7 +28,7 @@ pub const CLI_APPLICATION_VERSION: &str =
   concat!("fog-of-intent ", env!("CARGO_PKG_VERSION"), "\n");
 
 /// Bounded process-level usage for the executable wrapper.
-pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1\n  --run-dir <path>  store bounded run artifacts in this directory\n  --color <mode>    auto, always, or never (default auto)\n  --help            show this help\n  --version, -V     show package version\n";
+pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1 or m9-complete-match-replay-v1\n  --run-dir <path>  store bounded run artifacts in this directory (fixture only)\n  --color <mode>    auto, always, or never (default auto)\n  --help            show this help\n  --version, -V     show package version\n";
 
 /// Closed set of executable fixture constructors.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
@@ -36,6 +36,8 @@ pub enum CliApplicationScenario {
   /// The deterministic two-window M3 reference fixture.
   #[default]
   M3TwoWindowFixture,
+  /// The replay-verified M9 complete-match transcript; prints and exits.
+  M9CompleteMatchReplay,
 }
 
 /// Errors raised while parsing executable arguments before the command loop.
@@ -52,6 +54,7 @@ pub enum CliApplicationArgsError {
   DuplicateColor,
   UnsupportedColor,
   UnsupportedScenario,
+  RunDirectoryRequiresFixture,
   UnexpectedArgument,
 }
 
@@ -70,6 +73,9 @@ impl CliApplicationArgsError {
       Self::DuplicateColor => "--color may be provided only once",
       Self::UnsupportedColor => "unsupported --color mode; use auto, always, or never",
       Self::UnsupportedScenario => "unsupported --scenario ID; use --help",
+      Self::RunDirectoryRequiresFixture => {
+        "--run-dir is available only for the two-window fixture scenario"
+      }
       Self::UnexpectedArgument => "unexpected executable argument; use --help",
     }
   }
@@ -174,10 +180,13 @@ pub fn parse_application_args(
         if args[index].to_string_lossy().starts_with('-') {
           return Err(CliApplicationArgsError::UnexpectedArgument);
         }
-        if args[index] != CLI_FIXTURE_SCENARIO_ID {
+        if args[index] == CLI_FIXTURE_SCENARIO_ID {
+          scenario = Some(CliApplicationScenario::M3TwoWindowFixture);
+        } else if args[index] == crate::cli::CLI_MATCH_REPLAY_SCENARIO_ID {
+          scenario = Some(CliApplicationScenario::M9CompleteMatchReplay);
+        } else {
           return Err(CliApplicationArgsError::UnsupportedScenario);
         }
-        scenario = Some(CliApplicationScenario::M3TwoWindowFixture);
       }
       value if value == "--run-dir" => {
         if run_dir.is_some() {
@@ -218,11 +227,28 @@ pub fn parse_application_args(
     }
     index += 1;
   }
+  let scenario = scenario.unwrap_or_default();
+  if run_dir.is_some() && scenario != CliApplicationScenario::M3TwoWindowFixture {
+    // The match-replay transcript prints and exits without creating run
+    // artifacts; accepting a store path would silently ignore it.
+    return Err(CliApplicationArgsError::RunDirectoryRequiresFixture);
+  }
   Ok(CliApplicationCommand::Run(CliApplicationOptions {
-    scenario: scenario.unwrap_or_default(),
+    scenario,
     run_dir,
     color: color.unwrap_or_default(),
   }))
+}
+
+/// Print the replay-verified M9 complete-match transcript and stop. Used by
+/// the executable edge for `--scenario m9-complete-match-replay-v1`.
+pub fn write_match_replay_transcript<W: Write>(mut output: W) -> io::Result<()> {
+  let transcript = crate::cli::build_match_replay_transcript().map_err(io::Error::other)?;
+  for line in transcript.lines() {
+    output.write_all(line.as_bytes())?;
+    output.write_all(b"\n")?;
+  }
+  output.flush()
 }
 
 /// Why the command loop stopped reading input.
@@ -383,7 +409,7 @@ mod tests {
     );
     assert_eq!(
       CLI_APPLICATION_HELP,
-      "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1\n  --run-dir <path>  store bounded run artifacts in this directory\n  --color <mode>    auto, always, or never (default auto)\n  --help            show this help\n  --version, -V     show package version\n"
+      "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1 or m9-complete-match-replay-v1\n  --run-dir <path>  store bounded run artifacts in this directory (fixture only)\n  --color <mode>    auto, always, or never (default auto)\n  --help            show this help\n  --version, -V     show package version\n"
     );
     assert_eq!(
       parse_application_args(&[OsString::from("--version")]),
@@ -647,5 +673,64 @@ mod tests {
     assert!(output.contains("example: plan contest"));
     assert!(output.contains("observation: schema="));
     assert!(!output.contains("source_state_hash"));
+  }
+  #[test]
+  fn application_args_parse_the_match_replay_scenario() {
+    let args = [
+      OsString::from("--scenario"),
+      OsString::from("m9-complete-match-replay-v1"),
+    ];
+    let command = parse_application_args(&args).expect("match replay scenario");
+    match command {
+      CliApplicationCommand::Run(options) => {
+        assert_eq!(
+          options.scenario(),
+          CliApplicationScenario::M9CompleteMatchReplay
+        );
+        assert_eq!(options.run_dir(), None);
+      }
+      other => panic!("unexpected command: {other:?}"),
+    }
+  }
+
+  #[test]
+  fn match_replay_scenario_rejects_run_directory_and_unknown_ids() {
+    let args = [
+      OsString::from("--scenario"),
+      OsString::from("m9-complete-match-replay-v1"),
+      OsString::from("--run-dir"),
+      OsString::from("runs"),
+    ];
+    assert_eq!(
+      parse_application_args(&args),
+      Err(CliApplicationArgsError::RunDirectoryRequiresFixture)
+    );
+
+    let unknown = [
+      OsString::from("--scenario"),
+      OsString::from("m9-unknown-scenario"),
+    ];
+    assert_eq!(
+      parse_application_args(&unknown),
+      Err(CliApplicationArgsError::UnsupportedScenario)
+    );
+  }
+
+  #[test]
+  fn help_lists_both_executable_scenarios() {
+    assert!(CLI_APPLICATION_HELP.contains("m3-two-window-fixture-v1"));
+    assert!(CLI_APPLICATION_HELP.contains("m9-complete-match-replay-v1"));
+  }
+
+  #[test]
+  fn match_replay_transcript_writer_outputs_labeled_lines() {
+    let mut buffer: Vec<u8> = Vec::new();
+    write_match_replay_transcript(&mut buffer).expect("transcript writes");
+    let text = String::from_utf8(buffer).expect("UTF-8 transcript");
+    let lines: Vec<&str> = text.lines().collect();
+    assert_eq!(lines.len(), 6);
+    assert_eq!(lines[0], "match-replay: begin");
+    assert_eq!(lines[5], "match-replay: complete");
+    assert!(text.ends_with('\n'));
   }
 }

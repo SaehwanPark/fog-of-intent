@@ -44,11 +44,22 @@ fn main() -> ExitCode {
   let stdout_is_terminal = io::stdout().is_terminal();
   let no_color = std::env::var_os("NO_COLOR").is_some();
   let color_enabled = resolve_color(options.color(), stdout_is_terminal, no_color);
-  let mut command_loop = match (options.scenario(), options.run_dir()) {
-    (CliApplicationScenario::M3TwoWindowFixture, Some(path)) => {
-      CliCommandLoop::fixture_with_store(CliRunStore::new(path))
-    }
-    (CliApplicationScenario::M3TwoWindowFixture, None) => CliCommandLoop::fixture(),
+  if matches!(
+    options.scenario(),
+    CliApplicationScenario::M9CompleteMatchReplay
+  ) {
+    let stdout = io::stdout();
+    return match fog_of_intent::command_loop::write_match_replay_transcript(stdout.lock()) {
+      Ok(()) => ExitCode::SUCCESS,
+      Err(error) => {
+        eprintln!("match replay failed: {error}");
+        ExitCode::FAILURE
+      }
+    };
+  }
+  let mut command_loop = match options.run_dir() {
+    Some(path) => CliCommandLoop::fixture_with_store(CliRunStore::new(path)),
+    None => CliCommandLoop::fixture(),
   };
   let result = if stdin_is_terminal && stdout_is_terminal {
     command_loop.run_repl(color_enabled)

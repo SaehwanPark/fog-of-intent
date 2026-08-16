@@ -31,7 +31,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | --- | --- | --- |
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
-| Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs` | Standalone package version reporting plus a bounded fixture transcript with `--scenario m3-two-window-fixture-v1`, optional `--run-dir`, TTY prompt/completion, and `--color` |
+| Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs` | Standalone package version reporting, a bounded fixture transcript with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, TTY prompt/completion, `--color`), and a replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1` |
 | Package | `Cargo.toml` | Version `0.1.197`, one deferred edge crate (`reedline`) |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
@@ -2046,10 +2046,33 @@ terminates and replays to an identical final hash, at the library boundary. Refe
 surfacing of the composed replay, MCP match replays, multi-match
 tournaments, and human pacing evidence remain deferred.
 
+### Current M9 reference-CLI complete-match replay evidence
+
+- [x] Define `m9-complete-match-replay-v1` as the second executable scenario:
+  `--scenario m9-complete-match-replay-v1` executes both canonical composed
+  complete matches, replay-verifies each by full re-execution and hash
+  comparison, prints a stable labeled plain-text transcript (match label,
+  winner, condition, final turn, objective counts, phase/event/effect
+  totals, categorical replay-match flags — never raw hash values), and
+  exits. Fail-closed: a replay mismatch or execution failure prints nothing
+  and fails the process.
+- [x] Keep the projection pure at the adapter edge (`src/cli/match_replay.rs`
+  performs no I/O) with the writer at the executable boundary
+  (`write_match_replay_transcript`); `--run-dir` is rejected for this
+  scenario because the transcript creates no run artifacts, and unknown
+  scenario ids keep failing closed.
+- [x] Cover transcript content and determinism, hash-value-free labeled
+  output, scenario parsing, run-dir rejection, help text, and a
+  clean-checkout binary run through the real executable in 6 focused tests.
+
+This delivers the bounded CLI portion of the "Complete CLI and MCP match
+replays" deliverable. MCP match replays, interactive match play, save/load
+of match replays, and human pacing evidence remain deferred.
+
 ### Deliverables
 
 - Versioned match scenario and ruleset.
-- Complete CLI and MCP match replays.
+- Complete CLI and MCP match replays (CLI delivered bounded; MCP deferred).
 - Role-specific and match-level debriefs.
 - Performance and decision-density reports.
 
