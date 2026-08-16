@@ -1655,8 +1655,46 @@ distribution estimation, and parametric fitting remain open.
   Allied/Opposing symmetry, clamping, catalog outcomes, and Markdown rendering.
 
 This establishes a bounded deterministic comeback evaluation boundary from explicit
-inputs. Automatic comeback detection from true match state, match-level
-pivotal-decision detection, and decision density optimization remain deferred.
+inputs. Automatic comeback detection from true match state and decision density
+optimization remain deferred.
+
+#### Delivered in the bounded pivotal-decision detection follow-up
+
+- `PivotalDecisionSample` declares one caller-supplied decision measurement:
+  decision id, strictly increasing turn, acting side, and Allied-perspective
+  net match value before/after in `[-10,000..=10,000]` bp. No authoritative
+  match state is consulted.
+- `PivotalTier` (`Routine`, `Notable`, `Pivotal`, `MatchDefining`) classifies
+  absolute swing magnitude at explicit 500/1,500/3,500 bp thresholds;
+  `SwingDirection` and `DecisionAlignment` (`SwingWithActor`,
+  `SwingAgainstActor`, `NeutralSwing`) separate outcome direction from
+  acting-side attribution.
+- Lead-change detection is a strict value-sign flip; passing to or from exact
+  parity is not a lead change.
+- `detect_pivotal_decisions` is a pure function; `EmptyTrajectory`,
+  `ValueOutOfRange`, and `NonMonotonicTurn` fail closed with the offending
+  sample index before any classification.
+- `PivotalDecisionReport` returns findings in turn order, `most_pivotal`
+  (largest absolute swing with earliest-turn tie-break), `pivotal_count`,
+  ranked `pivotal_findings()`, `lead_change_turns`, `final_value_bp`, and
+  saturating `total_absolute_swing_bp`; renders structured Markdown without
+  private chain-of-thought or hidden state.
+- `PivotalCatalog` registers 3 canonical benchmark scenarios:
+  1. `scenario-base-race-decisive-swing-v1`: one `MatchDefining` swing decides
+     an uncontested base race.
+  2. `scenario-baron-throw-comeback-v1`: an against-actor throw flips the lead
+     at turn 14 and the match follows.
+  3. `scenario-stable-slow-burn-v1`: only notable swings; zero pivotal
+     decisions and no lead changes.
+- 21 focused tests cover tier boundaries, direction/alignment matrices,
+  strict lead-change semantics, ranking tie-break, fail-closed validation,
+  reproducibility, aggregates, catalog outcomes, and Markdown hygiene.
+
+This establishes a bounded deterministic detection boundary over declared
+value trajectories. Automatic trajectory derivation from authoritative match
+history, host/CLI/MCP debrief integration, counterfactual branching from a
+pivotal decision, threshold calibration, and decision quality claims remain
+deferred.
 
 ## Future
 

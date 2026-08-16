@@ -6,6 +6,40 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.197] - 2026-08-16
+
+### Added
+
+- `m9-pivotal-decision-v1` and `m9-pivotal-catalog-v1` defining match-level
+  pivotal-decision detection for M9:
+  - `PivotalDecisionSample` — explicit caller-declared decision measurement
+    (decision id, strictly increasing turn, acting side, Allied-perspective net
+    match value before/after in `[-10,000..=10,000]` bp); no authoritative
+    match state consulted.
+  - `PivotalTier` (4 discrete tiers: `Routine`, `Notable`, `Pivotal`,
+    `MatchDefining`) classified from absolute swing magnitude with explicit
+    500/1,500/3,500 bp thresholds.
+  - `SwingDirection` (`AlliedFavorable`/`OpposingFavorable`/`Neutral`) and
+    `DecisionAlignment` (`SwingWithActor`/`SwingAgainstActor`/`NeutralSwing`)
+    separating outcome direction from acting-side attribution.
+  - Strict lead-change detection: only a value-sign flip counts; passing to or
+    from exact parity does not.
+  - `detect_pivotal_decisions` — pure function with fail-closed typed errors
+    (`EmptyTrajectory`, `ValueOutOfRange`, `NonMonotonicTurn`) validated before
+    classification.
+  - `PivotalDecisionReport` — findings in turn order, `most_pivotal` (largest
+    absolute swing, earliest-turn tie-break), `pivotal_count`, ranked
+    `pivotal_findings()`, `lead_change_turns`, `final_value_bp`, and saturating
+    `total_absolute_swing_bp`; renders structured Markdown without private
+    chain-of-thought or hidden state.
+  - `PivotalCatalog` with 3 canonical benchmark scenarios:
+    `scenario-base-race-decisive-swing-v1` (match-defining swing),
+    `scenario-baron-throw-comeback-v1` (against-actor throw + lead change),
+    `scenario-stable-slow-burn-v1` (no pivotal decisions).
+  - 21 focused tests: tier boundaries, direction/alignment matrices, strict
+    lead-change semantics, ranking tie-break, fail-closed validation,
+    reproducibility, aggregates, catalog outcomes, and Markdown hygiene.
+
 ## [0.1.196] - 2026-08-16
 
 ### Added

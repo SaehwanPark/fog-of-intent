@@ -3,7 +3,7 @@
 **Document role:** Canonical milestone order, scope, and promotion gates
 **Status:** Active
 **Current milestone:** M2 — One-Lane Vertical Slice
-**Last reviewed:** 2026-08-13
+**Last reviewed:** 2026-08-16
 
 This document is the authoritative execution roadmap. The project proposal
 explains the broader vision and preserves the original roadmap concept; when its
@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs` | Standalone package version reporting plus a bounded fixture transcript with `--scenario m3-two-window-fixture-v1`, optional `--run-dir`, TTY prompt/completion, and `--color` |
-| Package | `Cargo.toml` | Version `0.1.192`, one deferred edge crate (`reedline`) |
+| Package | `Cargo.toml` | Version `0.1.197`, one deferred edge crate (`reedline`) |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -1728,7 +1728,7 @@ match-level debriefing while routine execution remains delegated.
 - [x] Define match victory and terminal conditions.
 - [x] Add role-specific observations, actions, and debrief perspectives.
 - [x] Add comeback and variance-seeking mechanics with explicit inputs.
-  - [ ] Add match-level pivotal-decision detection.
+  - [x] Add match-level pivotal-decision detection.
 - [ ] Preserve meaningful decision density through automatic routine execution.
 - [ ] Profile transition, replay, projection, and batch-run costs.
 - [ ] Expand scenario and property tests without weakening M1/M2 fixtures.
@@ -1808,7 +1808,38 @@ This establishes a bounded deterministic comeback evaluation boundary with expli
 inputs. It does not establish automatic comeback detection from true match state,
 match-level pivotal-decision detection, or decision density optimization.
 
-This establishes the spatial topology, deterministic rotation/travel model, neutral objective cycles, vision control, cross-map tradeoff mechanics, team composition archetypes, structures hierarchy, super minion pressure, match victory terminal conditions, role-specific observation/action/debrief contracts, and comeback/variance-seeking evaluation for the multi-lane match prototype. Match-level pivotal-decision detection, decision density, profiling, and broader test expansion remain deferred.
+### Current M9 pivotal-decision detection evidence
+
+- [x] Define `m9-pivotal-decision-v1` covering `PivotalDecisionSample`
+  (explicit caller-declared decision measurements: id, strictly increasing
+  turn, acting side, Allied-perspective match value before/after in
+  `[-10,000..=10,000]` bp), `PivotalTier` (`Routine`/`Notable`/`Pivotal`/
+  `MatchDefining` at explicit 500/1,500/3,500 bp swing thresholds),
+  `SwingDirection`, `DecisionAlignment` (`SwingWithActor`/`SwingAgainstActor`/
+  `NeutralSwing`), strict value-sign-flip lead-change detection, and
+  `detect_pivotal_decisions` as a pure function with fail-closed typed errors
+  (`EmptyTrajectory`, `ValueOutOfRange`, `NonMonotonicTurn`) validated before
+  classification.
+- [x] Return a `PivotalDecisionReport` with findings in turn order,
+  `most_pivotal` (largest absolute swing, earliest-turn tie-break),
+  `pivotal_count`, ranked `pivotal_findings()`, `lead_change_turns`,
+  `final_value_bp`, and saturating `total_absolute_swing_bp`, plus a
+  structured Markdown debrief rendering with zero private chain-of-thought.
+- [x] Define `m9-pivotal-catalog-v1` registering 3 canonical benchmark
+  scenarios (`scenario-base-race-decisive-swing-v1`,
+  `scenario-baron-throw-comeback-v1`, `scenario-stable-slow-burn-v1`) with
+  fail-closed lookup, verifiable expectations, and reproducible execution.
+- [x] Cover tier boundaries, direction/alignment matrices, strict lead-change
+  semantics, ranking tie-break, fail-closed validation, reproducibility,
+  aggregates, catalog outcomes, and Markdown hygiene in 21 focused tests.
+
+This establishes a bounded deterministic detection boundary over declared
+value trajectories. It does not establish automatic trajectory derivation
+from authoritative match state, host/CLI/MCP debrief integration,
+counterfactual branching from a pivotal decision, threshold calibration, or
+decision quality claims.
+
+This establishes the spatial topology, deterministic rotation/travel model, neutral objective cycles, vision control, cross-map tradeoff mechanics, team composition archetypes, structures hierarchy, super minion pressure, match victory terminal conditions, role-specific observation/action/debrief contracts, comeback/variance-seeking evaluation, and pivotal-decision detection for the multi-lane match prototype. Decision density, profiling, and broader test expansion remain deferred.
 
 ### Deliverables
 
