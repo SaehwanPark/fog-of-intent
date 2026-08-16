@@ -115,7 +115,7 @@ pub use pivotal_catalog::{
 };
 pub use population_validation::{
   COMMUNICATION_USAGE_FLOOR_BP, MIN_DISTINCT_STRATEGIES, MechanicExemption, MechanicKind,
-  PopulationValidationError, PopulationValidationReport, ROLE_ACTIVITY_FLOOR_BP, ReplayObservation,
+  PopulationValidationError, PopulationValidationReport, ROLE_ACTIVITY_FLOOR_BP, ReplaySummary,
   measure_validation_population,
 };
 pub use population_validation_catalog::{

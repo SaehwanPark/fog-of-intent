@@ -12,7 +12,7 @@
 use super::composition::{CompositionArchetype, MatchRole};
 use super::population_validation::{
   M9_POPULATION_VALIDATION_SCHEMA_V1, MechanicExemption, MechanicKind, PopulationValidationReport,
-  ReplayObservation, measure_validation_population,
+  ReplaySummary, measure_validation_population,
 };
 
 pub const M9_POPULATION_VALIDATION_CATALOG_SCHEMA_V1: &str = "m9-population-validation-catalog-v1";
@@ -133,7 +133,7 @@ impl PopulationValidationCatalog {
   ) -> Result<PopulationScenarioExecutionResult, &'static str> {
     let (definition, observations, exemptions): (
       &PopulationScenarioDefinition,
-      Vec<ReplayObservation>,
+      Vec<ReplaySummary>,
       Vec<MechanicExemption>,
     ) = match scenario_id {
       "scenario-diverse-engaged-population-v1" => (
@@ -193,9 +193,9 @@ impl PopulationValidationCatalog {
     })
   }
 
-  fn diverse_engaged_observations() -> Vec<ReplayObservation> {
+  fn diverse_engaged_observations() -> Vec<ReplaySummary> {
     vec![
-      ReplayObservation {
+      ReplaySummary {
         replay_id: "replay-early-pick-blitz",
         strategy: CompositionArchetype::EarlyPick,
         active_roles: &ALL_ROLES,
@@ -208,7 +208,7 @@ impl PopulationValidationCatalog {
           MechanicKind::TeamCommunication,
         ],
       },
-      ReplayObservation {
+      ReplaySummary {
         replay_id: "replay-teamfight-scaling",
         strategy: CompositionArchetype::TeamfightScaling,
         active_roles: &ALL_ROLES,
@@ -223,7 +223,7 @@ impl PopulationValidationCatalog {
           MechanicKind::PivotalReview,
         ],
       },
-      ReplayObservation {
+      ReplaySummary {
         replay_id: "replay-split-pressure",
         strategy: CompositionArchetype::SplitPush,
         active_roles: &[MatchRole::TopLaner, MatchRole::Jungler, MatchRole::MidLaner],
@@ -237,7 +237,7 @@ impl PopulationValidationCatalog {
           MechanicKind::PivotalReview,
         ],
       },
-      ReplayObservation {
+      ReplaySummary {
         replay_id: "replay-poke-siege",
         strategy: CompositionArchetype::PokeSiege,
         active_roles: &[MatchRole::MidLaner, MatchRole::BotCarry, MatchRole::Support],
@@ -253,7 +253,7 @@ impl PopulationValidationCatalog {
     ]
   }
 
-  fn narrow_passive_observations() -> Vec<ReplayObservation> {
+  fn narrow_passive_observations() -> Vec<ReplaySummary> {
     const FOUR_ROLES: [MatchRole; 4] = [
       MatchRole::TopLaner,
       MatchRole::Jungler,
@@ -261,21 +261,21 @@ impl PopulationValidationCatalog {
       MatchRole::BotCarry,
     ];
     vec![
-      ReplayObservation {
+      ReplaySummary {
         replay_id: "replay-narrow-one",
         strategy: CompositionArchetype::EarlyPick,
         active_roles: &FOUR_ROLES,
         communication_events: 0,
         mechanics_used: &[MechanicKind::Rotation, MechanicKind::RoleTactics],
       },
-      ReplayObservation {
+      ReplaySummary {
         replay_id: "replay-narrow-two",
         strategy: CompositionArchetype::EarlyPick,
         active_roles: &FOUR_ROLES,
         communication_events: 0,
         mechanics_used: &[MechanicKind::Rotation, MechanicKind::RoleTactics],
       },
-      ReplayObservation {
+      ReplaySummary {
         replay_id: "replay-narrow-three",
         strategy: CompositionArchetype::EarlyPick,
         active_roles: &FOUR_ROLES,
@@ -285,9 +285,9 @@ impl PopulationValidationCatalog {
     ]
   }
 
-  fn exempted_observations() -> Vec<ReplayObservation> {
+  fn exempted_observations() -> Vec<ReplaySummary> {
     vec![
-      ReplayObservation {
+      ReplaySummary {
         replay_id: "replay-split-clean",
         strategy: CompositionArchetype::SplitPush,
         active_roles: &ALL_ROLES,
@@ -301,7 +301,7 @@ impl PopulationValidationCatalog {
           MechanicKind::ObjectiveContest,
         ],
       },
-      ReplayObservation {
+      ReplaySummary {
         replay_id: "replay-poke-clean",
         strategy: CompositionArchetype::PokeSiege,
         active_roles: &ALL_ROLES,

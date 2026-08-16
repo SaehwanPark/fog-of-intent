@@ -14,7 +14,7 @@ use crate::map::composition::{CompositionArchetype, MatchRole};
 use crate::map::population_validation::{
   COMMUNICATION_USAGE_FLOOR_BP, M9_POPULATION_VALIDATION_SCHEMA_V1, MIN_DISTINCT_STRATEGIES,
   MechanicExemption, MechanicKind, PopulationValidationError, ROLE_ACTIVITY_FLOOR_BP,
-  ReplayObservation, measure_validation_population,
+  ReplaySummary, measure_validation_population,
 };
 use crate::map::population_validation_catalog::PopulationValidationCatalog;
 
@@ -26,8 +26,8 @@ fn observation(
   active_roles: &'static [MatchRole],
   communication_events: u16,
   mechanics_used: &'static [MechanicKind],
-) -> ReplayObservation {
-  ReplayObservation {
+) -> ReplaySummary {
+  ReplaySummary {
     replay_id,
     strategy,
     active_roles,
@@ -92,6 +92,35 @@ fn distinct_strategies_count_every_observed_archetype() {
     report.strategy_shares_bp[3],
     (CompositionArchetype::PokeSiege, 0)
   );
+}
+
+#[test]
+fn distinct_count_uses_raw_presence_not_truncated_shares() {
+  // A singleton archetype in a population over 10,000 replays truncates to a
+  // 0 bp share; distinct counting must still see it. Leaked ids are fine in
+  // a test: they live for the process either way.
+  let population_size = 10_001;
+  let observations: Vec<ReplaySummary> = (0..population_size)
+    .map(|index| ReplaySummary {
+      replay_id: Box::leak(format!("replay-{index}").into_boxed_str()),
+      strategy: if index == 0 {
+        CompositionArchetype::SplitPush
+      } else {
+        CompositionArchetype::EarlyPick
+      },
+      active_roles: &ALL_ROLES,
+      communication_events: 3,
+      mechanics_used: &CORE_MECHANICS,
+    })
+    .collect();
+  let report = measure_validation_population(&observations, &[]).expect("valid population");
+  assert_eq!(report.distinct_strategy_count, 2);
+  // The singleton archetype's share itself still truncates to 0 bp.
+  assert_eq!(
+    report.strategy_shares_bp[2],
+    (CompositionArchetype::SplitPush, 0)
+  );
+  assert!(report.strategy_diversity_passes);
 }
 
 #[test]
@@ -162,7 +191,7 @@ fn roles_below_the_floor_are_flagged_inactive() {
     "e0", "e1", "e2", "e3", "e4", "e5", "e6", "e7", "e8", "e9", "e10",
   ];
 
-  let five: Vec<ReplayObservation> = (0..5)
+  let five: Vec<ReplaySummary> = (0..5)
     .map(|index| {
       let roles: &'static [MatchRole] = if index == 0 { &ALL_ROLES } else { &FOUR_ROLES };
       observation(
@@ -180,7 +209,7 @@ fn roles_below_the_floor_are_flagged_inactive() {
   assert!(report.role_activity_passes);
   assert_eq!(ROLE_ACTIVITY_FLOOR_BP, 1_000);
 
-  let ten: Vec<ReplayObservation> = (0..10)
+  let ten: Vec<ReplaySummary> = (0..10)
     .map(|index| {
       let roles: &'static [MatchRole] = if index == 0 { &ALL_ROLES } else { &FOUR_ROLES };
       observation(
@@ -197,7 +226,7 @@ fn roles_below_the_floor_are_flagged_inactive() {
   assert_eq!(report.role_activity_bp[4], (MatchRole::Support, 1_000));
   assert!(report.role_activity_passes);
 
-  let eleven: Vec<ReplayObservation> = (0..11)
+  let eleven: Vec<ReplaySummary> = (0..11)
     .map(|index| {
       let roles: &'static [MatchRole] = if index == 0 { &ALL_ROLES } else { &FOUR_ROLES };
       observation(
@@ -459,6 +488,31 @@ fn replays_without_active_roles_are_rejected_with_index() {
 }
 
 #[test]
+fn exemptions_without_reason_are_rejected_with_index() {
+  let observations = [observation(
+    "only",
+    CompositionArchetype::EarlyPick,
+    &ALL_ROLES,
+    3,
+    &CORE_MECHANICS,
+  )];
+  let exemptions = [
+    MechanicExemption {
+      mechanic: MechanicKind::ComebackPlay,
+      reason: "decisive leads throughout",
+    },
+    MechanicExemption {
+      mechanic: MechanicKind::PivotalReview,
+      reason: "",
+    },
+  ];
+  assert_eq!(
+    measure_validation_population(&observations, &exemptions),
+    Err(PopulationValidationError::ExemptionWithoutReason { index: 1 })
+  );
+}
+
+#[test]
 fn error_display_covers_every_variant() {
   assert_eq!(
     PopulationValidationError::EmptyPopulation.to_string(),
@@ -611,7 +665,27 @@ fn markdown_contains_measurement_labels_without_hidden_state() {
   assert!(markdown.contains("**Unused Mechanics**: comeback-play"));
   assert!(markdown.contains("**Unexplained Unused Mechanics**: comeback-play"));
   assert!(markdown.contains("**Strategy Diversity Passes**: yes"));
+  assert!(markdown.contains("**Role Activity Passes**: yes"));
+  assert!(markdown.contains("**Communication Usage Passes**: yes"));
   assert!(markdown.contains("**All Required Mechanics Justified**: no"));
   assert!(!markdown.to_lowercase().contains("chain-of-thought"));
-  assert!(!markdown.contains("hash"));
+  assert!(!markdown.to_lowercase().contains("hash"));
+}
+
+#[test]
+fn markdown_lists_inactive_roles_with_the_floor() {
+  const ONE_ROLE: [MatchRole; 1] = [MatchRole::MidLaner];
+  let observations = [observation(
+    "solo",
+    CompositionArchetype::PokeSiege,
+    &ONE_ROLE,
+    0,
+    &[MechanicKind::Rotation],
+  )];
+  let report = measure_validation_population(&observations, &[]).expect("valid population");
+  let markdown = report.render_markdown();
+  assert!(
+    markdown.contains("**Inactive Roles**: top-laner, jungler, bot-carry, support (floor 1000 bp)")
+  );
+  assert!(markdown.contains("**Role Activity Passes**: no"));
 }

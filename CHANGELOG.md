@@ -13,7 +13,7 @@ not increment the package version.
 - `m9-population-validation-v1` and `m9-population-validation-catalog-v1`
   measuring strategy diversity, role activity, communication usage, and
   unused-mechanic justification for M9 validation populations:
-  - `ReplayObservation` — explicit caller-declared replay summary (unique
+  - `ReplaySummary` — explicit caller-declared replay summary (unique
     replay id, strategy archetype over the 4-archetype composition catalog,
     active roles, communication-event count, mechanics used); no
     authoritative match state consulted.
@@ -25,7 +25,10 @@ not increment the package version.
     `all_required_mechanics_justified`.
   - `measure_validation_population` — pure function with fail-closed typed
     errors (`EmptyPopulation`, `DuplicateReplayId`,
-    `ReplayWithoutActiveRoles`) validated before measurement.
+    `ReplayWithoutActiveRoles`, `ExemptionWithoutReason` for empty exemption
+    reasons) validated before measurement; distinct-strategy counting uses
+    raw archetype presence so share truncation cannot hide an observed
+    strategy.
   - `PopulationValidationReport` — per-archetype strategy shares and
     distinct-strategy count against the 2-archetype minimum (mirroring the
     M9 exit evidence), per-role activity shares against the 1,000 bp floor,
@@ -37,7 +40,8 @@ not increment the package version.
     `scenario-narrow-passive-population-v1` (every gate fails),
     `scenario-exempted-unused-mechanic-v1` (an exempted unused mechanic
     beside an unexplained one).
-  - 21 focused tests: strategy shares and distinct counting, exact
+  - 24 focused tests: strategy shares and distinct counting (including the
+    10,001-replay truncation edge), exact
     role-activity and communication floor boundaries, unused-mechanic
     complement and exemption separation, fail-closed validation, error
     Display coverage, reproducibility, catalog outcomes, and Markdown

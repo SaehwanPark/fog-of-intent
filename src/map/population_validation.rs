@@ -6,7 +6,7 @@
 //! The M9 exit evidence requires multiple team strategies in representative
 //! replays and no required mechanic left unused without an explicit reason.
 //! This module measures both over an explicit caller-declared validation
-//! population: each `ReplayObservation` summarizes one representative replay
+//! population: each `ReplaySummary` summarizes one representative replay
 //! — the strategy archetype played, the roles that took decisions, the
 //! communication activity, and the M9 mechanics the replay exercised. No
 //! authoritative match state is read here.
@@ -16,8 +16,13 @@
 //! Unused mechanics are only acceptable when the caller declares an explicit
 //! exemption reason; unexplained unused mechanics fail the population.
 //!
-//! Malformed inputs fail closed: empty populations, duplicate replay ids, and
-//! replays without a single active role are rejected before any measurement.
+//! Evaluation-side contracts such as decision-density classification and
+//! cost profiling are measurement infrastructure rather than played
+//! mechanics, so they sit outside `MechanicKind`.
+//!
+//! Malformed inputs fail closed: empty populations, duplicate replay ids,
+//! replays without a single active role, and exemptions without a reason are
+//! rejected before any measurement.
 
 use core::fmt;
 
@@ -91,7 +96,7 @@ impl fmt::Display for MechanicKind {
 
 /// One caller-declared representative replay summary.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct ReplayObservation {
+pub struct ReplaySummary {
   /// Stable caller-assigned identity of the replay; must be unique across the
   /// population.
   pub replay_id: &'static str,
@@ -106,7 +111,7 @@ pub struct ReplayObservation {
   pub mechanics_used: &'static [MechanicKind],
 }
 
-impl ReplayObservation {
+impl ReplaySummary {
   /// Whether the replay used team communication at all.
   pub const fn uses_communication(&self) -> bool {
     self.communication_events > 0
@@ -135,6 +140,9 @@ pub enum PopulationValidationError {
   DuplicateReplayId { index: usize },
   /// A replay declares no active role at all.
   ReplayWithoutActiveRoles { index: usize },
+  /// An exemption carries an empty reason; only explicit reasons justify an
+  /// unused mechanic.
+  ExemptionWithoutReason { index: usize },
 }
 
 impl fmt::Display for PopulationValidationError {
@@ -150,6 +158,10 @@ impl fmt::Display for PopulationValidationError {
       Self::ReplayWithoutActiveRoles { index } => write!(
         f,
         "replay without active roles: observation {index} declares no role decisions"
+      ),
+      Self::ExemptionWithoutReason { index } => write!(
+        f,
+        "exemption without reason: exemption {index} declares an empty reason"
       ),
     }
   }
@@ -285,7 +297,7 @@ fn share_bp(part: u32, whole: u32) -> u16 {
 /// duplicate replay id, or a replay without active roles rejects the whole
 /// input.
 pub fn measure_validation_population(
-  observations: &[ReplayObservation],
+  observations: &[ReplaySummary],
   exemptions: &[MechanicExemption],
 ) -> Result<PopulationValidationReport, PopulationValidationError> {
   if observations.is_empty() {
@@ -300,6 +312,11 @@ pub fn measure_validation_population(
     }
     if observation.active_roles.is_empty() {
       return Err(PopulationValidationError::ReplayWithoutActiveRoles { index });
+    }
+  }
+  for (index, exemption) in exemptions.iter().enumerate() {
+    if exemption.reason.is_empty() {
+      return Err(PopulationValidationError::ExemptionWithoutReason { index });
     }
   }
 
@@ -318,7 +335,11 @@ pub fn measure_validation_population(
   let distinct_strategy_count = u32::try_from(
     strategy_shares_bp
       .iter()
-      .filter(|(_, share)| *share > 0)
+      .filter(|(archetype, _)| {
+        observations
+          .iter()
+          .any(|observation| observation.strategy == *archetype)
+      })
       .count(),
   )
   .expect("distinct archetype count fits in a u32");
