@@ -1978,22 +1978,28 @@ those remain deferred.
 - [x] Add a whole-catalog replay-determinism sweep executing every registered
   scenario across all eight M9 catalogs (map travel, objective, match, role,
   comeback, pivotal, decision-density, population-validation) twice with
-  identical results, plus expectation verification for every
-  expectation-carrying catalog and state-advance checks for the hash-bearing
-  catalogs.
+  identical results, expectation verification for every expectation-carrying
+  catalog, and state-advance (initial != final hash) checks for all four
+  hash-bearing catalogs (map, objective, match, role).
 - [x] Add generated-input conservation properties driven by an in-test
-  deterministic LCG (no rand crate, no wall clock): state-hash determinism
-  and single-actor perturbation distinctness over 64 generated states; the
-  fog-of-war observation invariant (every `Observed` enemy stands on a
-  team-visible location carrying its true location, every `Unknown` enemy
-  does not) across 64 states and all observers; decision-density count and
-  share conservation over 32 generated streams; pivotal aggregate consistency
-  over 32 generated trajectories; population-validation raw-membership
-  consistency over 32 generated populations.
+  deterministic LCG (no rand crate, no wall clock), with boolean and mask
+  inputs drawn from single words so LCG parity artifacts cannot degenerate a
+  generator: state-hash determinism and single-actor perturbation
+  distinctness over 64 generated states; the fog-of-war observation
+  invariant (every `Observed` enemy stands on a team-visible location
+  carrying its true location, every `Unknown` enemy does not, sightings are
+  complete, and fresh stationary states never carry `LastKnown`) across 64
+  states and all observers; decision-density conservation against an
+  independent classification oracle with an anti-degeneracy meta-guard over
+  32 generated streams; pivotal aggregate consistency plus per-sample swing
+  verification over 32 generated trajectories; population-validation
+  raw-membership consistency over 32 generated populations with arbitrary
+  mechanic subsets.
 - [x] Add a comeback classification sweep across the full
-  `[-10,000..=10,000]` bp delta range in steps of 7 (2,857 cases) against the
-  documented tier thresholds, variance-multiplier monotonic ordering, and
-  fixed-input evaluation determinism.
+  `[-10,000..=10,000]` bp delta range in steps of 7 (2,858 cases) plus every
+  exact threshold-boundary value, against the documented tier thresholds;
+  variance-multiplier strict ordering across behaviors; and fixed-input
+  evaluation determinism.
 - [x] Keep every M1/M2 fixture untouched; the 15 new tests live in
   `src/map/tests/properties.rs` and strengthen M9 coverage only.
 

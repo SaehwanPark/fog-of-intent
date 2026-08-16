@@ -61,6 +61,13 @@ impl DeterministicRng {
   fn below(&mut self, bound: u64) -> u64 {
     self.next_u64() % bound
   }
+
+  /// Draw several low bits at once. `below(2)` flips parity every call with
+  /// this LCG's odd increment, so independent booleans must come from one
+  /// draw rather than consecutive draws.
+  fn bits(&mut self, count: u32) -> u64 {
+    self.next_u64() & ((1u64 << count) - 1)
+  }
 }
 
 // --- Exhaustive map-graph properties ---
@@ -110,8 +117,9 @@ fn map_distances_are_bounded_by_location_count() {
   for origin in MapLocation::ALL_LOCATIONS {
     for destination in MapLocation::ALL_LOCATIONS {
       let distance = distance_in_beats(origin, destination);
+      let location_count = u32::try_from(MapLocation::ALL_LOCATIONS.len()).expect("fits u32");
       assert!(
-        u32::from(distance) <= 14,
+        u32::from(distance) < location_count,
         "{origin:?} -> {destination:?} distance {distance} exceeds the location count bound"
       );
     }
@@ -272,6 +280,15 @@ fn observations_only_reveal_team_visible_enemies() {
         .filter(|(id, _)| state.is_allied(observer) == state.is_allied(*id))
         .map(|(_, loc)| loc.current_location())
         .collect();
+      // Every tracked enemy appears in the sightings list exactly once.
+      assert_eq!(
+        observation.opposing_sightings.len(),
+        state
+          .actor_locations()
+          .iter()
+          .filter(|(id, _)| state.is_allied(*id) != state.is_allied(observer))
+          .count()
+      );
       for (enemy, sighting) in &observation.opposing_sightings {
         let true_location = state
           .get_actor_location(*enemy)
@@ -294,7 +311,9 @@ fn observations_only_reveal_team_visible_enemies() {
               "enemy at {true_location:?} on a team-visible location must be Observed"
             );
           }
-          OpponentSighting::LastKnown { .. } => {}
+          // Generated states have stationary actors and no prior sightings,
+          // so a fresh observation never carries a stale LastKnown entry.
+          OpponentSighting::LastKnown { .. } => panic!("unexpected LastKnown sighting"),
         }
       }
       // Projection determinism: the same state must project identically.
@@ -307,6 +326,10 @@ fn observations_only_reveal_team_visible_enemies() {
 
 #[test]
 fn generated_decision_density_streams_conserve_counts() {
+  // Meta-guard: the generated streams must exercise both dispositions, so an
+  // RNG artifact can never reduce this property to a single-class check.
+  let mut saw_absorbed = false;
+  let mut saw_decision = false;
   const KINDS: [CandidateWindowKind; 10] = [
     CandidateWindowKind::WaveClear,
     CandidateWindowKind::ResourceCollection,
@@ -331,8 +354,11 @@ fn generated_decision_density_streams_conserve_counts() {
           turn,
           kind: KINDS[usize::try_from(rng.below(10)).expect("fits usize")],
           value_stakes_bp: u32::try_from(rng.below(10_001)).expect("fits u32"),
-          threat_present: rng.below(2) == 1,
-          objective_active: rng.below(2) == 1,
+          // Both booleans come from one draw: consecutive below(2) calls
+          // flip parity with this LCG and would make the flags always
+          // opposite, forcing every routine window to escalate.
+          threat_present: rng.bits(2) & 1 != 0,
+          objective_active: rng.bits(2) & 2 != 0,
         }
       })
       .collect();
@@ -342,18 +368,34 @@ fn generated_decision_density_streams_conserve_counts() {
       report.window_count,
       u32::try_from(window_count).expect("fits u32")
     );
-    assert_eq!(
-      report.automatic_count.saturating_add(report.decision_count),
-      report.window_count
-    );
     assert_eq!(report.findings.len(), window_count);
+    saw_absorbed = saw_absorbed || report.automatic_count > 0;
+    saw_decision = saw_decision || report.decision_count > 0;
+
+    // Independent oracle over the documented classification rule: strategic
+    // kinds decide; routine kinds decide only strictly above the 500 bp
+    // ceiling or under threat/objective escalation.
+    let expected_decisions: Vec<u16> = candidates
+      .iter()
+      .filter(|candidate| {
+        !candidate.kind.is_routine()
+          || candidate.value_stakes_bp > crate::map::decision_density::ROUTINE_STAKES_CEILING_BP
+          || candidate.threat_present
+          || candidate.objective_active
+      })
+      .map(|candidate| candidate.turn)
+      .collect();
+    assert_eq!(report.decision_turns, expected_decisions);
+    let expected_decision_count = u32::try_from(expected_decisions.len()).expect("fits u32");
+    assert_eq!(report.decision_count, expected_decision_count);
     assert_eq!(
-      report.decision_turns.len(),
-      usize::try_from(report.decision_count).expect("fits usize")
+      report.automatic_count,
+      report.window_count - expected_decision_count
     );
     assert_eq!(
-      u32::from(report.decision_share_bp) + u32::from(report.routine_absorption_bp),
-      10_000
+      report.decision_share_bp,
+      u16::try_from(u64::from(expected_decision_count) * 10_000 / u64::from(report.window_count))
+        .expect("fits u16")
     );
     // Reproducibility on the same stream.
     assert_eq!(
@@ -361,6 +403,14 @@ fn generated_decision_density_streams_conserve_counts() {
       report
     );
   }
+  assert!(
+    saw_absorbed,
+    "generated streams must include absorbed windows"
+  );
+  assert!(
+    saw_decision,
+    "generated streams must include decision windows"
+  );
 }
 
 // --- Pivotal aggregates over generated trajectories ---
@@ -374,22 +424,31 @@ fn generated_pivotal_trajectories_keep_aggregates_consistent() {
     let samples: Vec<PivotalDecisionSample> = (0..sample_count)
       .map(|index| {
         turn += u16::try_from(rng.below(4) + 1).expect("fits u16");
+        let bits = rng.next_u64();
         PivotalDecisionSample {
           decision_id: Box::leak(format!("decision-{index}").into_boxed_str()),
           turn,
-          acting_side: if rng.below(2) == 1 {
+          acting_side: if bits & 1 == 0 {
             TeamSide::Allied
           } else {
             TeamSide::Opposing
           },
-          value_before_bp: i32::try_from(rng.below(20_001)).expect("fits i32") - 10_000,
-          value_after_bp: i32::try_from(rng.below(20_001)).expect("fits i32") - 10_000,
+          value_before_bp: i32::try_from(bits % 20_001).expect("fits i32") - 10_000,
+          value_after_bp: i32::try_from((bits >> 32) % 20_001).expect("fits i32") - 10_000,
         }
       })
       .collect();
 
     let report = detect_pivotal_decisions(&samples).expect("generated trajectory is valid");
     assert_eq!(report.findings.len(), sample_count);
+    // Independent oracle: each finding's swing is the sample's value delta.
+    for (finding, sample) in report.findings.iter().zip(&samples) {
+      assert_eq!(
+        finding.swing_bp,
+        sample.value_after_bp.saturating_sub(sample.value_before_bp),
+        "swing must equal the declared value delta"
+      );
+    }
     assert_eq!(
       report.pivotal_count,
       u32::try_from(
@@ -426,13 +485,14 @@ fn generated_populations_match_raw_memberships() {
     let population_size = usize::try_from(rng.below(7) + 2).expect("fits usize");
     let observations: Vec<ReplaySummary> = (0..population_size)
       .map(|index| {
-        let role_mask = rng.below(31) | 1; // at least the top laner active
+        let role_mask = rng.next_u64() | 1; // at least the first-listed role active
         let active: Vec<MatchRole> = MatchRole::ALL
           .iter()
           .enumerate()
           .filter(|(bit, _)| role_mask & (1 << bit) != 0)
           .map(|(_, role)| *role)
           .collect();
+        let mechanic_mask = rng.next_u64();
         ReplaySummary {
           replay_id: IDS[index],
           strategy: CompositionArchetype::ALL[usize::try_from(rng.below(4)).expect("fits usize")],
@@ -441,8 +501,9 @@ fn generated_populations_match_raw_memberships() {
           mechanics_used: Box::leak(
             MechanicKind::ALL
               .iter()
-              .filter(|_| rng.below(2) == 1)
-              .copied()
+              .enumerate()
+              .filter(|(bit, _)| mechanic_mask & (1 << bit) != 0)
+              .map(|(_, mechanic)| *mechanic)
               .collect::<Vec<_>>()
               .into_boxed_slice(),
           ),
@@ -478,7 +539,19 @@ fn generated_populations_match_raw_memberships() {
       .filter(|mechanic| !used_mechanics.contains(mechanic))
       .collect();
     assert_eq!(report.unused_mechanics, expected_unused);
-    assert!(report.population_size >= 2);
+    // Truncated archetype shares never exceed the population whole.
+    let share_sum: u32 = report
+      .strategy_shares_bp
+      .iter()
+      .map(|(_, share)| u32::from(*share))
+      .sum();
+    assert!(share_sum <= 10_000);
+    assert!(
+      report
+        .strategy_shares_bp
+        .iter()
+        .all(|(_, share)| *share <= 10_000)
+    );
   }
 }
 
@@ -505,7 +578,7 @@ fn comeback_classification_matches_thresholds_across_full_delta_sweep() {
 }
 
 #[test]
-fn variance_multipliers_order_monotonically_with_deficit() {
+fn variance_multipliers_increase_across_behaviors() {
   let multipliers = [
     VarianceSeekingBehavior::ConservativePlay.variance_multiplier_bp(),
     VarianceSeekingBehavior::BalancedApproach.variance_multiplier_bp(),
