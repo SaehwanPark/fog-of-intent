@@ -1740,6 +1740,38 @@ boundary over declared window streams. Host-side window scheduling, automatic
 candidate derivation from authoritative match state, live CLI/MCP surfacing of
 absorbed windows, and human pacing evidence remain deferred.
 
+#### Delivered in the bounded cost-profiling follow-up
+
+- `m9-cost-profile-v1` profiles the canonical M9 map-travel path by counting
+  exact operations instead of measuring wall-clock time: `OperationCounts`
+  tracks transitions executed, state hashes computed (per the versioned
+  executor contract of one initial plus one terminal hash per pass),
+  observation projections actually performed, and replay verifications.
+- `profile_travel_scenario` executes each canonical `MapTravelCatalog`
+  scenario, projects a terminal observation for every allied actor through the
+  new `MapScenarioDefinition::execute_with_state` boundary, then replay-verifies
+  by re-execution and initial/terminal hash comparison. `profile_catalog_batch`
+  aggregates per-entry bp averages over the four-entry batch.
+- Scaling probes at the explicit [1, 8, 64, 512] step ladder show transition
+  and replay work growing linearly with match length (exact marginal cost of 2
+  transitions per step including replay) while per-pass hash work stays
+  constant at 2 evaluations regardless of match length.
+- `CostProfileReport` renders structured Markdown without wall-clock
+  measurements or hidden state. `EmptyProbeScript`, `ProbeMapUnavailable`, and
+  wrapped transition errors fail closed before any counting.
+- 15 focused tests cover scenario-count derivation from script and roster
+  shape, replay pass semantics, independently derived batch totals and exact
+  bp averages, probe linearity and hash constancy, exact marginal cost,
+  fail-closed validation, error Display coverage for every variant,
+  terminal-state verification of `execute_with_state`, reproducibility, and
+  Markdown hygiene.
+
+This establishes a bounded deterministic cost-accounting boundary over the
+canonical map-travel path. Wall-clock timing evidence, profiling of the
+objective/structure/role transition families, actor-count scaling, memory
+accounting, and M6 batch-harness integration remain at repository edges or
+deferred.
+
 ## Future
 
 The detailed and canonical order is in `ROADMAP.md`.

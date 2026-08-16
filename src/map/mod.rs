@@ -7,6 +7,7 @@ pub mod comeback;
 pub mod comeback_catalog;
 pub mod composition;
 pub mod contest;
+pub mod cost_profile;
 pub mod decision_density;
 pub mod decision_density_catalog;
 pub mod graph;
@@ -71,6 +72,11 @@ pub use composition::{
 pub use contest::{
   ContestTransitionResult, CrossMapTradeTarget, ObjectiveEffect, ObjectiveEvent, ObjectiveIntent,
   TradeClassification, TradeoffEvaluation, transition_objective_contest,
+};
+pub use cost_profile::{
+  CostProfileError, CostProfileReport, M9_COST_PROFILE_SCHEMA_V1, OperationCounts,
+  SCALING_PROBE_STEPS, ScalingProbe, ScenarioCostProfile, profile_catalog_batch,
+  profile_scaling_probe, profile_travel_scenario,
 };
 pub use decision_density::{
   CandidateWindowKind, DECISION_SHARE_MAX_BP, DECISION_SHARE_MIN_BP, DecisionDensityError,
