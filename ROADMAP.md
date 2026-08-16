@@ -1726,7 +1726,7 @@ match-level debriefing while routine execution remains delegated.
 - [x] Add the minimum role and team-composition abstractions needed for match
   strategy.
 - [x] Define match victory and terminal conditions.
-- [ ] Add role-specific observations, actions, and debrief perspectives.
+- [x] Add role-specific observations, actions, and debrief perspectives.
 - [ ] Add comeback and variance-seeking mechanics with explicit inputs.
 - [ ] Add match-level pivotal-decision detection.
 - [ ] Preserve meaningful decision density through automatic routine execution.
@@ -1774,7 +1774,19 @@ match-level debriefing while routine execution remains delegated.
   `MatchScenarioCatalog` registering 4 canonical benchmark match scenarios (`scenario-early-pick-snowball-v1`, `scenario-split-push-base-race-v1`,
   `scenario-late-game-scaling-comeback-v1`, `scenario-siege-inhibitor-concession-v1`) with reproducible execution and replay hash verification.
 
-This establishes the spatial topology, deterministic rotation/travel model, neutral objective cycles, vision control, cross-map tradeoff mechanics, team composition archetypes, structures hierarchy, super minion pressure, and match victory terminal conditions for the multi-lane match prototype. Role-specific observations and combat resolution remain deferred to subsequent M9 slices.
+### Current M9 role-specific observations, actions, and debrief perspectives evidence
+
+- [x] Define `m9-role-observation-v1`, `m9-role-action-v1`, `m9-role-debrief-v1`, and `m9-role-scenario-catalog-v1`
+  covering specialized situational contexts (`RoleSpecificContext` for `TopLanerContext`, `JunglerContext`, `MidLanerContext`,
+  `BotCarryContext`, `SupportContext`), wave equilibrium summaries (`WaveStateSummary`), role-scoped observation projections
+  (`RoleMatchObservation`), closed role tactical intent spaces (`TopIntent`, `JungleIntent`, `MidIntent`, `BotCarryIntent`,
+  `SupportIntent`), role action validation (`validate_role_action` with `RoleActionError`), role KPI reporting in integer basis points
+  ($[0..=10,000]$ bp), composite role ratings, performance tiers (`RolePerformanceTier`), 16 discrete positive and negative causal drivers
+  (`RoleCausalFactor`), structured Markdown debrief perspectives with zero private chain-of-thought, and `RoleScenarioCatalog` registering
+  5 canonical benchmark scenarios (`scenario-top-teleport-flank-v1`, `scenario-jungler-objective-steal-v1`, `scenario-mid-roam-conversion-v1`,
+  `scenario-bot-hypercarry-scaling-v1`, `scenario-support-vision-setup-peel-v1`) with reproducible execution and state hash verification.
+
+This establishes the spatial topology, deterministic rotation/travel model, neutral objective cycles, vision control, cross-map tradeoff mechanics, team composition archetypes, structures hierarchy, super minion pressure, match victory terminal conditions, and role-specific observation, action, and debrief contracts for the multi-lane match prototype. Comeback mechanics, variance-seeking behavior, and match-level pivotal-decision detection remain deferred to subsequent M9 slices.
 
 ### Deliverables
 

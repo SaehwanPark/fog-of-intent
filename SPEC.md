@@ -1623,7 +1623,16 @@ distribution estimation, and parametric fitting remain open.
   2. `scenario-split-push-base-race-v1`: Split-push comp trades Baron concession for Bot inhibitor + Nexus demolition in an uncontested base race at turn 22.
   3. `scenario-late-game-scaling-comeback-v1`: Scaling comp holds Tier 3 high ground, scales to late game, wins decisive ace and marches to victory at turn 28.
   4. `scenario-siege-inhibitor-concession-v1`: Poke/siege comp breaks all 3 inhibitors, forcing match concession from overwhelming super minion pressure at turn 24.
-- This contract establishes the spatial topology, travel model, neutral objective spawning cycles, vision control, cross-map tradeoff mechanics, team composition archetypes, structures hierarchy, super minion pressure, and match victory terminal conditions for the multi-lane match prototype.
+- `WaveStateSummary`, `RoleSpecificContext` (contexts for `TopLaner`, `Jungler`, `MidLaner`, `BotCarry`, `Support`), and `RoleMatchObservation` define `m9-role-observation-v1` projecting actor-visible observations tailored to each role's tactical responsibilities with strict fog-of-war compliance.
+- `TopIntent`, `JungleIntent`, `MidIntent`, `BotCarryIntent`, `SupportIntent`, `RoleIntent`, `RoleAction`, and `validate_role_action` define `m9-role-action-v1` validating specialized role-specific tactical intents against situational context and cooldowns (`RoleActionError`).
+- `RolePerformanceTier`, `RoleCausalFactor` (16 positive and negative causal drivers), `RoleKpis` (role-tailored metrics in $[0..=10,000]$ bp), and `RoleDebriefPerspective` define `m9-role-debrief-v1` evaluating composite role performance without outcome bias, generating formatted Markdown debriefs with zero private chain-of-thought.
+- `RoleScenarioCatalog` defines `m9-role-scenario-catalog-v1` registering and executing 5 canonical benchmark scenarios:
+  1. `scenario-top-teleport-flank-v1`: Top laner pushes side lane, executes TP flank at Dragon contest, and secures objective.
+  2. `scenario-jungler-objective-steal-v1`: Jungler infiltrates Bot River under fog, times Smite burst against contest, securing Drake.
+  3. `scenario-mid-roam-conversion-v1`: Mid laner shoves wave for priority, roams bot, and executes a 3v2 dive.
+  4. `scenario-bot-hypercarry-scaling-v1`: Bot carry maintains disciplined tethering, kites diving frontline, and delivers match-winning sustained DPS.
+  5. `scenario-support-vision-setup-peel-v1`: Support de-wards river with Oracle Lens, sets up deep wards, and peels assassin off BotCarry.
+- This contract establishes the spatial topology, travel model, neutral objective spawning cycles, vision control, cross-map tradeoff mechanics, team composition archetypes, structures hierarchy, super minion pressure, match victory terminal conditions, role-specific observations, actions, debrief perspectives, and canonical role benchmark scenarios for the multi-lane match prototype.
 
 ## Future
 

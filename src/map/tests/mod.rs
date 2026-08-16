@@ -3,5 +3,6 @@
 mod composition;
 mod match_scenarios;
 mod objective;
+mod role;
 mod structures;
 mod travel;

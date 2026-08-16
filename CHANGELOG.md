@@ -6,7 +6,28 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.195] - 2026-08-16
+
 ### Added
+
+- `m9-role-observation-v1`, `m9-role-action-v1`, `m9-role-debrief-v1`, and
+  `m9-role-scenario-catalog-v1` defining role-specific observations, tactical intents,
+  debrief perspectives, and benchmark scenarios for all 5 match roles in M9:
+  - `WaveStateSummary` and `RoleSpecificContext` (`TopLanerContext`, `JunglerContext`,
+    `MidLanerContext`, `BotCarryContext`, `SupportContext`) projecting situational
+    context and wave status with strict fog-of-war compliance (`RoleMatchObservation`).
+  - `RoleIntent` closed tactical intent spaces (`TopIntent`, `JungleIntent`, `MidIntent`,
+    `BotCarryIntent`, `SupportIntent`) and role action validation (`validate_role_action`
+    with `RoleActionError`).
+  - `RoleKpis` (integer basis-point metrics in $[0..=10,000]$ bp), composite role ratings,
+    performance tiers (`RolePerformanceTier`), 16 discrete causal drivers (`RoleCausalFactor`),
+    and structured Markdown debrief perspectives with zero private chain-of-thought (`RoleDebriefPerspective`).
+  - `RoleScenarioCatalog` registering and executing 5 canonical benchmark scenarios:
+    1. `scenario-top-teleport-flank-v1`: TopLaner TP flank at Dragon contest.
+    2. `scenario-jungler-objective-steal-v1`: Jungler fog infiltration and Smite secure.
+    3. `scenario-mid-roam-conversion-v1`: MidLaner wave shove and 3v2 Bot dive.
+    4. `scenario-bot-hypercarry-scaling-v1`: BotCarry late-game kiting and sustained DPS.
+    5. `scenario-support-vision-setup-peel-v1`: Support river de-ward and assassin peel.
 
 - `m9-team-composition-v1`, `m9-match-structures-v1`, `m9-match-victory-v1`, and
   `m9-match-scenario-catalog-v1` defining team composition archetypes, match roles,
