@@ -3,6 +3,8 @@
 //! Milestone: M9 — Bounded Multi-Lane Match Prototype
 
 pub mod catalog;
+pub mod comeback;
+pub mod comeback_catalog;
 pub mod composition;
 pub mod contest;
 pub mod graph;
@@ -43,8 +45,17 @@ pub const M9_ROLE_OBSERVATION_SCHEMA_V1: &str = "m9-role-observation-v1";
 pub const M9_ROLE_ACTION_SCHEMA_V1: &str = "m9-role-action-v1";
 pub const M9_ROLE_DEBRIEF_SCHEMA_V1: &str = "m9-role-debrief-v1";
 pub const M9_ROLE_SCENARIO_CATALOG_SCHEMA_V1: &str = "m9-role-scenario-catalog-v1";
+pub const M9_COMEBACK_MECHANICS_SCHEMA_V1: &str = "m9-comeback-mechanics-v1";
+pub const M9_COMEBACK_CATALOG_SCHEMA_V1: &str = "m9-comeback-catalog-v1";
 
 pub use catalog::{MapScenarioDefinition, MapScenarioExecutionResult, MapTravelCatalog};
+pub use comeback::{
+  ComebackEvaluation, ComebackOpportunityInputs, DeficitLevel, VarianceSeekingBehavior,
+  evaluate_comeback_opportunity,
+};
+pub use comeback_catalog::{
+  ComebackCatalog, ComebackScenarioDefinition, ComebackScenarioExecutionResult,
+};
 pub use composition::{
   CompositionArchetype, CompositionCatalog, CompositionMatchupEvaluation, MatchPhase, MatchRole,
   PowerScalingCurve, RecommendedPosture, TeamComposition,

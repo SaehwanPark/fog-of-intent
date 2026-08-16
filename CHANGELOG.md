@@ -6,7 +6,37 @@ not increment the package version.
 
 ## Unreleased
 
-## [0.1.195] - 2026-08-16
+## [0.1.196] - 2026-08-16
+
+### Added
+
+- `m9-comeback-mechanics-v1` and `m9-comeback-catalog-v1` defining comeback opportunity
+  evaluation and variance-seeking behavior recommendations for M9:
+  - `DeficitLevel` (4 discrete tiers: `Ahead`, `Parity`, `Deficit`, `SevereDeficit`)
+    classified from explicit structural and objective net-delta inputs
+    (`[-10,000..=10,000]` bp); no hidden authoritative state consulted.
+  - `VarianceSeekingBehavior` (4 discrete strategies: `ConservativePlay`,
+    `BalancedApproach`, `HighRiskEngage`, `DesperationAllIn`) recommended
+    deterministically from deficit level, match phase, composition power curves,
+    and recent high-value objective presence.
+  - `ComebackOpportunityInputs` — explicit caller-supplied snapshot of structural
+    counts, objective counts, match phase, and composition power ratings.
+  - `ComebackEvaluation` — deterministic result with `net_value_delta_bp: i32`,
+    `base_opportunity_bp: u32`, `variance_multiplier_bp: u16`, and
+    `variance_play_recommended: bool`; renders structured Markdown without
+    private chain-of-thought or hidden state.
+  - `evaluate_comeback_opportunity` — pure function; no side effects, randomness,
+    or authoritative state access.
+  - `ComebackCatalog` with 3 canonical benchmark scenarios:
+    1. `scenario-teamfight-comeback-v1`: TeamfightScaling with recent Drake in late
+       game (`Deficit` → `HighRiskEngage`).
+    2. `scenario-desperation-all-in-v1`: EarlyPick in severe late-game deficit
+       (`SevereDeficit` → `DesperationAllIn`).
+    3. `scenario-ahead-conservative-v1`: SplitPush leading mid-game
+       (`Ahead` → `ConservativePlay`).
+  - 20 focused library tests covering deficit classification, variance multiplier
+    ordering monotonicity, reproducibility, Allied/Opposing perspective symmetry,
+    net-delta clamping, catalog scenario outcomes, and Markdown rendering.
 
 ### Added
 

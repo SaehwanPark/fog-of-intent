@@ -1,5 +1,6 @@
-//! Tests for map topology, travel model, objective cycles, vision control, team compositions, structures, and match scenarios.
+//! Tests for map topology, travel model, objective cycles, vision control, team compositions, structures, match scenarios, and comeback mechanics.
 
+mod comeback;
 mod composition;
 mod match_scenarios;
 mod objective;

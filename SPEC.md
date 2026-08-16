@@ -1,7 +1,7 @@
 # Project Specification
 
 **Status:** Active project-state index
-**Last reviewed:** 2026-08-13
+**Last reviewed:** 2026-08-16
 
 This file records verified past, the small active slice, and intentionally
 deferred future work. It is not the product proposal, roadmap, issue tracker, or
@@ -1633,6 +1633,30 @@ distribution estimation, and parametric fitting remain open.
   4. `scenario-bot-hypercarry-scaling-v1`: Bot carry maintains disciplined tethering, kites diving frontline, and delivers match-winning sustained DPS.
   5. `scenario-support-vision-setup-peel-v1`: Support de-wards river with Oracle Lens, sets up deep wards, and peels assassin off BotCarry.
 - This contract establishes the spatial topology, travel model, neutral objective spawning cycles, vision control, cross-map tradeoff mechanics, team composition archetypes, structures hierarchy, super minion pressure, match victory terminal conditions, role-specific observations, actions, debrief perspectives, and canonical role benchmark scenarios for the multi-lane match prototype.
+
+#### Delivered in the bounded comeback and variance-seeking follow-up
+
+- `DeficitLevel` classifies `Ahead`, `Parity`, `Deficit`, and `SevereDeficit` from
+  explicit structural and objective net-delta inputs (`[-10,000..=10,000]` bp);
+  no authoritative match state is consulted.
+- `VarianceSeekingBehavior` (`ConservativePlay`, `BalancedApproach`, `HighRiskEngage`,
+  `DesperationAllIn`) is recommended deterministically from deficit level, match
+  phase, composition power curves, and recent high-value objective presence.
+- `ComebackOpportunityInputs` is a fully explicit caller-supplied snapshot;
+  `evaluate_comeback_opportunity` is a pure function with no side effects.
+- `ComebackEvaluation` returns `net_value_delta_bp`, `base_opportunity_bp`,
+  `variance_multiplier_bp`, and `variance_play_recommended`; renders structured
+  Markdown without private chain-of-thought or hidden state.
+- `ComebackCatalog` registers 3 canonical benchmark scenarios:
+  1. `scenario-teamfight-comeback-v1`: Deficit with recent objective → `HighRiskEngage`.
+  2. `scenario-desperation-all-in-v1`: Severe deficit → `DesperationAllIn`.
+  3. `scenario-ahead-conservative-v1`: Ahead → `ConservativePlay`.
+- 20 focused tests cover classification, multiplier monotonicity, reproducibility,
+  Allied/Opposing symmetry, clamping, catalog outcomes, and Markdown rendering.
+
+This establishes a bounded deterministic comeback evaluation boundary from explicit
+inputs. Automatic comeback detection from true match state, match-level
+pivotal-decision detection, and decision density optimization remain deferred.
 
 ## Future
 
