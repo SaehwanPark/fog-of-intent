@@ -1742,7 +1742,11 @@ match-level debriefing while routine execution remains delegated.
   - [x] Measure caller-declared validation populations for strategy-share
     diversity, role activity, communication usage, and unused-mechanic
     justification with explicit exemption reasons.
-- [ ] Expand scenario and property tests without weakening M1/M2 fixtures.
+- [x] Expand scenario and property tests without weakening M1/M2 fixtures.
+  - [x] Add exhaustive map-graph properties, generated-input conservation
+    properties, a fog-of-war observation invariant, and a whole-catalog
+    replay-determinism sweep across all eight M9 catalogs, all driven by a
+    deterministic LCG without touching M1/M2 fixtures.
 
 ### Current M9 abstracted three-lane map and travel model evidence
 
@@ -1965,7 +1969,46 @@ automatic replay-summarization from authoritative histories, population
 sampling, human strategy-quality evidence, or M6/M9 harness integration;
 those remain deferred.
 
-This establishes the spatial topology, deterministic rotation/travel model, neutral objective cycles, vision control, cross-map tradeoff mechanics, team composition archetypes, structures hierarchy, super minion pressure, match victory terminal conditions, role-specific observation/action/debrief contracts, comeback/variance-seeking evaluation, pivotal-decision detection, decision-density classification for automatic routine execution, deterministic operation-count cost profiling, and population-validation measurement for the multi-lane match prototype. Broader test expansion remains deferred.
+### Current M9 expanded scenario and property test evidence
+
+- [x] Add exhaustive map-graph properties over every one of the 15×15
+  location pairs: distance symmetry (including self-distance zero), shortest
+  routes stepping only through adjacent edges with beat counts matching step
+  counts, and distances bounded by the location count.
+- [x] Add a whole-catalog replay-determinism sweep executing every registered
+  scenario across all eight M9 catalogs (map travel, objective, match, role,
+  comeback, pivotal, decision-density, population-validation) twice with
+  identical results, expectation verification for every expectation-carrying
+  catalog, and state-advance (initial != final hash) checks for all four
+  hash-bearing catalogs (map, objective, match, role).
+- [x] Add generated-input conservation properties driven by an in-test
+  deterministic LCG (no rand crate, no wall clock), with boolean and mask
+  inputs drawn from single words so LCG parity artifacts cannot degenerate a
+  generator: state-hash determinism and single-actor perturbation
+  distinctness over 64 generated states; the fog-of-war observation
+  invariant (every `Observed` enemy stands on a team-visible location
+  carrying its true location, every `Unknown` enemy does not, sightings are
+  complete, and fresh stationary states never carry `LastKnown`) across 64
+  states and all observers; decision-density conservation against an
+  independent classification oracle with an anti-degeneracy meta-guard over
+  32 generated streams; pivotal aggregate consistency plus per-sample swing
+  verification over 32 generated trajectories; population-validation
+  raw-membership consistency over 32 generated populations with arbitrary
+  mechanic subsets.
+- [x] Add a comeback classification sweep across the full
+  `[-10,000..=10,000]` bp delta range in steps of 7 (2,858 cases) plus every
+  exact threshold-boundary value, against the documented tier thresholds;
+  variance-multiplier strict ordering across behaviors; and fixed-input
+  evaluation determinism.
+- [x] Keep every M1/M2 fixture untouched; the 15 new tests live in
+  `src/map/tests/properties.rs` and strengthen M9 coverage only.
+
+This establishes expanded M9 property and scenario coverage. It does not
+establish property tests for the objective/structure transition families'
+internal step sequences, mutation-based fuzzing, or benchmark harnesses;
+those remain deferred.
+
+This establishes the spatial topology, deterministic rotation/travel model, neutral objective cycles, vision control, cross-map tradeoff mechanics, team composition archetypes, structures hierarchy, super minion pressure, match victory terminal conditions, role-specific observation/action/debrief contracts, comeback/variance-seeking evaluation, pivotal-decision detection, decision-density classification for automatic routine execution, deterministic operation-count cost profiling, population-validation measurement, and expanded property/scenario coverage for the multi-lane match prototype. All M9 scope items are delivered; milestone promotion still requires the remaining deliverable evidence (complete reference-interface match replays) and exit-evidence review.
 
 ### Deliverables
 

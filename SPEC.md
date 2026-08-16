@@ -1811,6 +1811,23 @@ replay-summarization from authoritative histories, population sampling,
 human strategy-quality evidence, and M6/M9 harness integration remain
 deferred.
 
+#### Delivered in the bounded property-test expansion follow-up
+
+- 15 new tests in `src/map/tests/properties.rs` driven by an in-test
+  deterministic LCG (no rand crate, no wall clock): exhaustive 15×15
+  map-graph properties (distance symmetry, adjacency-valid shortest routes,
+  distance bounds); a whole-catalog replay-determinism sweep over all eight
+  M9 catalogs with expectation verification for expectation-carrying
+  catalogs; state-hash determinism and perturbation distinctness; the
+  fog-of-war observation invariant over generated states (Observed enemies
+  are team-visible and carry their true location; Unknown enemies are not
+  team-visible); decision-density, pivotal, and population-validation
+  conservation properties over generated inputs; and a comeback
+  classification sweep across the full `[-10,000..=10,000]` bp delta range.
+- No M1/M2 fixture changed; the property battery strengthens M9 coverage
+  only. Property tests for objective/structure transition step sequences,
+  mutation-based fuzzing, and benchmark harnesses remain deferred.
+
 ## Future
 
 The detailed and canonical order is in `ROADMAP.md`.
