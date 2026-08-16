@@ -448,7 +448,7 @@ strategically legitimate and value-accretive.
 registering and executing 5 canonical benchmark scenarios (`scenario-high-trust-gank-v1`, `scenario-low-trust-dissent-v1`,
 `scenario-conflicting-calls-arbitration-v1`, `scenario-missing-message-fallback-v1`, `scenario-strategic-dissent-survival-v1`).
 
-`src/map/` defines the foundational spatial topology, graph pathfinding, deterministic travel/rotation model, neutral objective cycles, vision control, cross-map tradeoff mechanics, team compositions, structures hierarchy, match victory conditions, comeback/variance-seeking evaluation, and pivotal-decision detection for M9:
+`src/map/` defines the foundational spatial topology, graph pathfinding, deterministic travel/rotation model, neutral objective cycles, vision control, cross-map tradeoff mechanics, team compositions, structures hierarchy, match victory conditions, comeback/variance-seeking evaluation, pivotal-decision detection, and decision-density preservation for M9:
 - `topology.rs`: `MapLocation` (`m9-map-topology-v1`) covering 15 discrete map locations (2 bases `AlliedBase`, `OpposingBase`, 9 lane sectors across `Top`, `Mid`, `Bot` lanes, 2 river zones `TopRiver`, `BotRiver`, and 2 jungle quadrants `TopJungle`, `BotJungle`).
 - `graph.rs`: Adjacency matrix, deterministic BFS shortest-path calculation, integer beat durations ($1\text{ beat} = 1\text{ step}$), and validated `TravelRoute`.
 - `travel.rs`: `ActorLocation` (`Stationary` vs `InTransit`), `TransitState` machine, `TravelCommand` (`InitiateRotation`, `ContinueTransit`, `AbortRotation`), and fail-closed validation.
@@ -471,6 +471,8 @@ registering and executing 5 canonical benchmark scenarios (`scenario-high-trust-
 - `comeback_catalog.rs`: `ComebackScenarioDefinition`, `ComebackScenarioExecutionResult`, and `ComebackCatalog` (`m9-comeback-catalog-v1`) registering and executing 3 canonical benchmark scenarios (`teamfight_comeback`, `desperation_all_in`, `ahead_conservative`).
 - `pivotal.rs`: `PivotalDecisionSample`, `PivotalTier` (`Routine`/`Notable`/`Pivotal`/`MatchDefining` at explicit 500/1,500/3,500 bp swing thresholds), `SwingDirection`, `DecisionAlignment`, and the pure fail-closed `detect_pivotal_decisions` (`m9-pivotal-decision-v1`) classifying caller-declared match value trajectories with strict sign-flip lead-change detection.
 - `pivotal_catalog.rs`: `PivotalScenarioDefinition`, `PivotalScenarioExecutionResult`, and `PivotalCatalog` (`m9-pivotal-catalog-v1`) registering and executing 3 canonical benchmark scenarios (`base_race_decisive_swing`, `baron_throw_comeback`, `stable_slow_burn`).
+- `decision_density.rs`: `CandidateWindowKind` (5 routine + 5 strategic window categories), `RoutineWindowCandidate`, `EscalationTrigger` (`StrategicKind`/`StakesAtThreshold`/`ThreatPresent`/`ObjectiveActive` in fixed priority order), `WindowDisposition` (`AutomaticallyExecuted`/`DecisionRequired`), and the pure fail-closed `evaluate_decision_density` (`m9-decision-density-v1`) classifying caller-declared window streams and evaluating decision share against the explicit `[1,000..=5,000]` bp band and 6-turn decision-gap bound.
+- `decision_density_catalog.rs`: `DecisionDensityScenarioDefinition`, `DecisionDensityScenarioExecutionResult`, and `DecisionDensityCatalog` (`m9-decision-density-catalog-v1`) registering and executing 3 canonical benchmark scenarios (`routine_laning_absorption`, `objective_spike_escalation`, `decision_overload`).
 
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/

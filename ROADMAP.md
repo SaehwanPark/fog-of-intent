@@ -1729,7 +1729,10 @@ match-level debriefing while routine execution remains delegated.
 - [x] Add role-specific observations, actions, and debrief perspectives.
 - [x] Add comeback and variance-seeking mechanics with explicit inputs.
   - [x] Add match-level pivotal-decision detection.
-- [ ] Preserve meaningful decision density through automatic routine execution.
+- [x] Preserve meaningful decision density through automatic routine execution.
+  - [x] Classify candidate windows as automatic or decision-required with
+    explicit escalation triggers and evaluate density against explicit share
+    and gap targets.
 - [ ] Profile transition, replay, projection, and batch-run costs.
 - [ ] Expand scenario and property tests without weakening M1/M2 fixtures.
 - [ ] Measure strategy diversity, role activity, communication, and unused
@@ -1839,7 +1842,45 @@ from authoritative match state, host/CLI/MCP debrief integration,
 counterfactual branching from a pivotal decision, threshold calibration, or
 decision quality claims.
 
-This establishes the spatial topology, deterministic rotation/travel model, neutral objective cycles, vision control, cross-map tradeoff mechanics, team composition archetypes, structures hierarchy, super minion pressure, match victory terminal conditions, role-specific observation/action/debrief contracts, comeback/variance-seeking evaluation, and pivotal-decision detection for the multi-lane match prototype. Decision density, profiling, and broader test expansion remain deferred.
+### Current M9 decision-density evidence
+
+- [x] Define `m9-decision-density-v1` and `m9-decision-density-catalog-v1`
+  covering `CandidateWindowKind` (5 routine kinds — `WaveClear`,
+  `ResourceCollection`, `TransitContinuation`, `WardRefresh`, `Regeneration` —
+  delegatable to automatic execution, and 5 strategic kinds —
+  `ObjectiveContest`, `RotationChoice`, `SiegeCommit`, `ThreatResponse`,
+  `TeamCoordination` — that always surface a decision), `RoutineWindowCandidate`
+  (explicit caller-declared snapshot: id, strictly increasing turn, kind, value
+  stakes in `[0..=10,000]` bp, threat/objective presence flags — no hidden
+  authoritative state), `EscalationTrigger` (`StrategicKind`,
+  `StakesAtThreshold` at the 500 bp threshold mirroring the pivotal `Routine`
+  tier ceiling, `ThreatPresent`, `ObjectiveActive`) in fixed priority order,
+  `WindowDisposition` (`AutomaticallyExecuted` vs `DecisionRequired`), and
+  `evaluate_decision_density` as a pure function with fail-closed typed errors
+  (`EmptyTrajectory`, `StakesOutOfRange`, `NonMonotonicTurn`) validated before
+  classification.
+- [x] Return a `DecisionDensityReport` with window/automatic/decision counts,
+  exact complement shares (`routine_absorption_bp` + `decision_share_bp` =
+  10,000 bp), decision turns, maximum consecutive decision gap, and
+  `meets_density_targets` over the explicit `[1,000..=5,000]` bp decision-share
+  band and 6-turn decision-gap bound, plus a structured Markdown rendering with
+  zero private chain-of-thought.
+- [x] Define `m9-decision-density-catalog-v1` registering 3 canonical benchmark
+  scenarios (`scenario-routine-laning-absorption-v1`,
+  `scenario-objective-spike-escalation-v1`,
+  `scenario-decision-overload-v1`) with fail-closed lookup, verifiable
+  expectations, and reproducible execution.
+- [x] Cover kind classification, escalation triggers and priority, the exact
+  500 bp threshold boundary, share arithmetic and band boundaries, gap
+  evaluation, fail-closed validation, reproducibility, catalog outcomes, and
+  Markdown hygiene in 24 focused tests.
+
+This establishes a bounded deterministic classification and density-evaluation
+boundary over declared window streams. It does not establish host-side window
+scheduling, automatic candidate derivation from authoritative match state,
+live CLI/MCP surfacing of absorbed windows, or human pacing evidence.
+
+This establishes the spatial topology, deterministic rotation/travel model, neutral objective cycles, vision control, cross-map tradeoff mechanics, team composition archetypes, structures hierarchy, super minion pressure, match victory terminal conditions, role-specific observation/action/debrief contracts, comeback/variance-seeking evaluation, pivotal-decision detection, and decision-density classification with automatic routine execution for the multi-lane match prototype. Cost profiling, broader test expansion, and strategy-diversity measurement remain deferred.
 
 ### Deliverables
 

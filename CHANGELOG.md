@@ -6,6 +6,45 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.198] - 2026-08-16
+
+### Added
+
+- `m9-decision-density-v1` and `m9-decision-density-catalog-v1` preserving
+  meaningful decision density through automatic routine execution for M9:
+  - `CandidateWindowKind` — 5 routine window kinds (`WaveClear`,
+    `ResourceCollection`, `TransitContinuation`, `WardRefresh`,
+    `Regeneration`) delegatable to automatic execution and 5 strategic kinds
+    (`ObjectiveContest`, `RotationChoice`, `SiegeCommit`, `ThreatResponse`,
+    `TeamCoordination`) that always surface an actor decision.
+  - `RoutineWindowCandidate` — explicit caller-declared window snapshot (id,
+    strictly increasing turn, kind, value stakes in `[0..=10,000]` bp,
+    threat/objective presence flags); no authoritative match state consulted.
+  - `EscalationTrigger` (`StrategicKind`, `StakesAtThreshold` at the 500 bp
+    threshold mirroring the pivotal `Routine` tier ceiling, `ThreatPresent`,
+    `ObjectiveActive`) evaluated in fixed priority order; untriggered routine
+    windows resolve as `AutomaticallyExecuted` without forcing a decision
+    window.
+  - `evaluate_decision_density` — pure function with fail-closed typed errors
+    (`EmptyTrajectory`, `StakesOutOfRange`, `NonMonotonicTurn`) validated
+    before classification.
+  - `DecisionDensityReport` — window/automatic/decision counts, exact
+    complement shares (`routine_absorption_bp` + `decision_share_bp` =
+    10,000 bp), decision turns, maximum consecutive decision gap, and
+    `meets_density_targets` over the explicit `[1,000..=5,000]` bp
+    decision-share band and 6-turn decision-gap bound; renders structured
+    Markdown without private chain-of-thought or hidden state.
+  - `DecisionDensityCatalog` with 3 canonical benchmark scenarios:
+    `scenario-routine-laning-absorption-v1` (7 absorbed, 3,000 bp share,
+    targets met), `scenario-objective-spike-escalation-v1` (every escalation
+    trigger exercised, density holds at the 5,000 bp ceiling),
+    `scenario-decision-overload-v1` (8,333 bp share exceeds the band;
+    targets missed as the failure mode automatic execution prevents).
+  - 24 focused tests: kind classification, escalation triggers and priority,
+    the exact 500 bp threshold boundary, share arithmetic, band and gap
+    boundaries, fail-closed validation, reproducibility, catalog outcomes,
+    and Markdown hygiene.
+
 ## [0.1.197] - 2026-08-16
 
 ### Added

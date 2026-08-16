@@ -1696,6 +1696,48 @@ history, host/CLI/MCP debrief integration, counterfactual branching from a
 pivotal decision, threshold calibration, and decision quality claims remain
 deferred.
 
+#### Delivered in the bounded decision-density follow-up
+
+- `RoutineWindowCandidate` declares one caller-supplied candidate execution
+  window: window id, strictly increasing turn, kind, value stakes in
+  `[0..=10,000]` bp, and explicit threat/objective presence flags. No
+  authoritative match state is consulted.
+- `CandidateWindowKind` separates 5 routine kinds (`WaveClear`,
+  `ResourceCollection`, `TransitContinuation`, `WardRefresh`, `Regeneration`)
+  delegatable to automatic execution from 5 strategic kinds (`ObjectiveContest`,
+  `RotationChoice`, `SiegeCommit`, `ThreatResponse`, `TeamCoordination`) that
+  always require an actor decision.
+- Routine windows escalate into decisions only through a concrete
+  `EscalationTrigger` in fixed priority order: stakes at or above the 500 bp
+  threshold (mirroring the pivotal `Routine` tier ceiling), a visible threat,
+  or an active neutral objective; untriggered routine windows resolve as
+  `AutomaticallyExecuted` without forcing a decision window.
+- `evaluate_decision_density` is a pure function; `EmptyTrajectory`,
+  `StakesOutOfRange`, and `NonMonotonicTurn` fail closed with the offending
+  candidate index before any classification.
+- `DecisionDensityReport` returns counts, exact complement shares
+  (`routine_absorption_bp` + `decision_share_bp` = 10,000 bp), decision turns,
+  the maximum consecutive decision gap, and `meets_density_targets` — the
+  decision share must stay inside the explicit `[1,000..=5,000]` bp band and
+  no decision gap may exceed 6 turns; renders structured Markdown without
+  private chain-of-thought or hidden state.
+- `DecisionDensityCatalog` registers 3 canonical benchmark scenarios:
+  1. `scenario-routine-laning-absorption-v1`: seven routine windows absorbed,
+     three decisions at a 3,000 bp share with a maximum six-turn gap.
+  2. `scenario-objective-spike-escalation-v1`: routine windows escalate through
+     every trigger; density still holds exactly at the 5,000 bp ceiling.
+  3. `scenario-decision-overload-v1`: only one window absorbed; the 8,333 bp
+     share exceeds the band and the evaluation reports missed targets.
+- 24 focused tests cover kind classification, escalation triggers and
+  priority, the exact 500 bp threshold boundary, share arithmetic, band and
+  gap evaluation, fail-closed validation, reproducibility, catalog outcomes,
+  and Markdown hygiene.
+
+This establishes a bounded deterministic classification and density-evaluation
+boundary over declared window streams. Host-side window scheduling, automatic
+candidate derivation from authoritative match state, live CLI/MCP surfacing of
+absorbed windows, and human pacing evidence remain deferred.
+
 ## Future
 
 The detailed and canonical order is in `ROADMAP.md`.
