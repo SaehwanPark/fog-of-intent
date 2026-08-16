@@ -83,8 +83,9 @@ pub use objective_catalog::{
   ObjectiveScenarioCatalog, ObjectiveScenarioDefinition, ObjectiveScenarioExecutionResult,
 };
 pub use pivotal::{
-  DecisionAlignment, PivotalDecisionError, PivotalDecisionFinding, PivotalDecisionReport,
-  PivotalDecisionSample, PivotalTier, SwingDirection, detect_pivotal_decisions,
+  DecisionAlignment, NOTABLE_MAX_SWING_BP, PIVOTAL_MAX_SWING_BP, PivotalDecisionError,
+  PivotalDecisionFinding, PivotalDecisionReport, PivotalDecisionSample, PivotalTier,
+  ROUTINE_MAX_SWING_BP, SwingDirection, VALUE_BOUND_BP, detect_pivotal_decisions,
 };
 pub use pivotal_catalog::{
   PivotalCatalog, PivotalScenarioDefinition, PivotalScenarioExecutionResult,

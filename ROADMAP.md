@@ -1805,8 +1805,8 @@ match-level debriefing while routine execution remains delegated.
   all catalog scenarios, and Markdown rendering in 20 focused tests.
 
 This establishes a bounded deterministic comeback evaluation boundary with explicit
-inputs. It does not establish automatic comeback detection from true match state,
-match-level pivotal-decision detection, or decision density optimization.
+inputs. It does not establish automatic comeback detection from true match state
+or decision density optimization.
 
 ### Current M9 pivotal-decision detection evidence
 
@@ -1831,7 +1831,7 @@ match-level pivotal-decision detection, or decision density optimization.
   fail-closed lookup, verifiable expectations, and reproducible execution.
 - [x] Cover tier boundaries, direction/alignment matrices, strict lead-change
   semantics, ranking tie-break, fail-closed validation, reproducibility,
-  aggregates, catalog outcomes, and Markdown hygiene in 21 focused tests.
+  aggregates, catalog outcomes, and Markdown hygiene in 24 focused tests.
 
 This establishes a bounded deterministic detection boundary over declared
 value trajectories. It does not establish automatic trajectory derivation

@@ -448,7 +448,7 @@ strategically legitimate and value-accretive.
 registering and executing 5 canonical benchmark scenarios (`scenario-high-trust-gank-v1`, `scenario-low-trust-dissent-v1`,
 `scenario-conflicting-calls-arbitration-v1`, `scenario-missing-message-fallback-v1`, `scenario-strategic-dissent-survival-v1`).
 
-`src/map/` defines the foundational spatial topology, graph pathfinding, deterministic travel/rotation model, neutral objective cycles, vision control, cross-map tradeoff mechanics, team compositions, structures hierarchy, and match victory conditions for M9:
+`src/map/` defines the foundational spatial topology, graph pathfinding, deterministic travel/rotation model, neutral objective cycles, vision control, cross-map tradeoff mechanics, team compositions, structures hierarchy, match victory conditions, comeback/variance-seeking evaluation, and pivotal-decision detection for M9:
 - `topology.rs`: `MapLocation` (`m9-map-topology-v1`) covering 15 discrete map locations (2 bases `AlliedBase`, `OpposingBase`, 9 lane sectors across `Top`, `Mid`, `Bot` lanes, 2 river zones `TopRiver`, `BotRiver`, and 2 jungle quadrants `TopJungle`, `BotJungle`).
 - `graph.rs`: Adjacency matrix, deterministic BFS shortest-path calculation, integer beat durations ($1\text{ beat} = 1\text{ step}$), and validated `TravelRoute`.
 - `travel.rs`: `ActorLocation` (`Stationary` vs `InTransit`), `TransitState` machine, `TravelCommand` (`InitiateRotation`, `ContinueTransit`, `AbortRotation`), and fail-closed validation.
@@ -467,6 +467,10 @@ registering and executing 5 canonical benchmark scenarios (`scenario-high-trust-
 - `role_action.rs`: `TopIntent`, `JungleIntent`, `MidIntent`, `BotCarryIntent`, `SupportIntent`, `RoleIntent`, `RoleAction`, and `validate_role_action` (`m9-role-action-v1`) defining closed role tactical action spaces with fail-closed cooldown and capability validation.
 - `role_debrief.rs`: `RolePerformanceTier`, `RoleCausalFactor` (16 discrete causal drivers), `RoleKpis` (integer basis-point metrics in $[0..=10,000]$ bp), and `RoleDebriefPerspective` (`m9-role-debrief-v1`) evaluating role performance without outcome bias.
 - `role_catalog.rs`: `RoleScenarioDefinition`, `RoleScenarioExecutionResult`, and `RoleScenarioCatalog` (`m9-role-scenario-catalog-v1`) registering and executing 5 canonical benchmark scenarios (`scenario-top-teleport-flank-v1`, `scenario-jungler-objective-steal-v1`, `scenario-mid-roam-conversion-v1`, `scenario-bot-hypercarry-scaling-v1`, `scenario-support-vision-setup-peel-v1`) with replay hash verification.
+- `comeback.rs`: `DeficitLevel` (`Ahead`/`Parity`/`Deficit`/`SevereDeficit`), `VarianceSeekingBehavior`, `ComebackOpportunityInputs`, and the pure `evaluate_comeback_opportunity` (`m9-comeback-mechanics-v1`) classifying explicit structural/objective net deltas in integer basis points into deterministic variance-seeking recommendations.
+- `comeback_catalog.rs`: `ComebackScenarioDefinition`, `ComebackScenarioExecutionResult`, and `ComebackCatalog` (`m9-comeback-catalog-v1`) registering and executing 3 canonical benchmark scenarios (`teamfight_comeback`, `desperation_all_in`, `ahead_conservative`).
+- `pivotal.rs`: `PivotalDecisionSample`, `PivotalTier` (`Routine`/`Notable`/`Pivotal`/`MatchDefining` at explicit 500/1,500/3,500 bp swing thresholds), `SwingDirection`, `DecisionAlignment`, and the pure fail-closed `detect_pivotal_decisions` (`m9-pivotal-decision-v1`) classifying caller-declared match value trajectories with strict sign-flip lead-change detection.
+- `pivotal_catalog.rs`: `PivotalScenarioDefinition`, `PivotalScenarioExecutionResult`, and `PivotalCatalog` (`m9-pivotal-catalog-v1`) registering and executing 3 canonical benchmark scenarios (`base_race_decisive_swing`, `baron_throw_comeback`, `stable_slow_burn`).
 
 
 `src/protocol.rs` owns the bounded actor observation/action/commit/draft/message/draft-receipt/

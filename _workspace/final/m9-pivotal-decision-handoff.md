@@ -37,7 +37,7 @@ established M9 pure-evaluation pattern (`m9-comeback-mechanics-v1`):
    - `scenario-stable-slow-burn-v1`: only routine/notable swings; zero
      pivotal decisions, no lead changes.
 
-3. **Tests (`src/map/tests/pivotal.rs`)**: 21 focused tests covering tier
+3. **Tests (`src/map/tests/pivotal.rs`)**: 24 focused tests covering tier
    boundaries, direction/alignment matrices, strict lead-change semantics,
    ranking tie-break, fail-closed validation with indices, reproducibility,
    aggregates, ranked filtering, all catalog scenarios, unknown-id failure,

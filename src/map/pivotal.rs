@@ -10,7 +10,8 @@
 //!
 //! Detection classifies swing magnitude (`PivotalTier`), swing direction,
 //! strict lead changes, and whether the swing aligned with or against the
-//! acting side. All arithmetic is exact integer math; no floating point,
+//! acting side. All arithmetic is exact integer math except the documented
+//! saturating aggregation of `total_absolute_swing_bp`; no floating point,
 //! randomness, I/O, authoritative state access, or hidden state is involved.
 //!
 //! Malformed inputs fail closed: empty trajectories, out-of-range values,
@@ -160,7 +161,8 @@ impl fmt::Display for DecisionAlignment {
 /// basis points, each within `[-10,000..=10,000]`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct PivotalDecisionSample {
-  /// Stable caller-assigned identity of the decision.
+  /// Stable caller-assigned identity of the decision. Uniqueness across
+  /// samples is the caller's responsibility; detection does not validate it.
   pub decision_id: &'static str,
   /// Match turn at which the decision occurred; strictly increasing across samples.
   pub turn: u16,
@@ -236,6 +238,10 @@ pub struct PivotalDecisionReport {
   /// Allied-perspective match value after the final declared decision.
   pub final_value_bp: i32,
   /// Saturating sum of absolute swings across all findings.
+  ///
+  /// Saturation is unreachable through validation: strictly increasing
+  /// `u16` turns cap the trajectory below 65,537 samples and each validated
+  /// swing is at most 20,000 bp, so the true sum stays below `u32::MAX`.
   pub total_absolute_swing_bp: u32,
 }
 
@@ -332,7 +338,11 @@ pub fn detect_pivotal_decisions(
 
   let mut previous_turn: Option<u16> = None;
   for (index, sample) in samples.iter().enumerate() {
-    if sample.value_before_bp.abs() > VALUE_BOUND_BP || sample.value_after_bp.abs() > VALUE_BOUND_BP
+    // `unsigned_abs` is total on i32 (`.abs()` would panic on i32::MIN in
+    // checked builds and wrap in release), keeping this check fail-closed
+    // for every representable input.
+    if sample.value_before_bp.unsigned_abs() > VALUE_BOUND_BP.unsigned_abs()
+      || sample.value_after_bp.unsigned_abs() > VALUE_BOUND_BP.unsigned_abs()
     {
       return Err(PivotalDecisionError::ValueOutOfRange { index });
     }

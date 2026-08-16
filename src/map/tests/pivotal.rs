@@ -12,8 +12,8 @@
 //! - Markdown rendering contains debrief labels without hidden state
 
 use crate::map::pivotal::{
-  DecisionAlignment, PivotalDecisionError, PivotalDecisionSample, PivotalTier, SwingDirection,
-  detect_pivotal_decisions,
+  DecisionAlignment, M9_PIVOTAL_DECISION_SCHEMA_V1, PivotalDecisionError, PivotalDecisionSample,
+  PivotalTier, SwingDirection, detect_pivotal_decisions,
 };
 use crate::map::pivotal_catalog::PivotalCatalog;
 use crate::map::topology::TeamSide;
@@ -216,6 +216,42 @@ fn detect_rejects_out_of_range_values() {
   );
 }
 
+#[test]
+fn detect_rejects_i32_min_without_panicking_or_wrapping() {
+  // Regression: `.abs()` on i32::MIN panics in checked builds and wraps in
+  // release, so the range check must use a total magnitude operation.
+  let bad_before =
+    detect_pivotal_decisions(&[sample("min-before", 1, TeamSide::Allied, i32::MIN, 0)]);
+  assert_eq!(
+    bad_before,
+    Err(PivotalDecisionError::ValueOutOfRange { index: 0 })
+  );
+
+  let bad_after =
+    detect_pivotal_decisions(&[sample("min-after", 1, TeamSide::Allied, 0, i32::MIN)]);
+  assert_eq!(
+    bad_after,
+    Err(PivotalDecisionError::ValueOutOfRange { index: 0 })
+  );
+}
+
+#[test]
+fn extreme_legal_values_classified_end_to_end() {
+  let report = detect_pivotal_decisions(&[
+    sample("boundary-low", 1, TeamSide::Allied, -10_000, -10_000),
+    sample("max-swing", 2, TeamSide::Opposing, -10_000, 10_000),
+  ])
+  .expect("boundary values are legal");
+  assert_eq!(report.findings[0].swing_bp, 0);
+  let max = &report.findings[1];
+  assert_eq!(max.swing_bp, 20_000);
+  assert_eq!(max.tier, PivotalTier::MatchDefining);
+  assert!(max.lead_changed);
+  assert_eq!(report.total_absolute_swing_bp, 20_000);
+  assert_eq!(report.final_value_bp, 10_000);
+  assert_eq!(report.pivotal_count, 1);
+}
+
 // --- Reproducibility and aggregates ---
 
 #[test]
@@ -260,6 +296,18 @@ fn pivotal_findings_are_filtered_and_ranked() {
 }
 
 #[test]
+fn pivotal_findings_rank_equal_swings_by_earliest_turn() {
+  let report = detect_pivotal_decisions(&[
+    sample("early-equal", 4, TeamSide::Allied, 0, 2_000),
+    sample("late-equal", 9, TeamSide::Allied, 2_000, 4_000),
+  ])
+  .expect("valid samples");
+  let ranked = report.pivotal_findings();
+  let turns: Vec<u16> = ranked.iter().map(|f| f.turn).collect();
+  assert_eq!(turns, vec![4, 9]);
+}
+
+#[test]
 fn neutral_zero_swing_is_classified_not_pivotal() {
   let report = detect_pivotal_decisions(&[sample("hold", 1, TeamSide::Allied, 700, 700)])
     .expect("valid samples");
@@ -280,6 +328,11 @@ fn catalog_base_race_scenario_meets_expectations() {
   let result = PivotalCatalog::execute_scenario("scenario-base-race-decisive-swing-v1")
     .expect("known scenario");
   assert!(result.all_expectations_met);
+  assert!(result.most_pivotal_turn_matches);
+  assert!(result.most_pivotal_tier_matches);
+  assert!(result.pivotal_count_matches);
+  assert!(result.lead_change_turns_match);
+  assert_eq!(result.report.schema, M9_PIVOTAL_DECISION_SCHEMA_V1);
   assert_eq!(result.report.most_pivotal.decision_id, "nexus-race-commit");
   assert_eq!(result.report.most_pivotal.tier, PivotalTier::MatchDefining);
   assert!(result.report.lead_change_turns.is_empty());
@@ -290,6 +343,10 @@ fn catalog_baron_throw_scenario_meets_expectations() {
   let result =
     PivotalCatalog::execute_scenario("scenario-baron-throw-comeback-v1").expect("known scenario");
   assert!(result.all_expectations_met);
+  assert!(result.most_pivotal_turn_matches);
+  assert!(result.most_pivotal_tier_matches);
+  assert!(result.pivotal_count_matches);
+  assert!(result.lead_change_turns_match);
   let finding = result
     .report
     .findings
@@ -306,9 +363,19 @@ fn catalog_stable_scenario_meets_expectations() {
   let result =
     PivotalCatalog::execute_scenario("scenario-stable-slow-burn-v1").expect("known scenario");
   assert!(result.all_expectations_met);
+  assert!(result.most_pivotal_turn_matches);
+  assert!(result.most_pivotal_tier_matches);
   assert!(result.pivotal_count_matches);
+  assert!(result.lead_change_turns_match);
   assert_eq!(result.report.pivotal_count, 0);
+  assert!(result.report.pivotal_findings().is_empty());
   assert_eq!(result.report.most_pivotal.tier, PivotalTier::Notable);
+  assert!(
+    result
+      .report
+      .render_markdown()
+      .contains("**Lead Change Turns**: none")
+  );
 }
 
 #[test]

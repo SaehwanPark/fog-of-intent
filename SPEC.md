@@ -1684,9 +1684,9 @@ optimization remain deferred.
      an uncontested base race.
   2. `scenario-baron-throw-comeback-v1`: an against-actor throw flips the lead
      at turn 14 and the match follows.
-  3. `scenario-stable-slow-burn-v1`: only notable swings; zero pivotal
-     decisions and no lead changes.
-- 21 focused tests cover tier boundaries, direction/alignment matrices,
+  3. `scenario-stable-slow-burn-v1`: only routine and notable swings; zero
+     pivotal decisions and no lead changes.
+- 24 focused tests cover tier boundaries, direction/alignment matrices,
   strict lead-change semantics, ranking tie-break, fail-closed validation,
   reproducibility, aggregates, catalog outcomes, and Markdown hygiene.
 

@@ -36,7 +36,7 @@ not increment the package version.
     `scenario-base-race-decisive-swing-v1` (match-defining swing),
     `scenario-baron-throw-comeback-v1` (against-actor throw + lead change),
     `scenario-stable-slow-burn-v1` (no pivotal decisions).
-  - 21 focused tests: tier boundaries, direction/alignment matrices, strict
+  - 24 focused tests: tier boundaries, direction/alignment matrices, strict
     lead-change semantics, ranking tie-break, fail-closed validation,
     reproducibility, aggregates, catalog outcomes, and Markdown hygiene.
 
