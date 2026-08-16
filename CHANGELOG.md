@@ -18,8 +18,11 @@ not increment the package version.
     `SiegeStructure`, `EvaluateTerminal`) drives its real subsystem
     transition without re-implementing subsystem rules.
   - One combined FNV-1a hash committing the map hash, structure hash,
-    serialized objective and ward state, secure counters, and turn;
-    identical plans replay to identical results and final hashes.
+    serialized objective and ward state (including the ward-id sequence and
+    per-actor team membership), secure counters, and turn; identical plans
+    replay to identical results and final hashes. A Nexus fall mid-plan
+    fails the plan closed for any non-evaluation follow-up and the reported
+    final turn is the turn the Nexus fell.
   - `CompleteMatchPlan::execute` fails closed on `EmptyPlan`,
     `MatchDidNotTerminate`, `MatchAlreadyConcluded`, `UntrackedActor`, and
     wrapped travel/vision/siege errors.
@@ -30,10 +33,10 @@ not increment the package version.
     answered by three Allied objective cycles and all three inhibitors taken
     inside the five-turn respawn window; `MatchConceded` at turn 29 with
     objectives 3-1).
-  - 12 focused tests: termination conditions and winners, replay
-    determinism, combined-hash commitment of vision and rosters, phase-kind
-    coverage, fail-closed behavior, error Display coverage, and Markdown
-    hygiene.
+  - 14 focused tests: termination conditions and winners, replay
+    determinism, combined-hash commitment of vision, team membership, and
+    ward-id history, phase-kind coverage, fail-closed behavior (including
+    post-Nexus actions), error Display coverage, and Markdown hygiene.
 
 ## [0.1.201] - 2026-08-16
 

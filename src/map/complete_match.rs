@@ -17,6 +17,13 @@
 //!
 //! Rotations resolve within their action using the full BFS route length,
 //! modeling a committed rotation that completes over the inter-turn window.
+//!
+//! Tick model: every action advances the shared turn, the map's internal
+//! turn, and structure respawn countdowns. Objective spawn/respawn
+//! countdowns and ward expiry tick only inside `ContestObjectives` actions,
+//! following the contest transition's existing contract; a plan without
+//! contest actions therefore carries wards and unspawned objectives forward
+//! unchanged.
 
 use core::fmt;
 
@@ -263,6 +270,11 @@ impl CompleteMatchState {
       hash = hash_bytes(hash, &entry.secure_count_allied.to_le_bytes());
       hash = hash_bytes(hash, &entry.secure_count_opposing.to_le_bytes());
     }
+    // Team membership per tracked actor commits the rosters even though the
+    // map's own hash covers only locations.
+    for (actor, _location) in self.map.actor_locations() {
+      hash = hash_bytes(hash, &[actor.value(), u8::from(self.map.is_allied(*actor))]);
+    }
     for ward in self.vision.active_wards() {
       hash = hash_bytes(hash, &ward.ward_id.to_le_bytes());
       hash = hash_bytes(
@@ -274,6 +286,8 @@ impl CompleteMatchState {
       );
       hash = hash_bytes(hash, &ward.remaining_turns.to_le_bytes());
     }
+    // The ward-id sequence commits placement history beyond the active set.
+    hash = hash_bytes(hash, &self.vision.next_ward_id().to_le_bytes());
     hash = hash_bytes(hash, &self.allied_objectives_secured.to_le_bytes());
     hash = hash_bytes(hash, &self.opposing_objectives_secured.to_le_bytes());
     StateHash::from_raw(hash)
@@ -370,9 +384,18 @@ impl CompleteMatchPlan {
     let mut total_events = 0usize;
     let mut total_effects = 0usize;
     let mut conclusion: Option<(TeamSide, MatchVictoryCondition, u32)> = None;
+    // Set when a subsystem already decided the match (a Nexus fell): only
+    // the closing EvaluateTerminal may follow, and the recorded final turn
+    // is the turn the subsystem conclusion happened, not the evaluation turn.
+    let mut subsystem_conclusion_turn: Option<u32> = None;
 
     for action in &self.actions {
       if conclusion.is_some() {
+        return Err(CompleteMatchError::MatchAlreadyConcluded);
+      }
+      if subsystem_conclusion_turn.is_some()
+        && !matches!(action, CompleteMatchAction::EvaluateTerminal)
+      {
         return Err(CompleteMatchError::MatchAlreadyConcluded);
       }
       let action_turn = state.turn;
@@ -385,9 +408,12 @@ impl CompleteMatchPlan {
         events,
         effects,
       });
+      if state.structures.check_nexus_destroyed().is_some() && subsystem_conclusion_turn.is_none() {
+        subsystem_conclusion_turn = Some(action_turn);
+      }
       if let CompleteMatchAction::EvaluateTerminal = action {
         let evaluation = MatchTerminalEvaluation::evaluate(
-          action_turn,
+          subsystem_conclusion_turn.unwrap_or(action_turn),
           &state.structures,
           usize::try_from(state.allied_objectives_secured).expect("fits usize"),
           usize::try_from(state.opposing_objectives_secured).expect("fits usize"),
@@ -459,10 +485,12 @@ impl CompleteMatchState {
         location,
         duration_turns,
       } => {
+        // place_ward emits no subsystem events or effects; the phase record
+        // itself is the evidence of the warding action.
         self
           .vision
           .place_ward(*team, *placed_by, *location, self.turn, *duration_turns)?;
-        (MatchPhaseKind::Warding, 1, 1)
+        (MatchPhaseKind::Warding, 0, 0)
       }
       CompleteMatchAction::ContestObjectives {
         allied_intent,

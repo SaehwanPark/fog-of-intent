@@ -1838,8 +1838,14 @@ deferred.
   on empty plans, unterminated plan ends, post-conclusion actions,
   untracked-actor rotations, and subsystem rejections.
 - One combined FNV-1a hash commits the map hash, structure hash, serialized
-  objective and ward state, secure counters, and turn; identical plans
-  replay to identical results and final hashes.
+  objective and ward state (including the ward-id sequence and per-actor
+  team membership), secure counters, and turn; identical plans replay to
+  identical results and final hashes. A Nexus fall mid-plan fails the plan
+  closed for any non-evaluation follow-up, and the reported final turn is
+  the turn the Nexus fell. The tick model is explicit: every action advances
+  the shared turn, the map turn, and structure respawns, while objective
+  spawn/respawn and ward expiry tick inside contest actions per the existing
+  contest contract.
 - `m9-complete-match-catalog-v1` registers 2 canonical complete matches:
   `scenario-complete-allied-snowball-v1` (secured Drake, full Mid siege,
   `NexusDemolished` at turn 15) and

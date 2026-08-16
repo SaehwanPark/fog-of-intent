@@ -85,7 +85,9 @@ fn allied_snowball_terminates_by_nexus_demolition() {
   assert_eq!(result.condition, MatchVictoryCondition::NexusDemolished);
   assert_eq!(result.allied_objectives_secured, 1);
   assert_eq!(result.opposing_objectives_secured, 0);
-  assert_eq!(result.final_turn, 15);
+  // The Nexus falls to the turn-14 siege; the turn-15 evaluation confirms
+  // the subsystem conclusion and reports its turn.
+  assert_eq!(result.final_turn, 14);
   // Every mechanic family appears in the phase log.
   let kinds: Vec<MatchPhaseKind> = result.phases.iter().map(|phase| phase.kind).collect();
   for expected in [
@@ -156,6 +158,16 @@ fn final_hash_commits_subsystem_changes() {
     scenario_id: "hash-vision-check",
     initial: single_actor_state(),
     actions: vec![
+      CompleteMatchAction::Rotate {
+        actor,
+        destination: MapLocation::MID_NEAR_TOWER,
+      },
+      CompleteMatchAction::PlaceWard {
+        team: TeamSide::Allied,
+        placed_by: actor,
+        location: ward_location,
+        duration_turns: 5,
+      },
       CompleteMatchAction::SiegeStructure {
         side: TeamSide::Allied,
         tier: StructureTier::OuterTurret,
@@ -186,16 +198,6 @@ fn final_hash_commits_subsystem_changes() {
         lane: None,
         raw_damage: 6_500,
       },
-      CompleteMatchAction::Rotate {
-        actor,
-        destination: MapLocation::MID_NEAR_TOWER,
-      },
-      CompleteMatchAction::PlaceWard {
-        team: TeamSide::Allied,
-        placed_by: actor,
-        location: ward_location,
-        duration_turns: 5,
-      },
       CompleteMatchAction::EvaluateTerminal,
     ],
   };
@@ -210,29 +212,108 @@ fn final_hash_commits_subsystem_changes() {
     "the combined hash must commit vision state"
   );
 
-  // Differing rosters produce differing initial hashes.
-  let two_actors = CompleteMatchState::new(
+  // Differing team membership produces differing initial hashes: the same
+  // actor at the same location, but assigned to the opposing team.
+  let actor = ActorId::new(1);
+  let allied_actor = CompleteMatchState::new(
     1,
-    vec![ActorId::new(1), ActorId::new(2)],
+    vec![actor],
     vec![],
-    vec![
-      (
-        ActorId::new(1),
-        ActorLocation::Stationary(MapLocation::ALLIED_BASE),
-      ),
-      (
-        ActorId::new(2),
-        ActorLocation::Stationary(MapLocation::MID_CENTER),
-      ),
-    ],
+    vec![(actor, ActorLocation::Stationary(MapLocation::ALLIED_BASE))],
+  );
+  let opposing_actor = CompleteMatchState::new(
+    1,
+    vec![],
+    vec![actor],
+    vec![(actor, ActorLocation::Stationary(MapLocation::ALLIED_BASE))],
   );
   assert_ne!(
-    two_actors.combined_hash(),
-    single_actor_state().combined_hash()
+    allied_actor.combined_hash(),
+    opposing_actor.combined_hash(),
+    "the combined hash must commit team membership"
   );
   assert_eq!(
-    two_actors.clone().combined_hash(),
-    two_actors.combined_hash()
+    allied_actor.clone().combined_hash(),
+    allied_actor.combined_hash()
+  );
+}
+
+#[test]
+fn ward_id_history_is_committed_by_the_hash() {
+  // Two terminated plans whose active-ward sets coincide but whose placement
+  // histories differ must hash differently.
+  let actor = ActorId::new(1);
+  let siege = |tier, damage, lane| CompleteMatchAction::SiegeStructure {
+    side: TeamSide::Allied,
+    tier,
+    lane,
+    raw_damage: damage,
+  };
+  let sieges = vec![
+    siege(StructureTier::OuterTurret, 4_000, Some(LaneId::Mid)),
+    siege(StructureTier::InnerTurret, 4_500, Some(LaneId::Mid)),
+    siege(StructureTier::InhibitorTurret, 5_000, Some(LaneId::Mid)),
+    siege(StructureTier::Inhibitor, 3_500, Some(LaneId::Mid)),
+    siege(StructureTier::Nexus, 6_500, None),
+  ];
+  let ward = |duration| CompleteMatchAction::PlaceWard {
+    team: TeamSide::Allied,
+    placed_by: actor,
+    location: MapLocation::TOP_RIVER,
+    duration_turns: duration,
+  };
+  // Early one-turn ward expires during the turn-3 contest tick; a second
+  // ward at the same spot leaves one active ward with a later id.
+  let early = CompleteMatchPlan {
+    scenario_id: "ward-history-early",
+    initial: single_actor_state(),
+    actions: vec![
+      ward(1),
+      CompleteMatchAction::ContestObjectives {
+        allied_intent: None,
+        opposing_intent: None,
+      },
+      CompleteMatchAction::ContestObjectives {
+        allied_intent: None,
+        opposing_intent: None,
+      },
+      ward(9),
+      siege(StructureTier::OuterTurret, 4_000, Some(LaneId::Mid)),
+      siege(StructureTier::InnerTurret, 4_500, Some(LaneId::Mid)),
+      siege(StructureTier::InhibitorTurret, 5_000, Some(LaneId::Mid)),
+      siege(StructureTier::Inhibitor, 3_500, Some(LaneId::Mid)),
+      siege(StructureTier::Nexus, 6_500, None),
+      CompleteMatchAction::EvaluateTerminal,
+    ],
+  }
+  .execute()
+  .expect("early-ward run");
+  // Late single ward: same active set shape, different id sequence.
+  let late = CompleteMatchPlan {
+    scenario_id: "ward-history-late",
+    initial: single_actor_state(),
+    actions: {
+      let mut actions = vec![
+        CompleteMatchAction::Rotate {
+          actor,
+          destination: MapLocation::MID_NEAR_TOWER,
+        },
+        CompleteMatchAction::Rotate {
+          actor,
+          destination: MapLocation::ALLIED_BASE,
+        },
+        ward(9),
+      ];
+      actions.extend(sieges);
+      actions.push(CompleteMatchAction::EvaluateTerminal);
+      actions
+    },
+  }
+  .execute()
+  .expect("late-ward run");
+  assert_ne!(
+    early.final_hash, late.final_hash,
+    "the combined hash must commit ward placement history"
   );
 }
 
@@ -255,6 +336,25 @@ fn unterminated_plans_are_rejected() {
   assert_eq!(
     plan.execute(),
     Err(CompleteMatchError::MatchDidNotTerminate)
+  );
+}
+
+#[test]
+fn actions_after_a_subsystem_conclusion_are_rejected() {
+  // The Nexus falls at the turn-5 siege; a further rotation must fail closed
+  // even though no EvaluateTerminal has run yet.
+  let actor = ActorId::new(1);
+  let mut plan = terminating_plan();
+  plan.actions.insert(
+    5,
+    CompleteMatchAction::Rotate {
+      actor,
+      destination: MapLocation::MID_NEAR_TOWER,
+    },
+  );
+  assert_eq!(
+    plan.execute(),
+    Err(CompleteMatchError::MatchAlreadyConcluded)
   );
 }
 

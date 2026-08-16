@@ -2021,8 +2021,11 @@ This establishes the spatial topology, deterministic rotation/travel model, neut
   `place_ward`, `transition_structure_siege`, `MatchTerminalEvaluation`)
   without re-implementing subsystem rules.
 - [x] Commit every subsystem in one deterministic combined FNV-1a hash (map
-  hash, structure hash, serialized objective and ward state, secure
-  counters, turn); identical plans replay to identical results and hashes.
+  hash, structure hash, serialized objective and ward state including the
+  ward-id sequence, per-actor team membership, secure counters, turn);
+  identical plans replay to identical results and hashes. A mid-plan Nexus
+  fall fails the plan closed for any non-evaluation follow-up and the
+  reported final turn is the turn the Nexus fell.
 - [x] Fail closed on empty plans, plans that end in progress, actions after
   conclusion, untracked-actor rotations, and subsystem rejections
   (`EmptyPlan`, `MatchDidNotTerminate`, `MatchAlreadyConcluded`,
@@ -2034,11 +2037,12 @@ This establishes the spatial topology, deterministic rotation/travel model, neut
   three Allied objective cycles, all three inhibitor lanes taken inside the
   respawn window, `MatchConceded` at turn 29 with objectives 3-1).
 - [x] Cover termination conditions and winners, replay determinism, combined
-  hash commitment of vision state and rosters, phase-kind coverage,
-  fail-closed behavior, and Markdown hygiene in 12 focused tests.
+  hash commitment of vision state, team membership, and ward-id history,
+  phase-kind coverage, fail-closed behavior (including post-Nexus actions),
+  and Markdown hygiene in 14 focused tests.
 
-This establishes the M9 exit evidence that a complete match terminates and
-replays to an identical final hash at the library boundary. Reference-CLI
+This establishes the M9 exit-evidence bullet that a complete match
+terminates and replays to an identical final hash, at the library boundary. Reference-CLI
 surfacing of the composed replay, MCP match replays, multi-match
 tournaments, and human pacing evidence remain deferred.
 
