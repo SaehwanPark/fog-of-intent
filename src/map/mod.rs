@@ -11,6 +11,8 @@ pub mod graph;
 pub mod match_catalog;
 pub mod objective;
 pub mod objective_catalog;
+pub mod pivotal;
+pub mod pivotal_catalog;
 pub mod role_action;
 pub mod role_catalog;
 pub mod role_debrief;
@@ -47,6 +49,8 @@ pub const M9_ROLE_DEBRIEF_SCHEMA_V1: &str = "m9-role-debrief-v1";
 pub const M9_ROLE_SCENARIO_CATALOG_SCHEMA_V1: &str = "m9-role-scenario-catalog-v1";
 pub const M9_COMEBACK_MECHANICS_SCHEMA_V1: &str = "m9-comeback-mechanics-v1";
 pub const M9_COMEBACK_CATALOG_SCHEMA_V1: &str = "m9-comeback-catalog-v1";
+pub const M9_PIVOTAL_DECISION_SCHEMA_V1: &str = "m9-pivotal-decision-v1";
+pub const M9_PIVOTAL_CATALOG_SCHEMA_V1: &str = "m9-pivotal-catalog-v1";
 
 pub use catalog::{MapScenarioDefinition, MapScenarioExecutionResult, MapTravelCatalog};
 pub use comeback::{
@@ -77,6 +81,14 @@ pub use objective::{
 };
 pub use objective_catalog::{
   ObjectiveScenarioCatalog, ObjectiveScenarioDefinition, ObjectiveScenarioExecutionResult,
+};
+pub use pivotal::{
+  DecisionAlignment, NOTABLE_MAX_SWING_BP, PIVOTAL_MAX_SWING_BP, PivotalDecisionError,
+  PivotalDecisionFinding, PivotalDecisionReport, PivotalDecisionSample, PivotalTier,
+  ROUTINE_MAX_SWING_BP, SwingDirection, VALUE_BOUND_BP, detect_pivotal_decisions,
+};
+pub use pivotal_catalog::{
+  PivotalCatalog, PivotalScenarioDefinition, PivotalScenarioExecutionResult,
 };
 pub use role_action::{
   BotCarryIntent, JungleIntent, MidIntent, RoleAction, RoleActionError, RoleIntent, SupportIntent,
