@@ -78,7 +78,8 @@ and `advance`. Piped input has no prompt and prints labeled plain text. The
 [How to Play](HOW_TO_PLAY.md) guide walks through a full two-window session.
 
 The M9 complete-match replay prints a replay-verified transcript of both
-canonical composed matches and exits:
+canonical composed matches and exits (always plain text; `--color` and
+`--run-dir` do not apply):
 
 ```sh
 cargo run -- --scenario m9-complete-match-replay-v1

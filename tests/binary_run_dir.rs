@@ -275,8 +275,6 @@ fn binary_without_run_directory_remains_in_memory() {
 #[test]
 fn binary_prints_replay_verified_complete_match_transcript() {
   let binary = binary_path();
-  let root = temporary_root();
-  fs::create_dir_all(&root).expect("isolated working directory");
 
   let output = run_scenario_binary(&binary, "m9-complete-match-replay-v1", "");
   assert!(output.status.success(), "stderr: {:?}", output.stderr);
@@ -291,6 +289,4 @@ fn binary_prints_replay_verified_complete_match_transcript() {
     "match: scenario=scenario-complete-comeback-concession-v1 winner=allied condition=match-conceded"
   ));
   assert_eq!(lines[5], "match-replay: complete");
-
-  let _ = fs::remove_dir_all(root);
 }

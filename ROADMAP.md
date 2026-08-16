@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs` | Standalone package version reporting, a bounded fixture transcript with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, TTY prompt/completion, `--color`), and a replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1` |
-| Package | `Cargo.toml` | Version `0.1.197`, one deferred edge crate (`reedline`) |
+| Package | `Cargo.toml` | Version `0.1.203`, one deferred edge crate (`reedline`) |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -2032,7 +2032,7 @@ This establishes the spatial topology, deterministic rotation/travel model, neut
   `UntrackedActor`, wrapped travel/vision/siege errors).
 - [x] Define `m9-complete-match-catalog-v1` with 2 canonical complete-match
   plans: `scenario-complete-allied-snowball-v1` (rotations, river vision, a
-  secured Drake, a full Mid siege, `NexusDemolished` at turn 15) and
+  secured Drake, a full Mid siege, `NexusDemolished` at turn 14) and
   `scenario-complete-comeback-concession-v1` (an opposing objective lead,
   three Allied objective cycles, all three inhibitor lanes taken inside the
   respawn window, `MatchConceded` at turn 29 with objectives 3-1).
@@ -2042,9 +2042,7 @@ This establishes the spatial topology, deterministic rotation/travel model, neut
   and Markdown hygiene in 14 focused tests.
 
 This establishes the M9 exit-evidence bullet that a complete match
-terminates and replays to an identical final hash, at the library boundary. Reference-CLI
-surfacing of the composed replay, MCP match replays, multi-match
-tournaments, and human pacing evidence remain deferred.
+terminates and replays to an identical final hash, at the library boundary.
 
 ### Current M9 reference-CLI complete-match replay evidence
 
@@ -2062,8 +2060,9 @@ tournaments, and human pacing evidence remain deferred.
   scenario because the transcript creates no run artifacts, and unknown
   scenario ids keep failing closed.
 - [x] Cover transcript content and determinism, hash-value-free labeled
-  output, scenario parsing, run-dir rejection, help text, and a
-  clean-checkout binary run through the real executable in 6 focused tests.
+  output, scenario parsing, run-dir rejection, help text, writer output,
+  and a clean-checkout binary run through the real executable in 7 focused
+  tests.
 
 This delivers the bounded CLI portion of the "Complete CLI and MCP match
 replays" deliverable. MCP match replays, interactive match play, save/load

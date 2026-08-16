@@ -24,9 +24,9 @@ not increment the package version.
     nothing and fails the process; `--run-dir` is rejected (no run
     artifacts); unknown scenario ids keep failing closed.
   - `--help` now lists both executable scenarios.
-  - 6 focused tests: transcript content and determinism, hash-value-free
-    labeled output, scenario parsing, run-dir rejection, help text, and a
-    clean-checkout binary run through the real executable.
+  - 7 focused tests: transcript content and determinism, hash-value-free
+    labeled output, scenario parsing, run-dir rejection, help text, writer
+    output, and a clean-checkout binary run through the real executable.
 
 ## [0.1.202] - 2026-08-16
 
@@ -50,7 +50,7 @@ not increment the package version.
     wrapped travel/vision/siege errors.
   - `CompleteMatchCatalog` with 2 canonical complete matches:
     `scenario-complete-allied-snowball-v1` (river vision, a secured Drake, a
-    full Mid siege, `NexusDemolished` at turn 15) and
+    full Mid siege, `NexusDemolished` at turn 14) and
     `scenario-complete-comeback-concession-v1` (an opposing objective lead
     answered by three Allied objective cycles and all three inhibitors taken
     inside the five-turn respawn window; `MatchConceded` at turn 29 with

@@ -819,7 +819,7 @@ and an architecture update or ADR when it changes a consequential boundary.
   thin line-oriented fixture loop with explicit versioned fixture selection,
   `--run-dir` wiring, a matched-parent host branch projection, and
   machine-checked labeled plain text, process-edge package version reporting,
-  and one executable complete-transcript regression; broader scenario selection,
+  and one executable complete-transcript regression; interactive and dynamic scenario selection,
   regenerated/graph branching, and human accessibility evidence remain open.
 - M2 still lacks a communication system, full vision geometry, memory decay,
   automatic threat damage, no-choice host scheduling, adaptive pacing, a complete item/resource economy,
