@@ -1877,6 +1877,40 @@ replays to an identical final hash at the library boundary.
 MCP match replays, interactive match play, save/load of match replays, and
 human pacing evidence remain deferred.
 
+#### Delivered in the bounded human usability and accessibility study protocol follow-up
+
+- `m10-study-protocol-v1`, `m10-finding-taxonomy-v1`, `m10-participant-session-v1`,
+  `m10-study-evaluation-v1`, and `m10-study-catalog-v1` define the formal study
+  protocol, participant session schema, finding taxonomy, and evaluation framework for M10:
+  - `StudyProtocolDefinition` establishes research questions, target completion and
+    comprehension floors in exact basis points ($[0..=10,000]$ bp), and strict
+    `PrivacyConsentDeclaration` invariants (de-identified IDs, zero PII, zero latent state leakage).
+  - `ParticipantCohort` covers 4 representative cohorts: `StrategyGamer`, `MobaPlayer`,
+    `AccessNeeds`, and `NoviceStrategy`.
+  - `EvaluationDimension` covers 10 canonical dimensions across onboarding, terminology clarity,
+    command discoverability, pacing cognitive load, perceived agency, delegated fairness,
+    debrief causal utility, keyboard flow, non-color semantics, and screen-reader suitability.
+  - `FindingRecord` tracks findings across 4 orthogonal categories (`Usability`, `Accessibility`,
+    `GameplayBalance`, `BehavioralModel`), 4 severity tiers (`Blocker`, `MajorBarrier`,
+    `MinorFriction`, `PositiveInsight`), and issue-linked dispositions (`Resolved`, `Mitigated`,
+    `Deferred`, `DocumentedLimitation`).
+  - `evaluate_study_cohort` is a pure function with fail-closed validation (`EmptyPopulation`,
+    `DuplicateParticipantId`, `DuplicateFindingId`, `ScoreOutOfRange`, `UnlinkedFindingParticipant`,
+    `InvalidPrivacyDeclaration`) producing a `StudyEvaluationReport` with overall and per-cohort
+    completion rates (bp), average explanation and debrief comprehension scores (bp), finding
+    disposition breakdown, accessibility qualification gate evaluation (requiring access-needs
+    evaluation, zero unresolved accessibility blockers, and debrief comprehension >= floor),
+    evidence boundary statements, and clean Markdown rendering without private chain-of-thought.
+  - `StudyProtocolCatalog` registers 3 canonical benchmark scenarios (`scenario-study-cohort-balanced-alpha-v1`,
+    `scenario-study-cohort-access-friction-v1`, `scenario-study-cohort-mixed-novice-v1`) with
+    reproducible execution and expectation verification.
+  - 8 focused tests cover cohort/dimension round trips, privacy invariants, finding dispositions,
+    fail-closed validation, error Display coverage, catalog outcomes, accessibility gate rules,
+    and Markdown hygiene.
+
+This establishes a bounded deterministic study protocol and evaluation framework for M10. Empirical
+human testing, participant recruitment, live study runs, and behavioral research claims remain deferred.
+
 ## Future
 
 The detailed and canonical order is in `ROADMAP.md`.

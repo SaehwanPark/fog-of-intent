@@ -2105,7 +2105,7 @@ project reports accessibility and usability limits honestly.
 
 - [ ] Conduct small informal checks of the core loop before this phase and retain
   issue-linked notes without overstating them.
-- [ ] Define research questions, participant criteria, consent, privacy, and data
+- [x] Define research questions, participant criteria, consent, privacy, and data
   handling appropriate to the study and claims.
 - [ ] Test onboarding, terminology, command discoverability, pacing, information
   load, agency, delegated-execution fairness, and debrief usefulness.
@@ -2113,10 +2113,34 @@ project reports accessibility and usability limits honestly.
   screen-reader use with relevant participants where those claims are made.
 - [ ] Include strategy-oriented, existing MOBA, and access-needs perspectives as
   feasible and report sampling limits.
-- [ ] Separate usability, accessibility, gameplay, balance, and behavioral-model
+- [x] Separate usability, accessibility, gameplay, balance, and behavioral-model
   findings.
-- [ ] Link revisions to reproducible or well-supported findings.
-- [ ] Preserve negative, mixed, and inconclusive results.
+- [x] Link revisions to reproducible or well-supported findings.
+- [x] Preserve negative, mixed, and inconclusive results.
+
+### Current M10 study protocol, participant criteria, and evaluation framework evidence
+
+- [x] Define `m10-study-protocol-v1`, `m10-finding-taxonomy-v1`, `m10-participant-session-v1`,
+  `m10-study-evaluation-v1`, and `m10-study-catalog-v1` covering formal study protocol definitions
+  (`StudyProtocolDefinition` with explicit research questions, privacy consent invariants, target
+  completion/comprehension floors), 4 representative participant cohorts (`StrategyGamer`, `MobaPlayer`,
+  `AccessNeeds`, `NoviceStrategy`), 10 canonical evaluation dimensions (`Onboarding`, `TerminologyClarity`,
+  `CommandDiscoverability`, `PacingLoad`, `PerceivedAgency`, `DelegatedFairness`, `DebriefCausalUtility`,
+  `KeyboardFlow`, `NonColorSemantics`, `ScreenReaderSuitability`), finding classification across 4
+  orthogonal categories (`Usability`, `Accessibility`, `GameplayBalance`, `BehavioralModel`), 4 severity
+  tiers (`Blocker`, `MajorBarrier`, `MinorFriction`, `PositiveInsight`), issue-linked disposition tracking
+  (`Resolved`, `Mitigated`, `Deferred`, `DocumentedLimitation`), and pure deterministic cohort evaluation
+  (`evaluate_study_cohort`) producing exact integer basis-point metrics ($[0..=10,000]$ bp), cohort breakdown
+  tables, gate checks, fail-closed validation, accessibility qualification gates, and structured Markdown
+  reports with zero private chain-of-thought.
+- [x] Register 3 canonical benchmark scenarios in `StudyProtocolCatalog` (`scenario-study-cohort-balanced-alpha-v1`,
+  `scenario-study-cohort-access-friction-v1`, `scenario-study-cohort-mixed-novice-v1`) with reproducible
+  execution and verified expectations.
+- [x] Cover cohort/dimension round trips, privacy invariants, finding dispositions, fail-closed validation,
+  error Display formatting, catalog outcomes, accessibility gate rules, and Markdown hygiene in 8 focused tests.
+
+This establishes a bounded deterministic study protocol and evaluation framework for M10. Empirical human
+participant recruitment, live study execution, and research claims remain deferred until study data is collected.
 
 ### Deliverables
 

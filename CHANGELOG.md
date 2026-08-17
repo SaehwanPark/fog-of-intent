@@ -6,6 +6,41 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.204] - 2026-08-17
+
+### Added
+
+- `m10-study-protocol-v1`, `m10-finding-taxonomy-v1`, `m10-participant-session-v1`,
+  `m10-study-evaluation-v1`, and `m10-study-catalog-v1` formalizing the study protocol,
+  participant criteria, finding taxonomy, and deterministic evaluation framework for M10:
+  - `StudyProtocolDefinition` — research questions, target completion and comprehension floors,
+    and strict `PrivacyConsentDeclaration` invariants (de-identified IDs, zero PII, zero latent
+    state leakage).
+  - `ParticipantCohort` — 4 representative cohorts (`StrategyGamer`, `MobaPlayer`,
+    `AccessNeeds`, `NoviceStrategy`).
+  - `EvaluationDimension` — 10 canonical evaluation dimensions covering onboarding, terminology
+    clarity, command discoverability, pacing cognitive load, perceived agency, delegated fairness,
+    debrief causal utility, keyboard flow, non-color semantics, and screen-reader suitability.
+  - `FindingRecord` — finding classification across 4 orthogonal categories (`Usability`,
+    `Accessibility`, `GameplayBalance`, `BehavioralModel`), 4 severity tiers (`Blocker`,
+    `MajorBarrier`, `MinorFriction`, `PositiveInsight`), and issue-linked disposition tracking
+    (`Resolved`, `Mitigated`, `Deferred`, `DocumentedLimitation`).
+  - `ParticipantSessionRecord` — anonymous session tracking, declared access needs
+    (`AccessNeedsDeclaration`), completion status (`Completed`, `AbandonedAtTurn`, `Inconclusive`),
+    and exact integer basis-point scores ($[0..=10,000]$ bp) for explanation quality and debrief
+    comprehension.
+  - `evaluate_study_cohort` — pure deterministic evaluation function with fail-closed validation
+    (`EmptyPopulation`, `DuplicateParticipantId`, `DuplicateFindingId`, `ScoreOutOfRange`,
+    `UnlinkedFindingParticipant`, `InvalidPrivacyDeclaration`) generating `StudyEvaluationReport`
+    with cohort breakdown tables, finding counts, accessibility qualification gate evaluation,
+    and clean Markdown rendering without private chain-of-thought.
+  - `StudyProtocolCatalog` — 3 canonical benchmark study scenarios
+    (`scenario-study-cohort-balanced-alpha-v1`, `scenario-study-cohort-access-friction-v1`,
+    `scenario-study-cohort-mixed-novice-v1`) with reproducible execution and verified expectations.
+  - 8 focused tests: cohort/dimension round trips, privacy invariants, finding dispositions,
+    fail-closed validation, error Display coverage, catalog outcomes, accessibility gate rules,
+    and Markdown hygiene.
+
 ## [0.1.203] - 2026-08-16
 
 ### Added
