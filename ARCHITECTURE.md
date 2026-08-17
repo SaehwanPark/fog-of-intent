@@ -104,6 +104,7 @@ src/repl.rs
 src/command_loop.rs
 src/protocol.rs
 src/session.rs
+src/study/
 src/kernel.rs
 src/lane/
 src/serialization.rs
@@ -118,7 +119,7 @@ docs/
 _workspace/
 ```
 
-`src/lib.rs`, `src/cli.rs`, `src/agent_batch_store.rs`, `src/agent_operational_store.rs`, `src/host.rs`, `src/host_artifact.rs`, `src/run_store.rs`, `src/terminal.rs`, `src/presentation.rs`, `src/repl.rs`, `src/protocol.rs`, `src/session.rs`, `src/kernel.rs`,
+`src/lib.rs`, `src/cli.rs`, `src/agent_batch_store.rs`, `src/agent_operational_store.rs`, `src/host.rs`, `src/host_artifact.rs`, `src/run_store.rs`, `src/terminal.rs`, `src/presentation.rs`, `src/repl.rs`, `src/protocol.rs`, `src/session.rs`, `src/study/`, `src/kernel.rs`,
 `src/lane/`, and `src/serialization.rs` are the current internal
 kernel/adapter/fixture surface;
 `src/main.rs` parses bounded process options and runs the fixture loop, using
@@ -556,6 +557,29 @@ the receiving host.
 `ActorReplayDebriefRecordDto` adds only a categorical objective and committed-
 facts attribution for each complete verified window; it remains read-only and
 omits causal, hash, input, and trace detail.
+
+`src/study/` defines the human usability and accessibility study protocol, participant
+session schema, finding taxonomy, deterministic cohort evaluation, and benchmark catalog
+for M10:
+- `protocol.rs` (`m10-study-protocol-v1`): defines `StudyProtocolDefinition` with explicit
+  research questions, target completion and comprehension floors, and strict
+  `PrivacyConsentDeclaration` invariants (de-identified IDs, zero PII, zero latent state leakage),
+  4 participant cohorts (`StrategyGamer`, `MobaPlayer`, `AccessNeeds`, `NoviceStrategy`), and
+  10 canonical evaluation dimensions.
+- `finding.rs` (`m10-finding-taxonomy-v1`): classifies findings across 4 orthogonal categories
+  (`Usability`, `Accessibility`, `GameplayBalance`, `BehavioralModel`), 4 severity tiers (`Blocker`,
+  `MajorBarrier`, `MinorFriction`, `PositiveInsight`), and issue-linked dispositions (`Resolved`,
+  `Mitigated`, `Deferred`, `DocumentedLimitation`).
+- `session.rs` (`m10-participant-session-v1`): defines `ParticipantSessionRecord` tracking
+  anonymous participant sessions, declared access needs (`AccessNeedsDeclaration`), completion
+  status (`Completed`, `AbandonedAtTurn`, `Inconclusive`), explanation quality, and debrief
+  comprehension in exact integer basis points ($[0..=10,000]$ bp).
+- `evaluation.rs` (`m10-study-evaluation-v1`): pure deterministic cohort evaluation (`evaluate_study_cohort`)
+  producing `StudyEvaluationReport` with overall and per-cohort metrics, finding breakdowns,
+  accessibility qualification gate evaluation, and clean Markdown rendering without private chain-of-thought.
+- `catalog.rs` (`m10-study-catalog-v1`): registers 3 canonical benchmark study scenarios
+  (`scenario-study-cohort-balanced-alpha-v1`, `scenario-study-cohort-access-friction-v1`,
+  `scenario-study-cohort-mixed-novice-v1`) with reproducible execution and verified expectations.
 
 ## Target Components
 

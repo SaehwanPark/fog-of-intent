@@ -1,56 +1,45 @@
-# Request Summary: M8 Scenarios, Debriefs, and Strategic Disagreement
-
-**Task:** M8 — Add high-trust, low-trust, conflicting-call, and missing-message scenarios; Add communication and leadership debriefs; Test that disagreement can be strategically legitimate
-**Milestone:** M8 — Team Communication and Shot-Calling (Milestone Completion)
-**Role:** Fog of Intent Orchestrator / Agent-Ecology Designer
+# Request Summary: M10 Human Usability and Accessibility Study Protocol & Evaluation Framework
 
 ## Requested Outcome
 
-Complete the final scope items for Milestone M8:
-1. Deliver a canonical benchmark scenario battery (`m8-team-scenarios-v1`) covering high-trust coordination, low-trust dissent, conflicting-call peer arbitration, missing-message transmission failure, and strategic legitimate dissent.
-2. Deliver causal communication and leadership debrief contracts (`m8-team-communication-debrief-v1`, `m8-team-leadership-debrief-v1`, `m8-team-encounter-debrief-v1`) with transmission metrics, leadership compliance/dissent rates, basis-point reputation deltas, and formatted Markdown rendering.
-3. Deliver a formal strategic disagreement legitimacy evaluator (`m8-strategic-disagreement-v1`) proving that autonomous agent insubordination under adverse conditions is strategically sound and value-accretive compared to blind compliance.
+Establish the first bounded vertical slice of Phase 10 (M10 Human Usability and Accessibility Alpha):
+- Define the formal study protocol contract (`m10-study-protocol-v1`) with research questions, participant criteria across 4 cohorts (strategy gamer, MOBA player, access needs, novice), privacy/consent governance (de-identified records, no PII, zero latent state leakage), and 10 declared evaluation dimensions.
+- Define participant session record schema and finding taxonomy (`m10-finding-taxonomy-v1`) with category separation (`Usability`, `Accessibility`, `GameplayBalance`, `BehavioralModel`), severity tiers, and issue-linked disposition tracking.
+- Implement pure deterministic study cohort evaluation (`m10-study-evaluation-v1`) computing overall and per-cohort completion rates (bp), explanation quality (bp), debrief comprehension (bp), finding breakdown, accessibility claims gate qualification, and structured Markdown report generation with zero private chain-of-thought and no floating-point math.
+- Register canonical benchmark study scenarios in `m10-study-catalog-v1`.
+
+## Roadmap Milestone
+
+- Milestone: Phase 10 — M10 Human Usability and Accessibility Alpha
+- Status: Initial bounded slice
+
+## Current Evidence
+
+- M9 complete-match composition and replay-verified CLI transcript delivered in PR #210 and PR #211.
+- M10 is the active successor milestone focused on human usability, accessibility, and honest evidence boundaries.
 
 ## In Scope
 
-- Versioned schemas:
-  - `m8-team-scenarios-v1`
-  - `m8-team-communication-debrief-v1`
-  - `m8-team-leadership-debrief-v1`
-  - `m8-team-encounter-debrief-v1`
-  - `m8-strategic-disagreement-v1`
-- Canonical scenario suite (`TeamScenarioBattery`, `TeamScenarioCatalog`):
-  - `scenario-high-trust-gank-v1`
-  - `scenario-low-trust-dissent-v1`
-  - `scenario-conflicting-calls-arbitration-v1`
-  - `scenario-missing-message-fallback-v1`
-  - `scenario-strategic-dissent-survival-v1`
-- Communication & Leadership debrief contracts (`CommunicationDebriefSummary`, `LeadershipDebriefSummary`, `TeamEncounterDebriefReport`).
-- Strategic disagreement legitimacy evaluation (`DisagreementLegitimacyEvaluator`, `DisagreementLegitimacyClassification`, `DisagreementCounterfactualComparison`).
-- Exact integer basis-point metrics ($[0..=10,000]$ bp) and zero floating-point math.
-- Fail-closed error handling and strict zero private chain-of-thought enforcement (`chain_of_thought_present == false`).
-- Re-exports in `src/agent/mod.rs`.
-- Comprehensive unit and integration tests.
+- `src/study/mod.rs`
+- `src/study/protocol.rs`
+- `src/study/session.rs`
+- `src/study/finding.rs`
+- `src/study/evaluation.rs`
+- `src/study/catalog.rs`
+- `src/study/tests.rs`
+- Registration in `src/lib.rs` and `scripts/check_repository.py`
+- Version bump to `0.1.204` in `Cargo.toml`
+- Updates to `README.md`, `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md`
 
-## Non-Goals & Deferrals
+## Non-Goals
 
-- No floating-point math or continuous gradient approximations.
-- No live network multiplayer, external LLM provider APIs, or private chain-of-thought storage.
-- No multi-lane full match simulation (deferred to M9).
-- No claim that simulated team dynamics establish human psychology.
+- No human participant recruitment or empirical data collection in this PR (this establishes the pure evaluation and protocol framework).
+- No production telemetry or external web services.
+- No GUI client implementation (M11).
 
-## Source Files
+## Verification
 
-- `src/agent/debrief.rs` (new module)
-- `src/agent/disagreement.rs` (new module)
-- `src/agent/scenarios.rs` (new module)
-- `src/agent/mod.rs` (submodule exports)
-- `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `README.md`, `LESSONS.md`
-
-## Verification Plan
-
-- Exhaustive unit tests in each new submodule testing all scenario runs, debrief reports, markdown outputs, basis-point math, error conditions, and counterfactual evaluations.
-- Verification commands:
-  - `cargo +1.96.0 fmt --all -- --check`
-  - `cargo +1.96.0 clippy --locked --all-targets --all-features -- -D warnings`
-  - `cargo +1.96.0 test --locked`
+- `cargo +1.96.0 fmt --all -- --check`
+- `cargo +1.96.0 clippy --locked --all-targets --all-features -- -D warnings`
+- `cargo +1.96.0 test --locked`
+- `python3 scripts/check_repository.py`

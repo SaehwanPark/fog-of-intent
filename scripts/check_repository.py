@@ -138,6 +138,12 @@ CORE_RUST_FILES = (
   "src/serialization/history.rs",
   "src/serialization/mod.rs",
   "src/serialization/snapshot.rs",
+  "src/study/catalog.rs",
+  "src/study/evaluation.rs",
+  "src/study/finding.rs",
+  "src/study/mod.rs",
+  "src/study/protocol.rs",
+  "src/study/session.rs",
 )
 CORE_EDGE_RUST_FILES = frozenset(
   {

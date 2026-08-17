@@ -16,4 +16,5 @@ pub mod repl;
 pub mod run_store;
 pub mod serialization;
 pub mod session;
+pub mod study;
 pub mod terminal;
