@@ -3,7 +3,10 @@
 pub mod catalog;
 pub mod dto;
 pub mod need;
+pub mod parity;
 pub mod projection;
+pub mod state;
+pub mod state_catalog;
 
 #[cfg(test)]
 pub mod tests;
@@ -12,9 +15,10 @@ pub use catalog::{
   GUI_CATALOG_SCHEMA_VERSION, GuiScenarioCatalog, GuiScenarioDefinition, GuiScenarioExecutionResult,
 };
 pub use dto::{
-  GUI_DTO_SCHEMA_VERSION, GuiAccessibilityDto, GuiDebriefViewDto, GuiKpiCard, GuiMapActorState,
-  GuiMapLocationState, GuiMapObjectiveState, GuiMapStructureState, GuiMapViewDto, GuiPlanViewDto,
-  GuiPresentationBundle, GuiSymbolTag, GuiTimelineViewDto, GuiVisionStatus,
+  GUI_DTO_SCHEMA_VERSION, GuiAccessibilityDto, GuiActiveTab, GuiDebriefViewDto, GuiKpiCard,
+  GuiMapActorState, GuiMapLocationState, GuiMapObjectiveState, GuiMapStructureState, GuiMapViewDto,
+  GuiPlanViewDto, GuiPresentationBundle, GuiSymbolTag, GuiTimelineViewDto, GuiViewMode,
+  GuiVisionStatus,
 };
 pub use need::{
   ComprehensionDeficit, ComprehensionDomain, DeficitSeverity, GUI_BARRIER_THRESHOLD_BP,
@@ -22,7 +26,20 @@ pub use need::{
   PresentationNeedAssessment, PresentationNeedError, evaluate_presentation_need,
   render_presentation_need_markdown,
 };
+pub use parity::{
+  GUI_PARITY_SCHEMA_VERSION, GuiParityCheckReport, GuiParityError, render_parity_report_markdown,
+  verify_presentation_parity,
+};
 pub use projection::{
   assemble_gui_presentation_bundle, build_gui_accessibility, build_gui_debrief_view,
   build_gui_map_view, build_gui_plan_view, build_gui_timeline_view,
+};
+pub use state::{
+  DEFAULT_ZOOM_LEVEL_BP, GUI_STATE_SCHEMA_VERSION, GuiClientError, GuiClientEvent, GuiClientState,
+  GuiDisplayOptions, GuiPresentationAction, GuiSelectionState, MAX_ZOOM_LEVEL_BP,
+  MIN_ZOOM_LEVEL_BP,
+};
+pub use state_catalog::{
+  GUI_STATE_CATALOG_SCHEMA_VERSION, GuiStateScenarioCatalog, GuiStateScenarioDefinition,
+  GuiStateScenarioExecutionResult,
 };
