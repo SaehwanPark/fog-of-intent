@@ -6,6 +6,35 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.205] - 2026-08-18
+
+### Added
+
+- `m10-dimension-assessment-v1`, `m10-interaction-mode-v1`, and `m10-dimension-catalog-v1`
+  formalizing dimension-level usability & accessibility assessments and interaction mode
+  auditing for M10:
+  - `CognitiveFrictionIndicator` — 7 discrete friction categories (`None`, `HighCognitiveLoad`,
+    `AmbiguousTerminology`, `HiddenActionAffordance`, `UnclearCausalTrace`, `PacingOverwhelm`,
+    `NavigationDisorientation`).
+  - `DimensionScore` and `ParticipantDimensionAssessment` — full 10-dimension ratings
+    in basis points ($[0..=10,000]$ bp) with associated friction indicators and qualitative notes.
+  - `evaluate_dimension_assessments` — pure deterministic dimension evaluation with fail-closed
+    validation (`EmptyAssessmentList`, `DuplicateParticipantId`, `ScoreOutOfRange`, `MissingDimension`,
+    `DuplicateDimensionInAssessment`, `InvalidPrivacyDeclaration`) generating `DimensionEvaluationReport`
+    with per-dimension means, min/max bounds, predominant friction indicators, weakest and strongest
+    dimensions, and accessibility dimension qualification.
+  - `VerbosityLevel` (`Concise`, `Standard`, `Detailed`) and `ContrastMode` (`Standard`,
+    `HighContrast`, `NoColor`) modeling adjustable output density and non-color semantics.
+  - `InteractionProfile` and `audit_interaction_transcript` — pure audit checking ANSI purity in NoColor
+    mode, line length bounds (<= 120 chars), verbosity line limits, symbolic bracket markers (`[OK]`,
+    `[WARN]`), keyboard-only command affordances, and screen-reader linear text flow.
+  - `DimensionAssessmentCatalog` — 3 canonical benchmark scenarios
+    (`scenario-dimension-alpha-benchmark-v1`, `scenario-dimension-screen-reader-audit-v1`,
+    `scenario-dimension-novice-friction-v1`) with reproducible execution and verified expectations.
+  - 6 focused tests: friction indicator and interaction mode round trips, interaction audit validation
+    rules, fail-closed validation, error Display coverage, dimension catalog benchmark execution, and
+    structured Markdown rendering hygiene.
+
 ## [0.1.204] - 2026-08-17
 
 ### Added

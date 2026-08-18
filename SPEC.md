@@ -1908,8 +1908,30 @@ human pacing evidence remain deferred.
     fail-closed validation, error Display coverage, catalog outcomes, accessibility gate rules,
     and Markdown hygiene.
 
-This establishes a bounded deterministic study protocol and evaluation framework for M10. Empirical
-human testing, participant recruitment, live study runs, and behavioral research claims remain deferred.
+- `m10-dimension-assessment-v1`, `m10-interaction-mode-v1`, and `m10-dimension-catalog-v1`
+  formalize dimension-level usability & accessibility assessments and interaction mode auditing:
+  - `CognitiveFrictionIndicator` classifies friction across 7 discrete categories (`None`,
+    `HighCognitiveLoad`, `AmbiguousTerminology`, `HiddenActionAffordance`, `UnclearCausalTrace`,
+    `PacingOverwhelm`, `NavigationDisorientation`).
+  - `evaluate_dimension_assessments` is a pure deterministic evaluation function with fail-closed
+    validation (`EmptyAssessmentList`, `DuplicateParticipantId`, `ScoreOutOfRange`, `MissingDimension`,
+    `DuplicateDimensionInAssessment`, `InvalidPrivacyDeclaration`) generating `DimensionEvaluationReport`
+    with per-dimension means, min/max ranges, predominant friction indicators, weakest and strongest
+    dimension identification, and accessibility qualification gates.
+  - `VerbosityLevel` (`Concise`, `Standard`, `Detailed`) and `ContrastMode` (`Standard`, `HighContrast`,
+    `NoColor`) model output density and non-color semantics.
+  - `audit_interaction_transcript` deterministically verifies ANSI purity under `NoColor`, line length
+    bounds (<= 120 chars), verbosity ceilings, bracketed status tags, pure keyboard navigation affordances,
+    and linear screen-reader text flow without bare ASCII art.
+  - `DimensionAssessmentCatalog` registers 3 canonical benchmark scenarios
+    (`scenario-dimension-alpha-benchmark-v1`, `scenario-dimension-screen-reader-audit-v1`,
+    `scenario-dimension-novice-friction-v1`) with reproducible execution and verified expectations.
+  - 6 focused tests cover friction indicators, interaction modes, interaction audit checks, fail-closed
+    validation, error Display coverage, dimension catalog execution, and Markdown hygiene.
+
+This establishes a bounded deterministic study protocol, dimension assessment framework, and interaction
+mode auditing for M10. Empirical human testing, participant recruitment, live study runs, and behavioral
+research claims remain deferred.
 
 ## Future
 
