@@ -11,6 +11,8 @@ pub mod parity;
 pub mod projection;
 pub mod state;
 pub mod state_catalog;
+pub mod transport;
+pub mod transport_catalog;
 
 #[cfg(test)]
 pub mod tests;
@@ -62,4 +64,14 @@ pub use state::{
 pub use state_catalog::{
   GUI_STATE_CATALOG_SCHEMA_VERSION, GuiStateScenarioCatalog, GuiStateScenarioDefinition,
   GuiStateScenarioExecutionResult,
+};
+pub use transport::{
+  GUI_TRANSPORT_SCHEMA_VERSION, GuiClientRequest, GuiHostResponse, GuiPresentationSession,
+  GuiSessionCloseReason, GuiSessionPhase, GuiTransportError, GuiTransportErrorCode,
+  GuiTransportRepairHint, verify_transport_invariants,
+};
+pub use transport_catalog::{
+  GUI_TRANSPORT_CATALOG_SCHEMA_VERSION, GuiTransportScenarioCatalog,
+  GuiTransportScenarioDefinition, GuiTransportScenarioExecutionResult,
+  render_transport_scenario_markdown,
 };

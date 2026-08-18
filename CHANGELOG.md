@@ -6,6 +6,25 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.212] - 2026-08-18
+
+### Added
+
+- `m11-gui-transport-v1` (`src/gui/transport.rs`) implementing loopback transport contracts and presentation session adapter:
+  - `GuiSessionPhase` (`active`, `awaiting-intent`, `intent-submitted`, `closed`) and `GuiSessionCloseReason` (`client-requested`, `timed-out`, `disconnected`, `fatal-error`) with string parsing and Display implementations.
+  - `GuiClientRequest` protocol message envelope supporting `FetchBundle`, `InspectEntity`, `SubmitIntent`, `FetchHtmlDocument`, `ResetClientState`, `Ping`, and `CloseSession`.
+  - `GuiHostResponse` message envelope supporting `BundleResponse` (with boxed bundle), `HtmlResponse`, `ActionAcknowledged`, `IntentSubmitted`, `ClientStateReset`, `Pong`, `SessionClosed`, and `ErrorResponse`.
+  - `GuiTransportErrorCode` and `GuiTransportRepairHint` categorizing transport errors with actionable client-side remediation guidance.
+  - `GuiPresentationSession` lifecycle manager dispatching requests against actor-bound observations and reversible client state with fail-closed validation (`ActorMismatch`, `SessionClosed`, `InvalidPayload`, `UnknownEntity`, `InvariantViolation`, `StaleTurn`).
+  - `verify_transport_invariants` enforcing zero true-state hash exposure, zero latent state leaks, zero non-compliant HTML reports, and zero private chain-of-thought in responses.
+- `m11-gui-transport-catalog-v1` (`src/gui/transport_catalog.rs`) registering 4 canonical benchmark transport scenarios:
+  - `scenario-gui-transport-bundle-request-v1`: Presentation bundle retrieval and actor binding verification.
+  - `scenario-gui-transport-interactive-inspection-v1`: Sequential entity inspection, debrief quadrant filtering, and zoom transition acknowledgment.
+  - `scenario-gui-transport-intent-submission-v1`: Player intent submission acknowledgment and session phase progression.
+  - `scenario-gui-transport-fail-closed-rejection-v1`: Fail-closed rejection of actor mismatch, unknown entity targets, and post-close requests.
+  - `render_transport_scenario_markdown` producing structured Markdown reports without ANSI styling.
+- 6 new unit tests in `src/gui/tests.rs` (35 total GUI tests, 602 total library tests) covering session phase / close reason round-trips, error code / repair hint mappings, session lifecycle request handling, invariant leak rejection, catalog benchmark execution, and Markdown report hygiene.
+
 ## [0.1.211] - 2026-08-18
 
 ### Added

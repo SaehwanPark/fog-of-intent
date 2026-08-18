@@ -2035,21 +2035,28 @@ behavioral research claims remain deferred until study data is collected.
 - `m11-gui-html-catalog-v1` (`src/gui/html_catalog.rs`) registers 3 benchmark HTML presentation scenarios
   (`scenario-gui-html-flank-inspection-v1`, `scenario-gui-html-debrief-quadrant-v1`,
   `scenario-gui-html-high-contrast-accessibility-v1`) with verified expectations.
-- 29 focused unit tests in `src/gui/tests.rs` cover domain/severity round trips, threshold rules,
+- `m11-gui-transport-v1` (`src/gui/transport.rs`) defines loopback transport message envelopes (`GuiClientRequest`,
+  `GuiHostResponse`), categorical error codes (`GuiTransportErrorCode`), actionable repair hints (`GuiTransportRepairHint`),
+  presentation session lifecycle manager (`GuiPresentationSession`), and strict invariant verification (`verify_transport_invariants`)
+  enforcing zero latent opponent state, zero true-state hashes, and zero private chain-of-thought in responses.
+- `m11-gui-transport-catalog-v1` (`src/gui/transport_catalog.rs`) registers 4 benchmark transport scenarios
+  (`scenario-gui-transport-bundle-request-v1`, `scenario-gui-transport-interactive-inspection-v1`,
+  `scenario-gui-transport-intent-submission-v1`, `scenario-gui-transport-fail-closed-rejection-v1`) with verified expectations
+  and reproducible execution.
+- 35 focused unit tests in `src/gui/tests.rs` cover domain/severity round trips, threshold rules,
   fail-closed validation, error Display coverage, DTO construction, invariant leak rejection, CoT omission,
   catalog execution, active tab/view mode round trips, client state transitions, reversibility, zoom bounds,
   triple projection parity verification, asset kind/license/fallback round trips, asset governance audit rules,
-  HTML document generation, verification rules, and Markdown report hygiene.
+  HTML document generation, verification rules, transport message round trips, session request handling, and Markdown report hygiene.
 
 #### Verification
 
-- `cargo test --locked gui::` passes 29 unit tests.
-- All benchmark catalog scenarios verify deficit impacts, GUI justification, invariant preservation, asset governance compliance, and HTML document integrity.
+- `cargo test --locked gui::` passes 35 unit tests (602 total library tests).
+- All benchmark catalog scenarios verify deficit impacts, GUI justification, invariant preservation, asset governance compliance, HTML document integrity, and transport session lifecycle.
 - Repository checker scans confirm zero async/network primitives in `src/gui/`.
 
 #### Deferred
 
-- Loopback HTTP/WebSocket transport adapter.
 - Live browser-to-host interaction parity tests.
 
 ## Future

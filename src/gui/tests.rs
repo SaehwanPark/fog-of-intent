@@ -1596,3 +1596,489 @@ fn html_scenario_markdown_rendering_hygiene() {
   assert!(md.contains("- **Compliance Status:** **VERIFIED PASS**"));
   assert!(!md.contains("\x1b["));
 }
+
+#[test]
+fn session_phase_and_close_reason_round_trips() {
+  use crate::gui::transport::{GuiSessionCloseReason, GuiSessionPhase};
+
+  let phases = [
+    (GuiSessionPhase::Active, "active"),
+    (GuiSessionPhase::AwaitingIntent, "awaiting-intent"),
+    (GuiSessionPhase::IntentSubmitted, "intent-submitted"),
+    (GuiSessionPhase::Closed, "closed"),
+  ];
+
+  for (phase, name) in phases {
+    assert_eq!(phase.as_str(), name);
+    assert_eq!(GuiSessionPhase::from_str_name(name), Some(phase));
+    assert_eq!(format!("{phase}"), name);
+  }
+  assert_eq!(GuiSessionPhase::from_str_name("unknown-phase"), None);
+
+  let reasons = [
+    (GuiSessionCloseReason::ClientRequested, "client-requested"),
+    (GuiSessionCloseReason::TimedOut, "timed-out"),
+    (GuiSessionCloseReason::Disconnected, "disconnected"),
+    (GuiSessionCloseReason::FatalError, "fatal-error"),
+  ];
+
+  for (reason, name) in reasons {
+    assert_eq!(reason.as_str(), name);
+    assert_eq!(GuiSessionCloseReason::from_str_name(name), Some(reason));
+    assert_eq!(format!("{reason}"), name);
+  }
+  assert_eq!(GuiSessionCloseReason::from_str_name("invalid-reason"), None);
+}
+
+#[test]
+fn transport_error_codes_repair_hints_and_display() {
+  use crate::gui::transport::{GuiTransportError, GuiTransportErrorCode, GuiTransportRepairHint};
+
+  let code_mappings = [
+    (GuiTransportErrorCode::ActorMismatch, "actor-mismatch"),
+    (GuiTransportErrorCode::SessionClosed, "session-closed"),
+    (GuiTransportErrorCode::InvalidPayload, "invalid-payload"),
+    (GuiTransportErrorCode::UnknownEntity, "unknown-entity"),
+    (
+      GuiTransportErrorCode::InvariantViolation,
+      "invariant-violation",
+    ),
+    (GuiTransportErrorCode::StaleTurn, "stale-turn"),
+    (
+      GuiTransportErrorCode::UnsupportedAction,
+      "unsupported-action",
+    ),
+  ];
+
+  for (code, name) in code_mappings {
+    assert_eq!(code.as_str(), name);
+    assert_eq!(format!("{code}"), name);
+  }
+
+  let hint_mappings = [
+    (GuiTransportRepairHint::UseBoundActor, "use-bound-actor"),
+    (GuiTransportRepairHint::StartNewSession, "start-new-session"),
+    (
+      GuiTransportRepairHint::InspectActorVisibleEntity,
+      "inspect-actor-visible-entity",
+    ),
+    (
+      GuiTransportRepairHint::RequestFreshBundle,
+      "request-fresh-bundle",
+    ),
+    (GuiTransportRepairHint::SanitizePayload, "sanitize-payload"),
+    (
+      GuiTransportRepairHint::CheckActionParameters,
+      "check-action-parameters",
+    ),
+  ];
+
+  for (hint, name) in hint_mappings {
+    assert_eq!(hint.as_str(), name);
+    assert_eq!(format!("{hint}"), name);
+  }
+
+  let errors = [
+    (
+      GuiTransportError::ActorMismatch {
+        expected: "MidLaner".to_string(),
+        actual: "TopLaner".to_string(),
+      },
+      "actor mismatch: expected 'MidLaner', received 'TopLaner'",
+      GuiTransportErrorCode::ActorMismatch,
+      GuiTransportRepairHint::UseBoundActor,
+    ),
+    (
+      GuiTransportError::SessionClosed("timeout".to_string()),
+      "session closed: timeout",
+      GuiTransportErrorCode::SessionClosed,
+      GuiTransportRepairHint::StartNewSession,
+    ),
+    (
+      GuiTransportError::InvalidPayload("empty id"),
+      "invalid transport payload: empty id",
+      GuiTransportErrorCode::InvalidPayload,
+      GuiTransportRepairHint::SanitizePayload,
+    ),
+    (
+      GuiTransportError::UnknownEntity("loc-99".to_string()),
+      "unknown entity: loc-99",
+      GuiTransportErrorCode::UnknownEntity,
+      GuiTransportRepairHint::InspectActorVisibleEntity,
+    ),
+    (
+      GuiTransportError::InvariantViolation("leak"),
+      "transport invariant violation: leak",
+      GuiTransportErrorCode::InvariantViolation,
+      GuiTransportRepairHint::SanitizePayload,
+    ),
+    (
+      GuiTransportError::StaleTurn {
+        current_turn: 3,
+        requested_turn: 1,
+      },
+      "stale turn requested: current turn 3, requested turn 1",
+      GuiTransportErrorCode::StaleTurn,
+      GuiTransportRepairHint::RequestFreshBundle,
+    ),
+    (
+      GuiTransportError::ClientStateError("invalid zoom".to_string()),
+      "client state error: invalid zoom",
+      GuiTransportErrorCode::UnsupportedAction,
+      GuiTransportRepairHint::CheckActionParameters,
+    ),
+    (
+      GuiTransportError::HtmlGenerationError("render error".to_string()),
+      "html generation error: render error",
+      GuiTransportErrorCode::UnsupportedAction,
+      GuiTransportRepairHint::CheckActionParameters,
+    ),
+  ];
+
+  for (err, display_str, code, hint) in errors {
+    assert_eq!(format!("{err}"), display_str);
+    assert_eq!(err.error_code(), code);
+    assert_eq!(err.repair_hint(), hint);
+  }
+}
+
+#[test]
+fn presentation_session_lifecycle_and_request_handling() {
+  use crate::gui::catalog::GuiScenarioCatalog;
+  use crate::gui::dto::{GuiActiveTab, GuiPresentationBundle, GuiViewMode};
+  use crate::gui::state::GuiPresentationAction;
+  use crate::gui::transport::{
+    GuiClientRequest, GuiHostResponse, GuiPresentationSession, GuiSessionCloseReason,
+    GuiSessionPhase, GuiTransportError,
+  };
+
+  // 1. Creation validation
+  assert!(GuiPresentationSession::new("", "MidLaner", 1).is_err());
+  assert!(GuiPresentationSession::new("s1", "", 1).is_err());
+  assert!(GuiPresentationSession::new("a".repeat(100), "MidLaner", 1).is_err());
+
+  let mut session =
+    GuiPresentationSession::new("session-test-01", "MidLaner", 2).expect("valid session creation");
+  assert_eq!(session.bound_actor, "MidLaner");
+  assert_eq!(session.current_turn, 2);
+  assert_eq!(session.phase, GuiSessionPhase::Active);
+  assert!(session.is_active());
+
+  let base_catalog = GuiScenarioCatalog::new();
+  let bundle_provider = |_role: &str,
+                         _tab: GuiActiveTab,
+                         _mode: GuiViewMode|
+   -> Result<GuiPresentationBundle, GuiTransportError> {
+    let def = base_catalog
+      .get("scenario-gui-map-flank-v1")
+      .ok_or(GuiTransportError::InvalidPayload("sample bundle not found"))?;
+    Ok(def.sample_bundle)
+  };
+
+  // 2. Ping request
+  let ping_res = session
+    .handle_request(GuiClientRequest::Ping { nonce: 12345 }, bundle_provider)
+    .expect("ping should succeed");
+  match ping_res {
+    GuiHostResponse::Pong {
+      nonce,
+      host_timestamp_tick,
+    } => {
+      assert_eq!(nonce, 12345);
+      assert_eq!(host_timestamp_tick, 2);
+    }
+    _ => panic!("expected Pong response"),
+  }
+
+  // 3. Fetch bundle request
+  let bundle_res = session
+    .handle_request(
+      GuiClientRequest::FetchBundle {
+        actor_role: "MidLaner".to_string(),
+        tab: GuiActiveTab::MapView,
+        view_mode: GuiViewMode::Standard,
+      },
+      bundle_provider,
+    )
+    .expect("fetch bundle should succeed");
+  match bundle_res {
+    GuiHostResponse::BundleResponse {
+      session_id,
+      turn,
+      actor_role,
+      bundle,
+      client_state,
+    } => {
+      assert_eq!(session_id, "session-test-01");
+      assert_eq!(turn, 2);
+      assert_eq!(actor_role, "MidLaner");
+      assert_eq!(bundle.observer_role, "MidLaner");
+      assert_eq!(client_state.active_tab, GuiActiveTab::MapView);
+    }
+    _ => panic!("expected BundleResponse"),
+  }
+
+  // 4. Inspect entity request
+  let inspect_res = session
+    .handle_request(
+      GuiClientRequest::InspectEntity {
+        actor_role: "MidLaner".to_string(),
+        action: GuiPresentationAction::SelectLocation("BotRiver".to_string()),
+      },
+      bundle_provider,
+    )
+    .expect("inspect entity should succeed");
+  match inspect_res {
+    GuiHostResponse::ActionAcknowledged {
+      actor_role,
+      client_state,
+      ..
+    } => {
+      assert_eq!(actor_role, "MidLaner");
+      assert_eq!(
+        client_state.selection.selected_location_id.as_deref(),
+        Some("BotRiver")
+      );
+    }
+    _ => panic!("expected ActionAcknowledged"),
+  }
+
+  // 5. Submit intent request
+  let submit_res = session
+    .handle_request(
+      GuiClientRequest::SubmitIntent {
+        actor_role: "MidLaner".to_string(),
+        intent_id: "Contest".to_string(),
+        commitment: "Standard".to_string(),
+        target_focus: "Minions".to_string(),
+      },
+      bundle_provider,
+    )
+    .expect("submit intent should succeed");
+  match submit_res {
+    GuiHostResponse::IntentSubmitted {
+      intent_id,
+      validated,
+      ..
+    } => {
+      assert_eq!(intent_id, "Contest");
+      assert!(validated);
+      assert_eq!(session.phase, GuiSessionPhase::IntentSubmitted);
+    }
+    _ => panic!("expected IntentSubmitted"),
+  }
+
+  // 6. Fetch HTML document request
+  let html_res = session
+    .handle_request(
+      GuiClientRequest::FetchHtmlDocument {
+        actor_role: "MidLaner".to_string(),
+        tab: GuiActiveTab::MapView,
+        view_mode: GuiViewMode::Standard,
+      },
+      bundle_provider,
+    )
+    .expect("fetch html document should succeed");
+  match html_res {
+    GuiHostResponse::HtmlResponse {
+      html_document,
+      verification_report,
+      ..
+    } => {
+      assert!(html_document.starts_with("<!DOCTYPE html>"));
+      assert!(verification_report.is_compliant);
+    }
+    _ => panic!("expected HtmlResponse"),
+  }
+
+  // 7. Reset client state request
+  let reset_res = session
+    .handle_request(
+      GuiClientRequest::ResetClientState {
+        actor_role: "MidLaner".to_string(),
+      },
+      bundle_provider,
+    )
+    .expect("reset state should succeed");
+  match reset_res {
+    GuiHostResponse::ClientStateReset { client_state, .. } => {
+      assert!(client_state.selection.is_empty());
+    }
+    _ => panic!("expected ClientStateReset"),
+  }
+
+  // 8. Close session request
+  let close_res = session
+    .handle_request(
+      GuiClientRequest::CloseSession {
+        actor_role: "MidLaner".to_string(),
+        reason: GuiSessionCloseReason::ClientRequested,
+      },
+      bundle_provider,
+    )
+    .expect("close session should succeed");
+  match close_res {
+    GuiHostResponse::SessionClosed { reason, .. } => {
+      assert_eq!(reason, GuiSessionCloseReason::ClientRequested);
+      assert_eq!(session.phase, GuiSessionPhase::Closed);
+      assert!(!session.is_active());
+    }
+    _ => panic!("expected SessionClosed"),
+  }
+
+  // 9. Post-close request fails closed
+  assert!(
+    session
+      .handle_request(
+        GuiClientRequest::FetchBundle {
+          actor_role: "MidLaner".to_string(),
+          tab: GuiActiveTab::MapView,
+          view_mode: GuiViewMode::Standard,
+        },
+        bundle_provider,
+      )
+      .is_err()
+  );
+}
+
+#[test]
+fn transport_invariant_verification_rejects_violations() {
+  use crate::gui::catalog::GuiScenarioCatalog;
+  use crate::gui::html::GuiHtmlVerificationReport;
+  use crate::gui::state::GuiClientState;
+  use crate::gui::transport::{
+    GuiHostResponse, GuiTransportErrorCode, GuiTransportRepairHint, verify_transport_invariants,
+  };
+
+  let base_catalog = GuiScenarioCatalog::new();
+  let mut sample_bundle = base_catalog
+    .get("scenario-gui-map-flank-v1")
+    .expect("sample bundle exists")
+    .sample_bundle;
+
+  // Valid bundle response verifies successfully
+  let valid_resp = GuiHostResponse::BundleResponse {
+    session_id: "s1".to_string(),
+    turn: 1,
+    actor_role: "MidLaner".to_string(),
+    bundle: Box::new(sample_bundle.clone()),
+    client_state: GuiClientState::new("MidLaner"),
+  };
+  assert!(verify_transport_invariants(&valid_resp).is_ok());
+
+  // Tampered schema version fails closed
+  sample_bundle.schema_version = "invalid-schema-v99".to_string();
+  let tampered_resp = GuiHostResponse::BundleResponse {
+    session_id: "s1".to_string(),
+    turn: 1,
+    actor_role: "MidLaner".to_string(),
+    bundle: Box::new(sample_bundle),
+    client_state: GuiClientState::new("MidLaner"),
+  };
+  assert!(verify_transport_invariants(&tampered_resp).is_err());
+
+  // Non-compliant HTML response fails closed
+  let non_compliant_html = GuiHostResponse::HtmlResponse {
+    session_id: "s1".to_string(),
+    turn: 1,
+    actor_role: "MidLaner".to_string(),
+    html_document: "<div>test</div>".to_string(),
+    verification_report: GuiHtmlVerificationReport {
+      schema_version: "m11-gui-html-v1".to_string(),
+      document_title: "Test".to_string(),
+      byte_length: 15,
+      is_compliant: false,
+      has_valid_doctype: false,
+      has_viewport_meta: false,
+      has_all_landmarks: false,
+      zero_external_resources: true,
+      zero_script_tags: true,
+      zero_latent_leaks: true,
+    },
+  };
+  assert!(verify_transport_invariants(&non_compliant_html).is_err());
+
+  // HTML response with chain-of-thought fails closed
+  let cot_html = GuiHostResponse::HtmlResponse {
+    session_id: "s1".to_string(),
+    turn: 1,
+    actor_role: "MidLaner".to_string(),
+    html_document: "<!DOCTYPE html><thought>private CoT</thought>".to_string(),
+    verification_report: GuiHtmlVerificationReport {
+      schema_version: "m11-gui-html-v1".to_string(),
+      document_title: "Test".to_string(),
+      byte_length: 45,
+      is_compliant: true,
+      has_valid_doctype: true,
+      has_viewport_meta: true,
+      has_all_landmarks: true,
+      zero_external_resources: true,
+      zero_script_tags: true,
+      zero_latent_leaks: true,
+    },
+  };
+  assert!(verify_transport_invariants(&cot_html).is_err());
+
+  // ErrorResponse with chain-of-thought fails closed
+  let cot_error = GuiHostResponse::ErrorResponse {
+    error_code: GuiTransportErrorCode::InvariantViolation,
+    message: "chain_of_thought leak detected".to_string(),
+    repair_hint: GuiTransportRepairHint::SanitizePayload,
+  };
+  assert!(verify_transport_invariants(&cot_error).is_err());
+}
+
+#[test]
+fn transport_catalog_scenarios_execute_and_verify_all_expectations() {
+  use crate::gui::transport_catalog::GuiTransportScenarioCatalog;
+
+  let catalog = GuiTransportScenarioCatalog::new();
+  let scenarios = catalog.all_scenarios();
+  assert_eq!(scenarios.len(), 4);
+
+  for def in scenarios {
+    let result = catalog
+      .execute_scenario(def.scenario_id)
+      .unwrap_or_else(|e| {
+        panic!(
+          "transport scenario '{}' should execute successfully: {e}",
+          def.scenario_id
+        )
+      });
+
+    assert_eq!(result.scenario_id, def.scenario_id);
+    assert_eq!(result.bound_actor, def.bound_actor);
+    assert_eq!(result.terminal_phase, def.expected_terminal_phase);
+    assert_eq!(result.responses.len(), def.expected_response_count);
+    assert!(result.expectations_verified);
+  }
+
+  assert!(
+    catalog
+      .execute_scenario("non-existent-transport-scenario")
+      .is_err()
+  );
+}
+
+#[test]
+fn transport_scenario_markdown_rendering_hygiene() {
+  use crate::gui::transport_catalog::{
+    GuiTransportScenarioCatalog, render_transport_scenario_markdown,
+  };
+
+  let catalog = GuiTransportScenarioCatalog::new();
+  let result = catalog
+    .execute_scenario("scenario-gui-transport-interactive-inspection-v1")
+    .expect("scenario execution should succeed");
+
+  let md = render_transport_scenario_markdown(&result);
+  assert!(md.starts_with(
+    "### GUI Transport Benchmark Report: `scenario-gui-transport-interactive-inspection-v1`\n\n"
+  ));
+  assert!(md.contains("- **Bound Actor:** MidLaner"));
+  assert!(md.contains("- **Terminal Phase:** `active`"));
+  assert!(md.contains("- **Responses Count:** 3"));
+  assert!(md.contains("- **Expectations Verified:** **VERIFIED PASS**"));
+  assert!(md.contains("1. `ActionAcknowledged`: actor `MidLaner`"));
+  assert!(!md.contains("\x1b["));
+}
