@@ -355,3 +355,311 @@ fn markdown_report_rendering_hygiene() {
   assert!(md.contains("## Evidence Boundary"));
   assert!(md.contains("no universal accessibility"));
 }
+
+#[test]
+fn friction_indicators_and_interaction_modes_round_trip() {
+  use super::dimension::CognitiveFrictionIndicator;
+  use super::interaction::{ContrastMode, VerbosityLevel};
+
+  assert_eq!(CognitiveFrictionIndicator::ALL.len(), 7);
+  for indicator in CognitiveFrictionIndicator::ALL {
+    assert_eq!(format!("{indicator}"), indicator.as_str());
+    if indicator == CognitiveFrictionIndicator::None {
+      assert!(!indicator.is_friction());
+    } else {
+      assert!(indicator.is_friction());
+    }
+  }
+
+  assert_eq!(VerbosityLevel::ALL.len(), 3);
+  for v in VerbosityLevel::ALL {
+    assert_eq!(format!("{v}"), v.as_str());
+    assert!(v.max_lines_per_turn() > 0);
+  }
+
+  assert_eq!(ContrastMode::ALL.len(), 3);
+  for c in ContrastMode::ALL {
+    assert_eq!(format!("{c}"), c.as_str());
+    if c == ContrastMode::NoColor {
+      assert!(!c.allows_ansi());
+    } else {
+      assert!(c.allows_ansi());
+    }
+  }
+}
+
+#[test]
+fn interaction_audit_validation_rules() {
+  use super::interaction::{InteractionProfile, audit_interaction_transcript};
+
+  // Case A: Standard accessible profile with valid lines
+  let accessible_profile = InteractionProfile::accessibility_profile();
+  let valid_transcript = [
+    "[INFO] Turn 1 - Observation Ready",
+    "[STATUS] Wave: Neutral | Health: 100/100 | Mana: 100/100",
+    "[ACTIONS] Valid: contest, stabilize, recall, withdraw",
+    "[PROMPT] Enter intent: contest",
+  ];
+  let report = audit_interaction_transcript(&accessible_profile, &valid_transcript);
+  assert!(report.all_passed);
+  assert_eq!(report.passed_count, 6);
+  assert_eq!(report.failed_count, 0);
+  assert_eq!(report.compliance_rate_bp, 10_000);
+
+  // Case B: NoColor profile with ANSI escape sequence -> fails NoColor check
+  let ansi_transcript = ["\x1b[32m[INFO] Turn 1\x1b[0m", "[STATUS] Ready"];
+  let report_ansi = audit_interaction_transcript(&accessible_profile, &ansi_transcript);
+  assert!(!report_ansi.all_passed);
+  let no_color_check = report_ansi
+    .checks
+    .iter()
+    .find(|c| c.check_id == "check-no-color-purity")
+    .unwrap();
+  assert!(!no_color_check.passed);
+
+  // Case C: Overly long line (> 120 chars) -> fails line length check
+  let long_line = "a".repeat(125);
+  let long_transcript = [long_line.as_str()];
+  let report_long = audit_interaction_transcript(&accessible_profile, &long_transcript);
+  assert!(!report_long.all_passed);
+  let len_check = report_long
+    .checks
+    .iter()
+    .find(|c| c.check_id == "check-line-length-bounds")
+    .unwrap();
+  assert!(!len_check.passed);
+
+  // Case D: Exceeds concise verbosity line count (> 10 lines)
+  let verbose_lines = ["line"; 15];
+  let report_verbose = audit_interaction_transcript(&accessible_profile, &verbose_lines);
+  assert!(!report_verbose.all_passed);
+  let verb_check = report_verbose
+    .checks
+    .iter()
+    .find(|c| c.check_id == "check-verbosity-line-bounds")
+    .unwrap();
+  assert!(!verb_check.passed);
+
+  // Case E: Keyboard only profile with mouse instruction
+  let mouse_transcript = ["[INFO] Ready", "Please click here to select intent"];
+  let report_mouse = audit_interaction_transcript(&accessible_profile, &mouse_transcript);
+  assert!(!report_mouse.all_passed);
+  let kb_check = report_mouse
+    .checks
+    .iter()
+    .find(|c| c.check_id == "check-keyboard-navigation-only")
+    .unwrap();
+  assert!(!kb_check.passed);
+
+  // Case F: Screen reader friendly profile with ASCII box art
+  let box_art_transcript = ["+---+---+", "| A | B |", "+---+---+"];
+  let report_art = audit_interaction_transcript(&accessible_profile, &box_art_transcript);
+  assert!(!report_art.all_passed);
+  let sr_check = report_art
+    .checks
+    .iter()
+    .find(|c| c.check_id == "check-screen-reader-linear-flow")
+    .unwrap();
+  assert!(!sr_check.passed);
+}
+
+#[test]
+fn dimension_assessment_validation_and_errors() {
+  use super::catalog::STANDARD_ALPHA_PROTOCOL;
+  use super::dimension::{
+    CognitiveFrictionIndicator, DimensionEvaluationError, DimensionScore,
+    ParticipantDimensionAssessment, evaluate_dimension_assessments,
+  };
+
+  let proto = STANDARD_ALPHA_PROTOCOL;
+
+  // Empty assessment list
+  let err = evaluate_dimension_assessments(&proto, &[]).unwrap_err();
+  assert_eq!(err, DimensionEvaluationError::EmptyAssessmentList);
+
+  // Invalid privacy
+  let mut invalid_proto = proto;
+  invalid_proto.privacy_declaration.deidentified_records_only = false;
+  let sample_assessment = ParticipantDimensionAssessment {
+    participant_id: "p1",
+    cohort: ParticipantCohort::StrategyGamer,
+    scores: [
+      DimensionScore {
+        dimension: EvaluationDimension::Onboarding,
+        score_bp: 8000,
+        friction: CognitiveFrictionIndicator::None,
+        notes: "",
+      },
+      DimensionScore {
+        dimension: EvaluationDimension::TerminologyClarity,
+        score_bp: 8000,
+        friction: CognitiveFrictionIndicator::None,
+        notes: "",
+      },
+      DimensionScore {
+        dimension: EvaluationDimension::CommandDiscoverability,
+        score_bp: 8000,
+        friction: CognitiveFrictionIndicator::None,
+        notes: "",
+      },
+      DimensionScore {
+        dimension: EvaluationDimension::PacingLoad,
+        score_bp: 8000,
+        friction: CognitiveFrictionIndicator::None,
+        notes: "",
+      },
+      DimensionScore {
+        dimension: EvaluationDimension::PerceivedAgency,
+        score_bp: 8000,
+        friction: CognitiveFrictionIndicator::None,
+        notes: "",
+      },
+      DimensionScore {
+        dimension: EvaluationDimension::DelegatedFairness,
+        score_bp: 8000,
+        friction: CognitiveFrictionIndicator::None,
+        notes: "",
+      },
+      DimensionScore {
+        dimension: EvaluationDimension::DebriefCausalUtility,
+        score_bp: 8000,
+        friction: CognitiveFrictionIndicator::None,
+        notes: "",
+      },
+      DimensionScore {
+        dimension: EvaluationDimension::KeyboardFlow,
+        score_bp: 8000,
+        friction: CognitiveFrictionIndicator::None,
+        notes: "",
+      },
+      DimensionScore {
+        dimension: EvaluationDimension::NonColorSemantics,
+        score_bp: 8000,
+        friction: CognitiveFrictionIndicator::None,
+        notes: "",
+      },
+      DimensionScore {
+        dimension: EvaluationDimension::ScreenReaderSuitability,
+        score_bp: 8000,
+        friction: CognitiveFrictionIndicator::None,
+        notes: "",
+      },
+    ],
+  };
+  let err = evaluate_dimension_assessments(&invalid_proto, &[sample_assessment]).unwrap_err();
+  assert_eq!(err, DimensionEvaluationError::InvalidPrivacyDeclaration);
+
+  // Duplicate participant ID
+  let sample2 = sample_assessment;
+  let err = evaluate_dimension_assessments(&proto, &[sample_assessment, sample2]).unwrap_err();
+  assert_eq!(err, DimensionEvaluationError::DuplicateParticipantId("p1"));
+
+  // Score out of range
+  let mut invalid_score = sample_assessment;
+  invalid_score.participant_id = "p2";
+  invalid_score.scores[0].score_bp = 10_500;
+  let err = evaluate_dimension_assessments(&proto, &[invalid_score]).unwrap_err();
+  assert_eq!(
+    err,
+    DimensionEvaluationError::ScoreOutOfRange {
+      participant_id: "p2",
+      dimension: EvaluationDimension::Onboarding,
+      score_bp: 10_500,
+    }
+  );
+
+  // Duplicate dimension in assessment
+  let mut dup_dim = sample_assessment;
+  dup_dim.participant_id = "p3";
+  dup_dim.scores[1].dimension = EvaluationDimension::Onboarding;
+  let err = evaluate_dimension_assessments(&proto, &[dup_dim]).unwrap_err();
+  assert_eq!(
+    err,
+    DimensionEvaluationError::DuplicateDimensionInAssessment {
+      participant_id: "p3",
+      dimension: EvaluationDimension::Onboarding,
+    }
+  );
+}
+
+#[test]
+fn dimension_assessment_error_display_coverage() {
+  use super::dimension::DimensionEvaluationError;
+
+  let errors = [
+    DimensionEvaluationError::EmptyAssessmentList,
+    DimensionEvaluationError::DuplicateParticipantId("p-dup"),
+    DimensionEvaluationError::ScoreOutOfRange {
+      participant_id: "p1",
+      dimension: EvaluationDimension::PacingLoad,
+      score_bp: 12000,
+    },
+    DimensionEvaluationError::MissingDimension {
+      participant_id: "p1",
+      dimension: EvaluationDimension::KeyboardFlow,
+    },
+    DimensionEvaluationError::DuplicateDimensionInAssessment {
+      participant_id: "p1",
+      dimension: EvaluationDimension::Onboarding,
+    },
+    DimensionEvaluationError::InvalidPrivacyDeclaration,
+  ];
+
+  for err in errors {
+    let msg = format!("{err}");
+    assert!(!msg.is_empty());
+  }
+}
+
+#[test]
+fn dimension_catalog_scenarios_execute_and_verify_all_expectations() {
+  use super::dimension_catalog::DimensionAssessmentCatalog;
+
+  assert_eq!(DimensionAssessmentCatalog::ALL.len(), 3);
+
+  for def in DimensionAssessmentCatalog::ALL {
+    let lookup = DimensionAssessmentCatalog::find_by_id(def.scenario_id);
+    assert_eq!(lookup, Some(def));
+
+    let result = DimensionAssessmentCatalog::execute_scenario(def.scenario_id).unwrap();
+    assert_eq!(result.scenario_id, def.scenario_id);
+    assert!(
+      result.all_expectations_met,
+      "Scenario {} failed expectations: {:?}",
+      def.scenario_id, result
+    );
+  }
+
+  assert!(DimensionAssessmentCatalog::find_by_id("non-existent").is_none());
+}
+
+#[test]
+fn dimension_report_and_interaction_audit_markdown_hygiene() {
+  use super::dimension_catalog::DimensionAssessmentCatalog;
+  use super::interaction::{InteractionProfile, audit_interaction_transcript};
+
+  let result =
+    DimensionAssessmentCatalog::execute_scenario("scenario-dimension-alpha-benchmark-v1").unwrap();
+  let md = result.report.to_markdown();
+
+  assert!(md.contains("# Usability & Accessibility Dimension Evaluation Report"));
+  assert!(md.contains("**Protocol:** `protocol-m10-alpha-v1`"));
+  assert!(md.contains("## Dimension Breakdown"));
+  assert!(md.contains("## Accessibility Qualification"));
+  assert!(md.contains("Accessibility Dimensions Qualified: QUALIFIED"));
+  assert!(md.contains("## Evidence Boundary"));
+
+  let profile = InteractionProfile::accessibility_profile();
+  let transcript = [
+    "[INFO] Turn 1 - Ready",
+    "[STATUS] Units: 1 laner, 1 opponent",
+    "[PROMPT] > contest",
+  ];
+  let audit_report = audit_interaction_transcript(&profile, &transcript);
+  let audit_md = audit_report.to_markdown();
+
+  assert!(audit_md.contains("# Interaction & Accessibility Audit Report"));
+  assert!(audit_md.contains("profile-screen-reader-accessible-v1"));
+  assert!(audit_md.contains("## Evaluated Checks"));
+  assert!(audit_md.contains("check-no-color-purity"));
+}

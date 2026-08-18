@@ -2136,11 +2136,18 @@ project reports accessibility and usability limits honestly.
 - [x] Register 3 canonical benchmark scenarios in `StudyProtocolCatalog` (`scenario-study-cohort-balanced-alpha-v1`,
   `scenario-study-cohort-access-friction-v1`, `scenario-study-cohort-mixed-novice-v1`) with reproducible
   execution and verified expectations.
-- [x] Cover cohort/dimension round trips, privacy invariants, finding dispositions, fail-closed validation,
-  error Display formatting, catalog outcomes, accessibility gate rules, and Markdown hygiene in 8 focused tests.
+- [x] Define `m10-dimension-assessment-v1`, `m10-interaction-mode-v1`, and `m10-dimension-catalog-v1`
+  formalizing dimension-level usability & accessibility assessments and interaction mode auditing
+  (`CognitiveFrictionIndicator`, `evaluate_dimension_assessments` with fail-closed validation, `DimensionEvaluationReport`,
+  `VerbosityLevel`, `ContrastMode`, `InteractionProfile`, `audit_interaction_transcript` with ANSI purity, line length,
+  verbosity, non-color semantics, keyboard navigation, and screen reader flow checks, and `DimensionAssessmentCatalog`
+  with 3 benchmark scenarios).
+- [x] Cover study protocols, dimension assessments, interaction audits, fail-closed validation, error Display
+  formatting, catalog outcomes, accessibility gate rules, and Markdown hygiene across 14 focused tests in `src/study/tests.rs`.
 
-This establishes a bounded deterministic study protocol and evaluation framework for M10. Empirical human
-participant recruitment, live study execution, and research claims remain deferred until study data is collected.
+This establishes a bounded deterministic study protocol, dimension assessment framework, and interaction
+mode auditing for M10. Empirical human participant recruitment, live study execution, and research claims
+remain deferred until study data is collected.
 
 ### Deliverables
 
