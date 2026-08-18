@@ -143,9 +143,12 @@ CORE_RUST_FILES = (
   "src/study/dimension_catalog.rs",
   "src/study/evaluation.rs",
   "src/study/finding.rs",
+  "src/study/informal_check.rs",
   "src/study/interaction.rs",
   "src/study/mod.rs",
   "src/study/protocol.rs",
+  "src/study/remediation.rs",
+  "src/study/remediation_catalog.rs",
   "src/study/session.rs",
 )
 CORE_EDGE_RUST_FILES = frozenset(

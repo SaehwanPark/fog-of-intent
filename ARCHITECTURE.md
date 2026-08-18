@@ -580,6 +580,19 @@ for M10:
 - `catalog.rs` (`m10-study-catalog-v1`): registers 3 canonical benchmark study scenarios
   (`scenario-study-cohort-balanced-alpha-v1`, `scenario-study-cohort-access-friction-v1`,
   `scenario-study-cohort-mixed-novice-v1`) with reproducible execution and verified expectations.
+- `dimension.rs` (`m10-dimension-assessment-v1`): defines `CognitiveFrictionIndicator`,
+  `ParticipantDimensionAssessment`, `evaluate_dimension_assessments`, and `DimensionEvaluationReport`.
+- `interaction.rs` (`m10-interaction-mode-v1`): defines `VerbosityLevel`, `ContrastMode`,
+  `InteractionProfile`, and `audit_interaction_transcript`.
+- `dimension_catalog.rs` (`m10-dimension-catalog-v1`): registers 3 canonical benchmark scenarios
+  for dimension assessment and interaction mode auditing.
+- `informal_check.rs` (`m10-informal-check-v1`): defines `InformalCheckPhase`, `InformalCheckMode`,
+  `NoteDisposition`, `IssueLinkedNote`, and `InformalCheckSession`.
+- `remediation.rs` (`m10-remediation-plan-v1`): defines `RemediationTarget`, `RemediationVerificationStatus`,
+  `RemediationAction`, `evaluate_remediation_plan`, and `RemediationEvaluationReport`.
+- `remediation_catalog.rs` (`m10-remediation-catalog-v1`): registers 3 canonical benchmark scenarios
+  (`scenario-remediation-alpha-baseline-v1`, `scenario-remediation-accessibility-priority-v1`,
+  `scenario-remediation-mixed-progress-v1`) with reproducible execution and verified expectations.
 
 ## Target Components
 

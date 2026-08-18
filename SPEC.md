@@ -1929,9 +1929,36 @@ human pacing evidence remain deferred.
   - 6 focused tests cover friction indicators, interaction modes, interaction audit checks, fail-closed
     validation, error Display coverage, dimension catalog execution, and Markdown hygiene.
 
-This establishes a bounded deterministic study protocol, dimension assessment framework, and interaction
-mode auditing for M10. Empirical human testing, participant recruitment, live study runs, and behavioral
-research claims remain deferred.
+- `m10-informal-check-v1`, `m10-remediation-plan-v1`, and `m10-remediation-catalog-v1`
+  formalize informal check protocols, issue-linked note tracking, and deterministic remediation
+  evaluation:
+  - `InformalCheckPhase` covers 4 discrete core interaction touchpoints (`InitialOnboarding`,
+    `TurnDecisionMaking`, `ContingencyPlanning`, `DebriefAnalysis`).
+  - `InformalCheckMode` covers 3 interaction modes (`InteractiveTty`, `PipedStream`,
+    `AssistedScreenReader`).
+  - `NoteDisposition` tracks 4 dispositions (`AddressedInCode`, `LoggedForStudy`, `ClarifiedInDoc`,
+    `WontFixWithRationale`).
+  - `IssueLinkedNote` and `InformalCheckSession` link tester notes to explicit issue references
+    without overstating them as formal study conclusions.
+  - `RemediationTarget` covers 5 architectural targets (`PresentationOutput`, `CommandVocabulary`,
+    `DocumentationOnboarding`, `DebriefExplanation`, `ContingencyAffordance`).
+  - `RemediationVerificationStatus` tracks 4 verification statuses (`PendingImplementation`,
+    `VerifiedInRegression`, `ValidatedInStudyCohort`, `RejectedAlternative`).
+  - `evaluate_remediation_plan` is a pure deterministic evaluation function with fail-closed
+    validation (`EmptySessionList`, `EmptyRemediationList`, `EmptySessionNotes`, `DuplicateSessionId`,
+    `DuplicateNoteId`, `DuplicateActionId`, `UnlinkedNoteReference`, `InvalidBasisPointImpact`,
+    `EmptyDescription`, `EmptyObservation`) generating `RemediationEvaluationReport` with addressed
+    note shares ($[0..=10,000]$ bp), verified action shares ($[0..=10,000]$ bp), average expected impact
+    (bp), and readiness gate evaluation ($\ge 5,000$ bp verified actions required).
+  - `RemediationCatalog` registers 3 canonical benchmark scenarios
+    (`scenario-remediation-alpha-baseline-v1`, `scenario-remediation-accessibility-priority-v1`,
+    `scenario-remediation-mixed-progress-v1`) with reproducible execution and verified expectations.
+  - 6 focused tests cover phase/mode/disposition round trips, remediation targets and status predicates,
+    fail-closed validation, error Display coverage, remediation catalog execution, and Markdown hygiene.
+
+This establishes a bounded deterministic study protocol, dimension assessment framework, interaction
+mode auditing, informal check protocol, and remediation evaluation for M10. Empirical human testing,
+participant recruitment, live study runs, and behavioral research claims remain deferred.
 
 ## Future
 
