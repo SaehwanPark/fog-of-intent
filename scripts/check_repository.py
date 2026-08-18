@@ -69,6 +69,8 @@ CORE_RUST_FILES = (
   "src/agent/uncertainty.rs",
   "src/gui/asset.rs",
   "src/gui/asset_catalog.rs",
+  "src/gui/browser.rs",
+  "src/gui/browser_catalog.rs",
   "src/gui/catalog.rs",
   "src/gui/dto.rs",
   "src/gui/html.rs",

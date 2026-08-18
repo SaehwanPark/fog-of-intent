@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs` | Standalone package version reporting, a bounded fixture transcript with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, TTY prompt/completion, `--color`), and a replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1` |
-| Package | `Cargo.toml` | Version `0.1.208`, one deferred edge crate (`reedline`) |
+| Package | `Cargo.toml` | Version `0.1.213`, one deferred edge crate (`reedline`) |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -2262,18 +2262,23 @@ persistence remain host-owned.
 - [x] Register 4 canonical benchmark transport scenarios in `GuiTransportScenarioCatalog`
   (`m11-gui-transport-catalog-v1`: `scenario-gui-transport-bundle-request-v1`, `scenario-gui-transport-interactive-inspection-v1`,
   `scenario-gui-transport-intent-submission-v1`, `scenario-gui-transport-fail-closed-rejection-v1`) with reproducible execution and verified expectations.
+- [x] Define `m11-gui-browser-v1` in `src/gui/browser.rs` and `m11-gui-browser-catalog-v1` in `src/gui/browser_catalog.rs`
+  implementing browser interaction flow evaluation and resilience recovery testing across 4 browser environment profiles
+  (`ModernDesktop`, `HighContrastAccessible`, `TouchMobileViewport`, `TextFallbackHeadless`) and 4 benchmark scenarios
+  (`scenario-gui-browser-standard-flow-v1`, `scenario-gui-browser-network-recovery-v1`, `scenario-gui-browser-accessibility-flow-v1`,
+  `scenario-gui-browser-degraded-fallback-v1`) verifying clean state restoration, degraded fallback, and zero authority desync under connection loss.
 - [x] Cover presentation need evaluation, deficit threshold rules, fail-closed validation,
   DTO bundle construction, latent opponent leakage rejection, chain-of-thought omission,
   catalog scenario execution, active tab/view mode round trips, client state transitions, reversibility,
   zoom bounds, parity verification, asset kind/license/fallback round trips, asset governance audit rules,
   HTML document generation across all tabs, W3C/security/privacy verification, loopback transport request handling,
-  invariant verification, and Markdown report hygiene across 35 focused tests in `src/gui/tests.rs`.
+  browser target/capability round trips, recovery strategies, and Markdown report hygiene across 43 focused tests in `src/gui/tests.rs`.
 
 This establishes the formal presentation need evaluation framework, ADR-0003 architecture
 decision record, versioned actor-visible GUI DTO models, reversible client state machine,
 triple CLI/MCP/GUI projection parity verification, asset governance / fallback rules,
-standalone HTML5/CSS/SVG GUI presentation document generator, and loopback transport protocol / session adapter
-for M11. Live browser-to-host interaction tests remain open.
+standalone HTML5/CSS/SVG GUI presentation document generator, loopback transport protocol / session adapter,
+and browser flow resilience / recovery evaluation suite for M11. Live browser-to-host interaction tests remain open.
 
 
 ### Deliverables
