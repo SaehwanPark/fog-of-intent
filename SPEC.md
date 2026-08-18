@@ -1986,7 +1986,7 @@ mode auditing, informal check protocol, remediation evaluation, sampling limits 
 synthesis reporting for M10. Empirical human testing, participant recruitment, live study runs, and
 behavioral research claims remain deferred until study data is collected.
 
-### M11 — Shared-boundary GUI presentation need, actor-visible DTOs, client state, and parity — 2026-08-18
+### M11 — Shared-boundary GUI presentation need, actor-visible DTOs, client state, parity, and HTML document generator — 2026-08-18
 
 **Status:** Complete (initial slice)
 **Depends on:** M10
@@ -2028,22 +2028,27 @@ behavioral research claims remain deferred until study data is collected.
 - `m11-gui-asset-catalog-v1` (`src/gui/asset_catalog.rs`) registers 3 benchmark asset governance manifests
   (`scenario-gui-asset-core-v1`, `scenario-gui-asset-minimal-vector-v1`, `scenario-gui-asset-fallback-audit-v1`)
   with verified expectations and reproducible audit execution.
-- 24 focused unit tests in `src/gui/tests.rs` cover domain/severity round trips, threshold rules,
+- `m11-gui-html-v1` (`src/gui/html.rs`) defines the standalone HTML5/CSS/SVG presentation document generator
+  (`render_gui_html_document`) and verification engine (`verify_gui_html_document`) with semantic W3C landmarks,
+  WCAG 2.1 AA high contrast and reduced-motion tokens, procedural SVG maps, timeline bars, plan cards,
+  debrief quadrant breakdowns, and fail-closed security/privacy rules.
+- `m11-gui-html-catalog-v1` (`src/gui/html_catalog.rs`) registers 3 benchmark HTML presentation scenarios
+  (`scenario-gui-html-flank-inspection-v1`, `scenario-gui-html-debrief-quadrant-v1`,
+  `scenario-gui-html-high-contrast-accessibility-v1`) with verified expectations.
+- 29 focused unit tests in `src/gui/tests.rs` cover domain/severity round trips, threshold rules,
   fail-closed validation, error Display coverage, DTO construction, invariant leak rejection, CoT omission,
   catalog execution, active tab/view mode round trips, client state transitions, reversibility, zoom bounds,
   triple projection parity verification, asset kind/license/fallback round trips, asset governance audit rules,
-  and Markdown report hygiene.
+  HTML document generation, verification rules, and Markdown report hygiene.
 
 #### Verification
 
-- `cargo test --locked gui::` passes 24 unit tests.
-- All benchmark catalog scenarios verify deficit impacts, GUI justification, invariant preservation, and asset governance compliance.
+- `cargo test --locked gui::` passes 29 unit tests.
+- All benchmark catalog scenarios verify deficit impacts, GUI justification, invariant preservation, asset governance compliance, and HTML document integrity.
 - Repository checker scans confirm zero async/network primitives in `src/gui/`.
-
 
 #### Deferred
 
-- Browser client HTML5/CSS/JS frontend implementation.
 - Loopback HTTP/WebSocket transport adapter.
 - Live browser-to-host interaction parity tests.
 

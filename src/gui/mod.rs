@@ -4,6 +4,8 @@ pub mod asset;
 pub mod asset_catalog;
 pub mod catalog;
 pub mod dto;
+pub mod html;
+pub mod html_catalog;
 pub mod need;
 pub mod parity;
 pub mod projection;
@@ -29,6 +31,14 @@ pub use dto::{
   GuiMapActorState, GuiMapLocationState, GuiMapObjectiveState, GuiMapStructureState, GuiMapViewDto,
   GuiPlanViewDto, GuiPresentationBundle, GuiSymbolTag, GuiTimelineViewDto, GuiViewMode,
   GuiVisionStatus,
+};
+pub use html::{
+  GUI_HTML_SCHEMA_VERSION, GuiHtmlError, GuiHtmlVerificationReport, render_gui_html_document,
+  verify_gui_html_document,
+};
+pub use html_catalog::{
+  GUI_HTML_CATALOG_SCHEMA_VERSION, GuiHtmlScenarioCatalog, GuiHtmlScenarioDefinition,
+  GuiHtmlScenarioExecutionResult, render_html_scenario_markdown,
 };
 pub use need::{
   ComprehensionDeficit, ComprehensionDomain, DeficitSeverity, GUI_BARRIER_THRESHOLD_BP,

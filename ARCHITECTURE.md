@@ -630,6 +630,20 @@ reversible client state machine, triple projection parity verification, and cano
 - `state_catalog.rs` (`m11-gui-state-catalog-v1`): registers 3 benchmark client interaction scenarios
   (`scenario-gui-state-map-inspection-v1`, `scenario-gui-state-debrief-quadrant-filter-v1`,
   `scenario-gui-state-reversible-recovery-v1`) with verified expectations.
+- `asset.rs` (`m11-gui-asset-governance-v1`): defines asset classifications (`AssetKind`),
+  permissive open-source licensing (`AssetLicense`), non-visual/low-overhead fallback rendering rules
+  (`AssetFallbackKind`), content hash verification, and pure deterministic auditing (`audit_asset_governance`)
+  with fail-closed validation.
+- `asset_catalog.rs` (`m11-gui-asset-catalog-v1`): registers 3 canonical benchmark asset governance manifests
+  (`scenario-gui-asset-core-v1`, `scenario-gui-asset-minimal-vector-v1`, `scenario-gui-asset-fallback-audit-v1`)
+  with verified expectations and reproducible audit execution.
+- `html.rs` (`m11-gui-html-v1`): defines the standalone HTML5/CSS/SVG presentation document generator
+  (`render_gui_html_document`) and verification engine (`verify_gui_html_document`) with semantic W3C landmarks,
+  WCAG 2.1 AA high contrast and reduced-motion tokens, procedural SVG maps, timeline bars, plan cards,
+  debrief quadrant breakdowns, and fail-closed security/privacy rules.
+- `html_catalog.rs` (`m11-gui-html-catalog-v1`): registers 3 benchmark HTML presentation scenarios
+  (`scenario-gui-html-flank-inspection-v1`, `scenario-gui-html-debrief-quadrant-v1`,
+  `scenario-gui-html-high-contrast-accessibility-v1`) with verified expectations.
 
 ## Target Components
 

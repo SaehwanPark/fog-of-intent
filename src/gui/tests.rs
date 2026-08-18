@@ -1382,3 +1382,217 @@ fn asset_governance_markdown_rendering_hygiene() {
   assert!(md.contains("| `Apache-2.0` | 1 | [OK] Permissive |"));
   assert!(!md.contains("\x1b["));
 }
+
+#[test]
+fn html_document_generation_and_all_tabs_rendering() {
+  use crate::gui::catalog::GuiScenarioCatalog;
+  use crate::gui::dto::GuiActiveTab;
+  use crate::gui::html::{render_gui_html_document, verify_gui_html_document};
+  use crate::gui::state::{GuiClientState, GuiDisplayOptions, GuiSelectionState};
+
+  let base_catalog = GuiScenarioCatalog::new();
+  let base_def = base_catalog
+    .get("scenario-gui-map-flank-v1")
+    .expect("base flank scenario should exist");
+
+  let tabs = [
+    (GuiActiveTab::MapView, "Spatial Map &amp; Fog of War"),
+    (
+      GuiActiveTab::TimelineView,
+      "Temporal Turn &amp; Event Timeline",
+    ),
+    (GuiActiveTab::PlanView, "Plan, Focus &amp; Contingency"),
+    (GuiActiveTab::DebriefView, "Causal Attribution Debrief"),
+    (
+      GuiActiveTab::AccessibilityView,
+      "Accessibility &amp; Universal Usability (WCAG 2.1 AA)",
+    ),
+  ];
+
+  for (tab, expected_heading) in tabs {
+    let state = GuiClientState {
+      schema_version: crate::gui::state::GUI_STATE_SCHEMA_VERSION.to_string(),
+      observer_role: "TopLaner".to_string(),
+      active_tab: tab,
+      selection: GuiSelectionState::default(),
+      display_options: GuiDisplayOptions::default(),
+    };
+
+    let html = render_gui_html_document(&base_def.sample_bundle, &state)
+      .expect("HTML rendering should succeed for tab");
+
+    assert!(html.starts_with("<!DOCTYPE html>"));
+    assert!(html.contains(expected_heading));
+    assert!(html.contains(r#"class="nav-tab active" aria-current="page""#));
+
+    let report = verify_gui_html_document(&html, &base_def.sample_bundle)
+      .expect("HTML verification should pass");
+
+    assert!(report.is_compliant);
+    assert!(report.has_valid_doctype);
+    assert!(report.has_viewport_meta);
+    assert!(report.has_all_landmarks);
+    assert!(report.zero_external_resources);
+    assert!(report.zero_script_tags);
+    assert!(report.zero_latent_leaks);
+  }
+}
+
+#[test]
+fn html_document_verification_and_fail_closed_security_checks() {
+  use crate::gui::catalog::GuiScenarioCatalog;
+  use crate::gui::html::{GuiHtmlError, verify_gui_html_document};
+
+  let base_catalog = GuiScenarioCatalog::new();
+  let base_def = base_catalog
+    .get("scenario-gui-map-flank-v1")
+    .expect("base flank scenario should exist");
+
+  // Missing doctype
+  let no_doctype_html = "<html><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"></head><body><header></header><nav></nav><main></main><aside></aside><footer></footer></body></html>";
+  assert_eq!(
+    verify_gui_html_document(no_doctype_html, &base_def.sample_bundle),
+    Err(GuiHtmlError::MissingDoctype)
+  );
+
+  // Missing viewport
+  let no_viewport_html = "<!DOCTYPE html><html><head></head><body><header></header><nav></nav><main></main><aside></aside><footer></footer></body></html>";
+  assert_eq!(
+    verify_gui_html_document(no_viewport_html, &base_def.sample_bundle),
+    Err(GuiHtmlError::MissingViewport)
+  );
+
+  // Missing landmark
+  let no_aside_html = "<!DOCTYPE html><html><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"></head><body><header></header><nav></nav><main></main><footer></footer></body></html>";
+  assert_eq!(
+    verify_gui_html_document(no_aside_html, &base_def.sample_bundle),
+    Err(GuiHtmlError::MissingLandmark("aside"))
+  );
+
+  // External network resource
+  let ext_res_html = "<!DOCTYPE html><html><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><link rel=\"stylesheet\" href=\"https://evil.com/style.css\"></head><body><header></header><nav></nav><main></main><aside></aside><footer></footer></body></html>";
+  assert!(matches!(
+    verify_gui_html_document(ext_res_html, &base_def.sample_bundle),
+    Err(GuiHtmlError::ForbiddenExternalResource(_))
+  ));
+
+  // Script injection
+  let script_html = "<!DOCTYPE html><html><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"></head><body><header></header><nav></nav><main><script>alert('xss')</script></main><aside></aside><footer></footer></body></html>";
+  assert_eq!(
+    verify_gui_html_document(script_html, &base_def.sample_bundle),
+    Err(GuiHtmlError::ForbiddenScriptTag)
+  );
+
+  // Private chain-of-thought leak
+  let cot_leak_html = "<!DOCTYPE html><html><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"></head><body><header></header><nav></nav><main>private_reasoning: plan flank</main><aside></aside><footer></footer></body></html>";
+  assert!(matches!(
+    verify_gui_html_document(cot_leak_html, &base_def.sample_bundle),
+    Err(GuiHtmlError::LatentInformationLeak(_))
+  ));
+}
+
+#[test]
+fn html_error_display_coverage() {
+  use crate::gui::html::GuiHtmlError;
+
+  let errors = [
+    (
+      GuiHtmlError::BundleInvariantViolation("bad bundle"),
+      "bundle invariant violation: bad bundle",
+    ),
+    (
+      GuiHtmlError::SchemaMismatch {
+        expected: "v1".to_string(),
+        actual: "v2".to_string(),
+      },
+      "schema mismatch: expected v1, actual v2",
+    ),
+    (
+      GuiHtmlError::MissingDoctype,
+      "missing standard '<!DOCTYPE html>' declaration",
+    ),
+    (
+      GuiHtmlError::MissingViewport,
+      "missing standard viewport meta tag",
+    ),
+    (
+      GuiHtmlError::MissingLandmark("footer"),
+      "missing required semantic landmark: <footer>",
+    ),
+    (
+      GuiHtmlError::ForbiddenExternalResource("https://cdn.example.com/asset.js".to_string()),
+      "forbidden external resource reference: https://cdn.example.com/asset.js",
+    ),
+    (
+      GuiHtmlError::ForbiddenScriptTag,
+      "forbidden '<script>' tag found in presentation document",
+    ),
+    (
+      GuiHtmlError::LatentInformationLeak("latent coord"),
+      "latent information leak detected: latent coord",
+    ),
+  ];
+
+  for (err, expected_str) in errors {
+    assert_eq!(format!("{err}"), expected_str);
+  }
+}
+
+#[test]
+fn html_catalog_scenarios_execute_and_verify_all_expectations() {
+  use crate::gui::html_catalog::GuiHtmlScenarioCatalog;
+
+  let catalog = GuiHtmlScenarioCatalog::new();
+  let scenarios = catalog.all_scenarios();
+  assert_eq!(scenarios.len(), 3);
+
+  for def in scenarios {
+    let result = catalog
+      .execute_scenario(def.scenario_id)
+      .unwrap_or_else(|e| {
+        panic!(
+          "html scenario '{}' should execute successfully: {e}",
+          def.scenario_id
+        )
+      });
+
+    assert_eq!(result.scenario_id, def.scenario_id);
+    assert!(result.expectations_verified);
+    assert!(result.verification_report.is_compliant);
+    assert!(result.verification_report.has_valid_doctype);
+    assert!(result.verification_report.has_viewport_meta);
+    assert!(result.verification_report.has_all_landmarks);
+    assert!(result.verification_report.zero_external_resources);
+    assert!(result.verification_report.zero_script_tags);
+    assert!(result.verification_report.zero_latent_leaks);
+  }
+
+  assert!(
+    catalog
+      .execute_scenario("non-existent-html-scenario")
+      .is_err()
+  );
+}
+
+#[test]
+fn html_scenario_markdown_rendering_hygiene() {
+  use crate::gui::html_catalog::{GuiHtmlScenarioCatalog, render_html_scenario_markdown};
+
+  let catalog = GuiHtmlScenarioCatalog::new();
+  let result = catalog
+    .execute_scenario("scenario-gui-html-flank-inspection-v1")
+    .expect("scenario execution should succeed");
+
+  let md = render_html_scenario_markdown(&result);
+  assert!(
+    md.starts_with("### GUI HTML Benchmark Report: `scenario-gui-html-flank-inspection-v1`\n\n")
+  );
+  assert!(md.contains("- **W3C Doctype:** Valid (`<!DOCTYPE html>`)"));
+  assert!(md.contains("- **Viewport Meta:** Valid (`width=device-width`)"));
+  assert!(md.contains("- **Landmarks Present:** Header, Nav, Main, Aside, Footer"));
+  assert!(md.contains("- **Zero External Resources:** Verified (Zero)"));
+  assert!(md.contains("- **Zero Client Scripts:** Verified (Zero)"));
+  assert!(md.contains("- **Zero Latent Information Leaks:** Verified (Zero)"));
+  assert!(md.contains("- **Compliance Status:** **VERIFIED PASS**"));
+  assert!(!md.contains("\x1b["));
+}
