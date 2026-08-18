@@ -102,6 +102,7 @@ src/terminal.rs
 src/presentation.rs
 src/repl.rs
 src/command_loop.rs
+src/gui/
 src/protocol.rs
 src/session.rs
 src/study/
@@ -119,7 +120,7 @@ docs/
 _workspace/
 ```
 
-`src/lib.rs`, `src/cli.rs`, `src/agent_batch_store.rs`, `src/agent_operational_store.rs`, `src/host.rs`, `src/host_artifact.rs`, `src/run_store.rs`, `src/terminal.rs`, `src/presentation.rs`, `src/repl.rs`, `src/protocol.rs`, `src/session.rs`, `src/study/`, `src/kernel.rs`,
+`src/lib.rs`, `src/cli.rs`, `src/agent_batch_store.rs`, `src/agent_operational_store.rs`, `src/gui/`, `src/host.rs`, `src/host_artifact.rs`, `src/run_store.rs`, `src/terminal.rs`, `src/presentation.rs`, `src/repl.rs`, `src/protocol.rs`, `src/session.rs`, `src/study/`, `src/kernel.rs`,
 `src/lane/`, and `src/serialization.rs` are the current internal
 kernel/adapter/fixture surface;
 `src/main.rs` parses bounded process options and runs the fixture loop, using
@@ -602,6 +603,21 @@ for M10:
 - `synthesis_catalog.rs` (`m10-synthesis-catalog-v1`): registers 3 canonical benchmark scenarios
   (`scenario-alpha-synthesis-baseline-v1`, `scenario-alpha-synthesis-accessibility-gated-v1`,
   `scenario-alpha-synthesis-sampling-gap-v1`) with reproducible execution and verified expectations.
+
+`src/gui/` defines the presentation need taxonomy, versioned actor-visible GUI Data Transfer Objects,
+and canonical benchmark scenarios for M11 (governed by ADR-0003 `docs/adr/0003-shared-boundary-gui.md`):
+- `need.rs` (`m11-gui-presentation-need-v1`): defines `ComprehensionDomain` (4 cognitive domains
+  `SpatialTopology`, `TemporalTimeline`, `ContingencyBranching`, `CausalDebrief`), `DeficitSeverity`,
+  `ComprehensionDeficit`, and pure deterministic `evaluate_presentation_need` calculating basis-point
+  impacts ($[0..=10,000]$ bp) and evaluating the GUI justification gate ($\ge 4,000$ bp mean or $\ge 5,000$ bp barrier).
+- `dto.rs` (`m11-gui-dto-v1`): defines versioned actor-visible GUI DTO models (`GuiMapViewDto`,
+  `GuiTimelineViewDto`, `GuiPlanViewDto`, `GuiDebriefViewDto`, `GuiAccessibilityDto`, `GuiPresentationBundle`)
+  with strict invariant validation enforcing zero latent opponent leakage, zero true-state hashes, and zero private chain-of-thought.
+- `projection.rs`: pure deterministic projection builders (`build_gui_map_view`, `build_gui_timeline_view`,
+  `build_gui_plan_view`, `build_gui_debrief_view`, `build_gui_accessibility`, `assemble_gui_presentation_bundle`).
+- `catalog.rs` (`m11-gui-scenario-catalog-v1`): registers 3 canonical benchmark scenarios
+  (`scenario-gui-map-flank-v1`, `scenario-gui-debrief-quadrant-v1`, `scenario-gui-timeline-siege-v1`)
+  with reproducible execution and verified expectations.
 
 ## Target Components
 

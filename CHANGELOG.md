@@ -6,6 +6,39 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.208] - 2026-08-18
+
+### Added
+
+- ADR-0003 (`docs/adr/0003-shared-boundary-gui.md`) establishing the Shared-Boundary GUI
+  Architecture, presentation-only client contracts, loopback transport, web standards baseline,
+  and asset governance.
+- `m11-gui-presentation-need-v1`, `m11-gui-dto-v1`, and `m11-gui-scenario-catalog-v1` formalizing
+  comprehension deficit evaluation, versioned actor-visible GUI DTO models, and benchmark scenarios for M11:
+  - `ComprehensionDomain` — 4 cognitive comprehension domains (`SpatialTopology`,
+    `TemporalTimeline`, `ContingencyBranching`, `CausalDebrief`).
+  - `DeficitSeverity` (`Negligible`, `ModerateFriction`, `SignificantBarrier`) and `ComprehensionDeficit`
+    modeling cognitive friction and limitations of linear text presentation.
+  - `evaluate_presentation_need` — pure deterministic evaluation function with fail-closed validation
+    (`EmptyDeficitList`, `EmptyIdentifier`, `DuplicateDomain`, `DeficitScoreOutOfRange`, `EmptyDescription`)
+    calculating mean and max deficit scores in basis points ($[0..=10,000]$ bp) and evaluating the GUI
+    justification gate ($\ge 4,000$ bp mean or $\ge 5,000$ bp barrier).
+  - Versioned actor-visible GUI DTO models: `GuiMapViewDto` (15 map locations, actor visibility,
+    fog-of-war statuses `FullVision`/`LastKnown`/`ConcealedInFog`, objective statuses, structure hierarchy),
+    `GuiTimelineViewDto` (current turn, phase, transit progression, scheduled spawns), `GuiPlanViewDto`
+    (staged/committed intent, target focus, commitment, ping signal, abort/fallback contingencies),
+    `GuiDebriefViewDto` (2D orthogonal quadrant attribution, coordination/execution ratings, KPI cards,
+    discrete causal factor tags, strict zero private chain-of-thought enforcement), and `GuiAccessibilityDto`
+    (non-color symbolic tags, aria live announcements, keyboard focus order, high contrast, reduced motion).
+  - `GuiPresentationBundle` and `assemble_gui_presentation_bundle` — integrated bundle builder with
+    strict invariant validation (zero latent opponent leakage, zero true-state hashes, zero private chain-of-thought).
+  - `GuiScenarioCatalog` — 3 canonical benchmark scenarios (`scenario-gui-map-flank-v1`,
+    `scenario-gui-debrief-quadrant-v1`, `scenario-gui-timeline-siege-v1`) with reproducible execution
+    and verified expectations.
+  - 9 focused unit tests in `src/gui/tests.rs` covering domain/severity round trips, threshold rules,
+    fail-closed validation, error Display coverage, DTO construction, invariant leak rejection, CoT omission,
+    catalog execution, and Markdown report hygiene.
+
 ## [0.1.207] - 2026-08-18
 
 ### Added
