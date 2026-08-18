@@ -2207,11 +2207,11 @@ persistence remain host-owned.
 - [x] Preserve text and symbol equivalents for color, motion, and audio meaning.
 - [x] Add keyboard, focus, scaling, mute, reduced-motion, loading, offline, and
   missing-data behavior in accessibility DTO contracts.
-- [ ] Keep browser state reversible and presentation-only.
-- [ ] Add host-contract, CLI/MCP/GUI parity, default-browser, and recovery tests.
+- [x] Keep browser state reversible and presentation-only.
+- [x] Add host-contract, CLI/MCP/GUI parity, default-browser, and recovery tests.
 - [ ] Define asset provenance, license, attribution, hash, and fallback rules.
 
-### Current M11 presentation-need assessment and actor-visible GUI DTO evidence
+### Current M11 presentation-need assessment, GUI DTOs, client state, and parity evidence
 
 - [x] Record ADR-0003 (`docs/adr/0003-shared-boundary-gui.md`) establishing the
   Shared-Boundary GUI Architecture, presentation-only client contracts, loopback transport,
@@ -2221,19 +2221,30 @@ persistence remain host-owned.
   `PresentationNeedAssessment` evaluating GUI justification against exact basis-point thresholds
   ($\ge 4,000$ bp mean or $\ge 5,000$ bp barrier).
 - [x] Define `m11-gui-dto-v1` with versioned actor-visible DTO models (`GuiMapViewDto`,
-  `GuiTimelineViewDto`, `GuiPlanViewDto`, `GuiDebriefViewDto`, `GuiAccessibilityDto`),
-  `assemble_gui_presentation_bundle`, and strict invariant validation against latent opponent
-  leakage, true-state hashes, and private chain-of-thought.
+  `GuiTimelineViewDto`, `GuiPlanViewDto`, `GuiDebriefViewDto`, `GuiAccessibilityDto`), `GuiActiveTab`,
+  `GuiViewMode`, `assemble_gui_presentation_bundle`, and strict invariant validation against latent
+  opponent leakage, true-state hashes, and private chain-of-thought.
 - [x] Register 3 canonical benchmark scenarios in `GuiScenarioCatalog` (`m11-gui-scenario-catalog-v1`:
   `scenario-gui-map-flank-v1`, `scenario-gui-debrief-quadrant-v1`, `scenario-gui-timeline-siege-v1`)
   with reproducible execution and verified expectations.
+- [x] Define `m11-gui-client-state-v1` in `src/gui/state.rs` with `GuiClientState`, `GuiSelectionState`,
+  `GuiDisplayOptions` (fog overlay, high contrast, reduced motion, symbol tags, $[5_000..=20_000]$ bp zoom),
+  `GuiPresentationAction`, and reversible state transitions with fail-closed entity validation.
+- [x] Implement pure deterministic triple projection parity verification in `src/gui/parity.rs`
+  (`m11-gui-parity-v1`, `verify_presentation_parity`) validating that CLI, MCP, and GUI views preserve
+  exact turn progression, observer role, and legal intent sets with zero hash, latent coordinate, or CoT leakage.
+- [x] Register 3 benchmark client interaction scenarios in `GuiStateScenarioCatalog` (`m11-gui-state-catalog-v1`:
+  `scenario-gui-state-map-inspection-v1`, `scenario-gui-state-debrief-quadrant-filter-v1`,
+  `scenario-gui-state-reversible-recovery-v1`) with verified expectations.
 - [x] Cover presentation need evaluation, deficit threshold rules, fail-closed validation,
   DTO bundle construction, latent opponent leakage rejection, chain-of-thought omission,
-  catalog scenario execution, and Markdown report hygiene across 9 focused tests in `src/gui/tests.rs`.
+  catalog scenario execution, active tab/view mode round trips, client state transitions, reversibility,
+  zoom bounds, parity verification, and Markdown report hygiene across 18 focused tests in `src/gui/tests.rs`.
 
 This establishes the formal presentation need evaluation framework, ADR-0003 architecture
-decision record, versioned actor-visible GUI DTO models, and benchmark scenario validation for M11.
-Browser client implementation, loopback transport server, and live browser parity tests remain open.
+decision record, versioned actor-visible GUI DTO models, reversible client state machine,
+triple CLI/MCP/GUI projection parity verification, and benchmark scenario validation for M11.
+Browser client HTML/CSS/JS frontend implementation, loopback transport server, and live browser tests remain open.
 
 ### Deliverables
 

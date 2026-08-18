@@ -605,19 +605,31 @@ for M10:
   `scenario-alpha-synthesis-sampling-gap-v1`) with reproducible execution and verified expectations.
 
 `src/gui/` defines the presentation need taxonomy, versioned actor-visible GUI Data Transfer Objects,
-and canonical benchmark scenarios for M11 (governed by ADR-0003 `docs/adr/0003-shared-boundary-gui.md`):
+reversible client state machine, triple projection parity verification, and canonical benchmark scenarios for M11 (governed by ADR-0003 `docs/adr/0003-shared-boundary-gui.md`):
 - `need.rs` (`m11-gui-presentation-need-v1`): defines `ComprehensionDomain` (4 cognitive domains
   `SpatialTopology`, `TemporalTimeline`, `ContingencyBranching`, `CausalDebrief`), `DeficitSeverity`,
   `ComprehensionDeficit`, and pure deterministic `evaluate_presentation_need` calculating basis-point
   impacts ($[0..=10,000]$ bp) and evaluating the GUI justification gate ($\ge 4,000$ bp mean or $\ge 5,000$ bp barrier).
 - `dto.rs` (`m11-gui-dto-v1`): defines versioned actor-visible GUI DTO models (`GuiMapViewDto`,
-  `GuiTimelineViewDto`, `GuiPlanViewDto`, `GuiDebriefViewDto`, `GuiAccessibilityDto`, `GuiPresentationBundle`)
-  with strict invariant validation enforcing zero latent opponent leakage, zero true-state hashes, and zero private chain-of-thought.
+  `GuiTimelineViewDto`, `GuiPlanViewDto`, `GuiDebriefViewDto`, `GuiAccessibilityDto`, `GuiPresentationBundle`),
+  top-level navigation enums (`GuiActiveTab`, `GuiViewMode`), and strict invariant validation enforcing zero
+  latent opponent leakage, zero true-state hashes, and zero private chain-of-thought.
 - `projection.rs`: pure deterministic projection builders (`build_gui_map_view`, `build_gui_timeline_view`,
   `build_gui_plan_view`, `build_gui_debrief_view`, `build_gui_accessibility`, `assemble_gui_presentation_bundle`).
 - `catalog.rs` (`m11-gui-scenario-catalog-v1`): registers 3 canonical benchmark scenarios
   (`scenario-gui-map-flank-v1`, `scenario-gui-debrief-quadrant-v1`, `scenario-gui-timeline-siege-v1`)
   with reproducible execution and verified expectations.
+- `state.rs` (`m11-gui-client-state-v1`): defines the reversible presentation-only GUI client state machine
+  (`GuiClientState`), selection states (`GuiSelectionState`), display options (`GuiDisplayOptions`),
+  actions (`GuiPresentationAction`), events (`GuiClientEvent`), and fail-closed validation enforcing that
+  selections target only actor-visible entities without simulation authority.
+- `parity.rs` (`m11-gui-parity-v1`): implements pure deterministic triple projection parity verification
+  (`verify_presentation_parity`) validating that CLI observation (`LanerObservation`), MCP protocol DTO
+  (`ActorObservationDto`), and GUI bundle (`GuiPresentationBundle`) share exact turn progression, observer role,
+  and legal intent sets with zero hash, latent coordinate, or private CoT leakage.
+- `state_catalog.rs` (`m11-gui-state-catalog-v1`): registers 3 benchmark client interaction scenarios
+  (`scenario-gui-state-map-inspection-v1`, `scenario-gui-state-debrief-quadrant-filter-v1`,
+  `scenario-gui-state-reversible-recovery-v1`) with verified expectations.
 
 ## Target Components
 

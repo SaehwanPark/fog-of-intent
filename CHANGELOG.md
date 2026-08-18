@@ -6,6 +6,37 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.209] - 2026-08-18
+
+### Added
+
+- `m11-gui-client-state-v1` (`src/gui/state.rs`) defining the reversible presentation-only GUI client
+  state machine, view selections, display options, and action transitions:
+  - `GuiActiveTab` (`map-view`, `timeline-view`, `plan-view`, `debrief-view`, `accessibility-view`) and
+    `GuiViewMode` (`standard`, `compact`, `inspector`) with string parsing and Display implementations.
+  - `GuiSelectionState` tracking active location, actor, objective, structure, and debrief quadrant selections.
+  - `GuiDisplayOptions` managing fog overlay, high contrast, reduced motion, non-color symbol tags, and
+    bounded display zoom in $[5_000..=20_000]$ bp (50% to 200%).
+  - `GuiPresentationAction` and `GuiClientEvent` for declarative client interaction.
+  - `GuiClientState::transition` with fail-closed validation (`EmptyIdentifier`, `InvalidZoomLevel`,
+    `UnknownLocationId`, `UnknownActorRole`, `UnknownObjectiveKind`, `UnknownStructureTier`, `UnknownQuadrant`,
+    `TurnOutOfRange`) enforcing that selections target only actor-visible entities without simulation authority.
+  - Reversibility affordances (`ResetInspection`, `ResetAll`) enabling immediate state rollback to neutral defaults.
+- `m11-gui-parity-v1` (`src/gui/parity.rs`) implementing pure deterministic triple projection parity verification:
+  - `verify_presentation_parity` comparing CLI observation (`LanerObservation`), MCP protocol DTO
+    (`ActorObservationDto`), and GUI bundle (`GuiPresentationBundle`) for exact turn matching, observer role,
+    and legal intent sets.
+  - Presentation invariant enforcement: zero true-state hash exposure, zero latent opponent coordinate leakage
+    in fog, and zero private chain-of-thought in debriefs.
+  - `render_parity_report_markdown` producing clean Markdown parity reports with zero ANSI escapes.
+- `m11-gui-state-catalog-v1` (`src/gui/state_catalog.rs`) registering 3 canonical benchmark interaction scenarios:
+  - `scenario-gui-state-map-inspection-v1`: Interactive map location and actor inspection with reset.
+  - `scenario-gui-state-debrief-quadrant-filter-v1`: Causal debrief quadrant filtering and timeline turn inspection.
+  - `scenario-gui-state-reversible-recovery-v1`: Multi-panel interaction and reversible `ResetAll` recovery.
+- 9 new unit tests in `src/gui/tests.rs` (18 total GUI tests) covering active tab/view mode round trips,
+  client state transitions, reversibility, zoom bounds, fail-closed validation, error Display coverage,
+  triple projection parity verification, invariant rejection, and state scenario catalog execution.
+
 ## [0.1.208] - 2026-08-18
 
 ### Added

@@ -1986,7 +1986,7 @@ mode auditing, informal check protocol, remediation evaluation, sampling limits 
 synthesis reporting for M10. Empirical human testing, participant recruitment, live study runs, and
 behavioral research claims remain deferred until study data is collected.
 
-### M11 — Shared-boundary GUI presentation need and actor-visible DTOs — 2026-08-18
+### M11 — Shared-boundary GUI presentation need, actor-visible DTOs, client state, and parity — 2026-08-18
 
 **Status:** Complete (initial slice)
 **Depends on:** M10
@@ -2002,20 +2002,32 @@ behavioral research claims remain deferred until study data is collected.
   gate ($\ge 4,000$ bp mean or $\ge 5,000$ bp barrier).
 - `m11-gui-dto-v1` formalizes versioned actor-visible GUI Data Transfer Objects (`GuiMapViewDto`,
   `GuiTimelineViewDto`, `GuiPlanViewDto`, `GuiDebriefViewDto`, `GuiAccessibilityDto`, `GuiPresentationBundle`),
-  pure projection builders (`build_gui_map_view`, `build_gui_timeline_view`, `build_gui_plan_view`,
-  `build_gui_debrief_view`, `build_gui_accessibility`, `assemble_gui_presentation_bundle`), and strict
-  invariant validation enforcing zero latent opponent leakage, zero true-state hashes, and zero private
-  chain-of-thought.
+  top-level navigation enums (`GuiActiveTab`, `GuiViewMode`), pure projection builders (`build_gui_map_view`,
+  `build_gui_timeline_view`, `build_gui_plan_view`, `build_gui_debrief_view`, `build_gui_accessibility`,
+  `assemble_gui_presentation_bundle`), and strict invariant validation enforcing zero latent opponent
+  leakage, zero true-state hashes, and zero private chain-of-thought.
 - `GuiScenarioCatalog` (`m11-gui-scenario-catalog-v1`) registers 3 canonical benchmark scenarios
   (`scenario-gui-map-flank-v1`, `scenario-gui-debrief-quadrant-v1`, `scenario-gui-timeline-siege-v1`)
   with reproducible execution and verified expectations.
-- 9 focused unit tests in `src/gui/tests.rs` cover domain/severity round trips, threshold rules,
+- `m11-gui-client-state-v1` (`src/gui/state.rs`) defines the reversible presentation-only GUI client state
+  machine (`GuiClientState`), selection states (`GuiSelectionState`), display options (`GuiDisplayOptions`),
+  actions (`GuiPresentationAction`), events (`GuiClientEvent`), and fail-closed validation enforcing that
+  selections target only actor-visible entities without simulation authority.
+- `m11-gui-parity-v1` (`src/gui/parity.rs`) implements pure deterministic triple projection parity verification
+  (`verify_presentation_parity`) validating that CLI observation (`LanerObservation`), MCP protocol DTO
+  (`ActorObservationDto`), and GUI bundle (`GuiPresentationBundle`) share exact turn progression, observer role,
+  and legal intent sets with zero hash, latent coordinate, or private CoT leakage.
+- `m11-gui-state-catalog-v1` (`src/gui/state_catalog.rs`) registers 3 benchmark client interaction scenarios
+  (`scenario-gui-state-map-inspection-v1`, `scenario-gui-state-debrief-quadrant-filter-v1`,
+  `scenario-gui-state-reversible-recovery-v1`) with verified expectations.
+- 18 focused unit tests in `src/gui/tests.rs` cover domain/severity round trips, threshold rules,
   fail-closed validation, error Display coverage, DTO construction, invariant leak rejection, CoT omission,
-  catalog execution, and Markdown report hygiene.
+  catalog execution, active tab/view mode round trips, client state transitions, reversibility, zoom bounds,
+  triple projection parity verification, and Markdown report hygiene.
 
 #### Verification
 
-- `cargo test --locked gui::` passes 9 unit tests.
+- `cargo test --locked gui::` passes 18 unit tests.
 - All benchmark catalog scenarios verify deficit impacts, GUI justification, and invariant preservation.
 - Repository checker scans confirm zero async/network primitives in `src/gui/`.
 

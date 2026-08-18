@@ -8,6 +8,90 @@ use core::fmt;
 /// Schema version for actor-visible GUI DTO models.
 pub const GUI_DTO_SCHEMA_VERSION: &str = "m11-gui-dto-v1";
 
+/// Active top-level presentation tab in the GUI client.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum GuiActiveTab {
+  /// Spatial map topology, fog of war, and actor movement view.
+  MapView,
+  /// Temporal turn timeline, phases, and spawn schedules view.
+  TimelineView,
+  /// Intent, target focus, commitment, and contingency view.
+  PlanView,
+  /// Causal attribution quadrant, ratings, and KPI cards debrief view.
+  DebriefView,
+  /// Accessibility settings, symbol tags, and keyboard focus view.
+  AccessibilityView,
+}
+
+impl GuiActiveTab {
+  /// Canonical string identifier for the tab.
+  pub const fn as_str(self) -> &'static str {
+    match self {
+      Self::MapView => "map-view",
+      Self::TimelineView => "timeline-view",
+      Self::PlanView => "plan-view",
+      Self::DebriefView => "debrief-view",
+      Self::AccessibilityView => "accessibility-view",
+    }
+  }
+
+  /// Parse active tab from canonical string.
+  pub fn from_str_name(name: &str) -> Option<Self> {
+    match name {
+      "map-view" => Some(Self::MapView),
+      "timeline-view" => Some(Self::TimelineView),
+      "plan-view" => Some(Self::PlanView),
+      "debrief-view" => Some(Self::DebriefView),
+      "accessibility-view" => Some(Self::AccessibilityView),
+      _ => None,
+    }
+  }
+}
+
+impl fmt::Display for GuiActiveTab {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(f, "{}", self.as_str())
+  }
+}
+
+/// View density presentation mode for the GUI layout.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum GuiViewMode {
+  /// Standard balanced desktop layout with maps and panels.
+  Standard,
+  /// Compact density mode optimized for smaller screens.
+  Compact,
+  /// In-depth inspector mode with exhaustive telemetry.
+  Inspector,
+}
+
+impl GuiViewMode {
+  /// Canonical string identifier for the view mode.
+  pub const fn as_str(self) -> &'static str {
+    match self {
+      Self::Standard => "standard",
+      Self::Compact => "compact",
+      Self::Inspector => "inspector",
+    }
+  }
+
+  /// Parse view mode from canonical string.
+  pub fn from_str_name(name: &str) -> Option<Self> {
+    match name {
+      "standard" => Some(Self::Standard),
+      "compact" => Some(Self::Compact),
+      "inspector" => Some(Self::Inspector),
+      _ => None,
+    }
+  }
+}
+
+impl fmt::Display for GuiViewMode {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(f, "{}", self.as_str())
+  }
+}
+
 /// Vision status of a map location from the observer's perspective.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum GuiVisionStatus {
