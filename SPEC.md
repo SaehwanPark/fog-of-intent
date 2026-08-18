@@ -1986,6 +1986,45 @@ mode auditing, informal check protocol, remediation evaluation, sampling limits 
 synthesis reporting for M10. Empirical human testing, participant recruitment, live study runs, and
 behavioral research claims remain deferred until study data is collected.
 
+### M11 — Shared-boundary GUI presentation need and actor-visible DTOs — 2026-08-18
+
+**Status:** Complete (initial slice)
+**Depends on:** M10
+
+#### Delivered
+
+- `docs/adr/0003-shared-boundary-gui.md` establishes the Shared-Boundary GUI Architecture,
+  presentation-only client contracts, loopback transport, web standards baseline, and asset governance.
+- `m11-gui-presentation-need-v1` formalizes comprehension deficit evaluation across 4 cognitive domains
+  (`SpatialTopology`, `TemporalTimeline`, `ContingencyBranching`, `CausalDebrief`), 3 severity classifications
+  (`Negligible`, `ModerateFriction`, `SignificantBarrier`), and pure deterministic evaluation
+  (`evaluate_presentation_need`) calculating basis-point impact scores and evaluating the GUI justification
+  gate ($\ge 4,000$ bp mean or $\ge 5,000$ bp barrier).
+- `m11-gui-dto-v1` formalizes versioned actor-visible GUI Data Transfer Objects (`GuiMapViewDto`,
+  `GuiTimelineViewDto`, `GuiPlanViewDto`, `GuiDebriefViewDto`, `GuiAccessibilityDto`, `GuiPresentationBundle`),
+  pure projection builders (`build_gui_map_view`, `build_gui_timeline_view`, `build_gui_plan_view`,
+  `build_gui_debrief_view`, `build_gui_accessibility`, `assemble_gui_presentation_bundle`), and strict
+  invariant validation enforcing zero latent opponent leakage, zero true-state hashes, and zero private
+  chain-of-thought.
+- `GuiScenarioCatalog` (`m11-gui-scenario-catalog-v1`) registers 3 canonical benchmark scenarios
+  (`scenario-gui-map-flank-v1`, `scenario-gui-debrief-quadrant-v1`, `scenario-gui-timeline-siege-v1`)
+  with reproducible execution and verified expectations.
+- 9 focused unit tests in `src/gui/tests.rs` cover domain/severity round trips, threshold rules,
+  fail-closed validation, error Display coverage, DTO construction, invariant leak rejection, CoT omission,
+  catalog execution, and Markdown report hygiene.
+
+#### Verification
+
+- `cargo test --locked gui::` passes 9 unit tests.
+- All benchmark catalog scenarios verify deficit impacts, GUI justification, and invariant preservation.
+- Repository checker scans confirm zero async/network primitives in `src/gui/`.
+
+#### Deferred
+
+- Browser client HTML5/CSS/JS frontend implementation.
+- Loopback HTTP/WebSocket transport adapter.
+- Live browser-to-host interaction parity tests.
+
 ## Future
 
 The detailed and canonical order is in `ROADMAP.md`.

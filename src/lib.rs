@@ -5,6 +5,7 @@ pub mod agent_batch_store;
 pub mod agent_operational_store;
 pub mod cli;
 pub mod command_loop;
+pub mod gui;
 pub mod host;
 pub mod host_artifact;
 pub mod kernel;

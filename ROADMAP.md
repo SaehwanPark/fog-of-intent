@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs` | Standalone package version reporting, a bounded fixture transcript with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, TTY prompt/completion, `--color`), and a replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1` |
-| Package | `Cargo.toml` | Version `0.1.203`, one deferred edge crate (`reedline`) |
+| Package | `Cargo.toml` | Version `0.1.208`, one deferred edge crate (`reedline`) |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -2200,16 +2200,40 @@ persistence remain host-owned.
 
 ### Scope
 
-- [ ] Define the user problem and evidence that text presentation is insufficient.
-- [ ] Record an ADR for host/client, browser support, assets, and persistence.
-- [ ] Expose versioned actor-visible host DTOs rather than internal domain types.
-- [ ] Implement map, timeline, plan/contingency, and debrief views only as needed.
-- [ ] Preserve text and symbol equivalents for color, motion, and audio meaning.
-- [ ] Add keyboard, focus, scaling, mute, reduced-motion, loading, offline, and
-  missing-data behavior.
+- [x] Define the user problem and evidence that text presentation is insufficient.
+- [x] Record an ADR for host/client, browser support, assets, and persistence.
+- [x] Expose versioned actor-visible host DTOs rather than internal domain types.
+- [x] Implement map, timeline, plan/contingency, and debrief views only as needed.
+- [x] Preserve text and symbol equivalents for color, motion, and audio meaning.
+- [x] Add keyboard, focus, scaling, mute, reduced-motion, loading, offline, and
+  missing-data behavior in accessibility DTO contracts.
 - [ ] Keep browser state reversible and presentation-only.
 - [ ] Add host-contract, CLI/MCP/GUI parity, default-browser, and recovery tests.
 - [ ] Define asset provenance, license, attribution, hash, and fallback rules.
+
+### Current M11 presentation-need assessment and actor-visible GUI DTO evidence
+
+- [x] Record ADR-0003 (`docs/adr/0003-shared-boundary-gui.md`) establishing the
+  Shared-Boundary GUI Architecture, presentation-only client contracts, loopback transport,
+  web standards baseline, and asset governance.
+- [x] Define `m11-gui-presentation-need-v1`, `ComprehensionDomain` (4 domains), `DeficitSeverity`,
+  `ComprehensionDeficit`, `evaluate_presentation_need` (with fail-closed validation), and
+  `PresentationNeedAssessment` evaluating GUI justification against exact basis-point thresholds
+  ($\ge 4,000$ bp mean or $\ge 5,000$ bp barrier).
+- [x] Define `m11-gui-dto-v1` with versioned actor-visible DTO models (`GuiMapViewDto`,
+  `GuiTimelineViewDto`, `GuiPlanViewDto`, `GuiDebriefViewDto`, `GuiAccessibilityDto`),
+  `assemble_gui_presentation_bundle`, and strict invariant validation against latent opponent
+  leakage, true-state hashes, and private chain-of-thought.
+- [x] Register 3 canonical benchmark scenarios in `GuiScenarioCatalog` (`m11-gui-scenario-catalog-v1`:
+  `scenario-gui-map-flank-v1`, `scenario-gui-debrief-quadrant-v1`, `scenario-gui-timeline-siege-v1`)
+  with reproducible execution and verified expectations.
+- [x] Cover presentation need evaluation, deficit threshold rules, fail-closed validation,
+  DTO bundle construction, latent opponent leakage rejection, chain-of-thought omission,
+  catalog scenario execution, and Markdown report hygiene across 9 focused tests in `src/gui/tests.rs`.
+
+This establishes the formal presentation need evaluation framework, ADR-0003 architecture
+decision record, versioned actor-visible GUI DTO models, and benchmark scenario validation for M11.
+Browser client implementation, loopback transport server, and live browser parity tests remain open.
 
 ### Deliverables
 

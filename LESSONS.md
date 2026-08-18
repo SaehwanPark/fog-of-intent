@@ -5,6 +5,13 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Keep GUI DTO projections presentation-only, actor-visible, and invariant-validated to prevent latent state leakage
+
+- Context: M11 introduces graphical presentation contracts for spatial map topologies, timelines, plans, and causal debriefs.
+- Symptom: A graphical client receiving full world state or raw state hashes could allow client-side inspection to bypass the fog of war or turn client rendering into an accidental second simulation authority.
+- Resolution: Structure GUI models as versioned actor-visible DTOs (`m11-gui-dto-v1`), enforce invariant validation (`validate_invariants`) rejecting any unseen opposing actor revealing true coordinates or debriefs containing private chain-of-thought, and keep simulation authority exclusively host-owned as mandated by ADR-0003.
+- Prevention: In graphical clients, always project from actor-visible observations at the host edge, redact latent truth before serialization, and enforce zero client-side simulation authority.
+
 ## Register new deterministic-core modules in the repository checker's boundary list
 
 - Context: New pure simulation modules under `src/map/` (and other deterministic-core paths) must be classified in `scripts/check_repository.py`'s core boundary file list, which scans classified modules for async, wall-clock, and network-transport primitives.
