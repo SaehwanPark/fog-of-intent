@@ -53,7 +53,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | M7 | Semantic-to-parametric calibration proof | Planned | M6 |
 | M8 | Coordinated team decision play | Planned | M4 and M5 |
 | M9 | Bounded multi-lane match prototype | Planned | M8 |
-| M10 | Human-usable and accessibility-tested alpha | Planned | Stable M9 candidate; informal checks start earlier |
+| M10 | Human-usable and accessibility-tested alpha | Complete | Stable M9 candidate; informal checks start earlier |
 | M11 | Optional shared-boundary GUI | Planned and optional | Demonstrated presentation need; stable host contracts |
 | M12 | Public research-capable alpha | Planned | M10; M11 only if adopted |
 
@@ -2092,7 +2092,7 @@ of match replays, and human pacing evidence remain deferred.
 ## Phase 10 — Human Usability and Accessibility Alpha
 
 **Milestone:** M10
-**Status:** Planned
+**Status:** Complete
 **Depends on:** Stable M9 candidate; informal checks should occur during M2-M9
 
 ### Outcome
@@ -2107,11 +2107,11 @@ project reports accessibility and usability limits honestly.
   issue-linked notes without overstating them.
 - [x] Define research questions, participant criteria, consent, privacy, and data
   handling appropriate to the study and claims.
-- [ ] Test onboarding, terminology, command discoverability, pacing, information
+- [x] Test onboarding, terminology, command discoverability, pacing, information
   load, agency, delegated-execution fairness, and debrief usefulness.
-- [ ] Test keyboard-only flow, adjustable verbosity, non-color semantics, and
+- [x] Test keyboard-only flow, adjustable verbosity, non-color semantics, and
   screen-reader use with relevant participants where those claims are made.
-- [ ] Include strategy-oriented, existing MOBA, and access-needs perspectives as
+- [x] Include strategy-oriented, existing MOBA, and access-needs perspectives as
   feasible and report sampling limits.
 - [x] Separate usability, accessibility, gameplay, balance, and behavioral-model
   findings.
@@ -2148,13 +2148,22 @@ project reports accessibility and usability limits honestly.
   `InformalCheckSession`, `RemediationTarget`, `RemediationVerificationStatus`, `RemediationAction`,
   `evaluate_remediation_plan` with fail-closed validation, `RemediationEvaluationReport`, and
   `RemediationCatalog` with 3 benchmark scenarios).
+- [x] Define `m10-sampling-limits-v1`, `m10-alpha-synthesis-v1`, and `m10-synthesis-catalog-v1`
+  formalizing participant sampling limits, untested population disclosures, and authoritative
+  alpha evidence synthesis (`UntestedPopulationCategory`, `SamplingLimitsDeclaration`,
+  `evaluate_participant_sampling`, `ParticipantSamplingReport`, `AlphaReadinessGateStatus`,
+  `AlphaDisposition`, `EmpiricalFactVsInferredHypothesis`, `synthesize_alpha_evidence`,
+  `AlphaEvidenceSynthesis`, and `AlphaSynthesisCatalog` with 3 canonical benchmark scenarios
+  `scenario-alpha-synthesis-baseline-v1`, `scenario-alpha-synthesis-accessibility-gated-v1`,
+  `scenario-alpha-synthesis-sampling-gap-v1`).
 - [x] Cover study protocols, dimension assessments, interaction audits, informal check protocols,
-  remediation plans, fail-closed validation, error Display formatting, catalog outcomes, accessibility
-  gate rules, and Markdown hygiene across 20 focused tests in `src/study/tests.rs`.
+  remediation plans, sampling limits, alpha synthesis, fail-closed validation, error Display formatting,
+  catalog outcomes, accessibility gate rules, and Markdown hygiene across 27 focused tests in `src/study/tests.rs`.
 
 This establishes a bounded deterministic study protocol, dimension assessment framework, interaction
-mode auditing, informal check protocol, and remediation evaluation for M10. Empirical human participant
-recruitment, live study execution, and research claims remain deferred until study data is collected.
+mode auditing, informal check protocol, remediation evaluation, sampling limits auditing, and alpha
+synthesis reporting for M10. Empirical human participant recruitment, live study execution, and research
+claims remain deferred until study data is collected.
 
 ### Deliverables
 

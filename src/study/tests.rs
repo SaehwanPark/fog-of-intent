@@ -945,3 +945,350 @@ fn remediation_report_markdown_hygiene() {
   assert!(md.contains("## Remediation Readiness Gate"));
   assert!(md.contains("Remediation Readiness Gate: PASS"));
 }
+
+#[test]
+fn untested_population_categories_and_disclosures_round_trip() {
+  use super::sampling::{
+    M10_SAMPLING_LIMITS_SCHEMA_V1, SamplingLimitsDeclaration, UntestedPopulationCategory,
+  };
+
+  assert_eq!(M10_SAMPLING_LIMITS_SCHEMA_V1, "m10-sampling-limits-v1");
+  assert_eq!(UntestedPopulationCategory::ALL.len(), 5);
+
+  for cat in UntestedPopulationCategory::ALL {
+    let name = cat.as_str();
+    assert_eq!(format!("{cat}"), name);
+  }
+
+  let decl = SamplingLimitsDeclaration::standard_alpha();
+  assert_eq!(decl.declaration_id, "m10-alpha-sampling-limits-v1");
+  assert_eq!(decl.untested_disclosures.len(), 5);
+}
+
+#[test]
+fn sampling_limits_evaluation_and_validation() {
+  use super::protocol::ParticipantCohort;
+  use super::sampling::{
+    SamplingEvaluationError, SamplingLimitsDeclaration, UntestedPopulationCategory,
+    UntestedPopulationDisclosure, evaluate_participant_sampling,
+  };
+  use super::session::{AccessNeedsDeclaration, CompletionStatus, ParticipantSessionRecord};
+
+  let decl = SamplingLimitsDeclaration::standard_alpha();
+
+  // Valid 4-participant sample
+  let sessions = [
+    ParticipantSessionRecord {
+      participant_id: "p1",
+      cohort: ParticipantCohort::StrategyGamer,
+      access_needs: AccessNeedsDeclaration::none(),
+      completion_status: CompletionStatus::Completed,
+      explanation_quality_bp: 9_000,
+      debrief_comprehension_bp: 9_000,
+      turns_completed: 10,
+    },
+    ParticipantSessionRecord {
+      participant_id: "p2",
+      cohort: ParticipantCohort::MobaPlayer,
+      access_needs: AccessNeedsDeclaration::none(),
+      completion_status: CompletionStatus::Completed,
+      explanation_quality_bp: 8_500,
+      debrief_comprehension_bp: 8_500,
+      turns_completed: 10,
+    },
+    ParticipantSessionRecord {
+      participant_id: "p3",
+      cohort: ParticipantCohort::AccessNeeds,
+      access_needs: AccessNeedsDeclaration {
+        screen_reader_user: true,
+        color_vision_deficiency: false,
+        keyboard_only_user: true,
+        reduced_motion_required: false,
+      },
+      completion_status: CompletionStatus::Completed,
+      explanation_quality_bp: 8_000,
+      debrief_comprehension_bp: 8_000,
+      turns_completed: 10,
+    },
+    ParticipantSessionRecord {
+      participant_id: "p4",
+      cohort: ParticipantCohort::NoviceStrategy,
+      access_needs: AccessNeedsDeclaration::none(),
+      completion_status: CompletionStatus::Completed,
+      explanation_quality_bp: 7_500,
+      debrief_comprehension_bp: 7_500,
+      turns_completed: 10,
+    },
+  ];
+
+  let report = evaluate_participant_sampling(&decl, &sessions).unwrap();
+  assert_eq!(report.sample_size, 4);
+  assert!(report.all_cohorts_meet_floor);
+  assert!(report.has_access_needs_representation);
+  assert!(report.sampling_gate_passed);
+  assert_eq!(report.access_needs_breakdown.screen_reader_users, 1);
+  assert_eq!(report.access_needs_breakdown.total_with_access_needs, 1);
+  assert_eq!(report.access_needs_breakdown.access_needs_share_bp, 2_500);
+
+  // Empty sessions error
+  let err = evaluate_participant_sampling(&decl, &[]).unwrap_err();
+  assert_eq!(err, SamplingEvaluationError::EmptySessionList);
+
+  // Empty methodology error
+  let empty_method_decl = SamplingLimitsDeclaration {
+    declaration_id: "d1",
+    methodology: "   ",
+    target_sample_size: 4,
+    min_cohort_floor_bp: 1_500,
+    untested_disclosures: decl.untested_disclosures,
+  };
+  let err = evaluate_participant_sampling(&empty_method_decl, &sessions).unwrap_err();
+  assert_eq!(err, SamplingEvaluationError::EmptyMethodology);
+
+  // Empty disclosures error
+  let empty_disc_decl = SamplingLimitsDeclaration {
+    declaration_id: "d1",
+    methodology: "Valid methodology",
+    target_sample_size: 4,
+    min_cohort_floor_bp: 1_500,
+    untested_disclosures: &[],
+  };
+  let err = evaluate_participant_sampling(&empty_disc_decl, &sessions).unwrap_err();
+  assert_eq!(err, SamplingEvaluationError::EmptyUntestedDisclosures);
+
+  // Duplicate category error
+  static DUP_DISC: [UntestedPopulationDisclosure; 2] = [
+    UntestedPopulationDisclosure {
+      category: UntestedPopulationCategory::NonEnglishLocale,
+      rationale: "English only",
+      future_mitigation_plan: "Localization",
+    },
+    UntestedPopulationDisclosure {
+      category: UntestedPopulationCategory::NonEnglishLocale,
+      rationale: "Duplicate",
+      future_mitigation_plan: "None",
+    },
+  ];
+  let dup_decl = SamplingLimitsDeclaration {
+    declaration_id: "d1",
+    methodology: "Valid methodology",
+    target_sample_size: 4,
+    min_cohort_floor_bp: 1_500,
+    untested_disclosures: &DUP_DISC,
+  };
+  let err = evaluate_participant_sampling(&dup_decl, &sessions).unwrap_err();
+  assert_eq!(
+    err,
+    SamplingEvaluationError::DuplicateUntestedCategory(
+      UntestedPopulationCategory::NonEnglishLocale
+    )
+  );
+
+  // Empty disclosure text error
+  static EMPTY_TEXT_DISC: [UntestedPopulationDisclosure; 1] = [UntestedPopulationDisclosure {
+    category: UntestedPopulationCategory::MobileTouchInterface,
+    rationale: "   ",
+    future_mitigation_plan: "Web UI",
+  }];
+  let empty_text_decl = SamplingLimitsDeclaration {
+    declaration_id: "d1",
+    methodology: "Valid methodology",
+    target_sample_size: 4,
+    min_cohort_floor_bp: 1_500,
+    untested_disclosures: &EMPTY_TEXT_DISC,
+  };
+  let err = evaluate_participant_sampling(&empty_text_decl, &sessions).unwrap_err();
+  assert_eq!(
+    err,
+    SamplingEvaluationError::EmptyDisclosureText(UntestedPopulationCategory::MobileTouchInterface)
+  );
+}
+
+#[test]
+fn sampling_error_display_coverage() {
+  use super::sampling::{SamplingEvaluationError, UntestedPopulationCategory};
+
+  let errors = [
+    SamplingEvaluationError::EmptySessionList,
+    SamplingEvaluationError::EmptyMethodology,
+    SamplingEvaluationError::EmptyUntestedDisclosures,
+    SamplingEvaluationError::DuplicateUntestedCategory(
+      UntestedPopulationCategory::NonEnglishLocale,
+    ),
+    SamplingEvaluationError::EmptyDisclosureText(UntestedPopulationCategory::MobileTouchInterface),
+  ];
+
+  for err in errors {
+    let msg = format!("{err}");
+    assert!(!msg.is_empty());
+  }
+}
+
+#[test]
+fn synthesis_readiness_gates_and_disposition_logic() {
+  use super::catalog::StudyProtocolCatalog;
+  use super::dimension_catalog::DimensionAssessmentCatalog;
+  use super::interaction::{
+    ContrastMode, InteractionProfile, VerbosityLevel, audit_interaction_transcript,
+  };
+  use super::remediation_catalog::RemediationCatalog;
+  use super::sampling::{SamplingLimitsDeclaration, evaluate_participant_sampling};
+  use super::synthesis::{
+    AlphaDisposition, M10_ALPHA_SYNTHESIS_SCHEMA_V1, SynthesisEvaluationError,
+    synthesize_alpha_evidence,
+  };
+
+  assert_eq!(M10_ALPHA_SYNTHESIS_SCHEMA_V1, "m10-alpha-synthesis-v1");
+  assert_eq!(AlphaDisposition::ALL.len(), 3);
+  for disp in AlphaDisposition::ALL {
+    assert_eq!(format!("{disp}"), disp.as_str());
+  }
+
+  let study_res =
+    StudyProtocolCatalog::execute_scenario("scenario-study-cohort-balanced-alpha-v1").unwrap();
+  let dim_res =
+    DimensionAssessmentCatalog::execute_scenario("scenario-dimension-alpha-benchmark-v1").unwrap();
+  let rem_res =
+    RemediationCatalog::execute_scenario("scenario-remediation-alpha-baseline-v1").unwrap();
+
+  let profile = InteractionProfile {
+    profile_id: "test-profile-v1",
+    verbosity: VerbosityLevel::Standard,
+    contrast_mode: ContrastMode::NoColor,
+    keyboard_only: true,
+    screen_reader_friendly: true,
+  };
+  let transcript_lines = ["[OK] turn: 1 | status: open", "[OK] action: Stabilize"];
+  let interaction_report = audit_interaction_transcript(&profile, &transcript_lines);
+
+  let (sessions, _) = StudyProtocolCatalog::balanced_alpha_data();
+  let sampling_decl = SamplingLimitsDeclaration::standard_alpha();
+  let sampling_report = evaluate_participant_sampling(&sampling_decl, &sessions).unwrap();
+
+  static HYPOTHESES: [&str; 2] = ["Hypothesis 1", "Hypothesis 2"];
+
+  let synthesis = synthesize_alpha_evidence(
+    "synth-01",
+    study_res.report.clone(),
+    dim_res.report.clone(),
+    interaction_report.clone(),
+    rem_res.report.clone(),
+    sampling_report.clone(),
+    &HYPOTHESES,
+  )
+  .unwrap();
+
+  assert_eq!(synthesis.disposition, AlphaDisposition::AlphaReady);
+  assert!(synthesis.gates.all_gates_passed());
+
+  // Empty synthesis ID error
+  let err = synthesize_alpha_evidence(
+    "",
+    study_res.report.clone(),
+    dim_res.report.clone(),
+    interaction_report.clone(),
+    rem_res.report.clone(),
+    sampling_report.clone(),
+    &HYPOTHESES,
+  )
+  .unwrap_err();
+  assert_eq!(err, SynthesisEvaluationError::EmptySynthesisId);
+
+  // Sample size mismatch error
+  let mut mismatched_sampling_report = sampling_report.clone();
+  mismatched_sampling_report.sample_size = 99;
+  let err = synthesize_alpha_evidence(
+    "synth-01",
+    study_res.report.clone(),
+    dim_res.report.clone(),
+    interaction_report.clone(),
+    rem_res.report.clone(),
+    mismatched_sampling_report,
+    &HYPOTHESES,
+  )
+  .unwrap_err();
+  assert_eq!(
+    err,
+    SynthesisEvaluationError::SampleSizeMismatch {
+      study_sample_size: 8,
+      sampling_sample_size: 99,
+    }
+  );
+
+  // Empty hypotheses error
+  let err = synthesize_alpha_evidence(
+    "synth-01",
+    study_res.report,
+    dim_res.report,
+    interaction_report,
+    rem_res.report,
+    sampling_report,
+    &[],
+  )
+  .unwrap_err();
+  assert_eq!(err, SynthesisEvaluationError::EmptyInferredHypotheses);
+}
+
+#[test]
+fn synthesis_error_display_coverage() {
+  use super::synthesis::SynthesisEvaluationError;
+
+  let errors = [
+    SynthesisEvaluationError::EmptySynthesisId,
+    SynthesisEvaluationError::SampleSizeMismatch {
+      study_sample_size: 10,
+      sampling_sample_size: 12,
+    },
+    SynthesisEvaluationError::EmptyInferredHypotheses,
+  ];
+
+  for err in errors {
+    let msg = format!("{err}");
+    assert!(!msg.is_empty());
+  }
+}
+
+#[test]
+fn synthesis_catalog_scenarios_execute_and_verify_all_expectations() {
+  use super::synthesis_catalog::{AlphaSynthesisCatalog, M10_SYNTHESIS_CATALOG_SCHEMA_V1};
+
+  assert_eq!(M10_SYNTHESIS_CATALOG_SCHEMA_V1, "m10-synthesis-catalog-v1");
+  assert_eq!(AlphaSynthesisCatalog::ALL.len(), 3);
+
+  for def in AlphaSynthesisCatalog::ALL {
+    let lookup = AlphaSynthesisCatalog::find_by_id(def.scenario_id);
+    assert_eq!(lookup, Some(def));
+
+    let result = AlphaSynthesisCatalog::execute_scenario(def.scenario_id).unwrap();
+    assert_eq!(result.scenario_id, def.scenario_id);
+    assert!(
+      result.all_expectations_met,
+      "Scenario {} failed expectations: {:?}",
+      def.scenario_id, result
+    );
+  }
+
+  assert!(AlphaSynthesisCatalog::find_by_id("non-existent").is_none());
+}
+
+#[test]
+fn sampling_and_synthesis_markdown_hygiene() {
+  use super::synthesis_catalog::{AlphaSynthesisCatalog, SCENARIO_ALPHA_SYNTHESIS_BASELINE};
+
+  let result =
+    AlphaSynthesisCatalog::execute_scenario(SCENARIO_ALPHA_SYNTHESIS_BASELINE.scenario_id).unwrap();
+
+  let sampling_md = result.synthesis.sampling_report.render_markdown();
+  assert!(sampling_md.contains("# M10 Participant Sampling & Limitations Report"));
+  assert!(sampling_md.contains("## Cohort Representation Breakdown"));
+  assert!(sampling_md.contains("## Access Needs Distribution"));
+  assert!(sampling_md.contains("## Untested Populations & Alpha Claim Boundaries"));
+
+  let synth_md = result.synthesis.render_markdown();
+  assert!(synth_md.contains("# M10 Human Usability & Accessibility Alpha Evidence Synthesis"));
+  assert!(synth_md.contains("## Readiness Gates Evaluation"));
+  assert!(synth_md.contains("## Empirical Facts vs Inferred Design Hypotheses"));
+  assert!(synth_md.contains("### Observed Empirical Facts"));
+  assert!(synth_md.contains("### Inferred Design Hypotheses"));
+  assert!(synth_md.contains("## Untested Populations Disclosure"));
+}

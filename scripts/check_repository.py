@@ -149,7 +149,10 @@ CORE_RUST_FILES = (
   "src/study/protocol.rs",
   "src/study/remediation.rs",
   "src/study/remediation_catalog.rs",
+  "src/study/sampling.rs",
   "src/study/session.rs",
+  "src/study/synthesis.rs",
+  "src/study/synthesis_catalog.rs",
 )
 CORE_EDGE_RUST_FILES = frozenset(
   {

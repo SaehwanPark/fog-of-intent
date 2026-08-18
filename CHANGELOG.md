@@ -6,6 +6,38 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.207] - 2026-08-18
+
+### Added
+
+- `m10-sampling-limits-v1`, `m10-alpha-synthesis-v1`, and `m10-synthesis-catalog-v1`
+  formalizing participant sampling limits, untested population disclosures, and
+  authoritative alpha evidence synthesis for M10:
+  - `UntestedPopulationCategory` — 5 discrete untested population classifications
+    (`MotorImpairmentSwitchAccess`, `RefreshableBrailleDisplay`, `NonEnglishLocale`,
+    `SevereCognitiveImpairment`, `MobileTouchInterface`) with explicit rationale and
+    future mitigation disclosures (`UntestedPopulationDisclosure`).
+  - `SamplingLimitsDeclaration`, `AccessNeedsBreakdown`, `CohortRepresentation`, and
+    `evaluate_participant_sampling` — pure deterministic evaluation auditing cohort
+    diversity shares ($[0..=10,000]$ bp against the 1,500 bp floor) and access needs
+    distribution with fail-closed validation (`EmptySessionList`, `EmptyMethodology`,
+    `EmptyUntestedDisclosures`, `DuplicateUntestedCategory`, `EmptyDisclosureText`)
+    producing `ParticipantSamplingReport`.
+  - `AlphaReadinessGateStatus` and `AlphaDisposition` — 5 explicit alpha readiness
+    gates (`study_completion_floor_met`, `comprehension_floor_met`, `accessibility_floor_met`,
+    `remediation_readiness_met`, `sampling_diversity_met`) and 3 discrete milestone
+    dispositions (`AlphaReady`, `ConditionallyReadyWithLimitations`, `BlockedByReadinessGates`).
+  - `EmpiricalFactVsInferredHypothesis` and `synthesize_alpha_evidence` — pure deterministic
+    evidence synthesis distinguishing observed empirical facts from inferred design hypotheses,
+    evaluating readiness gates, and formatting structured Markdown reports without private
+    chain-of-thought (`AlphaEvidenceSynthesis`).
+  - `AlphaSynthesisCatalog` — 3 canonical benchmark scenarios (`scenario-alpha-synthesis-baseline-v1`,
+    `scenario-alpha-synthesis-accessibility-gated-v1`, `scenario-alpha-synthesis-sampling-gap-v1`)
+    with reproducible execution and verified expectations.
+  - 7 focused tests: untested population category round trips, sampling limit validation,
+    fail-closed error handling, error Display coverage, synthesis gate and disposition logic,
+    catalog scenario execution, and Markdown hygiene.
+
 ## [0.1.206] - 2026-08-18
 
 ### Added

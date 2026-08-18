@@ -593,6 +593,15 @@ for M10:
 - `remediation_catalog.rs` (`m10-remediation-catalog-v1`): registers 3 canonical benchmark scenarios
   (`scenario-remediation-alpha-baseline-v1`, `scenario-remediation-accessibility-priority-v1`,
   `scenario-remediation-mixed-progress-v1`) with reproducible execution and verified expectations.
+- `sampling.rs` (`m10-sampling-limits-v1`): defines `UntestedPopulationCategory`, `UntestedPopulationDisclosure`,
+  `SamplingLimitsDeclaration`, `AccessNeedsBreakdown`, `CohortRepresentation`, `evaluate_participant_sampling`,
+  and `ParticipantSamplingReport` auditing cohort diversity shares and access needs representation.
+- `synthesis.rs` (`m10-alpha-synthesis-v1`): defines `AlphaReadinessGateStatus`, `AlphaDisposition`,
+  `EmpiricalFactVsInferredHypothesis`, `synthesize_alpha_evidence`, and `AlphaEvidenceSynthesis` synthesizing
+  cohort metrics, dimension assessments, interaction audits, remediation plans, and sampling limits.
+- `synthesis_catalog.rs` (`m10-synthesis-catalog-v1`): registers 3 canonical benchmark scenarios
+  (`scenario-alpha-synthesis-baseline-v1`, `scenario-alpha-synthesis-accessibility-gated-v1`,
+  `scenario-alpha-synthesis-sampling-gap-v1`) with reproducible execution and verified expectations.
 
 ## Target Components
 
