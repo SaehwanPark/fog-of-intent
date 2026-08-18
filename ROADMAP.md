@@ -2209,9 +2209,9 @@ persistence remain host-owned.
   missing-data behavior in accessibility DTO contracts.
 - [x] Keep browser state reversible and presentation-only.
 - [x] Add host-contract, CLI/MCP/GUI parity, default-browser, and recovery tests.
-- [ ] Define asset provenance, license, attribution, hash, and fallback rules.
+- [x] Define asset provenance, license, attribution, hash, and fallback rules.
 
-### Current M11 presentation-need assessment, GUI DTOs, client state, and parity evidence
+### Current M11 presentation-need assessment, GUI DTOs, client state, parity, and asset governance evidence
 
 - [x] Record ADR-0003 (`docs/adr/0003-shared-boundary-gui.md`) establishing the
   Shared-Boundary GUI Architecture, presentation-only client contracts, loopback transport,
@@ -2236,15 +2236,26 @@ persistence remain host-owned.
 - [x] Register 3 benchmark client interaction scenarios in `GuiStateScenarioCatalog` (`m11-gui-state-catalog-v1`:
   `scenario-gui-state-map-inspection-v1`, `scenario-gui-state-debrief-quadrant-filter-v1`,
   `scenario-gui-state-reversible-recovery-v1`) with verified expectations.
+- [x] Define `m11-gui-asset-governance-v1` in `src/gui/asset.rs` covering asset classifications (`AssetKind`),
+  permissive open-source licensing (`AssetLicense`: MIT, CC0-1.0, Apache-2.0, Custom-Permissive, Public-Domain),
+  non-visual and low-overhead fallback rendering rules (`AssetFallbackKind`: ProceduralVector, TextualGlyph,
+  NonColorSymbolicTag, SilentVisualCue), content hash verification, and pure deterministic auditing
+  (`audit_asset_governance`) with fail-closed error handling (`EmptyManifest`, `DuplicateAssetId`,
+  `EmptyAuthor`, `EmptySourceUri`, `EmptyContentHash`, `InvalidContentHash`, `EmptyFallbackSymbol`).
+- [x] Register 3 canonical benchmark asset governance manifests in `AssetGovernanceCatalog`
+  (`m11-gui-asset-catalog-v1`: `scenario-gui-asset-core-v1`, `scenario-gui-asset-minimal-vector-v1`,
+  `scenario-gui-asset-fallback-audit-v1`) with reproducible execution and verified expectations.
 - [x] Cover presentation need evaluation, deficit threshold rules, fail-closed validation,
   DTO bundle construction, latent opponent leakage rejection, chain-of-thought omission,
   catalog scenario execution, active tab/view mode round trips, client state transitions, reversibility,
-  zoom bounds, parity verification, and Markdown report hygiene across 18 focused tests in `src/gui/tests.rs`.
+  zoom bounds, parity verification, asset kind/license/fallback round trips, asset governance audit rules,
+  and Markdown report hygiene across 24 focused tests in `src/gui/tests.rs`.
 
 This establishes the formal presentation need evaluation framework, ADR-0003 architecture
 decision record, versioned actor-visible GUI DTO models, reversible client state machine,
-triple CLI/MCP/GUI projection parity verification, and benchmark scenario validation for M11.
+triple CLI/MCP/GUI projection parity verification, and asset governance / fallback rules for M11.
 Browser client HTML/CSS/JS frontend implementation, loopback transport server, and live browser tests remain open.
+
 
 ### Deliverables
 

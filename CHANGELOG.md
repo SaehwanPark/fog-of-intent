@@ -6,7 +6,36 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.210] - 2026-08-18
+
+### Added
+
+- `m11-gui-asset-governance-v1` (`src/gui/asset.rs`) defining asset provenance, license compliance,
+  content hashing, and fallback rules for the Shared-Boundary GUI:
+  - `AssetKind` (`map-texture`, `actor-sprite`, `structure-icon`, `objective-icon`, `ui-icon`, `audio-cue`)
+    with string parsing and Display implementations.
+  - `AssetLicense` (`MIT`, `CC0-1.0`, `Apache-2.0`, `Custom-Permissive`, `Public-Domain`) with
+    permissive license verification (`is_permissive`).
+  - `AssetFallbackKind` (`procedural-vector`, `textual-glyph`, `non-color-symbolic-tag`, `silent-visual-cue`)
+    enforcing universal access and zero-overhead fallback rendering when graphical/audio assets are unavailable.
+  - `AssetRecord` and `AssetGovernanceManifest` modeling immutable asset metadata and manifest bundles.
+  - `audit_asset_governance` pure deterministic audit function with fail-closed validation (`EmptyManifest`,
+    `EmptyIdentifier`, `DuplicateAssetId`, `EmptyAuthor`, `EmptySourceUri`, `EmptyContentHash`,
+    `InvalidContentHash`, `EmptyFallbackSymbol`) producing `AssetGovernanceAuditReport` with category breakdowns
+    and readiness gate checks (100% fallback coverage, permissive license compliance, content hash verification).
+  - `render_asset_governance_markdown` producing structured Markdown reports without ANSI styling.
+- `m11-gui-asset-catalog-v1` (`src/gui/asset_catalog.rs`) registering 3 canonical benchmark asset manifests:
+  - `scenario-gui-asset-core-v1`: Complete core GUI asset bundle (10 assets: map, 5 roles, structure, objective,
+    UI, audio cue) with 100% fallback coverage and permissive open-source licenses.
+  - `scenario-gui-asset-minimal-vector-v1`: Minimalist procedural vector asset bundle for low-overhead or
+    headless rendering environments.
+  - `scenario-gui-asset-fallback-audit-v1`: Accessibility and fallback audit manifest verifying non-color
+    symbolic tags and silent visual cues for audio assets.
+- 6 new unit tests in `src/gui/tests.rs` (24 total GUI tests) covering asset kind/license/fallback round trips,
+  fail-closed validation, error Display coverage, gate checks, asset catalog execution, and Markdown hygiene.
+
 ## [0.1.209] - 2026-08-18
+
 
 ### Added
 
