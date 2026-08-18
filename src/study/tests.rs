@@ -663,3 +663,285 @@ fn dimension_report_and_interaction_audit_markdown_hygiene() {
   assert!(audit_md.contains("## Evaluated Checks"));
   assert!(audit_md.contains("check-no-color-purity"));
 }
+
+#[test]
+fn informal_check_phases_modes_and_dispositions_round_trip() {
+  use super::informal_check::{InformalCheckMode, InformalCheckPhase, NoteDisposition};
+
+  assert_eq!(InformalCheckPhase::ALL.len(), 4);
+  for phase in InformalCheckPhase::ALL {
+    assert_eq!(format!("{phase}"), phase.as_str());
+  }
+
+  assert_eq!(InformalCheckMode::ALL.len(), 3);
+  for mode in InformalCheckMode::ALL {
+    assert_eq!(format!("{mode}"), mode.as_str());
+  }
+
+  assert_eq!(NoteDisposition::ALL.len(), 4);
+  for disp in NoteDisposition::ALL {
+    assert_eq!(format!("{disp}"), disp.as_str());
+    match disp {
+      NoteDisposition::AddressedInCode | NoteDisposition::ClarifiedInDoc => {
+        assert!(disp.is_addressed());
+      }
+      NoteDisposition::LoggedForStudy | NoteDisposition::WontFixWithRationale => {
+        assert!(!disp.is_addressed());
+      }
+    }
+  }
+}
+
+#[test]
+fn remediation_targets_and_verification_statuses_round_trip() {
+  use super::remediation::{RemediationTarget, RemediationVerificationStatus};
+
+  assert_eq!(RemediationTarget::ALL.len(), 5);
+  for target in RemediationTarget::ALL {
+    assert_eq!(format!("{target}"), target.as_str());
+  }
+
+  assert_eq!(RemediationVerificationStatus::ALL.len(), 4);
+  for status in RemediationVerificationStatus::ALL {
+    assert_eq!(format!("{status}"), status.as_str());
+    match status {
+      RemediationVerificationStatus::VerifiedInRegression
+      | RemediationVerificationStatus::ValidatedInStudyCohort => {
+        assert!(status.is_verified());
+      }
+      RemediationVerificationStatus::PendingImplementation
+      | RemediationVerificationStatus::RejectedAlternative => {
+        assert!(!status.is_verified());
+      }
+    }
+  }
+}
+
+#[test]
+fn remediation_evaluation_validation_and_errors() {
+  use super::informal_check::{
+    InformalCheckMode, InformalCheckPhase, InformalCheckSession, IssueLinkedNote, NoteDisposition,
+  };
+  use super::remediation::{
+    RemediationAction, RemediationEvaluationError, RemediationTarget,
+    RemediationVerificationStatus, evaluate_remediation_plan,
+  };
+
+  let valid_session = InformalCheckSession {
+    session_id: "s1",
+    tester_id: "t1",
+    check_mode: InformalCheckMode::InteractiveTty,
+    notes: &[IssueLinkedNote {
+      note_id: "n1",
+      issue_ref: "I-1",
+      phase: InformalCheckPhase::InitialOnboarding,
+      dimension: EvaluationDimension::Onboarding,
+      observation: "Clear instructions",
+      disposition: NoteDisposition::AddressedInCode,
+    }],
+  };
+
+  let valid_action = RemediationAction {
+    action_id: "a1",
+    note_ref: "n1",
+    target: RemediationTarget::DocumentationOnboarding,
+    dimension: EvaluationDimension::Onboarding,
+    description: "Update docs",
+    verification: RemediationVerificationStatus::VerifiedInRegression,
+    expected_impact_bp: 2_000,
+  };
+
+  // Empty sessions
+  let err = evaluate_remediation_plan(&[], &[valid_action]).unwrap_err();
+  assert_eq!(err, RemediationEvaluationError::EmptySessionList);
+
+  // Empty actions
+  let err = evaluate_remediation_plan(&[valid_session], &[]).unwrap_err();
+  assert_eq!(err, RemediationEvaluationError::EmptyRemediationList);
+
+  // Empty session notes
+  let empty_notes_sess = InformalCheckSession {
+    session_id: "s_empty",
+    tester_id: "t1",
+    check_mode: InformalCheckMode::InteractiveTty,
+    notes: &[],
+  };
+  let err = evaluate_remediation_plan(&[empty_notes_sess], &[valid_action]).unwrap_err();
+  assert_eq!(
+    err,
+    RemediationEvaluationError::EmptySessionNotes {
+      session_id: "s_empty"
+    }
+  );
+
+  // Duplicate session ID
+  let err =
+    evaluate_remediation_plan(&[valid_session, valid_session], &[valid_action]).unwrap_err();
+  assert_eq!(err, RemediationEvaluationError::DuplicateSessionId("s1"));
+
+  // Duplicate note ID
+  let dup_note_sess = InformalCheckSession {
+    session_id: "s2",
+    tester_id: "t2",
+    check_mode: InformalCheckMode::PipedStream,
+    notes: &[IssueLinkedNote {
+      note_id: "n1",
+      issue_ref: "I-2",
+      phase: InformalCheckPhase::TurnDecisionMaking,
+      dimension: EvaluationDimension::PacingLoad,
+      observation: "Fast pacing",
+      disposition: NoteDisposition::LoggedForStudy,
+    }],
+  };
+  let err =
+    evaluate_remediation_plan(&[valid_session, dup_note_sess], &[valid_action]).unwrap_err();
+  assert_eq!(err, RemediationEvaluationError::DuplicateNoteId("n1"));
+
+  // Duplicate action ID
+  let err = evaluate_remediation_plan(&[valid_session], &[valid_action, valid_action]).unwrap_err();
+  assert_eq!(err, RemediationEvaluationError::DuplicateActionId("a1"));
+
+  // Unlinked note reference
+  let unlinked_action = RemediationAction {
+    action_id: "a2",
+    note_ref: "n_unknown",
+    target: RemediationTarget::PresentationOutput,
+    dimension: EvaluationDimension::NonColorSemantics,
+    description: "Add tags",
+    verification: RemediationVerificationStatus::VerifiedInRegression,
+    expected_impact_bp: 1_000,
+  };
+  let err = evaluate_remediation_plan(&[valid_session], &[unlinked_action]).unwrap_err();
+  assert_eq!(
+    err,
+    RemediationEvaluationError::UnlinkedNoteReference {
+      action_id: "a2",
+      note_ref: "n_unknown",
+    }
+  );
+
+  // Invalid impact score (> 10,000 bp)
+  let invalid_impact = RemediationAction {
+    action_id: "a3",
+    note_ref: "n1",
+    target: RemediationTarget::DebriefExplanation,
+    dimension: EvaluationDimension::DebriefCausalUtility,
+    description: "Format table",
+    verification: RemediationVerificationStatus::VerifiedInRegression,
+    expected_impact_bp: 12_000,
+  };
+  let err = evaluate_remediation_plan(&[valid_session], &[invalid_impact]).unwrap_err();
+  assert_eq!(
+    err,
+    RemediationEvaluationError::InvalidBasisPointImpact {
+      action_id: "a3",
+      impact_bp: 12_000,
+    }
+  );
+
+  // Empty description
+  let empty_desc = RemediationAction {
+    action_id: "a4",
+    note_ref: "n1",
+    target: RemediationTarget::CommandVocabulary,
+    dimension: EvaluationDimension::CommandDiscoverability,
+    description: "",
+    verification: RemediationVerificationStatus::VerifiedInRegression,
+    expected_impact_bp: 500,
+  };
+  let err = evaluate_remediation_plan(&[valid_session], &[empty_desc]).unwrap_err();
+  assert_eq!(
+    err,
+    RemediationEvaluationError::EmptyDescription { action_id: "a4" }
+  );
+
+  // Empty observation
+  let empty_obs_sess = InformalCheckSession {
+    session_id: "s_empty_obs",
+    tester_id: "t3",
+    check_mode: InformalCheckMode::InteractiveTty,
+    notes: &[IssueLinkedNote {
+      note_id: "n_empty_obs",
+      issue_ref: "I-3",
+      phase: InformalCheckPhase::DebriefAnalysis,
+      dimension: EvaluationDimension::DebriefCausalUtility,
+      observation: "",
+      disposition: NoteDisposition::ClarifiedInDoc,
+    }],
+  };
+  let err = evaluate_remediation_plan(&[empty_obs_sess], &[valid_action]).unwrap_err();
+  assert_eq!(
+    err,
+    RemediationEvaluationError::EmptyObservation {
+      note_id: "n_empty_obs"
+    }
+  );
+}
+
+#[test]
+fn remediation_error_display_coverage() {
+  use super::remediation::RemediationEvaluationError;
+
+  let errors = [
+    RemediationEvaluationError::EmptySessionList,
+    RemediationEvaluationError::EmptyRemediationList,
+    RemediationEvaluationError::EmptySessionNotes { session_id: "s1" },
+    RemediationEvaluationError::DuplicateSessionId("s1"),
+    RemediationEvaluationError::DuplicateNoteId("n1"),
+    RemediationEvaluationError::DuplicateActionId("a1"),
+    RemediationEvaluationError::UnlinkedNoteReference {
+      action_id: "a1",
+      note_ref: "n_missing",
+    },
+    RemediationEvaluationError::InvalidBasisPointImpact {
+      action_id: "a1",
+      impact_bp: 15_000,
+    },
+    RemediationEvaluationError::EmptyDescription { action_id: "a1" },
+    RemediationEvaluationError::EmptyObservation { note_id: "n1" },
+  ];
+
+  for err in errors {
+    let msg = format!("{err}");
+    assert!(!msg.is_empty());
+  }
+}
+
+#[test]
+fn remediation_catalog_scenarios_execute_and_verify_all_expectations() {
+  use super::remediation_catalog::RemediationCatalog;
+
+  assert_eq!(RemediationCatalog::ALL.len(), 3);
+
+  for def in RemediationCatalog::ALL {
+    let lookup = RemediationCatalog::find_scenario(def.scenario_id);
+    assert_eq!(lookup, Some(&def));
+
+    let result = RemediationCatalog::execute_scenario(def.scenario_id).unwrap();
+    assert_eq!(result.scenario_id, def.scenario_id);
+    assert!(
+      result.expectations_met,
+      "Scenario {} failed expectations: {:?}",
+      def.scenario_id, result
+    );
+  }
+
+  assert!(RemediationCatalog::find_scenario("non-existent").is_none());
+}
+
+#[test]
+fn remediation_report_markdown_hygiene() {
+  use super::remediation_catalog::RemediationCatalog;
+
+  let result =
+    RemediationCatalog::execute_scenario(RemediationCatalog::SCENARIO_ALPHA_BASELINE_V1).unwrap();
+  let md = result.report.to_markdown();
+
+  assert!(md.contains("# Informal Check & Remediation Evaluation Report"));
+  assert!(md.contains("**Schema:** `m10-remediation-evaluation-v1`"));
+  assert!(md.contains("## Notes by Disposition"));
+  assert!(md.contains("## Actions by Target"));
+  assert!(md.contains("## Actions by Verification Status"));
+  assert!(md.contains("## Remediation Readiness Gate"));
+  assert!(md.contains("Remediation Readiness Gate: PASS"));
+}

@@ -2103,7 +2103,7 @@ project reports accessibility and usability limits honestly.
 
 ### Scope
 
-- [ ] Conduct small informal checks of the core loop before this phase and retain
+- [x] Conduct small informal checks of the core loop before this phase and retain
   issue-linked notes without overstating them.
 - [x] Define research questions, participant criteria, consent, privacy, and data
   handling appropriate to the study and claims.
@@ -2142,12 +2142,19 @@ project reports accessibility and usability limits honestly.
   `VerbosityLevel`, `ContrastMode`, `InteractionProfile`, `audit_interaction_transcript` with ANSI purity, line length,
   verbosity, non-color semantics, keyboard navigation, and screen reader flow checks, and `DimensionAssessmentCatalog`
   with 3 benchmark scenarios).
-- [x] Cover study protocols, dimension assessments, interaction audits, fail-closed validation, error Display
-  formatting, catalog outcomes, accessibility gate rules, and Markdown hygiene across 14 focused tests in `src/study/tests.rs`.
+- [x] Define `m10-informal-check-v1`, `m10-remediation-plan-v1`, and `m10-remediation-catalog-v1`
+  formalizing informal check protocols, issue-linked note tracking, and deterministic remediation
+  evaluation (`InformalCheckPhase`, `InformalCheckMode`, `NoteDisposition`, `IssueLinkedNote`,
+  `InformalCheckSession`, `RemediationTarget`, `RemediationVerificationStatus`, `RemediationAction`,
+  `evaluate_remediation_plan` with fail-closed validation, `RemediationEvaluationReport`, and
+  `RemediationCatalog` with 3 benchmark scenarios).
+- [x] Cover study protocols, dimension assessments, interaction audits, informal check protocols,
+  remediation plans, fail-closed validation, error Display formatting, catalog outcomes, accessibility
+  gate rules, and Markdown hygiene across 20 focused tests in `src/study/tests.rs`.
 
-This establishes a bounded deterministic study protocol, dimension assessment framework, and interaction
-mode auditing for M10. Empirical human participant recruitment, live study execution, and research claims
-remain deferred until study data is collected.
+This establishes a bounded deterministic study protocol, dimension assessment framework, interaction
+mode auditing, informal check protocol, and remediation evaluation for M10. Empirical human participant
+recruitment, live study execution, and research claims remain deferred until study data is collected.
 
 ### Deliverables
 

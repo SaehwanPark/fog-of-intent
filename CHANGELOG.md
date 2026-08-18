@@ -6,6 +6,39 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.206] - 2026-08-18
+
+### Added
+
+- `m10-informal-check-v1`, `m10-remediation-plan-v1`, and `m10-remediation-catalog-v1`
+  formalizing informal check protocols, issue-linked note tracking, and deterministic
+  remediation plan evaluation for M10:
+  - `InformalCheckPhase` — 4 discrete core interaction touchpoints (`InitialOnboarding`,
+    `TurnDecisionMaking`, `ContingencyPlanning`, `DebriefAnalysis`).
+  - `InformalCheckMode` — 3 interaction modes (`InteractiveTty`, `PipedStream`,
+    `AssistedScreenReader`).
+  - `NoteDisposition` — 4 tracked dispositions (`AddressedInCode`, `LoggedForStudy`,
+    `ClarifiedInDoc`, `WontFixWithRationale`).
+  - `IssueLinkedNote` and `InformalCheckSession` — structured observation notes linking
+    tester observations to explicit issue references (e.g. `ISSUE-101`) without overstating
+    them as formal study conclusions.
+  - `RemediationTarget` — 5 architectural targets (`PresentationOutput`, `CommandVocabulary`,
+    `DocumentationOnboarding`, `DebriefExplanation`, `ContingencyAffordance`).
+  - `RemediationVerificationStatus` — 4 verification statuses (`PendingImplementation`,
+    `VerifiedInRegression`, `ValidatedInStudyCohort`, `RejectedAlternative`).
+  - `RemediationAction` and `evaluate_remediation_plan` — pure deterministic evaluation
+    function with fail-closed validation (`EmptySessionList`, `EmptyRemediationList`,
+    `EmptySessionNotes`, `DuplicateSessionId`, `DuplicateNoteId`, `DuplicateActionId`,
+    `UnlinkedNoteReference`, `InvalidBasisPointImpact`, `EmptyDescription`, `EmptyObservation`)
+    generating `RemediationEvaluationReport` with addressed note shares ($[0..=10,000]$ bp),
+    verified action shares ($[0..=10,000]$ bp), average expected impact (bp), and readiness
+    gate evaluation ($\ge 5,000$ bp verified actions required).
+  - `RemediationCatalog` — 3 canonical benchmark scenarios (`scenario-remediation-alpha-baseline-v1`,
+    `scenario-remediation-accessibility-priority-v1`, `scenario-remediation-mixed-progress-v1`)
+    with reproducible execution and verified expectations.
+  - 6 focused tests: phase/mode/disposition round trips, remediation targets and status predicates,
+    fail-closed validation, error Display coverage, remediation catalog execution, and Markdown hygiene.
+
 ## [0.1.205] - 2026-08-18
 
 ### Added
