@@ -1986,7 +1986,7 @@ mode auditing, informal check protocol, remediation evaluation, sampling limits 
 synthesis reporting for M10. Empirical human testing, participant recruitment, live study runs, and
 behavioral research claims remain deferred until study data is collected.
 
-### M11 — Shared-boundary GUI presentation need, actor-visible DTOs, client state, parity, and HTML document generator — 2026-08-18
+### M11 — Shared-boundary GUI presentation need, actor-visible DTOs, client state, parity, HTML document generator, transport, and browser resilience — 2026-08-18
 
 **Status:** Complete (initial slice)
 **Depends on:** M10
@@ -2043,16 +2043,22 @@ behavioral research claims remain deferred until study data is collected.
   (`scenario-gui-transport-bundle-request-v1`, `scenario-gui-transport-interactive-inspection-v1`,
   `scenario-gui-transport-intent-submission-v1`, `scenario-gui-transport-fail-closed-rejection-v1`) with verified expectations
   and reproducible execution.
-- 35 focused unit tests in `src/gui/tests.rs` cover domain/severity round trips, threshold rules,
+- `m11-gui-browser-v1` (`src/gui/browser.rs`) and `m11-gui-browser-catalog-v1` (`src/gui/browser_catalog.rs`) implement browser
+  interaction, multi-step flow execution, and resilience recovery evaluation across 4 browser profiles (`ModernDesktop`,
+  `HighContrastAccessible`, `TouchMobileViewport`, `TextFallbackHeadless`) and 4 benchmark scenarios (`scenario-gui-browser-standard-flow-v1`,
+  `scenario-gui-browser-network-recovery-v1`, `scenario-gui-browser-accessibility-flow-v1`, `scenario-gui-browser-degraded-fallback-v1`)
+  verifying clean state restoration, degraded fallback, and zero authority desync under connection loss.
+- 43 focused unit tests in `src/gui/tests.rs` cover domain/severity round trips, threshold rules,
   fail-closed validation, error Display coverage, DTO construction, invariant leak rejection, CoT omission,
   catalog execution, active tab/view mode round trips, client state transitions, reversibility, zoom bounds,
   triple projection parity verification, asset kind/license/fallback round trips, asset governance audit rules,
-  HTML document generation, verification rules, transport message round trips, session request handling, and Markdown report hygiene.
+  HTML document generation, verification rules, transport message round trips, session request handling,
+  browser target/capability round trips, recovery strategies, flow audits, and Markdown report hygiene.
 
 #### Verification
 
-- `cargo test --locked gui::` passes 35 unit tests (602 total library tests).
-- All benchmark catalog scenarios verify deficit impacts, GUI justification, invariant preservation, asset governance compliance, HTML document integrity, and transport session lifecycle.
+- `cargo test --locked gui::` passes 43 unit tests (610 total library tests).
+- All benchmark catalog scenarios verify deficit impacts, GUI justification, invariant preservation, asset governance compliance, HTML document integrity, transport session lifecycle, and browser flow resilience.
 - Repository checker scans confirm zero async/network primitives in `src/gui/`.
 
 #### Deferred

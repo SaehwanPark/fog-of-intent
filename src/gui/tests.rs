@@ -2082,3 +2082,454 @@ fn transport_scenario_markdown_rendering_hygiene() {
   assert!(md.contains("1. `ActionAcknowledged`: actor `MidLaner`"));
   assert!(!md.contains("\x1b["));
 }
+
+#[test]
+fn browser_target_and_capability_round_trips() {
+  use crate::gui::browser::{BrowserCapability, BrowserTarget};
+
+  let targets = [
+    (BrowserTarget::ModernDesktop, "modern-desktop"),
+    (
+      BrowserTarget::HighContrastAccessible,
+      "high-contrast-accessible",
+    ),
+    (BrowserTarget::TouchMobileViewport, "touch-mobile-viewport"),
+    (
+      BrowserTarget::TextFallbackHeadless,
+      "text-fallback-headless",
+    ),
+  ];
+
+  for (target, name) in targets {
+    assert_eq!(target.as_str(), name);
+    assert_eq!(BrowserTarget::from_str_name(name), Some(target));
+    assert_eq!(format!("{target}"), name);
+  }
+  assert_eq!(BrowserTarget::from_str_name("invalid-browser-target"), None);
+
+  let capabilities = [
+    (BrowserCapability::SemanticDom, "semantic-dom"),
+    (BrowserCapability::VectorSvg, "vector-svg"),
+    (
+      BrowserCapability::CssCustomProperties,
+      "css-custom-properties",
+    ),
+    (BrowserCapability::AriaLiveRegions, "aria-live-regions"),
+    (
+      BrowserCapability::ReducedMotionMedia,
+      "reduced-motion-media",
+    ),
+    (BrowserCapability::KeyboardNavigation, "keyboard-navigation"),
+  ];
+
+  for (cap, name) in capabilities {
+    assert_eq!(cap.as_str(), name);
+    assert_eq!(BrowserCapability::from_str_name(name), Some(cap));
+    assert_eq!(format!("{cap}"), name);
+  }
+  assert_eq!(BrowserCapability::from_str_name("invalid-capability"), None);
+}
+
+#[test]
+fn browser_recovery_strategy_and_status_round_trips() {
+  use crate::gui::browser::{BrowserRecoveryStatus, BrowserRecoveryStrategy};
+
+  let strategies = [
+    (
+      BrowserRecoveryStrategy::ImmediateReconnect,
+      "immediate-reconnect",
+    ),
+    (BrowserRecoveryStrategy::CacheReload, "cache-reload"),
+    (BrowserRecoveryStrategy::NeutralReset, "neutral-reset"),
+    (
+      BrowserRecoveryStrategy::DegradedFallback,
+      "degraded-fallback",
+    ),
+  ];
+
+  for (strat, name) in strategies {
+    assert_eq!(strat.as_str(), name);
+    assert_eq!(BrowserRecoveryStrategy::from_str_name(name), Some(strat));
+    assert_eq!(format!("{strat}"), name);
+  }
+  assert_eq!(
+    BrowserRecoveryStrategy::from_str_name("invalid-strategy"),
+    None
+  );
+
+  let statuses = [
+    (BrowserRecoveryStatus::CleanRecovery, "clean-recovery"),
+    (BrowserRecoveryStatus::DegradedFallback, "degraded-fallback"),
+    (BrowserRecoveryStatus::StateReset, "state-reset"),
+    (
+      BrowserRecoveryStatus::UnrecoverableFatal,
+      "unrecoverable-fatal",
+    ),
+  ];
+
+  for (status, name) in statuses {
+    assert_eq!(status.as_str(), name);
+    assert_eq!(BrowserRecoveryStatus::from_str_name(name), Some(status));
+    assert_eq!(format!("{status}"), name);
+  }
+  assert_eq!(BrowserRecoveryStatus::from_str_name("invalid-status"), None);
+}
+
+#[test]
+fn browser_environment_profiles_and_capability_checks() {
+  use crate::gui::browser::{BrowserCapability, BrowserEnvironment, BrowserTarget};
+
+  let desktop = BrowserEnvironment::default_desktop();
+  assert_eq!(desktop.target, BrowserTarget::ModernDesktop);
+  assert_eq!(desktop.viewport_width, 1920);
+  assert_eq!(desktop.viewport_height, 1080);
+  assert!(!desktop.high_contrast);
+  assert!(!desktop.reduced_motion);
+  assert!(!desktop.text_fallback);
+  assert!(desktop.has_capability(BrowserCapability::SemanticDom));
+  assert!(desktop.has_capability(BrowserCapability::VectorSvg));
+  assert!(desktop.has_capability(BrowserCapability::KeyboardNavigation));
+
+  let high_contrast = BrowserEnvironment::high_contrast_accessible();
+  assert_eq!(high_contrast.target, BrowserTarget::HighContrastAccessible);
+  assert!(high_contrast.high_contrast);
+  assert!(high_contrast.reduced_motion);
+  assert!(!high_contrast.text_fallback);
+
+  let mobile = BrowserEnvironment::touch_mobile();
+  assert_eq!(mobile.target, BrowserTarget::TouchMobileViewport);
+  assert_eq!(mobile.viewport_width, 390);
+  assert_eq!(mobile.viewport_height, 844);
+  assert!(!mobile.has_capability(BrowserCapability::KeyboardNavigation));
+
+  let headless = BrowserEnvironment::text_fallback_headless();
+  assert_eq!(headless.target, BrowserTarget::TextFallbackHeadless);
+  assert!(headless.text_fallback);
+  assert!(!headless.has_capability(BrowserCapability::VectorSvg));
+}
+
+#[test]
+fn browser_flow_evaluation_validation_and_errors() {
+  use crate::gui::browser::{
+    BrowserCapability, BrowserEnvironment, BrowserFlowAction, BrowserFlowError,
+    evaluate_browser_flow,
+  };
+  use crate::gui::catalog::GuiScenarioCatalog;
+  use crate::gui::dto::{GuiActiveTab, GuiPresentationBundle, GuiViewMode};
+  use crate::gui::transport::GuiTransportError;
+
+  let base_catalog = GuiScenarioCatalog::new();
+  let bundle_provider = |_role: &str,
+                         _tab: GuiActiveTab,
+                         _mode: GuiViewMode|
+   -> Result<GuiPresentationBundle, GuiTransportError> {
+    let flank_def = base_catalog
+      .get("scenario-gui-map-flank-v1")
+      .ok_or(GuiTransportError::InvalidPayload("sample bundle not found"))?;
+    Ok(flank_def.sample_bundle)
+  };
+
+  let valid_env = BrowserEnvironment::default_desktop();
+
+  // Empty scenario ID
+  assert!(evaluate_browser_flow("", &valid_env, bundle_provider, &[], "MidLaner", 1).is_err());
+
+  // Oversized scenario ID
+  let long_id = "a".repeat(65);
+  assert!(
+    evaluate_browser_flow(&long_id, &valid_env, bundle_provider, &[], "MidLaner", 1).is_err()
+  );
+
+  // Invalid viewport
+  let mut zero_width_env = valid_env.clone();
+  zero_width_env.viewport_width = 0;
+  assert!(
+    evaluate_browser_flow(
+      "test-flow",
+      &zero_width_env,
+      bundle_provider,
+      &[],
+      "MidLaner",
+      1
+    )
+    .is_err()
+  );
+
+  // Too many steps
+  let too_many_actions: Vec<BrowserFlowAction> = (0..65)
+    .map(|_| BrowserFlowAction::NavigateTab(GuiActiveTab::MapView))
+    .collect();
+  assert!(
+    evaluate_browser_flow(
+      "test-flow",
+      &valid_env,
+      bundle_provider,
+      &too_many_actions,
+      "MidLaner",
+      1
+    )
+    .is_err()
+  );
+
+  // Error Display coverage
+  let err = BrowserFlowError::InvalidScenarioId("id".to_string());
+  assert_eq!(format!("{err}"), "invalid scenario id 'id'");
+
+  let err = BrowserFlowError::InvalidViewportDimensions;
+  assert_eq!(
+    format!("{err}"),
+    "viewport dimensions must be strictly positive"
+  );
+
+  let err = BrowserFlowError::TooManySteps(70);
+  assert_eq!(
+    format!("{err}"),
+    "flow contains 70 steps, exceeding limit of 64"
+  );
+
+  let err = BrowserFlowError::MissingCapability(BrowserCapability::VectorSvg);
+  assert_eq!(
+    format!("{err}"),
+    "browser environment lacks capability 'vector-svg'"
+  );
+
+  let err = BrowserFlowError::RecoveryFailure("desync".to_string());
+  assert_eq!(format!("{err}"), "recovery failed: desync");
+
+  let err = BrowserFlowError::ActionNotAllowedInClosedSession;
+  assert_eq!(format!("{err}"), "cannot execute action on closed session");
+}
+
+#[test]
+fn browser_flow_execution_across_all_actions_and_invariants() {
+  use crate::gui::browser::{
+    BrowserEnvironment, BrowserFlowAction, GUI_BROWSER_SCHEMA_VERSION, evaluate_browser_flow,
+  };
+  use crate::gui::catalog::GuiScenarioCatalog;
+  use crate::gui::dto::{GuiActiveTab, GuiPresentationBundle, GuiViewMode};
+  use crate::gui::transport::GuiTransportError;
+  use crate::lane::LaneIntent;
+
+  let base_catalog = GuiScenarioCatalog::new();
+  let bundle_provider = |_role: &str,
+                         _tab: GuiActiveTab,
+                         _mode: GuiViewMode|
+   -> Result<GuiPresentationBundle, GuiTransportError> {
+    let flank_def = base_catalog
+      .get("scenario-gui-map-flank-v1")
+      .ok_or(GuiTransportError::InvalidPayload("sample bundle not found"))?;
+    Ok(flank_def.sample_bundle)
+  };
+
+  let env = BrowserEnvironment::default_desktop();
+  let actions = vec![
+    BrowserFlowAction::NavigateTab(GuiActiveTab::MapView),
+    BrowserFlowAction::InspectLocation("BotRiver".to_string()),
+    BrowserFlowAction::InspectActor("Jungler".to_string()),
+    BrowserFlowAction::AdjustZoom(12_000),
+    BrowserFlowAction::ToggleHighContrast,
+    BrowserFlowAction::ToggleReducedMotion,
+    BrowserFlowAction::NavigateTab(GuiActiveTab::DebriefView),
+    BrowserFlowAction::FilterDebriefQuadrant("CoordinatedTriumph".to_string()),
+    BrowserFlowAction::SubmitIntent(LaneIntent::Contest),
+    BrowserFlowAction::ExportHtmlDocument,
+  ];
+
+  let report = evaluate_browser_flow(
+    "flow-test-full",
+    &env,
+    bundle_provider,
+    &actions,
+    "MidLaner",
+    1,
+  )
+  .expect("flow evaluation should succeed");
+
+  assert_eq!(report.schema_version, GUI_BROWSER_SCHEMA_VERSION);
+  assert_eq!(report.scenario_id, "flow-test-full");
+  assert_eq!(report.total_steps, 10);
+  assert!(report.landmarks_verified);
+  assert!(report.zero_leaks_verified);
+  assert!(report.zero_cot_verified);
+  assert!(report.zero_authority_leak_verified);
+  assert!(report.all_expectations_met);
+
+  // Verify step audit records
+  assert_eq!(report.step_audits.len(), 10);
+  assert_eq!(report.step_audits[0].active_tab, GuiActiveTab::MapView);
+  assert_eq!(
+    report.step_audits[1].selected_location,
+    Some("BotRiver".to_string())
+  );
+  assert_eq!(
+    report.step_audits[2].selected_actor,
+    Some("Jungler".to_string())
+  );
+  assert!(report.step_audits[4].is_high_contrast);
+  assert!(report.step_audits[5].is_reduced_motion);
+  assert_eq!(report.step_audits[6].active_tab, GuiActiveTab::DebriefView);
+  assert_eq!(
+    report.step_audits[7].selected_quadrant,
+    Some("CoordinatedTriumph".to_string())
+  );
+}
+
+#[test]
+fn browser_network_drop_and_recovery_strategies() {
+  use crate::gui::browser::{
+    BrowserEnvironment, BrowserFlowAction, BrowserRecoveryStatus, BrowserRecoveryStrategy,
+    evaluate_browser_flow,
+  };
+  use crate::gui::catalog::GuiScenarioCatalog;
+  use crate::gui::dto::{GuiActiveTab, GuiPresentationBundle, GuiViewMode};
+  use crate::gui::transport::GuiTransportError;
+
+  let base_catalog = GuiScenarioCatalog::new();
+  let bundle_provider = |_role: &str,
+                         _tab: GuiActiveTab,
+                         _mode: GuiViewMode|
+   -> Result<GuiPresentationBundle, GuiTransportError> {
+    let flank_def = base_catalog
+      .get("scenario-gui-map-flank-v1")
+      .ok_or(GuiTransportError::InvalidPayload("sample bundle not found"))?;
+    Ok(flank_def.sample_bundle)
+  };
+
+  let env = BrowserEnvironment::default_desktop();
+
+  // Strategy 1: ImmediateReconnect
+  let actions = vec![
+    BrowserFlowAction::NavigateTab(GuiActiveTab::MapView),
+    BrowserFlowAction::SimulateNetworkDrop,
+    BrowserFlowAction::RecoverSession(BrowserRecoveryStrategy::ImmediateReconnect),
+  ];
+  let report = evaluate_browser_flow(
+    "recover-immediate",
+    &env,
+    bundle_provider,
+    &actions,
+    "MidLaner",
+    1,
+  )
+  .expect("recovery should succeed");
+  assert_eq!(
+    report.recovery_status,
+    Some(BrowserRecoveryStatus::CleanRecovery)
+  );
+
+  // Strategy 2: CacheReload
+  let actions = vec![
+    BrowserFlowAction::NavigateTab(GuiActiveTab::DebriefView),
+    BrowserFlowAction::SimulateNetworkDrop,
+    BrowserFlowAction::RecoverSession(BrowserRecoveryStrategy::CacheReload),
+  ];
+  let report = evaluate_browser_flow(
+    "recover-cache",
+    &env,
+    bundle_provider,
+    &actions,
+    "MidLaner",
+    1,
+  )
+  .expect("recovery should succeed");
+  assert_eq!(
+    report.recovery_status,
+    Some(BrowserRecoveryStatus::CleanRecovery)
+  );
+
+  // Strategy 3: NeutralReset
+  let actions = vec![
+    BrowserFlowAction::NavigateTab(GuiActiveTab::PlanView),
+    BrowserFlowAction::SimulateNetworkDrop,
+    BrowserFlowAction::RecoverSession(BrowserRecoveryStrategy::NeutralReset),
+  ];
+  let report = evaluate_browser_flow(
+    "recover-reset",
+    &env,
+    bundle_provider,
+    &actions,
+    "MidLaner",
+    1,
+  )
+  .expect("recovery should succeed");
+  assert_eq!(
+    report.recovery_status,
+    Some(BrowserRecoveryStatus::StateReset)
+  );
+
+  // Strategy 4: DegradedFallback
+  let actions = vec![
+    BrowserFlowAction::NavigateTab(GuiActiveTab::MapView),
+    BrowserFlowAction::SimulateNetworkDrop,
+    BrowserFlowAction::RecoverSession(BrowserRecoveryStrategy::DegradedFallback),
+  ];
+  let report = evaluate_browser_flow(
+    "recover-fallback",
+    &env,
+    bundle_provider,
+    &actions,
+    "MidLaner",
+    1,
+  )
+  .expect("recovery should succeed");
+  assert_eq!(
+    report.recovery_status,
+    Some(BrowserRecoveryStatus::DegradedFallback)
+  );
+}
+
+#[test]
+fn browser_catalog_scenarios_execute_and_verify_all_expectations() {
+  use crate::gui::browser_catalog::BrowserScenarioCatalog;
+
+  let catalog = BrowserScenarioCatalog::new();
+  let scenarios = catalog.all_scenarios();
+  assert_eq!(scenarios.len(), 4);
+
+  for def in scenarios {
+    let result = catalog
+      .execute_scenario(def.scenario_id)
+      .unwrap_or_else(|e| {
+        panic!(
+          "browser scenario '{}' should execute successfully: {e}",
+          def.scenario_id
+        )
+      });
+
+    assert_eq!(result.scenario_id, def.scenario_id);
+    assert_eq!(result.total_steps, def.expected_total_steps);
+    assert_eq!(result.recovery_status, def.expected_recovery_status);
+    assert!(result.all_expectations_met);
+  }
+
+  assert!(
+    catalog
+      .execute_scenario("non-existent-browser-scenario")
+      .is_err()
+  );
+}
+
+#[test]
+fn browser_scenario_markdown_rendering_hygiene() {
+  use crate::gui::browser_catalog::{BrowserScenarioCatalog, render_browser_scenario_markdown};
+
+  let catalog = BrowserScenarioCatalog::new();
+  let result = catalog
+    .execute_scenario("scenario-gui-browser-standard-flow-v1")
+    .expect("scenario execution should succeed");
+
+  let md = render_browser_scenario_markdown(&result);
+  assert!(md.starts_with(
+    "### GUI Browser Flow & Recovery Report: `scenario-gui-browser-standard-flow-v1`\n\n"
+  ));
+  assert!(md.contains("- **Schema Version:** `m11-gui-browser-v1`"));
+  assert!(md.contains("- **Browser Target:** `modern-desktop`"));
+  assert!(md.contains("- **Total Steps:** 7"));
+  assert!(md.contains("- **W3C Semantic Landmarks:** **VERIFIED PASS**"));
+  assert!(md.contains("- **Zero Latent / Hash Leaks:** **VERIFIED PASS**"));
+  assert!(md.contains("- **Zero Private Chain-of-Thought:** **VERIFIED PASS**"));
+  assert!(md.contains("- **Zero Authority Leakage:** **VERIFIED PASS**"));
+  assert!(md.contains("- **Overall Disposition:** **VERIFIED PASS**"));
+  assert!(md.contains("1. **`NavigateTab(map-view)`**"));
+  assert!(!md.contains("\x1b["));
+}

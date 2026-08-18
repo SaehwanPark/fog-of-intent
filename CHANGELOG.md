@@ -6,6 +6,25 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.213] - 2026-08-18
+
+### Added
+
+- `m11-gui-browser-v1` (`src/gui/browser.rs`) implementing browser interaction, flow execution, resilience, and recovery evaluation for the Shared-Boundary GUI:
+  - `BrowserTarget` (`modern-desktop`, `high-contrast-accessible`, `touch-mobile-viewport`, `text-fallback-headless`) and `BrowserCapability` (`semantic-dom`, `vector-svg`, `css-custom-properties`, `aria-live-regions`, `reduced-motion-media`, `keyboard-navigation`) with string parsing and Display implementations.
+  - `BrowserEnvironment` configuration presets (`default_desktop`, `high_contrast_accessible`, `touch_mobile`, `text_fallback_headless`) with viewport dimensions and accessibility preference flags.
+  - `BrowserRecoveryStrategy` (`immediate-reconnect`, `cache-reload`, `neutral-reset`, `degraded-fallback`) and `BrowserRecoveryStatus` (`clean-recovery`, `degraded-fallback`, `state-reset`, `unrecoverable-fatal`) modeling client resilience workflows.
+  - `BrowserFlowAction` declarative interaction actions: `NavigateTab`, `InspectLocation`, `InspectActor`, `FilterDebriefQuadrant`, `AdjustZoom`, `ToggleHighContrast`, `ToggleReducedMotion`, `SubmitIntent`, `SimulateNetworkDrop`, `RecoverSession`, and `ExportHtmlDocument`.
+  - `evaluate_browser_flow` pure deterministic execution runner dispatching multi-step browser user flows against host presentation sessions with fail-closed validation (`InvalidScenarioId`, `InvalidViewportDimensions`, `TooManySteps`, `MissingCapability`, `TransportError`, `ClientError`, `HtmlVerificationError`, `RecoveryFailure`, `ActionNotAllowedInClosedSession`, `InvariantViolation`).
+  - `render_browser_flow_markdown` producing structured Markdown reports without ANSI styling.
+- `m11-gui-browser-catalog-v1` (`src/gui/browser_catalog.rs`) registering 4 canonical benchmark browser interaction scenarios:
+  - `scenario-gui-browser-standard-flow-v1`: Complete user flow through Map View -> Location Inspection -> Timeline -> Causal Debrief with Quadrant Filtering -> Intent Submission.
+  - `scenario-gui-browser-network-recovery-v1`: Desktop user flow with sudden network drop during causal debrief analysis, followed by `ImmediateReconnect` and `CacheReload` recovery, verifying zero state loss or authority desync.
+  - `scenario-gui-browser-accessibility-flow-v1`: High-contrast, keyboard-only, and reduced-motion flow verifying non-color symbolic tags, landmark navigation, and screen reader annotations.
+  - `scenario-gui-browser-degraded-fallback-v1`: Headless / text-fallback environment without SVG, gracefully rendering structured textual presentation while maintaining complete tactical clarity.
+  - `render_browser_scenario_markdown` producing structured Markdown reports without ANSI styling.
+- 8 new unit tests in `src/gui/tests.rs` (43 total GUI tests, 610 total library tests) covering browser target / capability round trips, recovery strategy / status round trips, environment profiles, fail-closed flow evaluation validation, full flow execution with invariant checks, network drop and recovery across all 4 strategies, catalog scenario execution, and Markdown report hygiene.
+
 ## [0.1.212] - 2026-08-18
 
 ### Added

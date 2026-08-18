@@ -2,6 +2,8 @@
 
 pub mod asset;
 pub mod asset_catalog;
+pub mod browser;
+pub mod browser_catalog;
 pub mod catalog;
 pub mod dto;
 pub mod html;
@@ -24,6 +26,16 @@ pub use asset::{
 };
 pub use asset_catalog::{
   AssetGovernanceCatalog, AssetGovernanceScenarioDefinition, GUI_ASSET_CATALOG_SCHEMA_VERSION,
+};
+pub use browser::{
+  BrowserCapability, BrowserEnvironment, BrowserFlowAction, BrowserFlowError, BrowserFlowReport,
+  BrowserFlowStepAudit, BrowserRecoveryStatus, BrowserRecoveryStrategy, BrowserTarget,
+  GUI_BROWSER_SCHEMA_VERSION, MAX_BROWSER_FLOW_STEPS, evaluate_browser_flow,
+  render_browser_flow_markdown,
+};
+pub use browser_catalog::{
+  BrowserScenarioCatalog, BrowserScenarioDefinition, GUI_BROWSER_CATALOG_SCHEMA_VERSION,
+  render_browser_scenario_markdown,
 };
 pub use catalog::{
   GUI_CATALOG_SCHEMA_VERSION, GuiScenarioCatalog, GuiScenarioDefinition, GuiScenarioExecutionResult,
