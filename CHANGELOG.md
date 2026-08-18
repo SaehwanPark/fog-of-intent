@@ -6,6 +6,32 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.211] - 2026-08-18
+
+### Added
+
+- `m11-gui-html-v1` (`src/gui/html.rs`) implementing deterministic, standalone HTML5/CSS/SVG
+  presentation document generation and verification:
+  - `render_gui_html_document` generating self-contained, accessible presentation documents from
+    `GuiPresentationBundle` and `GuiClientState`.
+  - W3C semantic landmarks: `<header role="banner">`, `<nav role="navigation">`, `<main role="main">`,
+    `<aside role="complementary">`, and `<footer role="contentinfo">`.
+  - Vanilla CSS design tokens with WCAG 2.1 AA high contrast mode (`#ffff00` accent on `#000000`),
+    reduced-motion animation rules (`0.01ms`), and responsive two-column / single-column layouts.
+  - Procedural SVG spatial tactical map rendering with fog-of-war visualization, lane lines,
+    location nodes, and actor badges (`[A]`, `[E]`).
+  - Active tab presentation components: Map View, Timeline View, Plan & Focus View, Causal Debrief View,
+    and Accessibility View.
+  - `verify_gui_html_document` enforcing doctype validity, viewport presence, landmark completeness,
+    zero external resource leaks (`http://`, `https://`, `//`), zero script tags, and zero private
+    chain-of-thought or latent state leakage.
+- `m11-gui-html-catalog-v1` (`src/gui/html_catalog.rs`) registering 3 canonical benchmark HTML presentation scenarios:
+  - `scenario-gui-html-flank-inspection-v1`: Complete HTML5/SVG presentation rendering of spatial map flank tactic with fog-of-war visualization.
+  - `scenario-gui-html-debrief-quadrant-v1`: Complete HTML5 presentation rendering of post-encounter causal debrief with 2D quadrant and KPI metric breakdown.
+  - `scenario-gui-html-high-contrast-accessibility-v1`: Complete HTML5 presentation rendering with high-contrast tokens, reduced motion rules, and non-color symbolic tags.
+- 5 new unit tests in `src/gui/tests.rs` (29 total GUI tests) covering HTML document generation across all tabs,
+  fail-closed security and landmark verification, error Display coverage, catalog scenario execution, and Markdown report hygiene.
+
 ## [0.1.210] - 2026-08-18
 
 ### Added

@@ -2211,7 +2211,7 @@ persistence remain host-owned.
 - [x] Add host-contract, CLI/MCP/GUI parity, default-browser, and recovery tests.
 - [x] Define asset provenance, license, attribution, hash, and fallback rules.
 
-### Current M11 presentation-need assessment, GUI DTOs, client state, parity, and asset governance evidence
+### Current M11 presentation-need assessment, GUI DTOs, client state, parity, asset governance, and HTML presentation evidence
 
 - [x] Record ADR-0003 (`docs/adr/0003-shared-boundary-gui.md`) establishing the
   Shared-Boundary GUI Architecture, presentation-only client contracts, loopback transport,
@@ -2245,16 +2245,28 @@ persistence remain host-owned.
 - [x] Register 3 canonical benchmark asset governance manifests in `AssetGovernanceCatalog`
   (`m11-gui-asset-catalog-v1`: `scenario-gui-asset-core-v1`, `scenario-gui-asset-minimal-vector-v1`,
   `scenario-gui-asset-fallback-audit-v1`) with reproducible execution and verified expectations.
+- [x] Define `m11-gui-html-v1` in `src/gui/html.rs` implementing deterministic standalone HTML5/CSS/SVG
+  presentation document generation (`render_gui_html_document`) and verification (`verify_gui_html_document`)
+  with W3C semantic landmarks (`<header>`, `<nav>`, `<main>`, `<aside>`, `<footer>`), Vanilla CSS design tokens
+  (WCAG 2.1 AA high contrast, reduced motion, responsive layout), procedural SVG spatial map rendering with
+  fog-of-war visualization and symbolic tags, timeline turn bar, plan & contingency card, causal debrief
+  quadrant & KPI breakdown, and fail-closed security/privacy verification (rejecting missing landmarks, doctypes,
+  viewports, external URLs, script tags, latent coordinate leaks, and private CoT).
+- [x] Register 3 canonical benchmark HTML presentation scenarios in `GuiHtmlScenarioCatalog`
+  (`m11-gui-html-catalog-v1`: `scenario-gui-html-flank-inspection-v1`, `scenario-gui-html-debrief-quadrant-v1`,
+  `scenario-gui-html-high-contrast-accessibility-v1`) with reproducible execution and verified expectations.
 - [x] Cover presentation need evaluation, deficit threshold rules, fail-closed validation,
   DTO bundle construction, latent opponent leakage rejection, chain-of-thought omission,
   catalog scenario execution, active tab/view mode round trips, client state transitions, reversibility,
   zoom bounds, parity verification, asset kind/license/fallback round trips, asset governance audit rules,
-  and Markdown report hygiene across 24 focused tests in `src/gui/tests.rs`.
+  HTML document generation across all tabs, W3C/security/privacy verification, and Markdown report hygiene
+  across 29 focused tests in `src/gui/tests.rs`.
 
 This establishes the formal presentation need evaluation framework, ADR-0003 architecture
 decision record, versioned actor-visible GUI DTO models, reversible client state machine,
-triple CLI/MCP/GUI projection parity verification, and asset governance / fallback rules for M11.
-Browser client HTML/CSS/JS frontend implementation, loopback transport server, and live browser tests remain open.
+triple CLI/MCP/GUI projection parity verification, asset governance / fallback rules, and
+standalone HTML5/CSS/SVG GUI presentation document generator and benchmark catalog for M11.
+Loopback HTTP/WebSocket transport adapter and live browser-to-host interaction tests remain open.
 
 
 ### Deliverables

@@ -71,6 +71,8 @@ CORE_RUST_FILES = (
   "src/gui/asset_catalog.rs",
   "src/gui/catalog.rs",
   "src/gui/dto.rs",
+  "src/gui/html.rs",
+  "src/gui/html_catalog.rs",
   "src/gui/mod.rs",
   "src/gui/need.rs",
   "src/gui/parity.rs",
