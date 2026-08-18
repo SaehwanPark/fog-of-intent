@@ -1956,9 +1956,35 @@ human pacing evidence remain deferred.
   - 6 focused tests cover phase/mode/disposition round trips, remediation targets and status predicates,
     fail-closed validation, error Display coverage, remediation catalog execution, and Markdown hygiene.
 
+- `m10-sampling-limits-v1`, `m10-alpha-synthesis-v1`, and `m10-synthesis-catalog-v1`
+  formalize participant sampling limits, untested population disclosures, and authoritative
+  alpha evidence synthesis:
+  - `UntestedPopulationCategory` covers 5 discrete untested population classifications
+    (`MotorImpairmentSwitchAccess`, `RefreshableBrailleDisplay`, `NonEnglishLocale`,
+    `SevereCognitiveImpairment`, `MobileTouchInterface`) with explicit rationale and
+    mitigation disclosures (`UntestedPopulationDisclosure`).
+  - `SamplingLimitsDeclaration`, `AccessNeedsBreakdown`, `CohortRepresentation`, and
+    `evaluate_participant_sampling` audit cohort representation shares against the 1,500 bp floor
+    and access needs distribution with fail-closed validation (`EmptySessionList`, `EmptyMethodology`,
+    `EmptyUntestedDisclosures`, `DuplicateUntestedCategory`, `EmptyDisclosureText`) generating
+    `ParticipantSamplingReport`.
+  - `AlphaReadinessGateStatus` and `AlphaDisposition` evaluate 5 explicit alpha readiness
+    gates (`study_completion_floor_met`, `comprehension_floor_met`, `accessibility_floor_met`,
+    `remediation_readiness_met`, `sampling_diversity_met`) and 3 milestone dispositions
+    (`AlphaReady`, `ConditionallyReadyWithLimitations`, `BlockedByReadinessGates`).
+  - `synthesize_alpha_evidence` synthesizes all M10 evaluation dimensions into an authoritative
+    `AlphaEvidenceSynthesis` report, explicitly separating observed empirical facts from inferred
+    design hypotheses and rendering structured Markdown without private chain-of-thought.
+  - `AlphaSynthesisCatalog` registers 3 canonical benchmark scenarios
+    (`scenario-alpha-synthesis-baseline-v1`, `scenario-alpha-synthesis-accessibility-gated-v1`,
+    `scenario-alpha-synthesis-sampling-gap-v1`) with reproducible execution and verified expectations.
+  - 7 focused tests cover untested population categories, sampling limit evaluation, fail-closed
+    validation, synthesis gates and disposition logic, catalog benchmark execution, and Markdown hygiene.
+
 This establishes a bounded deterministic study protocol, dimension assessment framework, interaction
-mode auditing, informal check protocol, and remediation evaluation for M10. Empirical human testing,
-participant recruitment, live study runs, and behavioral research claims remain deferred.
+mode auditing, informal check protocol, remediation evaluation, sampling limits auditing, and alpha
+synthesis reporting for M10. Empirical human testing, participant recruitment, live study runs, and
+behavioral research claims remain deferred until study data is collected.
 
 ## Future
 

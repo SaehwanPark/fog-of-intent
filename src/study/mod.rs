@@ -9,7 +9,9 @@
 //! - Deterministic cohort evaluation and report generation in basis points (`evaluation.rs`);
 //! - Canonical benchmark study scenarios and expectations (`catalog.rs`);
 //! - Dimension-level assessments and interaction auditing (`dimension.rs`, `interaction.rs`, `dimension_catalog.rs`);
-//! - Informal check protocol and remediation evaluation (`informal_check.rs`, `remediation.rs`, `remediation_catalog.rs`).
+//! - Informal check protocol and remediation evaluation (`informal_check.rs`, `remediation.rs`, `remediation_catalog.rs`);
+//! - Participant sampling limits and untested population disclosures (`sampling.rs`);
+//! - Alpha evidence synthesis and milestone readiness disposition (`synthesis.rs`, `synthesis_catalog.rs`).
 
 pub mod catalog;
 pub mod dimension;
@@ -21,7 +23,10 @@ pub mod interaction;
 pub mod protocol;
 pub mod remediation;
 pub mod remediation_catalog;
+pub mod sampling;
 pub mod session;
+pub mod synthesis;
+pub mod synthesis_catalog;
 
 #[cfg(test)]
 mod tests;
@@ -69,7 +74,22 @@ pub use remediation_catalog::{
   M10_REMEDIATION_CATALOG_SCHEMA_V1, RemediationCatalog, RemediationScenarioDefinition,
   RemediationScenarioExecutionResult,
 };
+pub use sampling::{
+  AccessNeedsBreakdown, CohortRepresentation, DEFAULT_MIN_COHORT_FLOOR_BP,
+  M10_SAMPLING_LIMITS_SCHEMA_V1, ParticipantSamplingReport, STANDARD_UNTESTED_DISCLOSURES,
+  SamplingEvaluationError, SamplingLimitsDeclaration, UntestedPopulationCategory,
+  UntestedPopulationDisclosure, evaluate_participant_sampling,
+};
 pub use session::{
   AccessNeedsDeclaration, CompletionStatus, M10_PARTICIPANT_SESSION_SCHEMA_V1,
   ParticipantSessionRecord,
+};
+pub use synthesis::{
+  AlphaDisposition, AlphaEvidenceSynthesis, AlphaReadinessGateStatus,
+  EmpiricalFactVsInferredHypothesis, M10_ALPHA_SYNTHESIS_SCHEMA_V1, SynthesisEvaluationError,
+  synthesize_alpha_evidence,
+};
+pub use synthesis_catalog::{
+  AlphaSynthesisCatalog, AlphaSynthesisExecutionResult, AlphaSynthesisScenarioDefinition,
+  M10_SYNTHESIS_CATALOG_SCHEMA_V1,
 };
