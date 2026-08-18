@@ -2020,16 +2020,26 @@ behavioral research claims remain deferred until study data is collected.
 - `m11-gui-state-catalog-v1` (`src/gui/state_catalog.rs`) registers 3 benchmark client interaction scenarios
   (`scenario-gui-state-map-inspection-v1`, `scenario-gui-state-debrief-quadrant-filter-v1`,
   `scenario-gui-state-reversible-recovery-v1`) with verified expectations.
-- 18 focused unit tests in `src/gui/tests.rs` cover domain/severity round trips, threshold rules,
+- `m11-gui-asset-governance-v1` (`src/gui/asset.rs`) defines asset classifications (`AssetKind`),
+  permissive open-source licensing (`AssetLicense`), non-visual/low-overhead fallback rendering rules
+  (`AssetFallbackKind`), content hash verification, and pure deterministic auditing (`audit_asset_governance`)
+  with fail-closed validation (`EmptyManifest`, `DuplicateAssetId`, `EmptyAuthor`, `EmptySourceUri`,
+  `EmptyContentHash`, `InvalidContentHash`, `EmptyFallbackSymbol`).
+- `m11-gui-asset-catalog-v1` (`src/gui/asset_catalog.rs`) registers 3 benchmark asset governance manifests
+  (`scenario-gui-asset-core-v1`, `scenario-gui-asset-minimal-vector-v1`, `scenario-gui-asset-fallback-audit-v1`)
+  with verified expectations and reproducible audit execution.
+- 24 focused unit tests in `src/gui/tests.rs` cover domain/severity round trips, threshold rules,
   fail-closed validation, error Display coverage, DTO construction, invariant leak rejection, CoT omission,
   catalog execution, active tab/view mode round trips, client state transitions, reversibility, zoom bounds,
-  triple projection parity verification, and Markdown report hygiene.
+  triple projection parity verification, asset kind/license/fallback round trips, asset governance audit rules,
+  and Markdown report hygiene.
 
 #### Verification
 
-- `cargo test --locked gui::` passes 18 unit tests.
-- All benchmark catalog scenarios verify deficit impacts, GUI justification, and invariant preservation.
+- `cargo test --locked gui::` passes 24 unit tests.
+- All benchmark catalog scenarios verify deficit impacts, GUI justification, invariant preservation, and asset governance compliance.
 - Repository checker scans confirm zero async/network primitives in `src/gui/`.
+
 
 #### Deferred
 

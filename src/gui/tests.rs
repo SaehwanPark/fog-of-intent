@@ -1049,3 +1049,336 @@ fn state_and_parity_markdown_rendering_hygiene() {
   assert!(parity_md.contains("- `stabilize`"));
   assert!(!parity_md.contains("\x1b["));
 }
+
+#[test]
+fn asset_kind_license_and_fallback_round_trips() {
+  use crate::gui::asset::{AssetFallbackKind, AssetKind, AssetLicense};
+
+  let kinds = [
+    (AssetKind::MapTexture, "map-texture"),
+    (AssetKind::ActorSprite, "actor-sprite"),
+    (AssetKind::StructureIcon, "structure-icon"),
+    (AssetKind::ObjectiveIcon, "objective-icon"),
+    (AssetKind::UiIcon, "ui-icon"),
+    (AssetKind::AudioCue, "audio-cue"),
+  ];
+  for (kind, name) in kinds {
+    assert_eq!(kind.as_str(), name);
+    assert_eq!(AssetKind::parse(name), Some(kind));
+    assert_eq!(format!("{kind}"), name);
+  }
+  assert_eq!(AssetKind::parse("invalid-kind"), None);
+
+  let licenses = [
+    (AssetLicense::Mit, "MIT"),
+    (AssetLicense::Cc0, "CC0-1.0"),
+    (AssetLicense::Apache2, "Apache-2.0"),
+    (AssetLicense::CustomPermissive, "Custom-Permissive"),
+    (AssetLicense::PublicDomain, "Public-Domain"),
+  ];
+  for (license, name) in licenses {
+    assert_eq!(license.as_str(), name);
+    assert_eq!(AssetLicense::parse(name), Some(license));
+    assert_eq!(format!("{license}"), name);
+    assert!(license.is_permissive());
+  }
+  assert_eq!(AssetLicense::parse("GPL-3.0"), None);
+
+  let fallbacks = [
+    (AssetFallbackKind::ProceduralVector, "procedural-vector"),
+    (AssetFallbackKind::TextualGlyph, "textual-glyph"),
+    (
+      AssetFallbackKind::NonColorSymbolicTag,
+      "non-color-symbolic-tag",
+    ),
+    (AssetFallbackKind::SilentVisualCue, "silent-visual-cue"),
+  ];
+  for (fb, name) in fallbacks {
+    assert_eq!(fb.as_str(), name);
+    assert_eq!(AssetFallbackKind::parse(name), Some(fb));
+    assert_eq!(format!("{fb}"), name);
+  }
+  assert_eq!(AssetFallbackKind::parse("unknown-fallback"), None);
+}
+
+#[test]
+fn asset_governance_validation_and_fail_closed_errors() {
+  use crate::gui::asset::{
+    AssetFallbackKind, AssetGovernanceError, AssetGovernanceManifest, AssetKind, AssetLicense,
+    AssetRecord, audit_asset_governance,
+  };
+
+  // Empty identifier
+  let empty_id_manifest = AssetGovernanceManifest {
+    manifest_id: "   ".to_string(),
+    version: "1.0.0".to_string(),
+    assets: vec![AssetRecord {
+      asset_id: "asset-1".to_string(),
+      kind: AssetKind::MapTexture,
+      license: AssetLicense::Mit,
+      author: "Author".to_string(),
+      source_uri: "https://example.com/asset.svg".to_string(),
+      content_hash: "sha256:1234567890abcdef1234567890abcdef".to_string(),
+      fallback_kind: AssetFallbackKind::ProceduralVector,
+      fallback_symbol: "[MAP]".to_string(),
+    }],
+  };
+  assert_eq!(
+    audit_asset_governance(&empty_id_manifest),
+    Err(AssetGovernanceError::EmptyIdentifier)
+  );
+
+  // Empty manifest
+  let empty_manifest = AssetGovernanceManifest {
+    manifest_id: "manifest-empty".to_string(),
+    version: "1.0.0".to_string(),
+    assets: vec![],
+  };
+  assert_eq!(
+    audit_asset_governance(&empty_manifest),
+    Err(AssetGovernanceError::EmptyManifest)
+  );
+
+  // Duplicate asset ID
+  let dup_manifest = AssetGovernanceManifest {
+    manifest_id: "manifest-dup".to_string(),
+    version: "1.0.0".to_string(),
+    assets: vec![
+      AssetRecord {
+        asset_id: "asset-dup".to_string(),
+        kind: AssetKind::MapTexture,
+        license: AssetLicense::Mit,
+        author: "Author".to_string(),
+        source_uri: "https://example.com/map.svg".to_string(),
+        content_hash: "sha256:1234567890abcdef1234567890abcdef".to_string(),
+        fallback_kind: AssetFallbackKind::ProceduralVector,
+        fallback_symbol: "[MAP]".to_string(),
+      },
+      AssetRecord {
+        asset_id: "asset-dup".to_string(),
+        kind: AssetKind::ActorSprite,
+        license: AssetLicense::Cc0,
+        author: "Author".to_string(),
+        source_uri: "https://example.com/actor.svg".to_string(),
+        content_hash: "sha256:abcdef1234567890abcdef1234567890".to_string(),
+        fallback_kind: AssetFallbackKind::TextualGlyph,
+        fallback_symbol: "[ACTOR]".to_string(),
+      },
+    ],
+  };
+  assert_eq!(
+    audit_asset_governance(&dup_manifest),
+    Err(AssetGovernanceError::DuplicateAssetId(
+      "asset-dup".to_string()
+    ))
+  );
+
+  // Empty author
+  let empty_author_manifest = AssetGovernanceManifest {
+    manifest_id: "manifest-err".to_string(),
+    version: "1.0.0".to_string(),
+    assets: vec![AssetRecord {
+      asset_id: "asset-no-author".to_string(),
+      kind: AssetKind::MapTexture,
+      license: AssetLicense::Mit,
+      author: "".to_string(),
+      source_uri: "https://example.com/map.svg".to_string(),
+      content_hash: "sha256:1234567890abcdef1234567890abcdef".to_string(),
+      fallback_kind: AssetFallbackKind::ProceduralVector,
+      fallback_symbol: "[MAP]".to_string(),
+    }],
+  };
+  assert_eq!(
+    audit_asset_governance(&empty_author_manifest),
+    Err(AssetGovernanceError::EmptyAuthor(
+      "asset-no-author".to_string()
+    ))
+  );
+
+  // Empty source URI
+  let empty_uri_manifest = AssetGovernanceManifest {
+    manifest_id: "manifest-err".to_string(),
+    version: "1.0.0".to_string(),
+    assets: vec![AssetRecord {
+      asset_id: "asset-no-uri".to_string(),
+      kind: AssetKind::MapTexture,
+      license: AssetLicense::Mit,
+      author: "Author".to_string(),
+      source_uri: "   ".to_string(),
+      content_hash: "sha256:1234567890abcdef1234567890abcdef".to_string(),
+      fallback_kind: AssetFallbackKind::ProceduralVector,
+      fallback_symbol: "[MAP]".to_string(),
+    }],
+  };
+  assert_eq!(
+    audit_asset_governance(&empty_uri_manifest),
+    Err(AssetGovernanceError::EmptySourceUri(
+      "asset-no-uri".to_string()
+    ))
+  );
+
+  // Empty content hash
+  let empty_hash_manifest = AssetGovernanceManifest {
+    manifest_id: "manifest-err".to_string(),
+    version: "1.0.0".to_string(),
+    assets: vec![AssetRecord {
+      asset_id: "asset-no-hash".to_string(),
+      kind: AssetKind::MapTexture,
+      license: AssetLicense::Mit,
+      author: "Author".to_string(),
+      source_uri: "https://example.com/map.svg".to_string(),
+      content_hash: " ".to_string(),
+      fallback_kind: AssetFallbackKind::ProceduralVector,
+      fallback_symbol: "[MAP]".to_string(),
+    }],
+  };
+  assert_eq!(
+    audit_asset_governance(&empty_hash_manifest),
+    Err(AssetGovernanceError::EmptyContentHash(
+      "asset-no-hash".to_string()
+    ))
+  );
+
+  // Invalid content hash (non-hex or too short)
+  let invalid_hash_manifest = AssetGovernanceManifest {
+    manifest_id: "manifest-err".to_string(),
+    version: "1.0.0".to_string(),
+    assets: vec![AssetRecord {
+      asset_id: "asset-bad-hash".to_string(),
+      kind: AssetKind::MapTexture,
+      license: AssetLicense::Mit,
+      author: "Author".to_string(),
+      source_uri: "https://example.com/map.svg".to_string(),
+      content_hash: "not-a-valid-hex-hash".to_string(),
+      fallback_kind: AssetFallbackKind::ProceduralVector,
+      fallback_symbol: "[MAP]".to_string(),
+    }],
+  };
+  assert_eq!(
+    audit_asset_governance(&invalid_hash_manifest),
+    Err(AssetGovernanceError::InvalidContentHash(
+      "asset-bad-hash".to_string()
+    ))
+  );
+
+  // Empty fallback symbol
+  let empty_fb_manifest = AssetGovernanceManifest {
+    manifest_id: "manifest-err".to_string(),
+    version: "1.0.0".to_string(),
+    assets: vec![AssetRecord {
+      asset_id: "asset-no-fb".to_string(),
+      kind: AssetKind::MapTexture,
+      license: AssetLicense::Mit,
+      author: "Author".to_string(),
+      source_uri: "https://example.com/map.svg".to_string(),
+      content_hash: "sha256:1234567890abcdef1234567890abcdef".to_string(),
+      fallback_kind: AssetFallbackKind::ProceduralVector,
+      fallback_symbol: "".to_string(),
+    }],
+  };
+  assert_eq!(
+    audit_asset_governance(&empty_fb_manifest),
+    Err(AssetGovernanceError::EmptyFallbackSymbol(
+      "asset-no-fb".to_string()
+    ))
+  );
+}
+
+#[test]
+fn asset_governance_error_display_coverage() {
+  use crate::gui::asset::AssetGovernanceError;
+
+  let errors = [
+    (
+      AssetGovernanceError::EmptyManifest,
+      "asset governance manifest contains zero assets",
+    ),
+    (
+      AssetGovernanceError::EmptyIdentifier,
+      "asset manifest identifier is empty",
+    ),
+    (
+      AssetGovernanceError::DuplicateAssetId("asset-xyz".to_string()),
+      "duplicate asset identifier: asset-xyz",
+    ),
+    (
+      AssetGovernanceError::EmptyAuthor("asset-xyz".to_string()),
+      "asset author is empty for asset: asset-xyz",
+    ),
+    (
+      AssetGovernanceError::EmptySourceUri("asset-xyz".to_string()),
+      "asset source URI is empty for asset: asset-xyz",
+    ),
+    (
+      AssetGovernanceError::EmptyContentHash("asset-xyz".to_string()),
+      "asset content hash is empty for asset: asset-xyz",
+    ),
+    (
+      AssetGovernanceError::InvalidContentHash("asset-xyz".to_string()),
+      "asset content hash is invalid for asset: asset-xyz",
+    ),
+    (
+      AssetGovernanceError::EmptyFallbackSymbol("asset-xyz".to_string()),
+      "fallback symbol is empty for asset: asset-xyz",
+    ),
+  ];
+
+  for (err, expected_str) in errors {
+    assert_eq!(format!("{err}"), expected_str);
+  }
+}
+
+#[test]
+fn asset_catalog_scenarios_execute_and_verify_all_expectations() {
+  use crate::gui::asset_catalog::AssetGovernanceCatalog;
+
+  let scenarios = AssetGovernanceCatalog::list();
+  assert_eq!(scenarios.len(), 3);
+
+  for id in scenarios {
+    let def = AssetGovernanceCatalog::get(id)
+      .unwrap_or_else(|| panic!("scenario '{id}' should exist in catalog"));
+    assert_eq!(def.scenario_id, id);
+
+    let report = def
+      .execute()
+      .unwrap_or_else(|e| panic!("scenario '{id}' should execute successfully: {e}"));
+
+    assert_eq!(report.total_assets, def.expected_total_assets);
+    assert_eq!(
+      report.all_asset_governance_gates_passed,
+      def.expected_gates_passed
+    );
+    assert!(report.fallback_coverage_floor_met);
+    assert!(report.license_compliance_met);
+    assert!(report.content_hashes_verified);
+  }
+
+  assert!(AssetGovernanceCatalog::get("non-existent-scenario").is_none());
+}
+
+#[test]
+fn asset_governance_markdown_rendering_hygiene() {
+  use crate::gui::asset::render_asset_governance_markdown;
+  use crate::gui::asset_catalog::AssetGovernanceCatalog;
+
+  let def =
+    AssetGovernanceCatalog::get("scenario-gui-asset-core-v1").expect("core scenario should exist");
+  let report = def.execute().expect("execution should succeed");
+
+  let md = render_asset_governance_markdown(&report);
+  assert!(md.starts_with("# Shared-Boundary GUI Asset Governance & Provenance Report\n\n"));
+  assert!(md.contains("- **Manifest ID:** `manifest-gui-assets-core-v1`"));
+  assert!(md.contains("- **Total Registered Assets:** 10"));
+  assert!(md.contains("- **Governance Gate Status:** [PASS] All Gates Met"));
+  assert!(md.contains("## Asset Classification Breakdown"));
+  assert!(md.contains("## License Compliance Breakdown"));
+  assert!(md.contains("## Fallback Coverage Breakdown"));
+  assert!(md.contains("## Readiness Gates"));
+  assert!(md.contains("| `map-texture` | 1 |"));
+  assert!(md.contains("| `actor-sprite` | 5 |"));
+  assert!(md.contains("| `MIT` | 3 | [OK] Permissive |"));
+  assert!(md.contains("| `CC0-1.0` | 6 | [OK] Permissive |"));
+  assert!(md.contains("| `Apache-2.0` | 1 | [OK] Permissive |"));
+  assert!(!md.contains("\x1b["));
+}

@@ -1,5 +1,7 @@
 //! Optional Shared-Boundary GUI presentation models, DTO projections, and presentation-need evaluation.
 
+pub mod asset;
+pub mod asset_catalog;
 pub mod catalog;
 pub mod dto;
 pub mod need;
@@ -11,6 +13,14 @@ pub mod state_catalog;
 #[cfg(test)]
 pub mod tests;
 
+pub use asset::{
+  AssetFallbackKind, AssetGovernanceAuditReport, AssetGovernanceError, AssetGovernanceManifest,
+  AssetKind, AssetLicense, AssetRecord, GUI_ASSET_SCHEMA_VERSION, audit_asset_governance,
+  render_asset_governance_markdown,
+};
+pub use asset_catalog::{
+  AssetGovernanceCatalog, AssetGovernanceScenarioDefinition, GUI_ASSET_CATALOG_SCHEMA_VERSION,
+};
 pub use catalog::{
   GUI_CATALOG_SCHEMA_VERSION, GuiScenarioCatalog, GuiScenarioDefinition, GuiScenarioExecutionResult,
 };
