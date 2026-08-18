@@ -2255,18 +2255,25 @@ persistence remain host-owned.
 - [x] Register 3 canonical benchmark HTML presentation scenarios in `GuiHtmlScenarioCatalog`
   (`m11-gui-html-catalog-v1`: `scenario-gui-html-flank-inspection-v1`, `scenario-gui-html-debrief-quadrant-v1`,
   `scenario-gui-html-high-contrast-accessibility-v1`) with reproducible execution and verified expectations.
+- [x] Define `m11-gui-transport-v1` in `src/gui/transport.rs` implementing loopback transport contracts and
+  presentation session adapter (`GuiClientRequest`, `GuiHostResponse`, `GuiSessionPhase`, `GuiSessionCloseReason`,
+  `GuiTransportErrorCode`, `GuiTransportRepairHint`, `GuiPresentationSession`, `verify_transport_invariants`)
+  enforcing zero latent state leaks, zero true-state hash exposures, and zero private chain-of-thought in responses.
+- [x] Register 4 canonical benchmark transport scenarios in `GuiTransportScenarioCatalog`
+  (`m11-gui-transport-catalog-v1`: `scenario-gui-transport-bundle-request-v1`, `scenario-gui-transport-interactive-inspection-v1`,
+  `scenario-gui-transport-intent-submission-v1`, `scenario-gui-transport-fail-closed-rejection-v1`) with reproducible execution and verified expectations.
 - [x] Cover presentation need evaluation, deficit threshold rules, fail-closed validation,
   DTO bundle construction, latent opponent leakage rejection, chain-of-thought omission,
   catalog scenario execution, active tab/view mode round trips, client state transitions, reversibility,
   zoom bounds, parity verification, asset kind/license/fallback round trips, asset governance audit rules,
-  HTML document generation across all tabs, W3C/security/privacy verification, and Markdown report hygiene
-  across 29 focused tests in `src/gui/tests.rs`.
+  HTML document generation across all tabs, W3C/security/privacy verification, loopback transport request handling,
+  invariant verification, and Markdown report hygiene across 35 focused tests in `src/gui/tests.rs`.
 
 This establishes the formal presentation need evaluation framework, ADR-0003 architecture
 decision record, versioned actor-visible GUI DTO models, reversible client state machine,
-triple CLI/MCP/GUI projection parity verification, asset governance / fallback rules, and
-standalone HTML5/CSS/SVG GUI presentation document generator and benchmark catalog for M11.
-Loopback HTTP/WebSocket transport adapter and live browser-to-host interaction tests remain open.
+triple CLI/MCP/GUI projection parity verification, asset governance / fallback rules,
+standalone HTML5/CSS/SVG GUI presentation document generator, and loopback transport protocol / session adapter
+for M11. Live browser-to-host interaction tests remain open.
 
 
 ### Deliverables

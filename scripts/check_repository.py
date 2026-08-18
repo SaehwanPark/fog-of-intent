@@ -79,6 +79,8 @@ CORE_RUST_FILES = (
   "src/gui/projection.rs",
   "src/gui/state.rs",
   "src/gui/state_catalog.rs",
+  "src/gui/transport.rs",
+  "src/gui/transport_catalog.rs",
   "src/kernel/command.rs",
   "src/kernel/history.rs",
   "src/kernel/inputs.rs",
