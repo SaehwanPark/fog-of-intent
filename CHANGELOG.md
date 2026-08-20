@@ -6,6 +6,36 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.214] - 2026-08-20
+
+### Added
+
+- `m12-alpha-governance-v1` (`src/alpha/governance.rs`) formalizing public alpha release governance and policy compliance verification:
+  - `PolicyComplianceArea` (`license-notice`, `non-commercial-use`, `unofficial-disclaimer`, `original-setting-fallback`, `asset-provenance-audit`, `content-isolation`) with string parsing and Display implementations.
+  - `LegalPostureStatus` (`compliant-permissive`, `original-fallback-required`, `pending-clearance`, `distribution-blocked`) and `is_distributable` predicate.
+  - `PolicyDeclaration` and `PublicAlphaGovernanceManifest` with checksums and explicit license citations.
+  - `evaluate_alpha_governance` pure deterministic evaluation with fail-closed validation (`EmptyManifest`, `EmptyDeclarationId`, `DuplicateArea`, `EmptyTitle`, `EmptyReferenceUri`, `EmptyRationale`, `EmptyFallbackUniverse`, `EmptyLicense`, `InvalidLicense`) producing `AlphaGovernanceReport` with integer basis-point compliance scores ($[0..=10,000]$ bp) and release eligibility gate checks.
+  - `render_governance_report_markdown` producing structured Markdown reports without ANSI styling.
+- `m12-alpha-compatibility-v1` (`src/alpha/compatibility.rs`) implementing cross-version compatibility matrix verification:
+  - `CompatibilityDomain` (`ruleset`, `scenario`, `protocol-dto`, `agent-profile`, `prompt-template`, `model-calibration`, `replay-artifact`, `gui-presentation`) with string parsing and Display implementations.
+  - `CompatibilityLevel` (`fully-compatible`, `backward-compatible-only`, `breaking-migration-required`, `deprecated-unsupported`) and `is_executable` predicate.
+  - `VersionMatrixEntry` and `CompatibilityMatrixDefinition` modeling migration contracts.
+  - `evaluate_compatibility_matrix` pure deterministic audit with fail-closed validation (`EmptyMatrix`, `EmptySourceVersion`, `EmptyTargetVersion`, `DuplicateDomainVersionPair`, `MissingMigrationContract`, `EmptyNotes`) producing `CompatibilityEvaluationReport`.
+  - `render_compatibility_report_markdown` producing structured Markdown reports without ANSI styling.
+- `m12-alpha-data-dictionary-v1` (`src/alpha/data_dictionary.rs`) cataloging simulation variables and auditing fog-of-war redactions:
+  - `DataCategory` (`authoritative-state`, `observation-projection`, `intent-command`, `event-log`, `causal-debrief`, `replay-record`, `protocol-dto`, `gui-presentation-bundle`) with string parsing and Display implementations.
+  - `DataSensitivityLevel` (`public-actor-visible`, `team-visible-shared`, `latent-host-authoritative`, `research-inspection-only`) with `requires_fog_redaction` predicate.
+  - `DataFieldDefinition` and `DataDictionaryDefinition` modeling data dictionary entries with explicit bounds and descriptions.
+  - `audit_data_dictionary` pure deterministic audit with fail-closed validation (`EmptyDictionary`, `EmptyFieldName`, `DuplicateFieldName`, `EmptyTypeSignature`, `EmptyValueBounds`, `EmptyDescription`, `EmptyRedactionRule`, `InvalidSensitivityRedactionPair`) enforcing that latent host state cannot be unredacted.
+  - `render_data_dictionary_markdown` producing structured Markdown reports without ANSI styling.
+- `m12-alpha-catalog-v1` (`src/alpha/catalog.rs`) registering 4 canonical benchmark alpha scenarios:
+  - `scenario-alpha-governance-compliant-v1`: Complete 6-area governance manifest with 100% verified compliance ($10,000$ bp) and `CompliantPermissive` posture.
+  - `scenario-alpha-governance-fallback-triggered-v1`: Governance manifest where disclaimer requires fallback universe activation, verifying distributable posture.
+  - `scenario-alpha-compatibility-matrix-v1`: Multi-domain compatibility matrix verifying ruleset, scenario, protocol DTO, and GUI presentation versions.
+  - `scenario-alpha-data-dictionary-complete-v1`: Canonical 12-field data dictionary auditing authoritative state, observation projections, events, debriefs, and GUI bundles with verified fog-of-war redactions.
+  - `render_alpha_scenario_markdown` producing structured Markdown reports without ANSI styling.
+- 18 new unit tests in `src/alpha/tests.rs` (628 total library tests) covering enum round-trips, fail-closed validation, error Display coverage, compliance basis points, compatibility matrix evaluation, migration contract requirements, data dictionary redaction auditing, catalog scenario execution, and Markdown report hygiene.
+
 ## [0.1.213] - 2026-08-18
 
 ### Added

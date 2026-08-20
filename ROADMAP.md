@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs` | Standalone package version reporting, a bounded fixture transcript with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, TTY prompt/completion, `--color`), and a replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1` |
-| Package | `Cargo.toml` | Version `0.1.213`, one deferred edge crate (`reedline`) |
+| Package | `Cargo.toml` | Version `0.1.214`, one deferred edge crate (`reedline`) |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -2316,13 +2316,13 @@ in its legal, accessibility, entertainment, and research claims.
 
 ### Scope
 
-- [ ] Review current fan-project policies, names, content, and asset provenance.
-- [ ] Confirm license, contribution, noncommercial, unofficial, and
+- [x] Review current fan-project policies, names, content, and asset provenance.
+- [x] Confirm license, contribution, noncommercial, unofficial, and
   original-setting fallback posture.
 - [ ] Add player, contributor, MCP-agent, experiment, replay, and data guides.
-- [ ] Publish ruleset, scenario, protocol, profile, prompt, model, and extractor
+- [x] Publish ruleset, scenario, protocol, profile, prompt, model, and extractor
   compatibility policies.
-- [ ] Add a data dictionary and model cards.
+- [x] Add a data dictionary and model cards.
 - [ ] Add known limitations, evidence boundaries, and citation guidance.
 - [ ] Package sample scenarios, replays, and experiments.
 - [ ] Run clean-install, reproducibility, security, license, and compatibility
@@ -2330,6 +2330,36 @@ in its legal, accessibility, entertainment, and research claims.
 - [ ] Conduct release-candidate human testing appropriate to public claims.
 - [ ] Archive source, lockfiles, schemas, fixtures, evidence, artifacts, and
   hashes for the release tag.
+
+### Current M12 release governance, compatibility matrix, data dictionary, and benchmark catalog evidence
+
+- [x] Define `m12-alpha-governance-v1` in `src/alpha/governance.rs` formalizing public alpha release
+  governance declarations across 6 discrete compliance areas (`LicenseNotice`, `NonCommercialUse`,
+  `UnofficialDisclaimer`, `OriginalSettingFallback`, `AssetProvenanceAudit`, `ContentIsolation`),
+  `LegalPostureStatus` (`CompliantPermissive`, `OriginalFallbackRequired`, `PendingClearance`,
+  `DistributionBlocked`), `PublicAlphaGovernanceManifest`, and pure deterministic audit evaluation
+  (`evaluate_alpha_governance`) with fail-closed validation and integer basis-point scoring ($[0..=10,000]$ bp).
+- [x] Define `m12-alpha-compatibility-v1` in `src/alpha/compatibility.rs` implementing cross-version
+  compatibility matrix verification across 8 simulation domains (`Ruleset`, `Scenario`, `ProtocolDto`,
+  `AgentProfile`, `PromptTemplate`, `ModelCalibration`, `ReplayArtifact`, `GuiPresentation`), 4
+  compatibility tiers (`FullyCompatible`, `BackwardCompatibleOnly`, `BreakingChangeMigrationRequired`,
+  `DeprecatedUnsupported`), and deterministic matrix soundness auditing (`evaluate_compatibility_matrix`).
+- [x] Define `m12-alpha-data-dictionary-v1` in `src/alpha/data_dictionary.rs` cataloging simulation variables
+  across 8 functional categories and 4 sensitivity tiers (`PublicActorVisible`, `TeamVisibleShared`,
+  `LatentHostAuthoritative`, `ResearchInspectionOnly`) with fail-closed fog-of-war redaction invariant
+  enforcement (`audit_data_dictionary`).
+- [x] Register 4 canonical benchmark alpha scenarios in `AlphaScenarioCatalog` (`m12-alpha-catalog-v1` in
+  `src/alpha/catalog.rs`: `scenario-alpha-governance-compliant-v1`, `scenario-alpha-governance-fallback-triggered-v1`,
+  `scenario-alpha-compatibility-matrix-v1`, `scenario-alpha-data-dictionary-complete-v1`) with reproducible
+  execution and verified expectations.
+- [x] Cover governance evaluation, fallback posture triggers, compliance basis points, compatibility matrix
+  validation, migration contract requirements, data dictionary redaction auditing, fail-closed error handling,
+  error Display coverage, and clean Markdown report hygiene across 18 focused tests in `src/alpha/tests.rs`
+  (628 total library tests).
+
+This establishes the formal public alpha governance framework, cross-version compatibility matrix,
+data dictionary redaction auditing, and canonical benchmark scenario catalog for M12. Player guides,
+reproducibility bundles, and release candidate archiving remain open.
 
 ### Deliverables
 
