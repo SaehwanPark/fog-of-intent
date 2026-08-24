@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs` | Standalone package version reporting, a bounded fixture transcript with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, TTY prompt/completion, `--color`), and a replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1` |
-| Package | `Cargo.toml` | Version `0.1.214`, one deferred edge crate (`reedline`) |
+| Package | `Cargo.toml` | Version `0.1.215`, one deferred edge crate (`reedline`) |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -2323,7 +2323,7 @@ in its legal, accessibility, entertainment, and research claims.
 - [x] Publish ruleset, scenario, protocol, profile, prompt, model, and extractor
   compatibility policies.
 - [x] Add a data dictionary and model cards.
-- [ ] Add known limitations, evidence boundaries, and citation guidance.
+- [x] Add known limitations, evidence boundaries, and citation guidance.
 - [ ] Package sample scenarios, replays, and experiments.
 - [ ] Run clean-install, reproducibility, security, license, and compatibility
   checks.
@@ -2357,9 +2357,27 @@ in its legal, accessibility, entertainment, and research claims.
   error Display coverage, and clean Markdown report hygiene across 18 focused tests in `src/alpha/tests.rs`
   (628 total library tests).
 
-This establishes the formal public alpha governance framework, cross-version compatibility matrix,
-data dictionary redaction auditing, and canonical benchmark scenario catalog for M12. Player guides,
-reproducibility bundles, and release candidate archiving remain open.
+### Current M12 limitations, evidence boundaries, and citation guidance evidence
+
+- [x] Define `m12-alpha-limitations-v1` in `src/alpha/limitations.rs` formalizing known technical/empirical
+  limitations across 6 discrete categories (`SimulationFidelity`, `AccessibilityCoverage`, `AgentGeneralization`,
+  `HumanRealism`, `NetworkMultiplayer`, `HardwareRequirements`), 5 evidence tiers (`SoftwareInvariants`,
+  `SyntheticAgentPlaytest`, `EmpiricalCalibration`, `LimitedHumanStudy`, `UnverifiedHypothesis`), 3 claim
+  classifications (`PermissibleBoundedClaim`, `ConditionalWithDisclaimer`, `ImpermissibleOverclaim`), `ResearchClaim`,
+  `CitationGuidance` (BibTeX, DOI/URN, canonical title, software version, repository URL, seed policy), and pure
+  deterministic audit evaluation (`audit_limitations_and_boundaries`) with fail-closed validation (`AlphaLimitationsError`)
+  and integer basis-point safety scoring ($[0..=10,000]$ bp).
+- [x] Register 3 canonical benchmark limitations scenarios in `AlphaScenarioCatalog` (`m12-alpha-catalog-v1` in
+  `src/alpha/catalog.rs`: `scenario-alpha-limitations-compliant-v1`, `scenario-alpha-limitations-overclaim-rejected-v1`,
+  `scenario-alpha-limitations-missing-disclaimer-v1`) with reproducible execution and verified expectations.
+- [x] Cover limitation category, evidence tier, and claim classification round-trips, compliant declaration auditing,
+  fail-closed validation (empty manifest/fields, duplicate IDs, impermissible overclaims, missing required disclaimers),
+  error Display formatting, catalog benchmark execution, and clean Markdown report hygiene across 24 focused tests in
+  `src/alpha/tests.rs` (634 total library tests).
+
+This establishes the formal known limitations, evidence boundaries, research claim constraints, and citation
+guidance framework for M12. Player guides, reproducibility bundles, and release candidate archiving remain open.
+
 
 ### Deliverables
 

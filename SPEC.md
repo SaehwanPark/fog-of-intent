@@ -2065,7 +2065,7 @@ behavioral research claims remain deferred until study data is collected.
 
 - Live browser-to-host interaction parity tests.
 
-### M12 — Public research-capable alpha governance, compatibility, and data dictionary — 2026-08-20
+### M12 — Public research-capable alpha governance, compatibility, data dictionary, and limitations — 2026-08-20
 
 **Status:** Initial library baseline complete
 
@@ -2074,18 +2074,20 @@ behavioral research claims remain deferred until study data is collected.
 - `m12-alpha-governance-v1` (`src/alpha/governance.rs`) defines public alpha release governance declarations across 6 discrete compliance areas (`LicenseNotice`, `NonCommercialUse`, `UnofficialDisclaimer`, `OriginalSettingFallback`, `AssetProvenanceAudit`, `ContentIsolation`), `LegalPostureStatus` (`CompliantPermissive`, `OriginalFallbackRequired`, `PendingClearance`, `DistributionBlocked`), `PublicAlphaGovernanceManifest`, and pure deterministic audit evaluation (`evaluate_alpha_governance`) with fail-closed validation (`AlphaGovernanceError`) and integer basis-point scoring ($[0..=10,000]$ bp).
 - `m12-alpha-compatibility-v1` (`src/alpha/compatibility.rs`) implements cross-version compatibility matrix verification across 8 simulation domains (`Ruleset`, `Scenario`, `ProtocolDto`, `AgentProfile`, `PromptTemplate`, `ModelCalibration`, `ReplayArtifact`, `GuiPresentation`), 4 compatibility tiers (`FullyCompatible`, `BackwardCompatibleOnly`, `BreakingChangeMigrationRequired`, `DeprecatedUnsupported`), and deterministic matrix soundness auditing (`evaluate_compatibility_matrix`).
 - `m12-alpha-data-dictionary-v1` (`src/alpha/data_dictionary.rs`) catalogs simulation variables across 8 functional categories and 4 sensitivity tiers (`PublicActorVisible`, `TeamVisibleShared`, `LatentHostAuthoritative`, `ResearchInspectionOnly`) with fail-closed fog-of-war redaction invariant enforcement (`audit_data_dictionary`).
-- `m12-alpha-catalog-v1` (`src/alpha/catalog.rs`) registers 4 canonical benchmark alpha scenarios in `AlphaScenarioCatalog`: `scenario-alpha-governance-compliant-v1`, `scenario-alpha-governance-fallback-triggered-v1`, `scenario-alpha-compatibility-matrix-v1`, and `scenario-alpha-data-dictionary-complete-v1`.
-- 18 focused unit tests in `src/alpha/tests.rs` cover governance evaluation, fallback posture triggers, compliance basis points, compatibility matrix validation, migration contract requirements, data dictionary redaction auditing, fail-closed error handling, error Display coverage, and clean Markdown report hygiene.
+- `m12-alpha-limitations-v1` (`src/alpha/limitations.rs`) formalizes known limitations across 6 categories (`SimulationFidelity`, `AccessibilityCoverage`, `AgentGeneralization`, `HumanRealism`, `NetworkMultiplayer`, `HardwareRequirements`), 5 evidence tiers (`SoftwareInvariants`, `SyntheticAgentPlaytest`, `EmpiricalCalibration`, `LimitedHumanStudy`, `UnverifiedHypothesis`), 3 claim classifications (`PermissibleBoundedClaim`, `ConditionalWithDisclaimer`, `ImpermissibleOverclaim`), `ResearchClaim`, `CitationGuidance` (BibTeX, DOI/URN, canonical title, software version, repository URL, seed policy), and pure deterministic audit evaluation (`audit_limitations_and_boundaries`) with fail-closed validation (`AlphaLimitationsError`) and integer basis-point safety scoring ($[0..=10,000]$ bp).
+- `m12-alpha-catalog-v1` (`src/alpha/catalog.rs`) registers 7 canonical benchmark alpha scenarios in `AlphaScenarioCatalog`: `scenario-alpha-governance-compliant-v1`, `scenario-alpha-governance-fallback-triggered-v1`, `scenario-alpha-compatibility-matrix-v1`, `scenario-alpha-data-dictionary-complete-v1`, `scenario-alpha-limitations-compliant-v1`, `scenario-alpha-limitations-overclaim-rejected-v1`, and `scenario-alpha-limitations-missing-disclaimer-v1`.
+- 24 focused unit tests in `src/alpha/tests.rs` cover governance evaluation, fallback posture triggers, compliance basis points, compatibility matrix validation, migration contract requirements, data dictionary redaction auditing, limitations/evidence boundary auditing, overclaim rejection, disclaimer enforcement, fail-closed error handling, error Display coverage, and clean Markdown report hygiene.
 
 #### Verification
 
-- `cargo test --locked alpha::` passes 18 unit tests (628 total library tests).
-- All 4 benchmark catalog scenarios execute deterministically and verify governance compliance, fallback activation, compatibility soundness, and data dictionary fog-of-war redactions.
+- `cargo test --locked alpha::` passes 24 unit tests (634 total library tests).
+- All 7 benchmark catalog scenarios execute deterministically and verify governance compliance, fallback activation, compatibility soundness, data dictionary fog-of-war redactions, compliant claim safety, overclaim rejection, and required disclaimer enforcement.
 - Repository checker confirms zero async, network, or wall-clock primitives in `src/alpha/`.
 
 #### Deferred
 
 - Complete user/contributor documentation packaging, reproduction bundles, and release tag archiving.
+
 
 ## Future
 

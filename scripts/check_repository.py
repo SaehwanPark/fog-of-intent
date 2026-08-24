@@ -71,6 +71,7 @@ CORE_RUST_FILES = (
   "src/alpha/compatibility.rs",
   "src/alpha/data_dictionary.rs",
   "src/alpha/governance.rs",
+  "src/alpha/limitations.rs",
   "src/alpha/mod.rs",
   "src/gui/asset.rs",
   "src/gui/asset_catalog.rs",
