@@ -1,5 +1,10 @@
 //! Benchmark scenarios and canonical test catalogs for Public Alpha governance, compatibility, limitations, guides, and reproducibility.
 
+use crate::alpha::checks::{
+  ALPHA_RELEASE_CHECKS_SCHEMA_VERSION, AlphaReleaseChecksError, AlphaReleaseChecksManifest,
+  CheckVerificationStatus, ReleaseCheckCategory, ReleaseCheckDefinition, ReleaseCheckSeverity,
+  ReleaseChecksAuditReport, audit_release_checks,
+};
 use crate::alpha::compatibility::{
   CompatibilityDomain, CompatibilityEvaluationReport, CompatibilityLevel,
   CompatibilityMatrixDefinition, VersionMatrixEntry, evaluate_compatibility_matrix,
@@ -40,6 +45,7 @@ pub enum AlphaScenarioKind {
   LimitationsAudit,
   GuidesAudit,
   ReproducibilityAudit,
+  ReleaseChecksAudit,
 }
 
 impl AlphaScenarioKind {
@@ -51,6 +57,7 @@ impl AlphaScenarioKind {
       Self::LimitationsAudit => "limitations-audit",
       Self::GuidesAudit => "guides-audit",
       Self::ReproducibilityAudit => "reproducibility-audit",
+      Self::ReleaseChecksAudit => "release-checks-audit",
     }
   }
 }
@@ -160,7 +167,33 @@ impl AlphaScenarioCatalog {
       expected_eligible: false,
     };
 
-  pub const ALL: [AlphaScenarioDefinition; 11] = [
+  pub const SCENARIO_RELEASE_CHECKS_COMPLIANT: AlphaScenarioDefinition = AlphaScenarioDefinition {
+    scenario_id: "scenario-alpha-release-checks-compliant-v1",
+    title: "Canonical Public Alpha Release Checks Suite",
+    kind: AlphaScenarioKind::ReleaseChecksAudit,
+    description: "Audits a complete 6-category release verification suite across clean-install, reproducibility, security, license, compatibility, and data redaction with 100% pass.",
+    expected_eligible: true,
+  };
+
+  pub const SCENARIO_RELEASE_CHECKS_BLOCKER_REJECTED: AlphaScenarioDefinition =
+    AlphaScenarioDefinition {
+      scenario_id: "scenario-alpha-release-checks-blocker-rejected-v1",
+      title: "Critical Blocker Release Check Rejection",
+      kind: AlphaScenarioKind::ReleaseChecksAudit,
+      description: "Verifies fail-closed rejection when a release check detects a critical security blocker or latent state disclosure.",
+      expected_eligible: false,
+    };
+
+  pub const SCENARIO_RELEASE_CHECKS_MISSING_CATEGORY_REJECTED: AlphaScenarioDefinition =
+    AlphaScenarioDefinition {
+      scenario_id: "scenario-alpha-release-checks-missing-category-rejected-v1",
+      title: "Missing Mandatory Check Category Rejection",
+      kind: AlphaScenarioKind::ReleaseChecksAudit,
+      description: "Verifies fail-closed rejection when a release manifest omits one of the 6 required verification categories.",
+      expected_eligible: false,
+    };
+
+  pub const ALL: [AlphaScenarioDefinition; 14] = [
     Self::SCENARIO_GOVERNANCE_COMPLIANT,
     Self::SCENARIO_GOVERNANCE_FALLBACK,
     Self::SCENARIO_COMPATIBILITY_MATRIX,
@@ -172,6 +205,9 @@ impl AlphaScenarioCatalog {
     Self::SCENARIO_GUIDES_CYCLIC_REJECTED,
     Self::SCENARIO_REPRODUCIBILITY_BUNDLE,
     Self::SCENARIO_REPRODUCIBILITY_CORRUPT_REJECTED,
+    Self::SCENARIO_RELEASE_CHECKS_COMPLIANT,
+    Self::SCENARIO_RELEASE_CHECKS_BLOCKER_REJECTED,
+    Self::SCENARIO_RELEASE_CHECKS_MISSING_CATEGORY_REJECTED,
   ];
 
   pub fn lookup(scenario_id: &str) -> Option<&'static AlphaScenarioDefinition> {
@@ -948,6 +984,153 @@ impl AlphaScenarioCatalog {
   -> Result<ReproducibilityAuditReport, AlphaReproducibilityError> {
     let bundle = Self::build_corrupt_reproducibility_bundle();
     audit_reproducibility_bundle(&bundle)
+  }
+
+  /// Constructs the canonical compliant release checks manifest.
+  pub fn build_canonical_release_checks_manifest() -> AlphaReleaseChecksManifest {
+    static CHECKS: [ReleaseCheckDefinition; 6] = [
+      ReleaseCheckDefinition {
+        check_id: "CHK-CLEAN-INSTALL-01",
+        category: ReleaseCheckCategory::CleanInstall,
+        title: "Clean Environment Build and Test",
+        description: "Fresh checkout builds cleanly with locked toolchain and passes all unit and binary integration tests without dirty files",
+        severity: ReleaseCheckSeverity::VerifiedPass,
+        status: CheckVerificationStatus::Passed,
+        evidence_command: "cargo +1.96.0 test --locked",
+        evidence_hash: "811c9dc500000011",
+        mitigation_notes: None,
+      },
+      ReleaseCheckDefinition {
+        check_id: "CHK-REPRODUCIBILITY-01",
+        category: ReleaseCheckCategory::Reproducibility,
+        title: "Deterministic Replay and State Hash Verification",
+        description: "Composed complete matches and sample artifacts replay to identical FNV-1a state hashes across independent executions",
+        severity: ReleaseCheckSeverity::VerifiedPass,
+        status: CheckVerificationStatus::Passed,
+        evidence_command: "fog-of-intent --scenario m9-complete-match-replay-v1",
+        evidence_hash: "811c9dc500000012",
+        mitigation_notes: None,
+      },
+      ReleaseCheckDefinition {
+        check_id: "CHK-SECURITY-01",
+        category: ReleaseCheckCategory::SecurityAdvisory,
+        title: "Repository Checker and Dependency Audit",
+        description: "Zero unauthorized external dependencies, zero async/network primitives in core, and strict memory safety invariants verified",
+        severity: ReleaseCheckSeverity::VerifiedPass,
+        status: CheckVerificationStatus::Passed,
+        evidence_command: "python3 scripts/check_repository.py",
+        evidence_hash: "811c9dc500000013",
+        mitigation_notes: None,
+      },
+      ReleaseCheckDefinition {
+        check_id: "CHK-LICENSE-01",
+        category: ReleaseCheckCategory::LicenseCompliance,
+        title: "MIT License Notice and Provenance Audit",
+        description: "Canonical MIT license header present in repository root, Cargo metadata, and asset provenance registers",
+        severity: ReleaseCheckSeverity::VerifiedPass,
+        status: CheckVerificationStatus::Passed,
+        evidence_command: "cargo metadata --format-version 1",
+        evidence_hash: "811c9dc500000014",
+        mitigation_notes: None,
+      },
+      ReleaseCheckDefinition {
+        check_id: "CHK-COMPATIBILITY-01",
+        category: ReleaseCheckCategory::CompatibilityMatrix,
+        title: "Cross-Version Migration and Compatibility Matrix",
+        description: "Ruleset, scenario, protocol DTO, and presentation schema compatibility matrices verified with explicit migration contracts",
+        severity: ReleaseCheckSeverity::VerifiedPass,
+        status: CheckVerificationStatus::Passed,
+        evidence_command: "cargo test --locked alpha::compatibility::",
+        evidence_hash: "811c9dc500000015",
+        mitigation_notes: None,
+      },
+      ReleaseCheckDefinition {
+        check_id: "CHK-REDACTION-01",
+        category: ReleaseCheckCategory::DataRedaction,
+        title: "Fog-of-War Redaction and Latent State Secrecy",
+        description: "Actor-visible observation DTOs, causal debriefs, and GUI presentation bundles maintain zero latent host state leakage",
+        severity: ReleaseCheckSeverity::VerifiedPass,
+        status: CheckVerificationStatus::Passed,
+        evidence_command: "cargo test --locked alpha::data_dictionary::",
+        evidence_hash: "811c9dc500000016",
+        mitigation_notes: None,
+      },
+    ];
+
+    AlphaReleaseChecksManifest {
+      schema_version: ALPHA_RELEASE_CHECKS_SCHEMA_VERSION,
+      manifest_id: "manifest-alpha-release-checks-compliant-v1",
+      release_version: "0.1.217",
+      target_commit: "ec340c2a8f01b9e5",
+      checks: &CHECKS,
+    }
+  }
+
+  /// Constructs a release checks manifest with a critical blocker.
+  pub fn build_blocker_release_checks_manifest() -> AlphaReleaseChecksManifest {
+    static BLOCKER_CHECKS: [ReleaseCheckDefinition; 1] = [ReleaseCheckDefinition {
+      check_id: "CHK-SECURITY-BLOCKER-01",
+      category: ReleaseCheckCategory::SecurityAdvisory,
+      title: "Latent State Leak Detected",
+      description: "Authoritative opponent coordinates exposed in public observation projection DTO",
+      severity: ReleaseCheckSeverity::CriticalBlocker,
+      status: CheckVerificationStatus::Failed,
+      evidence_command: "cargo test --locked protocol::",
+      evidence_hash: "811c9dc500000099",
+      mitigation_notes: Some("Requires immediate patch in observation projection adapter"),
+    }];
+
+    AlphaReleaseChecksManifest {
+      schema_version: ALPHA_RELEASE_CHECKS_SCHEMA_VERSION,
+      manifest_id: "manifest-alpha-release-checks-blocker-v1",
+      release_version: "0.1.217",
+      target_commit: "ec340c2a8f01b9e5",
+      checks: &BLOCKER_CHECKS,
+    }
+  }
+
+  /// Constructs a release checks manifest missing a mandatory category.
+  pub fn build_missing_category_release_checks_manifest() -> AlphaReleaseChecksManifest {
+    static INCOMPLETE_CHECKS: [ReleaseCheckDefinition; 1] = [ReleaseCheckDefinition {
+      check_id: "CHK-CLEAN-INSTALL-ONLY-01",
+      category: ReleaseCheckCategory::CleanInstall,
+      title: "Clean Install Only",
+      description: "Fresh checkout builds cleanly",
+      severity: ReleaseCheckSeverity::VerifiedPass,
+      status: CheckVerificationStatus::Passed,
+      evidence_command: "cargo test",
+      evidence_hash: "811c9dc500000011",
+      mitigation_notes: None,
+    }];
+
+    AlphaReleaseChecksManifest {
+      schema_version: ALPHA_RELEASE_CHECKS_SCHEMA_VERSION,
+      manifest_id: "manifest-alpha-release-checks-missing-cat-v1",
+      release_version: "0.1.217",
+      target_commit: "ec340c2a8f01b9e5",
+      checks: &INCOMPLETE_CHECKS,
+    }
+  }
+
+  /// Runs the compliant release checks benchmark.
+  pub fn execute_release_checks_compliant()
+  -> Result<ReleaseChecksAuditReport, AlphaReleaseChecksError> {
+    let manifest = Self::build_canonical_release_checks_manifest();
+    audit_release_checks(&manifest)
+  }
+
+  /// Runs the blocker release checks benchmark.
+  pub fn execute_release_checks_blocker()
+  -> Result<ReleaseChecksAuditReport, AlphaReleaseChecksError> {
+    let manifest = Self::build_blocker_release_checks_manifest();
+    audit_release_checks(&manifest)
+  }
+
+  /// Runs the missing category release checks benchmark.
+  pub fn execute_release_checks_missing_category()
+  -> Result<ReleaseChecksAuditReport, AlphaReleaseChecksError> {
+    let manifest = Self::build_missing_category_release_checks_manifest();
+    audit_release_checks(&manifest)
   }
 }
 

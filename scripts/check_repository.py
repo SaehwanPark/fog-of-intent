@@ -68,6 +68,7 @@ CORE_RUST_FILES = (
   "src/agent/trust.rs",
   "src/agent/uncertainty.rs",
   "src/alpha/catalog.rs",
+  "src/alpha/checks.rs",
   "src/alpha/compatibility.rs",
   "src/alpha/data_dictionary.rs",
   "src/alpha/governance.rs",

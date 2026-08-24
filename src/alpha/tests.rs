@@ -1,4 +1,9 @@
 use crate::alpha::catalog::{AlphaScenarioCatalog, render_alpha_scenario_markdown};
+use crate::alpha::checks::{
+  ALPHA_RELEASE_CHECKS_SCHEMA_VERSION, AlphaReleaseChecksError, CheckVerificationStatus,
+  ReleaseCheckCategory, ReleaseCheckDefinition, ReleaseCheckSeverity, audit_release_checks,
+  render_release_checks_report_markdown,
+};
 use crate::alpha::compatibility::{
   ALPHA_COMPATIBILITY_SCHEMA_VERSION, CompatibilityDomain, CompatibilityError, CompatibilityLevel,
   evaluate_compatibility_matrix, render_compatibility_report_markdown,
@@ -1107,6 +1112,337 @@ fn catalog_scenarios_execute_and_verify_all_expectations() {
     rep11,
     Err(AlphaReproducibilityError::InvalidContentHash { .. })
   ));
+
+  let rep12 = AlphaScenarioCatalog::execute_release_checks_compliant()
+    .expect("compliant release checks scenario");
+  assert!(rep12.is_release_ready);
+  assert_eq!(rep12.total_checks, 6);
+  assert_eq!(rep12.readiness_score_bp, 10_000);
+
+  let rep13 = AlphaScenarioCatalog::execute_release_checks_blocker();
+  assert!(matches!(
+    rep13,
+    Err(AlphaReleaseChecksError::CriticalBlockerDetected { .. })
+  ));
+
+  let rep14 = AlphaScenarioCatalog::execute_release_checks_missing_category();
+  assert!(matches!(
+    rep14,
+    Err(AlphaReleaseChecksError::MissingRequiredCategory { .. })
+  ));
+}
+
+#[test]
+fn release_check_category_round_trips() {
+  let categories = [
+    ReleaseCheckCategory::CleanInstall,
+    ReleaseCheckCategory::Reproducibility,
+    ReleaseCheckCategory::SecurityAdvisory,
+    ReleaseCheckCategory::LicenseCompliance,
+    ReleaseCheckCategory::CompatibilityMatrix,
+    ReleaseCheckCategory::DataRedaction,
+  ];
+  for cat in categories {
+    let s = cat.as_str();
+    assert_eq!(ReleaseCheckCategory::parse(s), Some(cat));
+    assert_eq!(cat.to_string(), s);
+  }
+  assert_eq!(ReleaseCheckCategory::parse("invalid-category"), None);
+  assert_eq!(ReleaseCheckCategory::all().len(), 6);
+}
+
+#[test]
+fn release_check_severity_round_trips() {
+  let severities = [
+    ReleaseCheckSeverity::CriticalBlocker,
+    ReleaseCheckSeverity::MajorIssue,
+    ReleaseCheckSeverity::MinorWarning,
+    ReleaseCheckSeverity::VerifiedPass,
+  ];
+  for sev in severities {
+    let s = sev.as_str();
+    assert_eq!(ReleaseCheckSeverity::parse(s), Some(sev));
+    assert_eq!(sev.to_string(), s);
+  }
+  assert_eq!(ReleaseCheckSeverity::parse("invalid-severity"), None);
+
+  assert!(ReleaseCheckSeverity::CriticalBlocker.is_blocking());
+  assert!(ReleaseCheckSeverity::MajorIssue.is_blocking());
+  assert!(!ReleaseCheckSeverity::MinorWarning.is_blocking());
+  assert!(!ReleaseCheckSeverity::VerifiedPass.is_blocking());
+}
+
+#[test]
+fn check_verification_status_round_trips() {
+  let statuses = [
+    CheckVerificationStatus::Passed,
+    CheckVerificationStatus::ConditionallyPassed,
+    CheckVerificationStatus::Failed,
+    CheckVerificationStatus::Skipped,
+  ];
+  for st in statuses {
+    let s = st.as_str();
+    assert_eq!(CheckVerificationStatus::parse(s), Some(st));
+    assert_eq!(st.to_string(), s);
+  }
+  assert_eq!(CheckVerificationStatus::parse("invalid-status"), None);
+
+  assert!(CheckVerificationStatus::Passed.is_successful());
+  assert!(CheckVerificationStatus::ConditionallyPassed.is_successful());
+  assert!(!CheckVerificationStatus::Failed.is_successful());
+  assert!(!CheckVerificationStatus::Skipped.is_successful());
+
+  assert_eq!(CheckVerificationStatus::Passed.score_weight_bp(), 10_000);
+  assert_eq!(
+    CheckVerificationStatus::ConditionallyPassed.score_weight_bp(),
+    7_500
+  );
+  assert_eq!(CheckVerificationStatus::Skipped.score_weight_bp(), 5_000);
+  assert_eq!(CheckVerificationStatus::Failed.score_weight_bp(), 0);
+}
+
+#[test]
+fn release_checks_compliant_audit_succeeds() {
+  let manifest = AlphaScenarioCatalog::build_canonical_release_checks_manifest();
+  let report = audit_release_checks(&manifest).expect("compliant release checks must succeed");
+
+  assert_eq!(report.schema_version, ALPHA_RELEASE_CHECKS_SCHEMA_VERSION);
+  assert_eq!(
+    report.manifest_id,
+    "manifest-alpha-release-checks-compliant-v1"
+  );
+  assert_eq!(report.release_version, "0.1.217");
+  assert_eq!(report.target_commit, "ec340c2a8f01b9e5");
+  assert_eq!(report.total_checks, 6);
+  assert_eq!(report.passed_checks, 6);
+  assert_eq!(report.conditionally_passed_checks, 0);
+  assert_eq!(report.failed_checks, 0);
+  assert_eq!(report.skipped_checks, 0);
+  assert_eq!(report.critical_blockers_count, 0);
+  assert_eq!(report.readiness_score_bp, 10_000);
+  assert!(report.is_release_ready);
+  assert_eq!(report.category_summaries.len(), 6);
+  for cat_summary in &report.category_summaries {
+    assert_eq!(cat_summary.total_checks, 1);
+    assert_eq!(cat_summary.passed_checks, 1);
+    assert!(!cat_summary.has_critical_blocker);
+  }
+}
+
+#[test]
+fn release_checks_fail_closed_validation() {
+  let mut m = AlphaScenarioCatalog::build_canonical_release_checks_manifest();
+  m.schema_version = "invalid-v0";
+  assert_eq!(
+    audit_release_checks(&m),
+    Err(AlphaReleaseChecksError::UnsupportedSchemaVersion {
+      version: "invalid-v0".to_string(),
+    })
+  );
+
+  let mut m = AlphaScenarioCatalog::build_canonical_release_checks_manifest();
+  m.manifest_id = "   ";
+  assert_eq!(
+    audit_release_checks(&m),
+    Err(AlphaReleaseChecksError::EmptyManifestId)
+  );
+
+  let mut m = AlphaScenarioCatalog::build_canonical_release_checks_manifest();
+  m.release_version = "";
+  assert_eq!(
+    audit_release_checks(&m),
+    Err(AlphaReleaseChecksError::EmptyReleaseVersion)
+  );
+
+  let mut m = AlphaScenarioCatalog::build_canonical_release_checks_manifest();
+  m.target_commit = "  ";
+  assert_eq!(
+    audit_release_checks(&m),
+    Err(AlphaReleaseChecksError::EmptyTargetCommit)
+  );
+
+  let mut m = AlphaScenarioCatalog::build_canonical_release_checks_manifest();
+  m.checks = &[];
+  assert_eq!(
+    audit_release_checks(&m),
+    Err(AlphaReleaseChecksError::ZeroChecks)
+  );
+
+  static EMPTY_ID_CHECK: [ReleaseCheckDefinition; 1] = [ReleaseCheckDefinition {
+    check_id: "",
+    category: ReleaseCheckCategory::CleanInstall,
+    title: "T",
+    description: "D",
+    severity: ReleaseCheckSeverity::VerifiedPass,
+    status: CheckVerificationStatus::Passed,
+    evidence_command: "cmd",
+    evidence_hash: "811c9dc500000011",
+    mitigation_notes: None,
+  }];
+  let mut m = AlphaScenarioCatalog::build_canonical_release_checks_manifest();
+  m.checks = &EMPTY_ID_CHECK;
+  assert_eq!(
+    audit_release_checks(&m),
+    Err(AlphaReleaseChecksError::EmptyCheckId)
+  );
+
+  static DUPLICATE_CHECKS: [ReleaseCheckDefinition; 2] = [
+    ReleaseCheckDefinition {
+      check_id: "CHK-01",
+      category: ReleaseCheckCategory::CleanInstall,
+      title: "T1",
+      description: "D1",
+      severity: ReleaseCheckSeverity::VerifiedPass,
+      status: CheckVerificationStatus::Passed,
+      evidence_command: "cmd1",
+      evidence_hash: "811c9dc500000011",
+      mitigation_notes: None,
+    },
+    ReleaseCheckDefinition {
+      check_id: "CHK-01",
+      category: ReleaseCheckCategory::Reproducibility,
+      title: "T2",
+      description: "D2",
+      severity: ReleaseCheckSeverity::VerifiedPass,
+      status: CheckVerificationStatus::Passed,
+      evidence_command: "cmd2",
+      evidence_hash: "811c9dc500000012",
+      mitigation_notes: None,
+    },
+  ];
+  let mut m = AlphaScenarioCatalog::build_canonical_release_checks_manifest();
+  m.checks = &DUPLICATE_CHECKS;
+  assert_eq!(
+    audit_release_checks(&m),
+    Err(AlphaReleaseChecksError::DuplicateCheckId {
+      check_id: "CHK-01".to_string(),
+    })
+  );
+
+  static EMPTY_TITLE_CHECK: [ReleaseCheckDefinition; 1] = [ReleaseCheckDefinition {
+    check_id: "CHK-01",
+    category: ReleaseCheckCategory::CleanInstall,
+    title: "  ",
+    description: "D",
+    severity: ReleaseCheckSeverity::VerifiedPass,
+    status: CheckVerificationStatus::Passed,
+    evidence_command: "cmd",
+    evidence_hash: "811c9dc500000011",
+    mitigation_notes: None,
+  }];
+  let mut m = AlphaScenarioCatalog::build_canonical_release_checks_manifest();
+  m.checks = &EMPTY_TITLE_CHECK;
+  assert_eq!(
+    audit_release_checks(&m),
+    Err(AlphaReleaseChecksError::EmptyTitle {
+      check_id: "CHK-01".to_string(),
+    })
+  );
+
+  static EMPTY_DESC_CHECK: [ReleaseCheckDefinition; 1] = [ReleaseCheckDefinition {
+    check_id: "CHK-01",
+    category: ReleaseCheckCategory::CleanInstall,
+    title: "T",
+    description: "",
+    severity: ReleaseCheckSeverity::VerifiedPass,
+    status: CheckVerificationStatus::Passed,
+    evidence_command: "cmd",
+    evidence_hash: "811c9dc500000011",
+    mitigation_notes: None,
+  }];
+  let mut m = AlphaScenarioCatalog::build_canonical_release_checks_manifest();
+  m.checks = &EMPTY_DESC_CHECK;
+  assert_eq!(
+    audit_release_checks(&m),
+    Err(AlphaReleaseChecksError::EmptyDescription {
+      check_id: "CHK-01".to_string(),
+    })
+  );
+
+  static EMPTY_CMD_CHECK: [ReleaseCheckDefinition; 1] = [ReleaseCheckDefinition {
+    check_id: "CHK-01",
+    category: ReleaseCheckCategory::CleanInstall,
+    title: "T",
+    description: "D",
+    severity: ReleaseCheckSeverity::VerifiedPass,
+    status: CheckVerificationStatus::Passed,
+    evidence_command: " ",
+    evidence_hash: "811c9dc500000011",
+    mitigation_notes: None,
+  }];
+  let mut m = AlphaScenarioCatalog::build_canonical_release_checks_manifest();
+  m.checks = &EMPTY_CMD_CHECK;
+  assert_eq!(
+    audit_release_checks(&m),
+    Err(AlphaReleaseChecksError::EmptyEvidenceCommand {
+      check_id: "CHK-01".to_string(),
+    })
+  );
+
+  static INVALID_HASH_CHECK: [ReleaseCheckDefinition; 1] = [ReleaseCheckDefinition {
+    check_id: "CHK-01",
+    category: ReleaseCheckCategory::CleanInstall,
+    title: "T",
+    description: "D",
+    severity: ReleaseCheckSeverity::VerifiedPass,
+    status: CheckVerificationStatus::Passed,
+    evidence_command: "cmd",
+    evidence_hash: "invalid-hash",
+    mitigation_notes: None,
+  }];
+  let mut m = AlphaScenarioCatalog::build_canonical_release_checks_manifest();
+  m.checks = &INVALID_HASH_CHECK;
+  assert_eq!(
+    audit_release_checks(&m),
+    Err(AlphaReleaseChecksError::InvalidEvidenceHash {
+      check_id: "CHK-01".to_string(),
+      hash: "invalid-hash".to_string(),
+    })
+  );
+}
+
+#[test]
+fn release_checks_error_display_coverage() {
+  let errors = [
+    AlphaReleaseChecksError::EmptyManifest,
+    AlphaReleaseChecksError::UnsupportedSchemaVersion {
+      version: "v0".to_string(),
+    },
+    AlphaReleaseChecksError::EmptyManifestId,
+    AlphaReleaseChecksError::EmptyReleaseVersion,
+    AlphaReleaseChecksError::EmptyTargetCommit,
+    AlphaReleaseChecksError::ZeroChecks,
+    AlphaReleaseChecksError::EmptyCheckId,
+    AlphaReleaseChecksError::DuplicateCheckId {
+      check_id: "CHK-01".to_string(),
+    },
+    AlphaReleaseChecksError::EmptyTitle {
+      check_id: "CHK-01".to_string(),
+    },
+    AlphaReleaseChecksError::EmptyDescription {
+      check_id: "CHK-01".to_string(),
+    },
+    AlphaReleaseChecksError::EmptyEvidenceCommand {
+      check_id: "CHK-01".to_string(),
+    },
+    AlphaReleaseChecksError::InvalidEvidenceHash {
+      check_id: "CHK-01".to_string(),
+      hash: "bad".to_string(),
+    },
+    AlphaReleaseChecksError::CriticalBlockerDetected {
+      check_id: "CHK-01".to_string(),
+      category: "security".to_string(),
+      description: "exploit".to_string(),
+    },
+    AlphaReleaseChecksError::MissingRequiredCategory {
+      category: "license-compliance".to_string(),
+    },
+  ];
+
+  for err in errors {
+    let formatted = err.to_string();
+    assert!(!formatted.is_empty());
+  }
 }
 
 #[test]
@@ -1140,4 +1476,9 @@ fn markdown_report_rendering_hygiene() {
   let repro_md = render_reproducibility_report_markdown(&repro_rep);
   assert!(repro_md.starts_with("# Public Alpha Reproducibility Bundle Audit Report"));
   assert!(!repro_md.contains('\x1b'));
+
+  let checks_rep = AlphaScenarioCatalog::execute_release_checks_compliant().unwrap();
+  let checks_md = render_release_checks_report_markdown(&checks_rep);
+  assert!(checks_md.starts_with("# Fog of Intent — Public Alpha Release Readiness Audit Report"));
+  assert!(!checks_md.contains('\x1b'));
 }

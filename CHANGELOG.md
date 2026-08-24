@@ -6,6 +6,23 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.217] - 2026-08-24
+
+### Added
+
+- `m12-alpha-release-checks-v1` (`src/alpha/checks.rs`) implementing the Public Alpha release readiness verification and multi-domain check suite:
+  - `ReleaseCheckCategory` (`clean-install`, `reproducibility`, `security-advisory`, `license-compliance`, `compatibility-matrix`, `data-redaction`) with string parsing and Display implementations.
+  - `ReleaseCheckSeverity` (`critical-blocker`, `major-issue`, `minor-warning`, `verified-pass`) with `is_blocking` predicate, string parsing, and Display implementations.
+  - `CheckVerificationStatus` (`passed`, `conditionally-passed`, `failed`, `skipped`) with `is_successful` predicate, integer basis-point scoring weights ($[0..=10,000]$ bp), string parsing, and Display implementations.
+  - `ReleaseCheckDefinition` and `AlphaReleaseChecksManifest` modeling release verification check suites with verification commands, 16-hex FNV-1a checksums, and mitigation notes.
+  - `audit_release_checks` pure deterministic audit with fail-closed validation (`EmptyManifest`, `UnsupportedSchemaVersion`, `EmptyManifestId`, `EmptyReleaseVersion`, `EmptyTargetCommit`, `ZeroChecks`, `EmptyCheckId`, `DuplicateCheckId`, `EmptyTitle`, `EmptyDescription`, `EmptyEvidenceCommand`, `InvalidEvidenceHash`, `CriticalBlockerDetected`, `MissingRequiredCategory`) evaluating integer basis-point release readiness scores ($[0..=10,000]$ bp), category summaries, and `is_release_ready` readiness gate checks ($\ge 8,500$ bp, 0 blockers, 0 failures, 100% required categories).
+  - `render_release_checks_report_markdown` producing structured Markdown tables without ANSI styling.
+- `m12-alpha-catalog-v1` (`src/alpha/catalog.rs`) registering 3 canonical benchmark release check scenarios (14 total alpha scenarios):
+  - `scenario-alpha-release-checks-compliant-v1`: Complete 6-category release verification suite across clean-install, reproducibility, security, license, compatibility, and data redaction with 100% pass ($10,000$ bp).
+  - `scenario-alpha-release-checks-blocker-rejected-v1`: Fail-closed rejection when a critical blocker (e.g. latent state leak or security vulnerability) is detected.
+  - `scenario-alpha-release-checks-missing-category-rejected-v1`: Fail-closed rejection when a required verification category is omitted from the manifest.
+- 6 new unit tests in `src/alpha/tests.rs` (38 total Alpha tests, 648 total library tests) covering enum round-trips, fail-closed validation, error Display coverage, score basis points, release readiness gate evaluation, catalog scenario execution, and Markdown report hygiene.
+
 ## [0.1.216] - 2026-08-24
 
 ### Added
