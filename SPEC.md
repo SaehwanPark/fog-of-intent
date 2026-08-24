@@ -2065,7 +2065,7 @@ behavioral research claims remain deferred until study data is collected.
 
 - Live browser-to-host interaction parity tests.
 
-### M12 — Public research-capable alpha governance, compatibility, data dictionary, and limitations — 2026-08-20
+### M12 — Public research-capable alpha governance, compatibility, data dictionary, limitations, guides, and reproducibility — 2026-08-20
 
 **Status:** Initial library baseline complete
 
@@ -2075,18 +2075,20 @@ behavioral research claims remain deferred until study data is collected.
 - `m12-alpha-compatibility-v1` (`src/alpha/compatibility.rs`) implements cross-version compatibility matrix verification across 8 simulation domains (`Ruleset`, `Scenario`, `ProtocolDto`, `AgentProfile`, `PromptTemplate`, `ModelCalibration`, `ReplayArtifact`, `GuiPresentation`), 4 compatibility tiers (`FullyCompatible`, `BackwardCompatibleOnly`, `BreakingChangeMigrationRequired`, `DeprecatedUnsupported`), and deterministic matrix soundness auditing (`evaluate_compatibility_matrix`).
 - `m12-alpha-data-dictionary-v1` (`src/alpha/data_dictionary.rs`) catalogs simulation variables across 8 functional categories and 4 sensitivity tiers (`PublicActorVisible`, `TeamVisibleShared`, `LatentHostAuthoritative`, `ResearchInspectionOnly`) with fail-closed fog-of-war redaction invariant enforcement (`audit_data_dictionary`).
 - `m12-alpha-limitations-v1` (`src/alpha/limitations.rs`) formalizes known limitations across 6 categories (`SimulationFidelity`, `AccessibilityCoverage`, `AgentGeneralization`, `HumanRealism`, `NetworkMultiplayer`, `HardwareRequirements`), 5 evidence tiers (`SoftwareInvariants`, `SyntheticAgentPlaytest`, `EmpiricalCalibration`, `LimitedHumanStudy`, `UnverifiedHypothesis`), 3 claim classifications (`PermissibleBoundedClaim`, `ConditionalWithDisclaimer`, `ImpermissibleOverclaim`), `ResearchClaim`, `CitationGuidance` (BibTeX, DOI/URN, canonical title, software version, repository URL, seed policy), and pure deterministic audit evaluation (`audit_limitations_and_boundaries`) with fail-closed validation (`AlphaLimitationsError`) and integer basis-point safety scoring ($[0..=10,000]$ bp).
-- `m12-alpha-catalog-v1` (`src/alpha/catalog.rs`) registers 7 canonical benchmark alpha scenarios in `AlphaScenarioCatalog`: `scenario-alpha-governance-compliant-v1`, `scenario-alpha-governance-fallback-triggered-v1`, `scenario-alpha-compatibility-matrix-v1`, `scenario-alpha-data-dictionary-complete-v1`, `scenario-alpha-limitations-compliant-v1`, `scenario-alpha-limitations-overclaim-rejected-v1`, and `scenario-alpha-limitations-missing-disclaimer-v1`.
-- 24 focused unit tests in `src/alpha/tests.rs` cover governance evaluation, fallback posture triggers, compliance basis points, compatibility matrix validation, migration contract requirements, data dictionary redaction auditing, limitations/evidence boundary auditing, overclaim rejection, disclaimer enforcement, fail-closed error handling, error Display coverage, and clean Markdown report hygiene.
+- `m12-alpha-guides-v1` (`src/alpha/guides.rs`) formalizes documentation guide manifests across 6 target audiences (`Player`, `Contributor`, `McpAgent`, `Experimenter`, `ReplayAnalyst`, `DataScientist`), 7 section categories (`Prerequisites`, `CoreConcepts`, `Quickstart`, `InteractiveWalkthrough`, `ProtocolContracts`, `Troubleshooting`, `EvidenceAndLimitations`), structured `GuideDocumentDefinition`, prerequisite DAG cycle detection via DFS, completeness basis-point scoring ($[0..=10,000]$ bp), and pure deterministic audit evaluation (`audit_guide_manifests`).
+- `m12-alpha-reproducibility-v1` (`src/alpha/reproducibility.rs`) implements sample artifact packaging across 5 artifact kinds (`ScenarioBenchmark`, `ReplayTranscript`, `ExperimentRun`, `ModelCalibrationStudy`, `BehavioralTelemetry`), 4 reproducibility statuses (`FullyReproducible`, `RequiresModelAdapter`, `SyntheticBaselineOnly`, `CorruptedOrMissing`), 16-hex FNV-1a content hash integrity verification, dependency resolution, and deterministic bundle evaluation (`audit_reproducibility_bundle`).
+- `m12-alpha-catalog-v1` (`src/alpha/catalog.rs`) registers 11 canonical benchmark alpha scenarios in `AlphaScenarioCatalog`: `scenario-alpha-governance-compliant-v1`, `scenario-alpha-governance-fallback-triggered-v1`, `scenario-alpha-compatibility-matrix-v1`, `scenario-alpha-data-dictionary-complete-v1`, `scenario-alpha-limitations-compliant-v1`, `scenario-alpha-limitations-overclaim-rejected-v1`, `scenario-alpha-limitations-missing-disclaimer-v1`, `scenario-alpha-guides-complete-v1`, `scenario-alpha-guides-cyclic-prereq-rejected-v1`, `scenario-alpha-reproducibility-bundle-v1`, and `scenario-alpha-reproducibility-corrupt-hash-rejected-v1`.
+- 32 focused unit tests in `src/alpha/tests.rs` cover governance evaluation, fallback posture triggers, compliance basis points, compatibility matrix validation, migration contract requirements, data dictionary redaction auditing, limitations/evidence boundary auditing, guide section completeness, DAG cycle rejection, reproducibility checksum verification, overclaim rejection, disclaimer enforcement, fail-closed error handling, error Display coverage, and clean Markdown report hygiene.
 
 #### Verification
 
-- `cargo test --locked alpha::` passes 24 unit tests (634 total library tests).
-- All 7 benchmark catalog scenarios execute deterministically and verify governance compliance, fallback activation, compatibility soundness, data dictionary fog-of-war redactions, compliant claim safety, overclaim rejection, and required disclaimer enforcement.
+- `cargo test --locked alpha::` passes 32 unit tests (642 total library tests).
+- All 11 benchmark catalog scenarios execute deterministically and verify governance compliance, fallback activation, compatibility soundness, data dictionary fog-of-war redactions, compliant claim safety, overclaim rejection, guide prerequisite DAG resolution, reproducibility bundle hash integrity, and required disclaimer enforcement.
 - Repository checker confirms zero async, network, or wall-clock primitives in `src/alpha/`.
 
 #### Deferred
 
-- Complete user/contributor documentation packaging, reproduction bundles, and release tag archiving.
+- Release candidate human testing and release tag archiving.
 
 
 ## Future

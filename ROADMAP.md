@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs` | Standalone package version reporting, a bounded fixture transcript with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, TTY prompt/completion, `--color`), and a replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1` |
-| Package | `Cargo.toml` | Version `0.1.215`, one deferred edge crate (`reedline`) |
+| Package | `Cargo.toml` | Version `0.1.216`, one deferred edge crate (`reedline`) |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -2319,12 +2319,12 @@ in its legal, accessibility, entertainment, and research claims.
 - [x] Review current fan-project policies, names, content, and asset provenance.
 - [x] Confirm license, contribution, noncommercial, unofficial, and
   original-setting fallback posture.
-- [ ] Add player, contributor, MCP-agent, experiment, replay, and data guides.
+- [x] Add player, contributor, MCP-agent, experiment, replay, and data guides.
 - [x] Publish ruleset, scenario, protocol, profile, prompt, model, and extractor
   compatibility policies.
 - [x] Add a data dictionary and model cards.
 - [x] Add known limitations, evidence boundaries, and citation guidance.
-- [ ] Package sample scenarios, replays, and experiments.
+- [x] Package sample scenarios, replays, and experiments.
 - [ ] Run clean-install, reproducibility, security, license, and compatibility
   checks.
 - [ ] Conduct release-candidate human testing appropriate to public claims.
@@ -2375,8 +2375,28 @@ in its legal, accessibility, entertainment, and research claims.
   error Display formatting, catalog benchmark execution, and clean Markdown report hygiene across 24 focused tests in
   `src/alpha/tests.rs` (634 total library tests).
 
-This establishes the formal known limitations, evidence boundaries, research claim constraints, and citation
-guidance framework for M12. Player guides, reproducibility bundles, and release candidate archiving remain open.
+### Current M12 documentation guides and reproducibility packaging evidence
+
+- [x] Define `m12-alpha-guides-v1` in `src/alpha/guides.rs` formalizing documentation guide manifests across 6 target
+  audiences (`Player`, `Contributor`, `McpAgent`, `Experimenter`, `ReplayAnalyst`, `DataScientist`), 7 section categories
+  (`Prerequisites`, `CoreConcepts`, `Quickstart`, `InteractiveWalkthrough`, `ProtocolContracts`, `Troubleshooting`,
+  `EvidenceAndLimitations`), structured `GuideDocumentDefinition`, prerequisite DAG cycle detection via DFS, completeness
+  basis-point scoring ($[0..=10,000]$ bp), and pure deterministic audit evaluation (`audit_guide_manifests`).
+- [x] Define `m12-alpha-reproducibility-v1` in `src/alpha/reproducibility.rs` implementing sample artifact packaging across
+  5 artifact kinds (`ScenarioBenchmark`, `ReplayTranscript`, `ExperimentRun`, `ModelCalibrationStudy`, `BehavioralTelemetry`),
+  4 reproducibility statuses (`FullyReproducible`, `RequiresModelAdapter`, `SyntheticBaselineOnly`, `CorruptedOrMissing`),
+  16-hex FNV-1a content hash integrity verification, dependency resolution, and deterministic bundle evaluation
+  (`audit_reproducibility_bundle`).
+- [x] Register 4 canonical benchmark guides and reproducibility scenarios in `AlphaScenarioCatalog` (`m12-alpha-catalog-v1` in
+  `src/alpha/catalog.rs`: `scenario-alpha-guides-complete-v1`, `scenario-alpha-guides-cyclic-prereq-rejected-v1`,
+  `scenario-alpha-reproducibility-bundle-v1`, `scenario-alpha-reproducibility-corrupt-hash-rejected-v1`) with reproducible
+  execution and verified expectations (11 total alpha benchmark scenarios).
+- [x] Cover guide audience, section category, and reproducibility status round-trips, DAG prerequisite cycle detection,
+  FNV-1a checksum validation, fail-closed errors (`AlphaGuidesError`, `AlphaReproducibilityError`), error Display coverage,
+  and clean Markdown report rendering hygiene across 32 focused tests in `src/alpha/tests.rs` (642 total library tests).
+
+This establishes the formal documentation guide manifests, prerequisite DAG verification, sample reproducibility bundle
+packaging, and checksum integrity framework for M12. Release candidate testing and release tag archiving remain open.
 
 
 ### Deliverables

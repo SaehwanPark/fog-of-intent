@@ -1,10 +1,12 @@
-//! Public Research-Capable Alpha release governance, compatibility policies, and data dictionary contracts for Fog of Intent.
+//! Public Research-Capable Alpha release governance, compatibility policies, data dictionary, limitations, guides, and reproducibility contracts for Fog of Intent.
 
 pub mod catalog;
 pub mod compatibility;
 pub mod data_dictionary;
 pub mod governance;
+pub mod guides;
 pub mod limitations;
+pub mod reproducibility;
 
 #[cfg(test)]
 pub mod tests;
@@ -28,8 +30,19 @@ pub use governance::{
   PolicyComplianceArea, PolicyDeclaration, PublicAlphaGovernanceManifest,
   evaluate_alpha_governance, render_governance_report_markdown,
 };
+pub use guides::{
+  ALPHA_GUIDES_SCHEMA_VERSION, AlphaGuidesError, AlphaGuidesManifest, GuideAudience,
+  GuideAuditRecord, GuideDocumentDefinition, GuideSection, GuideSectionKind, GuidesAuditReport,
+  audit_guide_manifests, render_guides_report_markdown,
+};
 pub use limitations::{
   ALPHA_LIMITATIONS_SCHEMA_VERSION, AlphaLimitationsDeclaration, AlphaLimitationsError,
   CitationGuidance, ClaimClassification, EvidenceTier, LimitationCategory, LimitationsAuditReport,
   ResearchClaim, audit_limitations_and_boundaries, render_limitations_report_markdown,
+};
+pub use reproducibility::{
+  ALPHA_REPRODUCIBILITY_SCHEMA_VERSION, AlphaReproducibilityError, PackageAuditRecord,
+  ReproducibilityAuditReport, ReproducibilityBundleManifest, ReproducibilityPackageDefinition,
+  ReproducibilityStatus, SampleArtifactKind, audit_reproducibility_bundle, is_valid_fnv1a_hash,
+  render_reproducibility_report_markdown,
 };

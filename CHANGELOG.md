@@ -6,6 +6,29 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.216] - 2026-08-24
+
+### Added
+
+- `m12-alpha-guides-v1` (`src/alpha/guides.rs`) formalizing documentation guide manifests, audience classifications, section validation, and DAG verification:
+  - `GuideAudience` (`player`, `contributor`, `mcp-agent`, `experimenter`, `replay-analyst`, `data-scientist`) with string parsing and Display implementations.
+  - `GuideSectionKind` (`prerequisites`, `core-concepts`, `quickstart`, `interactive-walkthrough`, `protocol-contracts`, `troubleshooting`, `evidence-and-limitations`) with string parsing and Display implementations.
+  - `GuideSection`, `GuideDocumentDefinition`, and `AlphaGuidesManifest` modeling structured documentation guides.
+  - `audit_guide_manifests` pure deterministic audit with fail-closed validation (`EmptyManifest`, `UnsupportedSchemaVersion`, `EmptyGuideId`, `DuplicateGuideId`, `EmptyTitle`, `EmptySummary`, `NoSections`, `EmptySectionHeading`, `EmptySectionSummary`, `MissingPrerequisite`, `CyclicPrerequisite`) implementing DFS-based prerequisite DAG cycle detection and completeness basis-point scoring ($[0..=10,000]$ bp).
+  - `render_guides_report_markdown` producing structured Markdown reports without ANSI styling.
+- `m12-alpha-reproducibility-v1` (`src/alpha/reproducibility.rs`) implementing sample artifact packaging, reproducibility classifications, and checksum integrity verification:
+  - `SampleArtifactKind` (`scenario-benchmark`, `replay-transcript`, `experiment-run`, `model-calibration-study`, `behavioral-telemetry`) with string parsing and Display implementations.
+  - `ReproducibilityStatus` (`fully-reproducible`, `requires-model-adapter`, `synthetic-baseline-only`, `corrupted-or-missing`) with `is_valid` and `base_score_bp` mapping ($[0..=10,000]$ bp).
+  - `ReproducibilityPackageDefinition` and `ReproducibilityBundleManifest` modeling sample artifact packages with 16-hex FNV-1a checksums, verification commands, and seed policies.
+  - `audit_reproducibility_bundle` pure deterministic audit with fail-closed validation (`EmptyBundle`, `UnsupportedSchemaVersion`, `EmptyPackageId`, `DuplicatePackageId`, `EmptyTitle`, `ZeroArtifactCount`, `InvalidContentHash`, `EmptyVerificationCommand`, `MissingDependency`, `CorruptedStatus`) producing `ReproducibilityAuditReport`.
+  - `render_reproducibility_report_markdown` producing structured Markdown reports without ANSI styling.
+- `m12-alpha-catalog-v1` (`src/alpha/catalog.rs`) registering 4 canonical benchmark guides and reproducibility scenarios (11 total alpha scenarios):
+  - `scenario-alpha-guides-complete-v1`: Complete 6-guide documentation suite spanning all target audiences with resolved DAG dependencies ($10,000$ bp completeness).
+  - `scenario-alpha-guides-cyclic-prereq-rejected-v1`: Fail-closed rejection of circular prerequisite dependencies in documentation manifests.
+  - `scenario-alpha-reproducibility-bundle-v1`: Comprehensive sample artifact bundle across benchmarks, replays, experiments, calibration runs, and telemetries ($9,700$ bp reproducibility score).
+  - `scenario-alpha-reproducibility-corrupt-hash-rejected-v1`: Fail-closed rejection when a packaged reproducibility sample provides an invalid content checksum.
+- 8 new unit tests in `src/alpha/tests.rs` (32 total Alpha tests, 642 total library tests) covering enum round-trips, fail-closed validation, error Display coverage, DAG cycle detection, FNV-1a hash verification, catalog scenario execution, and Markdown report hygiene.
+
 ## [0.1.215] - 2026-08-24
 
 ### Added
