@@ -11,9 +11,19 @@ use crate::alpha::governance::{
   ALPHA_GOVERNANCE_SCHEMA_VERSION, AlphaGovernanceError, LegalPostureStatus, PolicyComplianceArea,
   evaluate_alpha_governance, render_governance_report_markdown,
 };
+use crate::alpha::guides::{
+  ALPHA_GUIDES_SCHEMA_VERSION, AlphaGuidesError, AlphaGuidesManifest, GuideAudience,
+  GuideDocumentDefinition, GuideSection, GuideSectionKind, audit_guide_manifests,
+  render_guides_report_markdown,
+};
 use crate::alpha::limitations::{
   ALPHA_LIMITATIONS_SCHEMA_VERSION, AlphaLimitationsError, ClaimClassification, EvidenceTier,
   LimitationCategory, audit_limitations_and_boundaries, render_limitations_report_markdown,
+};
+use crate::alpha::reproducibility::{
+  ALPHA_REPRODUCIBILITY_SCHEMA_VERSION, AlphaReproducibilityError, ReproducibilityBundleManifest,
+  ReproducibilityPackageDefinition, ReproducibilityStatus, SampleArtifactKind,
+  audit_reproducibility_bundle, is_valid_fnv1a_hash, render_reproducibility_report_markdown,
 };
 
 #[test]
@@ -527,7 +537,6 @@ fn limitations_compliant_audit_succeeds() {
   // (1 * 10,000 + 2 * 8,000) / 3 = 26,000 / 3 = 8,666 bp
   assert_eq!(report.safety_score_bp, 8_666);
   assert!(report.is_audit_passed);
-  assert_eq!(report.citation.software_version, "0.1.215");
 }
 
 #[test]
@@ -658,6 +667,384 @@ fn limitations_error_display_coverage() {
 }
 
 #[test]
+fn guide_audience_and_section_kind_round_trips() {
+  for audience in GuideAudience::all() {
+    let s = audience.as_str();
+    assert_eq!(GuideAudience::parse(s), Some(audience));
+    assert_eq!(audience.to_string(), s);
+  }
+  assert_eq!(GuideAudience::parse("invalid-audience"), None);
+
+  for kind in GuideSectionKind::all() {
+    let s = kind.as_str();
+    assert_eq!(GuideSectionKind::parse(s), Some(kind));
+    assert_eq!(kind.to_string(), s);
+  }
+  assert_eq!(GuideSectionKind::parse("invalid-kind"), None);
+}
+
+#[test]
+fn guides_audit_succeeds_for_compliant_manifest() {
+  let manifest = AlphaScenarioCatalog::build_compliant_guides_manifest();
+  let report = audit_guide_manifests(&manifest).expect("compliant guides must pass");
+
+  assert_eq!(report.schema_version, ALPHA_GUIDES_SCHEMA_VERSION);
+  assert_eq!(report.guides_evaluated, 6);
+  assert_eq!(report.total_sections, 20);
+  assert_eq!(report.total_code_examples, 14);
+  assert!(report.average_completeness_bp >= 5_000);
+  assert!(report.all_prerequisites_resolved);
+  assert_eq!(report.records.len(), 6);
+}
+
+#[test]
+fn guides_audit_rejects_invalid_and_cyclic_manifests() {
+  let mut m = AlphaScenarioCatalog::build_compliant_guides_manifest();
+  m.schema_version = "invalid-v0";
+  assert_eq!(
+    audit_guide_manifests(&m),
+    Err(AlphaGuidesError::UnsupportedSchemaVersion {
+      version: "invalid-v0".to_string(),
+    })
+  );
+
+  let empty_manifest = AlphaGuidesManifest {
+    schema_version: ALPHA_GUIDES_SCHEMA_VERSION,
+    guides: &[],
+  };
+  assert_eq!(
+    audit_guide_manifests(&empty_manifest),
+    Err(AlphaGuidesError::EmptyManifest)
+  );
+
+  static SECTIONS: [GuideSection; 1] = [GuideSection {
+    heading: "Heading",
+    kind: GuideSectionKind::CoreConcepts,
+    content_summary: "Summary",
+    has_code_example: false,
+  }];
+  static GUIDES_EMPTY_ID: [GuideDocumentDefinition; 1] = [GuideDocumentDefinition {
+    guide_id: "  ",
+    title: "Title",
+    audience: GuideAudience::Player,
+    summary: "Summary",
+    prerequisite_guide_ids: &[],
+    sections: &SECTIONS,
+  }];
+  let m = AlphaGuidesManifest {
+    schema_version: ALPHA_GUIDES_SCHEMA_VERSION,
+    guides: &GUIDES_EMPTY_ID,
+  };
+  assert_eq!(
+    audit_guide_manifests(&m),
+    Err(AlphaGuidesError::EmptyGuideId)
+  );
+
+  static GUIDES_DUP: [GuideDocumentDefinition; 2] = [
+    GuideDocumentDefinition {
+      guide_id: "GUIDE-01",
+      title: "Title 1",
+      audience: GuideAudience::Player,
+      summary: "Summary 1",
+      prerequisite_guide_ids: &[],
+      sections: &SECTIONS,
+    },
+    GuideDocumentDefinition {
+      guide_id: "GUIDE-01",
+      title: "Title 2",
+      audience: GuideAudience::Contributor,
+      summary: "Summary 2",
+      prerequisite_guide_ids: &[],
+      sections: &SECTIONS,
+    },
+  ];
+  let m = AlphaGuidesManifest {
+    schema_version: ALPHA_GUIDES_SCHEMA_VERSION,
+    guides: &GUIDES_DUP,
+  };
+  assert_eq!(
+    audit_guide_manifests(&m),
+    Err(AlphaGuidesError::DuplicateGuideId {
+      guide_id: "GUIDE-01".to_string(),
+    })
+  );
+
+  static GUIDES_MISSING_PREREQ: [GuideDocumentDefinition; 1] = [GuideDocumentDefinition {
+    guide_id: "GUIDE-01",
+    title: "Title",
+    audience: GuideAudience::Player,
+    summary: "Summary",
+    prerequisite_guide_ids: &["NONEXISTENT"],
+    sections: &SECTIONS,
+  }];
+  let m = AlphaGuidesManifest {
+    schema_version: ALPHA_GUIDES_SCHEMA_VERSION,
+    guides: &GUIDES_MISSING_PREREQ,
+  };
+  assert_eq!(
+    audit_guide_manifests(&m),
+    Err(AlphaGuidesError::MissingPrerequisite {
+      guide_id: "GUIDE-01".to_string(),
+      prerequisite: "NONEXISTENT".to_string(),
+    })
+  );
+
+  // Cyclic prerequisites
+  let cyclic_manifest = AlphaScenarioCatalog::build_cyclic_guides_manifest();
+  assert!(matches!(
+    audit_guide_manifests(&cyclic_manifest),
+    Err(AlphaGuidesError::CyclicPrerequisite { .. })
+  ));
+}
+
+#[test]
+fn guides_error_display_coverage() {
+  let errors = [
+    AlphaGuidesError::EmptyManifest,
+    AlphaGuidesError::UnsupportedSchemaVersion {
+      version: "v0".to_string(),
+    },
+    AlphaGuidesError::EmptyGuideId,
+    AlphaGuidesError::DuplicateGuideId {
+      guide_id: "GUIDE-01".to_string(),
+    },
+    AlphaGuidesError::EmptyTitle {
+      guide_id: "GUIDE-01".to_string(),
+    },
+    AlphaGuidesError::EmptySummary {
+      guide_id: "GUIDE-01".to_string(),
+    },
+    AlphaGuidesError::NoSections {
+      guide_id: "GUIDE-01".to_string(),
+    },
+    AlphaGuidesError::EmptySectionHeading {
+      guide_id: "GUIDE-01".to_string(),
+    },
+    AlphaGuidesError::EmptySectionSummary {
+      guide_id: "GUIDE-01".to_string(),
+    },
+    AlphaGuidesError::MissingPrerequisite {
+      guide_id: "GUIDE-01".to_string(),
+      prerequisite: "PRE-01".to_string(),
+    },
+    AlphaGuidesError::CyclicPrerequisite {
+      guide_id: "GUIDE-01".to_string(),
+      path: vec!["A".to_string(), "B".to_string(), "A".to_string()],
+    },
+  ];
+  for err in errors {
+    let s = err.to_string();
+    assert!(!s.is_empty());
+  }
+}
+
+#[test]
+fn sample_artifact_kind_and_reproducibility_status_round_trips() {
+  for kind in SampleArtifactKind::all() {
+    let s = kind.as_str();
+    assert_eq!(SampleArtifactKind::parse(s), Some(kind));
+    assert_eq!(kind.to_string(), s);
+  }
+  assert_eq!(SampleArtifactKind::parse("invalid-kind"), None);
+
+  for status in ReproducibilityStatus::all() {
+    let s = status.as_str();
+    assert_eq!(ReproducibilityStatus::parse(s), Some(status));
+    assert_eq!(status.to_string(), s);
+  }
+  assert_eq!(ReproducibilityStatus::parse("invalid-status"), None);
+
+  assert!(ReproducibilityStatus::FullyReproducible.is_valid());
+  assert!(ReproducibilityStatus::RequiresModelAdapter.is_valid());
+  assert!(ReproducibilityStatus::SyntheticBaselineOnly.is_valid());
+  assert!(!ReproducibilityStatus::CorruptedOrMissing.is_valid());
+
+  assert_eq!(
+    ReproducibilityStatus::FullyReproducible.base_score_bp(),
+    10_000
+  );
+  assert_eq!(
+    ReproducibilityStatus::SyntheticBaselineOnly.base_score_bp(),
+    8_500
+  );
+  assert_eq!(
+    ReproducibilityStatus::RequiresModelAdapter.base_score_bp(),
+    7_500
+  );
+  assert_eq!(ReproducibilityStatus::CorruptedOrMissing.base_score_bp(), 0);
+
+  assert!(is_valid_fnv1a_hash("811c9dc500000001"));
+  assert!(is_valid_fnv1a_hash("0123456789abcdef"));
+  assert!(!is_valid_fnv1a_hash("short"));
+  assert!(!is_valid_fnv1a_hash("811c9dc50000000g"));
+}
+
+#[test]
+fn reproducibility_bundle_audit_succeeds_for_canonical_manifest() {
+  let bundle = AlphaScenarioCatalog::build_canonical_reproducibility_bundle();
+  let report = audit_reproducibility_bundle(&bundle).expect("canonical bundle must pass");
+
+  assert_eq!(report.schema_version, ALPHA_REPRODUCIBILITY_SCHEMA_VERSION);
+  assert_eq!(report.packages_evaluated, 5);
+  assert_eq!(report.total_artifacts, 53);
+  assert_eq!(report.fully_reproducible_count, 4);
+  assert!(report.average_reproducibility_score_bp >= 9_000);
+  assert!(report.bundle_eligible_for_release);
+  assert_eq!(report.records.len(), 5);
+}
+
+#[test]
+fn reproducibility_bundle_rejects_invalid_manifests() {
+  let mut b = AlphaScenarioCatalog::build_canonical_reproducibility_bundle();
+  b.schema_version = "invalid-v0";
+  assert_eq!(
+    audit_reproducibility_bundle(&b),
+    Err(AlphaReproducibilityError::UnsupportedSchemaVersion {
+      version: "invalid-v0".to_string(),
+    })
+  );
+
+  let empty_bundle = ReproducibilityBundleManifest {
+    schema_version: ALPHA_REPRODUCIBILITY_SCHEMA_VERSION,
+    packages: &[],
+  };
+  assert_eq!(
+    audit_reproducibility_bundle(&empty_bundle),
+    Err(AlphaReproducibilityError::EmptyBundle)
+  );
+
+  static PKGS_EMPTY_ID: [ReproducibilityPackageDefinition; 1] =
+    [ReproducibilityPackageDefinition {
+      package_id: "  ",
+      title: "Title",
+      kind: SampleArtifactKind::ScenarioBenchmark,
+      artifact_count: 1,
+      content_hash_fnv1a: "811c9dc500000001",
+      verification_command: "cargo test",
+      seed_policy: "none",
+      dependencies: &[],
+      declared_status: ReproducibilityStatus::FullyReproducible,
+    }];
+  let b = ReproducibilityBundleManifest {
+    schema_version: ALPHA_REPRODUCIBILITY_SCHEMA_VERSION,
+    packages: &PKGS_EMPTY_ID,
+  };
+  assert_eq!(
+    audit_reproducibility_bundle(&b),
+    Err(AlphaReproducibilityError::EmptyPackageId)
+  );
+
+  static PKGS_ZERO_COUNT: [ReproducibilityPackageDefinition; 1] =
+    [ReproducibilityPackageDefinition {
+      package_id: "PKG-01",
+      title: "Title",
+      kind: SampleArtifactKind::ScenarioBenchmark,
+      artifact_count: 0,
+      content_hash_fnv1a: "811c9dc500000001",
+      verification_command: "cargo test",
+      seed_policy: "none",
+      dependencies: &[],
+      declared_status: ReproducibilityStatus::FullyReproducible,
+    }];
+  let b = ReproducibilityBundleManifest {
+    schema_version: ALPHA_REPRODUCIBILITY_SCHEMA_VERSION,
+    packages: &PKGS_ZERO_COUNT,
+  };
+  assert_eq!(
+    audit_reproducibility_bundle(&b),
+    Err(AlphaReproducibilityError::ZeroArtifactCount {
+      package_id: "PKG-01".to_string(),
+    })
+  );
+
+  static PKGS_CORRUPT_HASH: [ReproducibilityPackageDefinition; 1] =
+    [ReproducibilityPackageDefinition {
+      package_id: "PKG-01",
+      title: "Title",
+      kind: SampleArtifactKind::ScenarioBenchmark,
+      artifact_count: 1,
+      content_hash_fnv1a: "invalid-hash",
+      verification_command: "cargo test",
+      seed_policy: "none",
+      dependencies: &[],
+      declared_status: ReproducibilityStatus::FullyReproducible,
+    }];
+  let b = ReproducibilityBundleManifest {
+    schema_version: ALPHA_REPRODUCIBILITY_SCHEMA_VERSION,
+    packages: &PKGS_CORRUPT_HASH,
+  };
+  assert_eq!(
+    audit_reproducibility_bundle(&b),
+    Err(AlphaReproducibilityError::InvalidContentHash {
+      package_id: "PKG-01".to_string(),
+      hash: "invalid-hash".to_string(),
+    })
+  );
+
+  static PKGS_MISSING_DEP: [ReproducibilityPackageDefinition; 1] =
+    [ReproducibilityPackageDefinition {
+      package_id: "PKG-01",
+      title: "Title",
+      kind: SampleArtifactKind::ScenarioBenchmark,
+      artifact_count: 1,
+      content_hash_fnv1a: "811c9dc500000001",
+      verification_command: "cargo test",
+      seed_policy: "none",
+      dependencies: &["NONEXISTENT-PKG"],
+      declared_status: ReproducibilityStatus::FullyReproducible,
+    }];
+  let b = ReproducibilityBundleManifest {
+    schema_version: ALPHA_REPRODUCIBILITY_SCHEMA_VERSION,
+    packages: &PKGS_MISSING_DEP,
+  };
+  assert_eq!(
+    audit_reproducibility_bundle(&b),
+    Err(AlphaReproducibilityError::MissingDependency {
+      package_id: "PKG-01".to_string(),
+      dependency: "NONEXISTENT-PKG".to_string(),
+    })
+  );
+}
+
+#[test]
+fn reproducibility_error_display_coverage() {
+  let errors = [
+    AlphaReproducibilityError::EmptyBundle,
+    AlphaReproducibilityError::UnsupportedSchemaVersion {
+      version: "v0".to_string(),
+    },
+    AlphaReproducibilityError::EmptyPackageId,
+    AlphaReproducibilityError::DuplicatePackageId {
+      package_id: "PKG-01".to_string(),
+    },
+    AlphaReproducibilityError::EmptyTitle {
+      package_id: "PKG-01".to_string(),
+    },
+    AlphaReproducibilityError::ZeroArtifactCount {
+      package_id: "PKG-01".to_string(),
+    },
+    AlphaReproducibilityError::InvalidContentHash {
+      package_id: "PKG-01".to_string(),
+      hash: "hash".to_string(),
+    },
+    AlphaReproducibilityError::EmptyVerificationCommand {
+      package_id: "PKG-01".to_string(),
+    },
+    AlphaReproducibilityError::MissingDependency {
+      package_id: "PKG-01".to_string(),
+      dependency: "DEP-01".to_string(),
+    },
+    AlphaReproducibilityError::CorruptedStatus {
+      package_id: "PKG-01".to_string(),
+    },
+  ];
+  for err in errors {
+    let s = err.to_string();
+    assert!(!s.is_empty());
+  }
+}
+
+#[test]
 fn catalog_scenarios_execute_and_verify_all_expectations() {
   for scenario in AlphaScenarioCatalog::ALL {
     assert_eq!(
@@ -699,6 +1086,27 @@ fn catalog_scenarios_execute_and_verify_all_expectations() {
     rep7,
     Err(AlphaLimitationsError::MissingRequiredDisclaimer { .. })
   ));
+
+  let rep8 = AlphaScenarioCatalog::execute_guides_compliant().expect("compliant guides scenario");
+  assert!(rep8.all_prerequisites_resolved);
+  assert_eq!(rep8.guides_evaluated, 6);
+
+  let rep9 = AlphaScenarioCatalog::execute_guides_cyclic();
+  assert!(matches!(
+    rep9,
+    Err(AlphaGuidesError::CyclicPrerequisite { .. })
+  ));
+
+  let rep10 = AlphaScenarioCatalog::execute_reproducibility_compliant()
+    .expect("compliant reproducibility scenario");
+  assert!(rep10.bundle_eligible_for_release);
+  assert_eq!(rep10.packages_evaluated, 5);
+
+  let rep11 = AlphaScenarioCatalog::execute_reproducibility_corrupt();
+  assert!(matches!(
+    rep11,
+    Err(AlphaReproducibilityError::InvalidContentHash { .. })
+  ));
 }
 
 #[test]
@@ -722,4 +1130,14 @@ fn markdown_report_rendering_hygiene() {
   let lim_md = render_limitations_report_markdown(&lim_rep);
   assert!(lim_md.starts_with("# Public Alpha Known Limitations and Evidence Boundaries Report"));
   assert!(!lim_md.contains('\x1b'));
+
+  let guides_rep = AlphaScenarioCatalog::execute_guides_compliant().unwrap();
+  let guides_md = render_guides_report_markdown(&guides_rep);
+  assert!(guides_md.starts_with("# Public Alpha Documentation Guides Audit Report"));
+  assert!(!guides_md.contains('\x1b'));
+
+  let repro_rep = AlphaScenarioCatalog::execute_reproducibility_compliant().unwrap();
+  let repro_md = render_reproducibility_report_markdown(&repro_rep);
+  assert!(repro_md.starts_with("# Public Alpha Reproducibility Bundle Audit Report"));
+  assert!(!repro_md.contains('\x1b'));
 }

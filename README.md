@@ -48,7 +48,7 @@ The full invariant list is in [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md).
 | --- | --- |
 | Current roadmap milestone | M2 — One-Lane Vertical Slice (Active) |
 | Repository governance and canonical docs | Complete — M0 |
-| Rust package | `0.1.215`, edition 2024, Rust `1.96`, one deferred edge crate (`reedline`), single package |
+| Rust package | `0.1.216`, edition 2024, Rust `1.96`, one deferred edge crate (`reedline`), single package |
 | Executable behavior | Standalone `--version`/`-V`, the two-window fixture with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, `--color auto/always/never`), or the replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1` |
 | Deterministic kernel | M1 complete; M2 v3 lane-window, roster, intent, observation, branch, replay, and debrief contracts implemented internally |
 | One-lane scenario | Bounded diagnostic windows and fixtures; full scenario not complete |
@@ -57,7 +57,7 @@ The full invariant list is in [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md).
 | Behavioral experiments and calibration | Library-only M6/M7 fixture evidence; live provider calibration remains open |
 | Team communication and shot-calling | Library-only M8 contracts; not reachable from the runner |
 | Full match, human alpha, optional GUI | M9 complete match library and CLI replay transcript exist; M10 study protocol, participant cohort schema, dimension assessments, interaction audits, informal check remediation, sampling limits, and alpha synthesis framework library contracts exist; M11 presentation need assessment, actor-visible GUI DTOs, reversible client state machine, triple CLI/MCP/GUI projection parity verification, asset governance/fallback rules, standalone HTML5/CSS/SVG presentation document generator, loopback transport protocol / session adapter, and browser flow resilience / recovery evaluation library contracts exist; human empirical testing and live browser client are not implemented — M10-M11 |
-| Public alpha | Library-only M12 release governance manifest evaluation, policy compliance, cross-version compatibility matrix, data dictionary redaction auditing, known limitations / evidence boundaries / citation guidance contracts, and benchmark catalog library contracts exist; public release packaging and research archiving remain open — M12 |
+| Public alpha | Library-only M12 release governance manifest evaluation, policy compliance, cross-version compatibility matrix, data dictionary redaction auditing, known limitations / evidence boundaries / citation guidance, documentation guides DAG verification, sample reproducibility bundle packaging, and benchmark catalog library contracts exist; release candidate testing and research archiving remain open — M12 |
 
 
 The binary is a fixture adapter, not a complete reference client. Later-phase
