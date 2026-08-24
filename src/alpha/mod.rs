@@ -4,6 +4,7 @@ pub mod catalog;
 pub mod compatibility;
 pub mod data_dictionary;
 pub mod governance;
+pub mod limitations;
 
 #[cfg(test)]
 pub mod tests;
@@ -26,4 +27,9 @@ pub use governance::{
   ALPHA_GOVERNANCE_SCHEMA_VERSION, AlphaGovernanceError, AlphaGovernanceReport, LegalPostureStatus,
   PolicyComplianceArea, PolicyDeclaration, PublicAlphaGovernanceManifest,
   evaluate_alpha_governance, render_governance_report_markdown,
+};
+pub use limitations::{
+  ALPHA_LIMITATIONS_SCHEMA_VERSION, AlphaLimitationsDeclaration, AlphaLimitationsError,
+  CitationGuidance, ClaimClassification, EvidenceTier, LimitationCategory, LimitationsAuditReport,
+  ResearchClaim, audit_limitations_and_boundaries, render_limitations_report_markdown,
 };

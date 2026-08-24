@@ -12,6 +12,11 @@ use crate::alpha::governance::{
   AlphaGovernanceError, AlphaGovernanceReport, PolicyComplianceArea, PolicyDeclaration,
   PublicAlphaGovernanceManifest, evaluate_alpha_governance,
 };
+use crate::alpha::limitations::{
+  AlphaLimitationsDeclaration, AlphaLimitationsError, CitationGuidance, ClaimClassification,
+  EvidenceTier, LimitationCategory, LimitationsAuditReport, ResearchClaim,
+  audit_limitations_and_boundaries,
+};
 
 /// Canonical schema version for the M12 Alpha scenario catalog.
 pub const ALPHA_CATALOG_SCHEMA_VERSION: &str = "m12-alpha-catalog-v1";
@@ -22,6 +27,7 @@ pub enum AlphaScenarioKind {
   GovernanceEvaluation,
   CompatibilityEvaluation,
   DataDictionaryAudit,
+  LimitationsAudit,
 }
 
 impl AlphaScenarioKind {
@@ -30,6 +36,7 @@ impl AlphaScenarioKind {
       Self::GovernanceEvaluation => "governance-evaluation",
       Self::CompatibilityEvaluation => "compatibility-evaluation",
       Self::DataDictionaryAudit => "data-dictionary-audit",
+      Self::LimitationsAudit => "limitations-audit",
     }
   }
 }
@@ -80,11 +87,40 @@ impl AlphaScenarioCatalog {
     expected_eligible: true,
   };
 
-  pub const ALL: [AlphaScenarioDefinition; 4] = [
+  pub const SCENARIO_LIMITATIONS_COMPLIANT: AlphaScenarioDefinition = AlphaScenarioDefinition {
+    scenario_id: "scenario-alpha-limitations-compliant-v1",
+    title: "Compliant Research Claims and Limitations Declaration",
+    kind: AlphaScenarioKind::LimitationsAudit,
+    description: "Audits bounded research claims across simulation fidelity, accessibility, and agent generalization with explicit limitation disclaimers and valid BibTeX citation.",
+    expected_eligible: true,
+  };
+
+  pub const SCENARIO_LIMITATIONS_OVERCLAIM_REJECTED: AlphaScenarioDefinition =
+    AlphaScenarioDefinition {
+      scenario_id: "scenario-alpha-limitations-overclaim-rejected-v1",
+      title: "Impermissible Overclaim Rejection",
+      kind: AlphaScenarioKind::LimitationsAudit,
+      description: "Verifies fail-closed rejection when a manifest asserts unverified commercial parity or human realism claims without supporting evidence.",
+      expected_eligible: false,
+    };
+
+  pub const SCENARIO_LIMITATIONS_MISSING_DISCLAIMER: AlphaScenarioDefinition =
+    AlphaScenarioDefinition {
+      scenario_id: "scenario-alpha-limitations-missing-disclaimer-v1",
+      title: "Missing Required Disclaimer Rejection",
+      kind: AlphaScenarioKind::LimitationsAudit,
+      description: "Verifies fail-closed rejection when a conditional research claim omits required limitation category disclosures.",
+      expected_eligible: false,
+    };
+
+  pub const ALL: [AlphaScenarioDefinition; 7] = [
     Self::SCENARIO_GOVERNANCE_COMPLIANT,
     Self::SCENARIO_GOVERNANCE_FALLBACK,
     Self::SCENARIO_COMPATIBILITY_MATRIX,
     Self::SCENARIO_DATA_DICTIONARY,
+    Self::SCENARIO_LIMITATIONS_COMPLIANT,
+    Self::SCENARIO_LIMITATIONS_OVERCLAIM_REJECTED,
+    Self::SCENARIO_LIMITATIONS_MISSING_DISCLAIMER,
   ];
 
   pub fn lookup(scenario_id: &str) -> Option<&'static AlphaScenarioDefinition> {
@@ -95,7 +131,7 @@ impl AlphaScenarioCatalog {
   pub fn build_compliant_manifest() -> PublicAlphaGovernanceManifest {
     PublicAlphaGovernanceManifest {
       manifest_id: "manifest-alpha-compliant-v1".to_string(),
-      version: "0.1.214".to_string(),
+      version: "0.1.215".to_string(),
       declarations: vec![
         PolicyDeclaration::new(
           PolicyComplianceArea::LicenseNotice,
@@ -155,7 +191,7 @@ impl AlphaScenarioCatalog {
   pub fn build_fallback_manifest() -> PublicAlphaGovernanceManifest {
     PublicAlphaGovernanceManifest {
       manifest_id: "manifest-alpha-fallback-v1".to_string(),
-      version: "0.1.214".to_string(),
+      version: "0.1.215".to_string(),
       declarations: vec![
         PolicyDeclaration::new(
           PolicyComplianceArea::LicenseNotice,
@@ -395,6 +431,124 @@ impl AlphaScenarioCatalog {
   -> Result<DataDictionaryAuditReport, crate::alpha::data_dictionary::DataDictionaryError> {
     let dict = Self::build_canonical_data_dictionary();
     audit_data_dictionary(&dict)
+  }
+
+  /// Constructs the canonical compliant limitations declaration.
+  pub fn build_compliant_limitations_declaration() -> AlphaLimitationsDeclaration {
+    AlphaLimitationsDeclaration {
+      manifest_id: "manifest-limitations-compliant-v1".to_string(),
+      version: "0.1.215".to_string(),
+      claims: vec![
+        ResearchClaim::new(
+          "CLAIM-001",
+          LimitationCategory::SimulationFidelity,
+          "Fog of Intent simulation transitions are fully deterministic and replay-verified across all core subsystems",
+          EvidenceTier::SoftwareInvariants,
+          vec![],
+          ClaimClassification::PermissibleBoundedClaim,
+          "Verified by deterministic state hashing, append-only history replay, and zero async/RNG primitives in core",
+        ),
+        ResearchClaim::new(
+          "CLAIM-002",
+          LimitationCategory::AccessibilityCoverage,
+          "The reference CLI and HTML presentation layers support non-color semantics, high-contrast tokens, and keyboard-driven interaction",
+          EvidenceTier::LimitedHumanStudy,
+          vec![LimitationCategory::AccessibilityCoverage],
+          ClaimClassification::ConditionalWithDisclaimer,
+          "Audited across M10 interaction modes and M11 WCAG 2.1 AA tokens, with documented untested assistive hardware limits",
+        ),
+        ResearchClaim::new(
+          "CLAIM-003",
+          LimitationCategory::AgentGeneralization,
+          "Parametric and heuristic agents exhibit distinct observable strategic trade-offs on diagnostic choice catalogs",
+          EvidenceTier::EmpiricalCalibration,
+          vec![
+            LimitationCategory::AgentGeneralization,
+            LimitationCategory::HumanRealism,
+          ],
+          ClaimClassification::ConditionalWithDisclaimer,
+          "Fitted and validated across M7 diagnostic dilemmas with Total Variation Distance metrics, not generalizing to unconstrained human game dynamics",
+        ),
+      ],
+      citation: CitationGuidance::new(
+        r#"@software{fog_of_intent_2026,
+  author = {Saehwan Park},
+  title = {Fog of Intent: Deterministic Turn-Based Strategy Simulation for AI-Native Coordination},
+  year = {2026},
+  version = {0.1.215},
+  url = {https://github.com/SaehwanPark/fog-of-intent}
+}"#,
+        "10.5281/zenodo.fogofintent.v0.1.215",
+        "Fog of Intent: Public Research-Capable Alpha",
+        "0.1.215",
+        "https://github.com/SaehwanPark/fog-of-intent",
+        "Explicit seed bundle injection with zero internal RNG; identical seeds produce identical trajectories",
+      ),
+
+      disclosed_limitations: vec![
+        LimitationCategory::SimulationFidelity,
+        LimitationCategory::AccessibilityCoverage,
+        LimitationCategory::AgentGeneralization,
+        LimitationCategory::HumanRealism,
+        LimitationCategory::NetworkMultiplayer,
+        LimitationCategory::HardwareRequirements,
+      ],
+    }
+  }
+
+  /// Constructs an overclaim limitations declaration.
+  pub fn build_overclaim_limitations_declaration() -> AlphaLimitationsDeclaration {
+    let mut decl = Self::build_compliant_limitations_declaration();
+    decl.manifest_id = "manifest-limitations-overclaim-v1".to_string();
+    decl.claims.push(ResearchClaim::new(
+      "CLAIM-OVERCLAIM",
+      LimitationCategory::HumanRealism,
+      "Simulated AI agent behaviors faithfully reproduce human psychological decision-making in competitive play",
+      EvidenceTier::UnverifiedHypothesis,
+      vec![],
+      ClaimClassification::ImpermissibleOverclaim,
+      "Unsubstantiated claim equating synthetic heuristics to human cognitive ground truth",
+    ));
+    decl
+  }
+
+  /// Constructs a limitations declaration missing required category disclaimers.
+  pub fn build_missing_disclaimer_limitations_declaration() -> AlphaLimitationsDeclaration {
+    let mut decl = Self::build_compliant_limitations_declaration();
+    decl.manifest_id = "manifest-limitations-missing-disclaimer-v1".to_string();
+    // Claim requires NetworkMultiplayer disclaimer, but manifest does not disclose it
+    decl.claims.push(ResearchClaim::new(
+      "CLAIM-CONDITIONAL-UNDISCLOSED",
+      LimitationCategory::NetworkMultiplayer,
+      "Local presentation simulation operates without networked multiplayer synchronizer",
+      EvidenceTier::SoftwareInvariants,
+      vec![LimitationCategory::NetworkMultiplayer],
+      ClaimClassification::ConditionalWithDisclaimer,
+      "Requires explicit disclosure in manifest limitations list",
+    ));
+    decl
+      .disclosed_limitations
+      .retain(|&cat| cat != LimitationCategory::NetworkMultiplayer);
+    decl
+  }
+
+  /// Runs the compliant limitations benchmark.
+  pub fn execute_limitations_compliant() -> Result<LimitationsAuditReport, AlphaLimitationsError> {
+    let decl = Self::build_compliant_limitations_declaration();
+    audit_limitations_and_boundaries(&decl)
+  }
+
+  /// Runs the overclaim limitations benchmark.
+  pub fn execute_limitations_overclaim() -> Result<LimitationsAuditReport, AlphaLimitationsError> {
+    let decl = Self::build_overclaim_limitations_declaration();
+    audit_limitations_and_boundaries(&decl)
+  }
+
+  /// Runs the missing disclaimer limitations benchmark.
+  pub fn execute_limitations_missing_disclaimer()
+  -> Result<LimitationsAuditReport, AlphaLimitationsError> {
+    let decl = Self::build_missing_disclaimer_limitations_declaration();
+    audit_limitations_and_boundaries(&decl)
   }
 }
 

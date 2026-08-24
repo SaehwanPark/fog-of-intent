@@ -1,5 +1,3 @@
-//! Unit and integration tests for M12 Public Alpha release governance, compatibility matrix, and data dictionary.
-
 use crate::alpha::catalog::{AlphaScenarioCatalog, render_alpha_scenario_markdown};
 use crate::alpha::compatibility::{
   ALPHA_COMPATIBILITY_SCHEMA_VERSION, CompatibilityDomain, CompatibilityError, CompatibilityLevel,
@@ -12,6 +10,10 @@ use crate::alpha::data_dictionary::{
 use crate::alpha::governance::{
   ALPHA_GOVERNANCE_SCHEMA_VERSION, AlphaGovernanceError, LegalPostureStatus, PolicyComplianceArea,
   evaluate_alpha_governance, render_governance_report_markdown,
+};
+use crate::alpha::limitations::{
+  ALPHA_LIMITATIONS_SCHEMA_VERSION, AlphaLimitationsError, ClaimClassification, EvidenceTier,
+  LimitationCategory, audit_limitations_and_boundaries, render_limitations_report_markdown,
 };
 
 #[test]
@@ -460,6 +462,202 @@ fn data_dictionary_error_display_coverage() {
 }
 
 #[test]
+fn limitation_category_round_trips() {
+  for cat in LimitationCategory::all() {
+    let s = cat.as_str();
+    assert_eq!(LimitationCategory::parse(s), Some(cat));
+    assert_eq!(cat.to_string(), s);
+  }
+  assert_eq!(LimitationCategory::parse("invalid-limitation"), None);
+}
+
+#[test]
+fn evidence_tier_round_trips() {
+  let tiers = [
+    EvidenceTier::SoftwareInvariants,
+    EvidenceTier::SyntheticAgentPlaytest,
+    EvidenceTier::EmpiricalCalibration,
+    EvidenceTier::LimitedHumanStudy,
+    EvidenceTier::UnverifiedHypothesis,
+  ];
+  for tier in tiers {
+    let s = tier.as_str();
+    assert_eq!(EvidenceTier::parse(s), Some(tier));
+    assert_eq!(tier.to_string(), s);
+  }
+  assert_eq!(EvidenceTier::parse("invalid-tier"), None);
+
+  assert!(EvidenceTier::SoftwareInvariants.is_empirical());
+  assert!(EvidenceTier::SyntheticAgentPlaytest.is_empirical());
+  assert!(EvidenceTier::EmpiricalCalibration.is_empirical());
+  assert!(EvidenceTier::LimitedHumanStudy.is_empirical());
+  assert!(!EvidenceTier::UnverifiedHypothesis.is_empirical());
+}
+
+#[test]
+fn claim_classification_round_trips() {
+  let classifications = [
+    ClaimClassification::PermissibleBoundedClaim,
+    ClaimClassification::ConditionalWithDisclaimer,
+    ClaimClassification::ImpermissibleOverclaim,
+  ];
+  for class in classifications {
+    let s = class.as_str();
+    assert_eq!(ClaimClassification::parse(s), Some(class));
+    assert_eq!(class.to_string(), s);
+  }
+  assert_eq!(ClaimClassification::parse("invalid-classification"), None);
+
+  assert!(ClaimClassification::PermissibleBoundedClaim.is_allowed());
+  assert!(ClaimClassification::ConditionalWithDisclaimer.is_allowed());
+  assert!(!ClaimClassification::ImpermissibleOverclaim.is_allowed());
+}
+
+#[test]
+fn limitations_compliant_audit_succeeds() {
+  let decl = AlphaScenarioCatalog::build_compliant_limitations_declaration();
+  let report =
+    audit_limitations_and_boundaries(&decl).expect("compliant limitations audit must pass");
+
+  assert_eq!(report.schema_version, ALPHA_LIMITATIONS_SCHEMA_VERSION);
+  assert_eq!(report.total_claims_count, 3);
+  assert_eq!(report.permissible_claims_count, 1);
+  assert_eq!(report.conditional_claims_count, 2);
+  assert_eq!(report.disclosed_limitations_count, 6);
+  // (1 * 10,000 + 2 * 8,000) / 3 = 26,000 / 3 = 8,666 bp
+  assert_eq!(report.safety_score_bp, 8_666);
+  assert!(report.is_audit_passed);
+  assert_eq!(report.citation.software_version, "0.1.215");
+}
+
+#[test]
+fn limitations_fail_closed_validation() {
+  let mut d = AlphaScenarioCatalog::build_compliant_limitations_declaration();
+  d.claims.clear();
+  assert_eq!(
+    audit_limitations_and_boundaries(&d),
+    Err(AlphaLimitationsError::EmptyManifest)
+  );
+
+  let mut d = AlphaScenarioCatalog::build_compliant_limitations_declaration();
+  d.disclosed_limitations.clear();
+  assert_eq!(
+    audit_limitations_and_boundaries(&d),
+    Err(AlphaLimitationsError::EmptyDisclosedLimitations)
+  );
+
+  let mut d = AlphaScenarioCatalog::build_compliant_limitations_declaration();
+  d.citation.bibtex_entry = "  ".to_string();
+  assert_eq!(
+    audit_limitations_and_boundaries(&d),
+    Err(AlphaLimitationsError::EmptyBibtex)
+  );
+
+  let mut d = AlphaScenarioCatalog::build_compliant_limitations_declaration();
+  d.citation.doi_or_urn = "".to_string();
+  assert_eq!(
+    audit_limitations_and_boundaries(&d),
+    Err(AlphaLimitationsError::EmptyDoiOrUrn)
+  );
+
+  let mut d = AlphaScenarioCatalog::build_compliant_limitations_declaration();
+  d.citation.canonical_title = "".to_string();
+  assert_eq!(
+    audit_limitations_and_boundaries(&d),
+    Err(AlphaLimitationsError::EmptyCanonicalTitle)
+  );
+
+  let mut d = AlphaScenarioCatalog::build_compliant_limitations_declaration();
+  d.citation.repository_url = "   ".to_string();
+  assert_eq!(
+    audit_limitations_and_boundaries(&d),
+    Err(AlphaLimitationsError::EmptyRepositoryUrl)
+  );
+
+  let mut d = AlphaScenarioCatalog::build_compliant_limitations_declaration();
+  d.citation.reproducibility_seed_policy = "".to_string();
+  assert_eq!(
+    audit_limitations_and_boundaries(&d),
+    Err(AlphaLimitationsError::EmptySeedPolicy)
+  );
+
+  let mut d = AlphaScenarioCatalog::build_compliant_limitations_declaration();
+  d.claims[0].claim_id = "".to_string();
+  assert_eq!(
+    audit_limitations_and_boundaries(&d),
+    Err(AlphaLimitationsError::EmptyClaimId)
+  );
+
+  let mut d = AlphaScenarioCatalog::build_compliant_limitations_declaration();
+  d.claims[0].statement = "   ".to_string();
+  assert_eq!(
+    audit_limitations_and_boundaries(&d),
+    Err(AlphaLimitationsError::EmptyStatement)
+  );
+
+  let mut d = AlphaScenarioCatalog::build_compliant_limitations_declaration();
+  d.claims[0].rationale = "".to_string();
+  assert_eq!(
+    audit_limitations_and_boundaries(&d),
+    Err(AlphaLimitationsError::EmptyRationale)
+  );
+
+  let mut d = AlphaScenarioCatalog::build_compliant_limitations_declaration();
+  d.claims.push(d.claims[0].clone());
+  assert_eq!(
+    audit_limitations_and_boundaries(&d),
+    Err(AlphaLimitationsError::DuplicateClaimId(
+      "CLAIM-001".to_string()
+    ))
+  );
+
+  // Impermissible overclaim
+  let d = AlphaScenarioCatalog::build_overclaim_limitations_declaration();
+  assert_eq!(
+    audit_limitations_and_boundaries(&d),
+    Err(AlphaLimitationsError::ImpermissibleClaimDetected(
+      "CLAIM-OVERCLAIM".to_string()
+    ))
+  );
+
+  // Missing required disclaimer
+  let d = AlphaScenarioCatalog::build_missing_disclaimer_limitations_declaration();
+  assert_eq!(
+    audit_limitations_and_boundaries(&d),
+    Err(AlphaLimitationsError::MissingRequiredDisclaimer {
+      claim_id: "CLAIM-CONDITIONAL-UNDISCLOSED".to_string(),
+      required_limitation: LimitationCategory::NetworkMultiplayer,
+    })
+  );
+}
+
+#[test]
+fn limitations_error_display_coverage() {
+  let errors = [
+    AlphaLimitationsError::EmptyManifest,
+    AlphaLimitationsError::EmptyClaimId,
+    AlphaLimitationsError::EmptyStatement,
+    AlphaLimitationsError::EmptyRationale,
+    AlphaLimitationsError::DuplicateClaimId("CLAIM-01".to_string()),
+    AlphaLimitationsError::ImpermissibleClaimDetected("CLAIM-01".to_string()),
+    AlphaLimitationsError::MissingRequiredDisclaimer {
+      claim_id: "CLAIM-01".to_string(),
+      required_limitation: LimitationCategory::SimulationFidelity,
+    },
+    AlphaLimitationsError::EmptyBibtex,
+    AlphaLimitationsError::EmptyDoiOrUrn,
+    AlphaLimitationsError::EmptyCanonicalTitle,
+    AlphaLimitationsError::EmptyRepositoryUrl,
+    AlphaLimitationsError::EmptySeedPolicy,
+    AlphaLimitationsError::EmptyDisclosedLimitations,
+  ];
+  for err in errors {
+    let s = err.to_string();
+    assert!(!s.is_empty());
+  }
+}
+
+#[test]
 fn catalog_scenarios_execute_and_verify_all_expectations() {
   for scenario in AlphaScenarioCatalog::ALL {
     assert_eq!(
@@ -485,6 +683,22 @@ fn catalog_scenarios_execute_and_verify_all_expectations() {
 
   let rep4 = AlphaScenarioCatalog::execute_data_dictionary().expect("dictionary scenario");
   assert!(rep4.is_audit_passed);
+
+  let rep5 =
+    AlphaScenarioCatalog::execute_limitations_compliant().expect("limitations compliant scenario");
+  assert!(rep5.is_audit_passed);
+
+  let rep6 = AlphaScenarioCatalog::execute_limitations_overclaim();
+  assert!(matches!(
+    rep6,
+    Err(AlphaLimitationsError::ImpermissibleClaimDetected(_))
+  ));
+
+  let rep7 = AlphaScenarioCatalog::execute_limitations_missing_disclaimer();
+  assert!(matches!(
+    rep7,
+    Err(AlphaLimitationsError::MissingRequiredDisclaimer { .. })
+  ));
 }
 
 #[test]
@@ -503,4 +717,9 @@ fn markdown_report_rendering_hygiene() {
   let dict_md = render_data_dictionary_markdown(&dict_rep);
   assert!(dict_md.starts_with("# Public Alpha Data Dictionary Audit Report"));
   assert!(!dict_md.contains('\x1b'));
+
+  let lim_rep = AlphaScenarioCatalog::execute_limitations_compliant().unwrap();
+  let lim_md = render_limitations_report_markdown(&lim_rep);
+  assert!(lim_md.starts_with("# Public Alpha Known Limitations and Evidence Boundaries Report"));
+  assert!(!lim_md.contains('\x1b'));
 }

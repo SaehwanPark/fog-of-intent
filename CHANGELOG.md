@@ -6,7 +6,25 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.215] - 2026-08-24
+
+### Added
+
+- `m12-alpha-limitations-v1` (`src/alpha/limitations.rs`) formalizing known technical/empirical limitations, evidence boundaries, research claim constraints, and citation guidance:
+  - `LimitationCategory` (`simulation-fidelity`, `accessibility-coverage`, `agent-generalization`, `human-realism`, `network-multiplayer`, `hardware-requirements`) with string parsing and Display implementations.
+  - `EvidenceTier` (`software-invariants`, `synthetic-agent-playtest`, `empirical-calibration`, `limited-human-study`, `unverified-hypothesis`) and `is_empirical` predicate.
+  - `ClaimClassification` (`permissible-bounded-claim`, `conditional-with-disclaimer`, `impermissible-overclaim`) and `is_allowed` predicate.
+  - `ResearchClaim`, `CitationGuidance` (BibTeX, DOI/URN, canonical title, software version, repository URL, seed policy), and `AlphaLimitationsDeclaration`.
+  - `audit_limitations_and_boundaries` pure deterministic audit with fail-closed validation (`EmptyManifest`, `EmptyClaimId`, `EmptyStatement`, `EmptyRationale`, `DuplicateClaimId`, `ImpermissibleClaimDetected`, `MissingRequiredDisclaimer`, `EmptyBibtex`, `EmptyDoiOrUrn`, `EmptyCanonicalTitle`, `EmptyRepositoryUrl`, `EmptySeedPolicy`, `EmptyDisclosedLimitations`) producing `LimitationsAuditReport` with integer basis-point safety scores ($[0..=10,000]$ bp) and audit status checks.
+  - `render_limitations_report_markdown` producing structured Markdown reports without ANSI styling.
+- `m12-alpha-catalog-v1` (`src/alpha/catalog.rs`) registering 3 canonical benchmark limitations scenarios:
+  - `scenario-alpha-limitations-compliant-v1`: Bounded research claims across simulation fidelity, accessibility, and agent generalization with explicit limitation disclaimers and valid BibTeX citation ($8,666$ bp safety score).
+  - `scenario-alpha-limitations-overclaim-rejected-v1`: Fail-closed rejection of an unverified human cognitive ground truth / psychological realism claim.
+  - `scenario-alpha-limitations-missing-disclaimer-v1`: Fail-closed rejection when a conditional research claim omits required limitation category disclosures.
+- 6 new unit tests in `src/alpha/tests.rs` (24 total Alpha tests, 634 total library tests) covering enum round-trips, fail-closed validation, error Display coverage, safety score basis points, overclaim rejection, disclaimer enforcement, catalog scenario execution, and Markdown report hygiene.
+
 ## [0.1.214] - 2026-08-20
+
 
 ### Added
 
