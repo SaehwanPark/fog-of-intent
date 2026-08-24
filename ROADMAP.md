@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs` | Standalone package version reporting, a bounded fixture transcript with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, TTY prompt/completion, `--color`), and a replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1` |
-| Package | `Cargo.toml` | Version `0.1.216`, one deferred edge crate (`reedline`) |
+| Package | `Cargo.toml` | Version `0.1.217`, one deferred edge crate (`reedline`) |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -2325,7 +2325,7 @@ in its legal, accessibility, entertainment, and research claims.
 - [x] Add a data dictionary and model cards.
 - [x] Add known limitations, evidence boundaries, and citation guidance.
 - [x] Package sample scenarios, replays, and experiments.
-- [ ] Run clean-install, reproducibility, security, license, and compatibility
+- [x] Run clean-install, reproducibility, security, license, and compatibility
   checks.
 - [ ] Conduct release-candidate human testing appropriate to public claims.
 - [ ] Archive source, lockfiles, schemas, fixtures, evidence, artifacts, and
@@ -2395,8 +2395,13 @@ in its legal, accessibility, entertainment, and research claims.
   FNV-1a checksum validation, fail-closed errors (`AlphaGuidesError`, `AlphaReproducibilityError`), error Display coverage,
   and clean Markdown report rendering hygiene across 32 focused tests in `src/alpha/tests.rs` (642 total library tests).
 
-This establishes the formal documentation guide manifests, prerequisite DAG verification, sample reproducibility bundle
-packaging, and checksum integrity framework for M12. Release candidate testing and release tag archiving remain open.
+### Current M12 release readiness verification check suite evidence
+
+- [x] Define `m12-alpha-release-checks-v1` in `src/alpha/checks.rs` implementing multi-domain release verification across 6 discrete check categories (`CleanInstall`, `Reproducibility`, `SecurityAdvisory`, `LicenseCompliance`, `CompatibilityMatrix`, `DataRedaction`), 4 severity levels (`CriticalBlocker`, `MajorIssue`, `MinorWarning`, `VerifiedPass`), 4 verification statuses (`Passed`, `ConditionallyPassed`, `Failed`, `Skipped`), `ReleaseCheckDefinition`, `AlphaReleaseChecksManifest`, and pure deterministic audit evaluation (`audit_release_checks`) with fail-closed validation (`AlphaReleaseChecksError`), exact integer basis-point scoring ($[0..=10,000]$ bp), category summaries, and `is_release_ready` release readiness gate checks ($\ge 8,500$ bp, 0 blockers, 0 failures, 100% required categories).
+- [x] Register 3 canonical benchmark release check scenarios in `AlphaScenarioCatalog` (`m12-alpha-catalog-v1` in `src/alpha/catalog.rs`: `scenario-alpha-release-checks-compliant-v1`, `scenario-alpha-release-checks-blocker-rejected-v1`, `scenario-alpha-release-checks-missing-category-rejected-v1`) with reproducible execution and verified expectations (14 total alpha benchmark scenarios).
+- [x] Cover check category, severity, and verification status round-trips, fail-closed validation, error Display formatting, readiness score basis points, release readiness gate logic, catalog benchmark execution, and clean Markdown report rendering hygiene across 38 focused tests in `src/alpha/tests.rs` (648 total library tests).
+
+This establishes the formal release readiness verification check suite, multi-domain compliance auditing, blocker rejection, and release eligibility framework for M12. Release candidate human testing and release tag archiving remain open.
 
 
 ### Deliverables

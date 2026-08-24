@@ -645,6 +645,16 @@ reversible client state machine, triple projection parity verification, and cano
   (`scenario-gui-html-flank-inspection-v1`, `scenario-gui-html-debrief-quadrant-v1`,
   `scenario-gui-html-high-contrast-accessibility-v1`) with verified expectations.
 
+`src/alpha/` defines the public research-capable alpha release governance manifests, cross-version compatibility matrices, data dictionary redaction auditing, limitations/evidence boundaries, documentation guides DAG verification, sample reproducibility bundle packaging, and release readiness verification check suite for M12:
+- `governance.rs` (`m12-alpha-governance-v1`): defines `PolicyComplianceArea`, `LegalPostureStatus`, `PolicyDeclaration`, `PublicAlphaGovernanceManifest`, and pure deterministic `evaluate_alpha_governance` auditing compliance basis points ($[0..=10,000]$ bp) and release eligibility.
+- `compatibility.rs` (`m12-alpha-compatibility-v1`): defines `CompatibilityDomain`, `CompatibilityLevel`, `VersionMatrixEntry`, `CompatibilityMatrixDefinition`, and pure deterministic `evaluate_compatibility_matrix` verifying cross-version migration contracts.
+- `data_dictionary.rs` (`m12-alpha-data-dictionary-v1`): defines `DataCategory`, `DataSensitivityLevel`, `DataFieldDefinition`, `DataDictionaryDefinition`, and pure deterministic `audit_data_dictionary` enforcing fog-of-war redactions on latent state fields.
+- `limitations.rs` (`m12-alpha-limitations-v1`): defines `LimitationCategory`, `EvidenceTier`, `ClaimClassification`, `ResearchClaim`, `CitationGuidance`, `AlphaLimitationsDeclaration`, and pure deterministic `audit_limitations_and_boundaries` evaluating claim safety basis points ($[0..=10,000]$ bp).
+- `guides.rs` (`m12-alpha-guides-v1`): defines `GuideAudience`, `GuideSectionKind`, `GuideDocumentDefinition`, `AlphaGuidesManifest`, and pure deterministic `audit_guide_manifests` with DFS prerequisite DAG cycle detection and completeness scoring ($[0..=10,000]$ bp).
+- `reproducibility.rs` (`m12-alpha-reproducibility-v1`): defines `SampleArtifactKind`, `ReproducibilityStatus`, `ReproducibilityPackageDefinition`, `ReproducibilityBundleManifest`, and pure deterministic `audit_reproducibility_bundle` verifying 16-hex FNV-1a checksums and bundle release eligibility.
+- `checks.rs` (`m12-alpha-release-checks-v1`): defines `ReleaseCheckCategory`, `ReleaseCheckSeverity`, `CheckVerificationStatus`, `ReleaseCheckDefinition`, `AlphaReleaseChecksManifest`, and pure deterministic `audit_release_checks` evaluating release readiness scores ($[0..=10,000]$ bp), category summaries, and `is_release_ready` readiness gates.
+- `catalog.rs` (`m12-alpha-catalog-v1`): registers 14 canonical benchmark alpha scenarios covering governance compliance, original fallback triggers, compatibility matrix soundness, data dictionary redactions, limitation claim safety, guide prerequisite DAG resolution, reproducibility bundle checksum integrity, and release readiness verification.
+
 ## Target Components
 
 These are ownership boundaries; the bounded kernel, fixture codec, and first
