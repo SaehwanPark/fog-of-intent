@@ -4,6 +4,7 @@
 //! [`crate::host::CliScenarioHost::apply_line`].
 
 use std::borrow::Cow;
+use std::io::{self, Write};
 
 use reedline::{
   ColumnarMenu, Completer, ExampleHighlighter, Highlighter, MenuBuilder, Prompt, PromptEditMode,
@@ -13,6 +14,8 @@ use reedline::{
 use reedline::{Emacs, KeyCode, KeyModifiers};
 
 use crate::cli::{CLI_COMMAND_NAMES, CLI_INSPECT_TARGETS, CLI_PLAN_INTENTS};
+use crate::command_loop::{CliApplicationScenario, format_scenario_menu, parse_scenario_selection};
+use crate::presentation::PresentationStyle;
 
 const COMPLETION_MENU: &str = "completion_menu";
 
@@ -30,6 +33,34 @@ impl Prompt for FogPrompt {
 
   fn render_prompt_indicator(&self, _prompt_mode: PromptEditMode) -> Cow<'static, str> {
     " ".into()
+  }
+
+  fn render_prompt_multiline_indicator(&self) -> Cow<'static, str> {
+    "· ".into()
+  }
+
+  fn render_prompt_history_search_indicator(
+    &self,
+    _history_search: PromptHistorySearch,
+  ) -> Cow<'static, str> {
+    "? ".into()
+  }
+}
+
+/// Prompt for interactive scenario selection.
+pub struct ScenarioPrompt;
+
+impl Prompt for ScenarioPrompt {
+  fn render_prompt_left(&self) -> Cow<'static, str> {
+    "scenario".into()
+  }
+
+  fn render_prompt_right(&self) -> Cow<'static, str> {
+    "".into()
+  }
+
+  fn render_prompt_indicator(&self, _prompt_mode: PromptEditMode) -> Cow<'static, str> {
+    "> ".into()
   }
 
   fn render_prompt_multiline_indicator(&self) -> Cow<'static, str> {
@@ -143,6 +174,50 @@ pub fn read_line(editor: &mut Reedline) -> std::io::Result<ReadLine> {
     Signal::Success(buffer) => Ok(ReadLine::Line(buffer)),
     Signal::CtrlC | Signal::CtrlD => Ok(ReadLine::Quit),
     _ => Ok(ReadLine::Quit),
+  }
+}
+
+/// Read one scenario selection line from the reedline editor.
+pub fn read_scenario_line(editor: &mut Reedline) -> std::io::Result<ReadLine> {
+  match editor.read_line(&ScenarioPrompt)? {
+    Signal::Success(buffer) => Ok(ReadLine::Line(buffer)),
+    Signal::CtrlC | Signal::CtrlD => Ok(ReadLine::Quit),
+    _ => Ok(ReadLine::Quit),
+  }
+}
+
+/// Prompt and read scenario selection in an interactive TTY session using reedline.
+pub fn select_scenario_with_editor(
+  editor: &mut Reedline,
+  style: PresentationStyle,
+) -> std::io::Result<Option<CliApplicationScenario>> {
+  let mut stdout = io::stdout();
+  stdout.write_all(format_scenario_menu(style).as_bytes())?;
+  stdout.flush()?;
+  loop {
+    match read_scenario_line(editor)? {
+      ReadLine::Quit => return Ok(None),
+      ReadLine::Line(line) => {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+          return Ok(Some(CliApplicationScenario::M3TwoWindowFixture));
+        }
+        if trimmed.eq_ignore_ascii_case("q")
+          || trimmed.eq_ignore_ascii_case("quit")
+          || trimmed.eq_ignore_ascii_case("exit")
+        {
+          return Ok(None);
+        }
+        if let Some(scenario) = parse_scenario_selection(trimmed) {
+          return Ok(Some(scenario));
+        }
+        let err_msg = style.paint_red(&format!(
+          "unknown scenario selection: '{trimmed}'. Please enter 1-7, scenario ID, alias, or 'q' to cancel.\n"
+        ));
+        stdout.write_all(err_msg.as_bytes())?;
+        stdout.flush()?;
+      }
+    }
   }
 }
 

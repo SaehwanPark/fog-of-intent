@@ -37,7 +37,7 @@ pub const CLI_APPLICATION_VERSION: &str =
   concat!("fog-of-intent ", env!("CARGO_PKG_VERSION"), "\n");
 
 /// Bounded process-level usage for the executable wrapper.
-pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --list-scenarios   list all available scenarios and descriptions\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --help             show this help\n  --version, -V      show package version\n";
+pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--select] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --help             show this help\n  --version, -V      show package version\n";
 
 /// Execution mode for a scenario entry in the scenario catalog.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -196,6 +196,8 @@ pub enum CliApplicationArgsError {
   UnsupportedColor,
   UnsupportedScenario,
   RunDirectoryRequiresFixture,
+  DuplicateSelect,
+  ConflictingScenarioSelection,
   UnexpectedArgument,
 }
 
@@ -217,6 +219,8 @@ impl CliApplicationArgsError {
       Self::RunDirectoryRequiresFixture => {
         "--run-dir is available only for interactive lane scenarios"
       }
+      Self::DuplicateSelect => "--select may be provided only once",
+      Self::ConflictingScenarioSelection => "cannot specify both --scenario and --select",
       Self::UnexpectedArgument => "unexpected executable argument; use --help",
     }
   }
@@ -264,15 +268,29 @@ pub enum CliApplicationCommand {
 /// Explicit executable configuration for the bounded fixture loop.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CliApplicationOptions {
-  scenario: CliApplicationScenario,
+  scenario: Option<CliApplicationScenario>,
+  interactive_select: bool,
   run_dir: Option<PathBuf>,
   color: CliColorMode,
 }
 
 impl CliApplicationOptions {
-  /// Return the closed scenario constructor selected at the process edge.
+  /// Return the closed scenario constructor, defaulting to the two-window reference fixture.
   pub const fn scenario(&self) -> CliApplicationScenario {
-    self.scenario
+    match self.scenario {
+      Some(scenario) => scenario,
+      None => CliApplicationScenario::M3TwoWindowFixture,
+    }
+  }
+
+  /// Whether an explicit scenario identifier was passed at the command line.
+  pub const fn has_explicit_scenario(&self) -> bool {
+    self.scenario.is_some()
+  }
+
+  /// Whether interactive scenario selection was explicitly requested via `--select` or `-s`.
+  pub const fn interactive_select(&self) -> bool {
+    self.interactive_select
   }
 
   /// Return the configured run directory, if binary persistence is enabled.
@@ -291,6 +309,7 @@ pub fn parse_application_args(
   args: &[OsString],
 ) -> Result<CliApplicationCommand, CliApplicationArgsError> {
   let mut scenario = None;
+  let mut interactive_select = false;
   let mut run_dir = None;
   let mut color = None;
   let mut index = 0;
@@ -314,9 +333,21 @@ pub fn parse_application_args(
         }
         return Err(CliApplicationArgsError::UnexpectedArgument);
       }
+      value if value == "--select" || value == "-s" => {
+        if interactive_select {
+          return Err(CliApplicationArgsError::DuplicateSelect);
+        }
+        if scenario.is_some() {
+          return Err(CliApplicationArgsError::ConflictingScenarioSelection);
+        }
+        interactive_select = true;
+      }
       value if value == "--scenario" => {
         if scenario.is_some() {
           return Err(CliApplicationArgsError::DuplicateScenario);
+        }
+        if interactive_select {
+          return Err(CliApplicationArgsError::ConflictingScenarioSelection);
         }
         index += 1;
         if index == args.len() {
@@ -385,14 +416,17 @@ pub fn parse_application_args(
     }
     index += 1;
   }
-  let scenario = scenario.unwrap_or_default();
-  if run_dir.is_some() && !scenario.is_interactive_lane() {
+  if let Some(explicit) = scenario
+    && run_dir.is_some()
+    && !explicit.is_interactive_lane()
+  {
     // The match-replay, gui-presentation, and release-checks scenarios print and
     // exit without creating run artifacts; accepting a store path would silently ignore it.
     return Err(CliApplicationArgsError::RunDirectoryRequiresFixture);
   }
   Ok(CliApplicationCommand::Run(CliApplicationOptions {
     scenario,
+    interactive_select,
     run_dir,
     color: color.unwrap_or_default(),
   }))
@@ -555,6 +589,113 @@ fn apply_presented<W: Write>(
   }
 }
 
+/// Parse a user selection input (number 1-7, scenario identifier, or short alias) into a scenario.
+pub fn parse_scenario_selection(input: &str) -> Option<CliApplicationScenario> {
+  let trimmed = input.trim();
+  if trimmed.is_empty() {
+    return None;
+  }
+  if let Ok(index) = trimmed.parse::<usize>() {
+    return match index {
+      1 => Some(CliApplicationScenario::M3TwoWindowFixture),
+      2 => Some(CliApplicationScenario::M2StrategyHappyPath),
+      3 => Some(CliApplicationScenario::M2StrategyRiskTaking),
+      4 => Some(CliApplicationScenario::M2StrategyConservative),
+      5 => Some(CliApplicationScenario::M9CompleteMatchReplay),
+      6 => Some(CliApplicationScenario::M11GuiPresentation),
+      7 => Some(CliApplicationScenario::M12AlphaReleaseChecks),
+      _ => None,
+    };
+  }
+  let lower = trimmed.to_ascii_lowercase();
+  match lower.as_str() {
+    CLI_FIXTURE_SCENARIO_ID | "fixture" | "m3" | "default" => {
+      Some(CliApplicationScenario::M3TwoWindowFixture)
+    }
+    CLI_STRATEGY_HAPPY_PATH_SCENARIO_ID | "happy-path" | "happypath" | "happy" => {
+      Some(CliApplicationScenario::M2StrategyHappyPath)
+    }
+    CLI_STRATEGY_RISK_TAKING_SCENARIO_ID | "risk-taking" | "risktaking" | "risk" => {
+      Some(CliApplicationScenario::M2StrategyRiskTaking)
+    }
+    CLI_STRATEGY_CONSERVATIVE_SCENARIO_ID | "conservative" => {
+      Some(CliApplicationScenario::M2StrategyConservative)
+    }
+    crate::cli::CLI_MATCH_REPLAY_SCENARIO_ID | "match-replay" | "match" | "m9" => {
+      Some(CliApplicationScenario::M9CompleteMatchReplay)
+    }
+    crate::cli::CLI_GUI_PRESENTATION_SCENARIO_ID | "gui-presentation" | "gui" | "m11" => {
+      Some(CliApplicationScenario::M11GuiPresentation)
+    }
+    crate::cli::CLI_ALPHA_RELEASE_CHECKS_SCENARIO_ID
+    | "alpha-release-checks"
+    | "alpha-checks"
+    | "alpha"
+    | "m12"
+    | "checks" => Some(CliApplicationScenario::M12AlphaReleaseChecks),
+    _ => None,
+  }
+}
+
+/// Format an interactive scenario selection menu for terminal presentation.
+pub fn format_scenario_menu(style: PresentationStyle) -> String {
+  let mut output = String::new();
+  output.push_str(&format!(
+    "{}\n\n",
+    style.paint_bold("Fog of Intent — Scenario Selection")
+  ));
+  for (index, entry) in CLI_SCENARIO_CATALOG.iter().enumerate() {
+    let num = index + 1;
+    let title = style.paint_bold(entry.display_name);
+    let meta = style.paint_dim(&format!("({}, {})", entry.milestone, entry.mode.label()));
+    let id_tag = style.paint_dim(&format!("id: {}", entry.id));
+    output.push_str(&format!("  [{num}] {title} {meta}\n"));
+    output.push_str(&format!("      {}\n", entry.description));
+    output.push_str(&format!("      {id_tag}\n\n"));
+  }
+  output.push_str("Select scenario by number [1-7], scenario ID, or short alias.\n");
+  output.push_str("Press Enter for default [1], or type 'q' to cancel.\n");
+  output
+}
+
+/// Read interactive scenario selection from any BufRead/Write stream.
+pub fn select_scenario_interactively<R: BufRead, W: Write>(
+  mut input: R,
+  mut output: W,
+  style: PresentationStyle,
+) -> io::Result<Option<CliApplicationScenario>> {
+  output.write_all(format_scenario_menu(style).as_bytes())?;
+  output.flush()?;
+  let prompt = style.paint_cyan("scenario [1-7]> ");
+  let mut line = String::new();
+  loop {
+    output.write_all(prompt.as_bytes())?;
+    output.flush()?;
+    line.clear();
+    if input.read_line(&mut line)? == 0 {
+      return Ok(None);
+    }
+    let trimmed = line.trim();
+    if trimmed.is_empty() {
+      return Ok(Some(CliApplicationScenario::M3TwoWindowFixture));
+    }
+    if trimmed.eq_ignore_ascii_case("q")
+      || trimmed.eq_ignore_ascii_case("quit")
+      || trimmed.eq_ignore_ascii_case("exit")
+    {
+      return Ok(None);
+    }
+    if let Some(scenario) = parse_scenario_selection(trimmed) {
+      return Ok(Some(scenario));
+    }
+    let err_msg = style.paint_red(&format!(
+      "unknown scenario selection: '{trimmed}'. Please enter 1-7, scenario ID, alias, or 'q' to cancel.\n"
+    ));
+    output.write_all(err_msg.as_bytes())?;
+    output.flush()?;
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -566,7 +707,8 @@ mod tests {
     assert_eq!(
       parse_application_args(&[]),
       Ok(CliApplicationCommand::Run(CliApplicationOptions {
-        scenario: CliApplicationScenario::M3TwoWindowFixture,
+        scenario: None,
+        interactive_select: false,
         run_dir: None,
         color: CliColorMode::Auto,
       }))
@@ -598,7 +740,7 @@ mod tests {
     );
     assert_eq!(
       CLI_APPLICATION_HELP,
-      "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --list-scenarios   list all available scenarios and descriptions\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --help             show this help\n  --version, -V      show package version\n"
+      "usage: fog-of-intent [--scenario <id>] [--select] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --help             show this help\n  --version, -V      show package version\n"
     );
     assert_eq!(
       parse_application_args(&[OsString::from("--version")]),
@@ -1161,5 +1303,269 @@ mod tests {
       parse_application_args(&trailing),
       Err(CliApplicationArgsError::UnexpectedArgument)
     );
+  }
+
+  #[test]
+  fn application_args_parse_interactive_select_and_conflicts() {
+    for flag in ["--select", "-s"] {
+      let args = [OsString::from(flag)];
+      let command = parse_application_args(&args).expect("interactive select command");
+      match command {
+        CliApplicationCommand::Run(options) => {
+          assert!(options.interactive_select());
+          assert!(!options.has_explicit_scenario());
+          assert_eq!(
+            options.scenario(),
+            CliApplicationScenario::M3TwoWindowFixture
+          );
+        }
+        other => panic!("unexpected command: {other:?}"),
+      }
+    }
+
+    let duplicate = [OsString::from("--select"), OsString::from("--select")];
+    assert_eq!(
+      parse_application_args(&duplicate),
+      Err(CliApplicationArgsError::DuplicateSelect)
+    );
+
+    let conflict1 = [
+      OsString::from("--scenario"),
+      OsString::from("m3-two-window-fixture-v1"),
+      OsString::from("--select"),
+    ];
+    assert_eq!(
+      parse_application_args(&conflict1),
+      Err(CliApplicationArgsError::ConflictingScenarioSelection)
+    );
+
+    let conflict2 = [
+      OsString::from("-s"),
+      OsString::from("--scenario"),
+      OsString::from("m3-two-window-fixture-v1"),
+    ];
+    assert_eq!(
+      parse_application_args(&conflict2),
+      Err(CliApplicationArgsError::ConflictingScenarioSelection)
+    );
+  }
+
+  #[test]
+  fn parse_scenario_selection_matches_indices_ids_and_aliases() {
+    assert_eq!(
+      parse_scenario_selection("1"),
+      Some(CliApplicationScenario::M3TwoWindowFixture)
+    );
+    assert_eq!(
+      parse_scenario_selection("2"),
+      Some(CliApplicationScenario::M2StrategyHappyPath)
+    );
+    assert_eq!(
+      parse_scenario_selection("3"),
+      Some(CliApplicationScenario::M2StrategyRiskTaking)
+    );
+    assert_eq!(
+      parse_scenario_selection("4"),
+      Some(CliApplicationScenario::M2StrategyConservative)
+    );
+    assert_eq!(
+      parse_scenario_selection("5"),
+      Some(CliApplicationScenario::M9CompleteMatchReplay)
+    );
+    assert_eq!(
+      parse_scenario_selection("6"),
+      Some(CliApplicationScenario::M11GuiPresentation)
+    );
+    assert_eq!(
+      parse_scenario_selection("7"),
+      Some(CliApplicationScenario::M12AlphaReleaseChecks)
+    );
+
+    // Exact IDs
+    assert_eq!(
+      parse_scenario_selection(CLI_FIXTURE_SCENARIO_ID),
+      Some(CliApplicationScenario::M3TwoWindowFixture)
+    );
+    assert_eq!(
+      parse_scenario_selection(CLI_STRATEGY_HAPPY_PATH_SCENARIO_ID),
+      Some(CliApplicationScenario::M2StrategyHappyPath)
+    );
+    assert_eq!(
+      parse_scenario_selection(CLI_STRATEGY_RISK_TAKING_SCENARIO_ID),
+      Some(CliApplicationScenario::M2StrategyRiskTaking)
+    );
+    assert_eq!(
+      parse_scenario_selection(CLI_STRATEGY_CONSERVATIVE_SCENARIO_ID),
+      Some(CliApplicationScenario::M2StrategyConservative)
+    );
+    assert_eq!(
+      parse_scenario_selection(crate::cli::CLI_MATCH_REPLAY_SCENARIO_ID),
+      Some(CliApplicationScenario::M9CompleteMatchReplay)
+    );
+    assert_eq!(
+      parse_scenario_selection(crate::cli::CLI_GUI_PRESENTATION_SCENARIO_ID),
+      Some(CliApplicationScenario::M11GuiPresentation)
+    );
+    assert_eq!(
+      parse_scenario_selection(crate::cli::CLI_ALPHA_RELEASE_CHECKS_SCENARIO_ID),
+      Some(CliApplicationScenario::M12AlphaReleaseChecks)
+    );
+
+    // Aliases and slug variants
+    assert_eq!(
+      parse_scenario_selection("fixture"),
+      Some(CliApplicationScenario::M3TwoWindowFixture)
+    );
+    assert_eq!(
+      parse_scenario_selection("m3"),
+      Some(CliApplicationScenario::M3TwoWindowFixture)
+    );
+    assert_eq!(
+      parse_scenario_selection("default"),
+      Some(CliApplicationScenario::M3TwoWindowFixture)
+    );
+    assert_eq!(
+      parse_scenario_selection("happy-path"),
+      Some(CliApplicationScenario::M2StrategyHappyPath)
+    );
+    assert_eq!(
+      parse_scenario_selection("happy"),
+      Some(CliApplicationScenario::M2StrategyHappyPath)
+    );
+    assert_eq!(
+      parse_scenario_selection("risk-taking"),
+      Some(CliApplicationScenario::M2StrategyRiskTaking)
+    );
+    assert_eq!(
+      parse_scenario_selection("risk"),
+      Some(CliApplicationScenario::M2StrategyRiskTaking)
+    );
+    assert_eq!(
+      parse_scenario_selection("conservative"),
+      Some(CliApplicationScenario::M2StrategyConservative)
+    );
+    assert_eq!(
+      parse_scenario_selection("match-replay"),
+      Some(CliApplicationScenario::M9CompleteMatchReplay)
+    );
+    assert_eq!(
+      parse_scenario_selection("match"),
+      Some(CliApplicationScenario::M9CompleteMatchReplay)
+    );
+    assert_eq!(
+      parse_scenario_selection("m9"),
+      Some(CliApplicationScenario::M9CompleteMatchReplay)
+    );
+    assert_eq!(
+      parse_scenario_selection("gui-presentation"),
+      Some(CliApplicationScenario::M11GuiPresentation)
+    );
+    assert_eq!(
+      parse_scenario_selection("gui"),
+      Some(CliApplicationScenario::M11GuiPresentation)
+    );
+    assert_eq!(
+      parse_scenario_selection("m11"),
+      Some(CliApplicationScenario::M11GuiPresentation)
+    );
+    assert_eq!(
+      parse_scenario_selection("alpha-checks"),
+      Some(CliApplicationScenario::M12AlphaReleaseChecks)
+    );
+    assert_eq!(
+      parse_scenario_selection("alpha"),
+      Some(CliApplicationScenario::M12AlphaReleaseChecks)
+    );
+    assert_eq!(
+      parse_scenario_selection("m12"),
+      Some(CliApplicationScenario::M12AlphaReleaseChecks)
+    );
+    assert_eq!(
+      parse_scenario_selection("checks"),
+      Some(CliApplicationScenario::M12AlphaReleaseChecks)
+    );
+
+    // Whitespace and case insensitivity
+    assert_eq!(
+      parse_scenario_selection("  HAPPY  "),
+      Some(CliApplicationScenario::M2StrategyHappyPath)
+    );
+    assert_eq!(
+      parse_scenario_selection("  5\n"),
+      Some(CliApplicationScenario::M9CompleteMatchReplay)
+    );
+    assert_eq!(
+      parse_scenario_selection("M9"),
+      Some(CliApplicationScenario::M9CompleteMatchReplay)
+    );
+
+    // Invalid values
+    assert_eq!(parse_scenario_selection(""), None);
+    assert_eq!(parse_scenario_selection("   "), None);
+    assert_eq!(parse_scenario_selection("0"), None);
+    assert_eq!(parse_scenario_selection("8"), None);
+    assert_eq!(parse_scenario_selection("99"), None);
+    assert_eq!(parse_scenario_selection("unknown-scenario"), None);
+  }
+
+  #[test]
+  fn format_scenario_menu_includes_all_entries() {
+    let menu = format_scenario_menu(PresentationStyle::Plain);
+    assert!(menu.contains("Fog of Intent — Scenario Selection"));
+    assert!(menu.contains("[1] Two-Window Lane Reference Fixture"));
+    assert!(menu.contains("[2] HappyPath Strategy Playthrough"));
+    assert!(menu.contains("[3] RiskTaking Strategy Playthrough"));
+    assert!(menu.contains("[4] Conservative Strategy Playthrough"));
+    assert!(menu.contains("[5] Complete Match Replay Transcript"));
+    assert!(menu.contains("[6] Shared-Boundary GUI Presentation Document"));
+    assert!(menu.contains("[7] Public Alpha Release Readiness Checks"));
+    assert!(menu.contains("Press Enter for default [1]"));
+  }
+
+  #[test]
+  fn select_scenario_interactively_reads_input_and_handles_retries() {
+    // Selection by number
+    let mut input = Cursor::new("2\n");
+    let mut output = Vec::new();
+    let result = select_scenario_interactively(&mut input, &mut output, PresentationStyle::Plain)
+      .expect("interactive selection");
+    assert_eq!(result, Some(CliApplicationScenario::M2StrategyHappyPath));
+
+    // Selection by default (empty line)
+    let mut input = Cursor::new("\n");
+    let mut output = Vec::new();
+    let result = select_scenario_interactively(&mut input, &mut output, PresentationStyle::Plain)
+      .expect("default selection");
+    assert_eq!(result, Some(CliApplicationScenario::M3TwoWindowFixture));
+
+    // Selection by alias
+    let mut input = Cursor::new("m9\n");
+    let mut output = Vec::new();
+    let result = select_scenario_interactively(&mut input, &mut output, PresentationStyle::Plain)
+      .expect("alias selection");
+    assert_eq!(result, Some(CliApplicationScenario::M9CompleteMatchReplay));
+
+    // Cancellation with 'q'
+    let mut input = Cursor::new("q\n");
+    let mut output = Vec::new();
+    let result = select_scenario_interactively(&mut input, &mut output, PresentationStyle::Plain)
+      .expect("quit selection");
+    assert_eq!(result, None);
+
+    // Cancellation with 'quit'
+    let mut input = Cursor::new("quit\n");
+    let mut output = Vec::new();
+    let result = select_scenario_interactively(&mut input, &mut output, PresentationStyle::Plain)
+      .expect("quit selection");
+    assert_eq!(result, None);
+
+    // Retry on invalid input followed by valid choice
+    let mut input = Cursor::new("invalid\n3\n");
+    let mut output = Vec::new();
+    let result = select_scenario_interactively(&mut input, &mut output, PresentationStyle::Plain)
+      .expect("retry selection");
+    assert_eq!(result, Some(CliApplicationScenario::M2StrategyRiskTaking));
+    let out_str = String::from_utf8(output).expect("UTF-8 output");
+    assert!(out_str.contains("unknown scenario selection: 'invalid'"));
   }
 }

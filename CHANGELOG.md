@@ -6,6 +6,15 @@ not increment the package version.
 
 ## Unreleased
 
+### Added
+
+- Dynamic interactive scenario selection in `src/command_loop.rs`, `src/repl.rs`, `src/presentation.rs`, and `src/main.rs`:
+  - `parse_scenario_selection()` parsing catalog numeric indices (`1`..=`7`), exact scenario IDs, and short aliases (`m3`, `happy`, `risk`, `conservative`, `m9`, `gui`, `alpha`) case-insensitively with whitespace trimming.
+  - `format_scenario_menu()` rendering human-readable interactive scenario selection menus with display names, milestones, modes, and descriptions.
+  - `select_scenario_interactively()` and `select_scenario_with_editor()` (with reedline `ScenarioPrompt`) providing interactive scenario selection in both TTY REPL and stream-oriented modes with graceful retry and clean cancellation (`q`/`quit`).
+  - `--select` / `-s` process-level CLI flag and interactive TTY fallback when launching without explicit `--scenario` flags, with fail-closed argument conflict detection (`ConflictingScenarioSelection`, `DuplicateSelect`).
+- 8 new unit and binary integration tests across `src/command_loop.rs` and `tests/binary_run_dir.rs` covering interactive scenario selection, alias resolution, index parsing, cancellation, input retry, and scenario dispatching.
+
 ## [0.1.221] - 2026-08-25
 
 ### Added

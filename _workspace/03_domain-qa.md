@@ -1,33 +1,28 @@
-# Fog of Intent Domain QA Review: M2 Exit Promotion & Scenario Catalog Discovery
+# Domain QA Review: M3 Dynamic Interactive Scenario Selection
 
-## Status
-PASS
+**Milestone:** M3 — CLI Reference Experience (Active)
+**Reviewer:** Domain QA & Verification
+**Date:** 2026-08-25
 
-## Reviewed Inputs
-- `src/command_loop.rs` (scenario catalog metadata, `CliScenarioCatalogEntry`, `ScenarioExecutionMode`, `CLI_SCENARIO_CATALOG`, `format_scenario_catalog()`, `ListScenarios` argument parsing, unit tests)
-- `src/main.rs` (`ListScenarios` metadata execution)
-- `tests/binary_run_dir.rs` (binary `--list-scenarios` and `-l` integration tests)
-- `Cargo.toml` & `Cargo.lock` (package version bump to `0.1.221`)
-- `README.md`, `ROADMAP.md`, `SPEC.md`, `CHANGELOG.md`
-- `_workspace/00_input/m2-exit-promotion-and-scenario-catalog-request-summary.md`
-- `_workspace/01-simulation-design-m2-promotion-and-scenario-catalog.md`
+## Reviewed Scope
 
-## Scope and Roadmap Findings
-- **Alignment:** Directly fulfills M2 active developer action item ("Finalize M2 exit evidence review and promote M2 from Active to Complete in SPEC.md") and M3 developer action item ("Dynamic scenario selection / discovery").
-- **Milestone Transitions:** Milestone M2 is promoted to `Complete`; Milestone M3 is promoted to `Active`.
+- `src/command_loop.rs` (`parse_scenario_selection`, `format_scenario_menu`, `select_scenario_interactively`, `parse_application_args`, `CliApplicationOptions`, `CliApplicationArgsError`)
+- `src/repl.rs` (`ScenarioPrompt`, `read_scenario_line`, `select_scenario_with_editor`)
+- `src/presentation.rs` (`PresentationStyle` color/dim/bold helper methods)
+- `src/main.rs` (Interactive selection dispatching, TTY detection, pipe fallback)
+- `tests/binary_run_dir.rs` (Integration tests for `--select`, alias selection, cancellation, retry)
 
-## Authority and Information-Boundary Findings
-- **Zero Latent State Exposure:** Scenario catalog exposes only public metadata (scenario ID, milestone, execution mode, and human-readable description) without exposing state hashes, traces, or unredacted domain truth.
-- **Pure Output:** Catalog formatting is pure deterministic plain-text table rendering without ANSI escape sequences.
-- **Core Purity:** No async runtimes, network primitives, or hidden RNG introduced.
+## Check Matrix
 
-## Determinism, Replay, and Reproducibility Findings
-- All 7 canonical benchmark scenarios across M2, M3, M9, M11, and M12 are stably registered with explicit mode classifications.
-- Replay reproducibility and advance conditions in M2 strategies verified across unit and binary integration tests.
+| Check Domain | Requirement | Finding / Disposition |
+|---|---|---|
+| Scope & Product Coherence | Enables dynamic scenario selection without hardcoded flags while preserving synchronous host authority | Pass — all 7 canonical scenarios selectable by index, ID, or slug |
+| Determinism & Authority | Host maintains pure synchronous simulation; selection only configures host constructor | Pass — no random values, zero domain pollution |
+| Information Privacy | Opponent latent state and true state hashes are not leaked during selection or execution | Pass — projections remain actor-visible and verified |
+| Backward Compatibility | Piped non-TTY runs without arguments continue to default to `M3TwoWindowFixture` | Pass — existing scripts and pipes behave identically |
+| Error Handling & Fail-Closed | Invalid scenario inputs retry gracefully; conflicting CLI flags error fail-closed | Pass — `ConflictingScenarioSelection` and `DuplicateSelect` enforced |
+| Verification | `cargo fmt`, `cargo clippy -D warnings`, `cargo test`, and `python3 scripts/check_repository.py` | Pass — 668 unit tests, 18 binary integration tests, 3 doc-tests passed |
 
-## Verification Evidence
-- `cargo +1.96.0 fmt --all -- --check` passes cleanly.
-- `cargo +1.96.0 clippy --locked --all-targets --all-features -- -D warnings` passes with 0 warnings.
-- `cargo +1.96.0 test --locked` passes 664 unit tests, 14 binary integration tests, and 3 doc tests (681 tests total).
-- `python3 scripts/check_repository.py` passes with `ok`.
-- `python3 -m unittest scripts/test_check_repository.py` passes 16/16 tests.
+## Disposition
+
+`PASS` — ready for PR handoff and merge.
