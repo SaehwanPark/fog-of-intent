@@ -6,11 +6,14 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.219] - 2026-08-25
+
 ### Added
 
+- `m11-gui-presentation-v1` CLI presentation exporter runner (`src/cli/gui_presentation.rs`, `src/command_loop.rs`, `src/main.rs`) adding executable support for `--scenario m11-gui-presentation-v1`, rendering the canonical actor-visible HTML5 presentation document from benchmark presentation bundles, verifying W3C semantic landmarks, procedural SVG maps, CSS tokens, and anti-leak invariants, and outputting the complete self-contained document.
 - `m12-alpha-release-checks-v1` CLI scenario runner (`src/cli/release_checks.rs`, `src/command_loop.rs`, `src/main.rs`) adding executable support for `--scenario m12-alpha-release-checks-v1`, running the canonical compliant Public Alpha release verification check suite, rendering the structured Markdown report, and verifying clean exit status.
 - `docs/adr/0004-cargo-workspace-partitioning.md` establishing ADR-0004 formalizing the post-alpha Cargo workspace partitioning architecture across 8 domain member crates (`foi-kernel`, `foi-lane`, `foi-map`, `foi-agent`, `foi-protocol`, `foi-study`, `foi-gui`, `foi-alpha`) and 2 thin application binaries (`fog-of-intent`, `fog-of-intent-mcp`).
-- 5 new tests in `src/cli/tests.rs`, `src/command_loop.rs`, and `tests/binary_run_dir.rs` covering argument parsing, report formatting, readiness status, `--run-dir` rejection, and executable invocation.
+- 8 new tests in `src/cli/tests.rs`, `src/command_loop.rs`, and `tests/binary_run_dir.rs` covering argument parsing, report formatting, compliance verification, `--run-dir` rejection, and executable invocation for M11 and M12 CLI scenario surfaces.
 
 ## [0.1.218] - 2026-08-25
 

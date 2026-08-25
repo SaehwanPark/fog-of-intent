@@ -89,7 +89,7 @@ The repository exhibits a unique architectural dynamic:
 - [ ] **M5 Standalone MCP Server Binary:** Wire `src/protocol/` DTOs into a dedicated `fog-of-intent-mcp` binary communicating over JSON-RPC stdio.
 - [ ] **M9 Interactive 5v5 Match Loop:** Expand the print-and-exit M9 replay runner into an interactive role-based macro decision session.
 - [ ] **M10 Live Human Subject Study:** Execute empirical playtest trials across the 4 cohorts using the `src/study/` evaluation engine.
-- [ ] **M11 Browser Presentation Viewer:** Provide a local file/loopback viewing flow for the standalone HTML presentation renderer.
+- [x] **M11 Browser Presentation Viewer:** Provide a local file/loopback viewing flow for the standalone HTML presentation renderer.
 - [x] **M12 Public Alpha Release:** Package official reproducibility bundles and run the automated release readiness suite via `--scenario m12-alpha-release-checks-v1`.
 
 ### 2. Architectural Evolution (Cargo Workspace Transition)

@@ -18,7 +18,8 @@ Fog of Intent is currently a single Rust 2024 package. The binary reports
 package metadata through standalone `--version`/`-V` and runs the bounded
 fixture loop with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`,
 and `--color auto|always|never`), the replay-verified complete-match transcript
-with `--scenario m9-complete-match-replay-v1`, or the public alpha release
+with `--scenario m9-complete-match-replay-v1`, the verified actor-visible HTML5 presentation document
+with `--scenario m11-gui-presentation-v1`, or the public alpha release
 readiness audit report with `--scenario m12-alpha-release-checks-v1`. One deferred
 edge crate, `reedline`, is used only for TTY line editing. Kernel, lane, host,
 CLI grammar, and labeled terminal-text modules remain free of that crate. Internal

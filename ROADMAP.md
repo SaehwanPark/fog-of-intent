@@ -31,8 +31,8 @@ sequencing or checklist differs from this file, this file governs current work.
 | --- | --- | --- |
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
-| Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs` | Standalone package version reporting, a bounded fixture transcript with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, TTY prompt/completion, `--color`), a replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1`, and a public alpha release readiness audit report with `--scenario m12-alpha-release-checks-v1` |
-| Package | `Cargo.toml` | Version `0.1.218`, one deferred edge crate (`reedline`) |
+| Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs` | Standalone package version reporting, a bounded fixture transcript with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, TTY prompt/completion, `--color`), a replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1`, a verified actor-visible HTML5 presentation document with `--scenario m11-gui-presentation-v1`, and a public alpha release readiness audit report with `--scenario m12-alpha-release-checks-v1` |
+| Package | `Cargo.toml` | Version `0.1.219`, one deferred edge crate (`reedline`) |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -2304,7 +2304,7 @@ triple CLI/MCP/GUI projection parity verification, asset governance / fallback r
 standalone HTML5/CSS/SVG GUI presentation document generator, loopback transport protocol / session adapter,
 ### Developer Action Items (Browser Client)
 
-- [ ] Wire standalone HTML presentation viewer to local file / loopback server for real-time visual inspection during play.
+- [x] Wire standalone HTML presentation viewer to CLI exporter (`--scenario m11-gui-presentation-v1`) for file/stream visual inspection.
 - [ ] Validate browser flow recovery on live browser sessions.
 
 ### Deliverables

@@ -5,6 +5,7 @@
 //! boundary.
 
 mod draft;
+mod gui_presentation;
 mod information;
 mod match_replay;
 mod release_checks;
@@ -16,6 +17,9 @@ mod top_level_grammar;
 mod tests;
 
 pub use draft::{CLI_DRAFT_SCHEMA, CliCommittedDraft, CliDraft, CliDraftStageError};
+pub use gui_presentation::{
+  CLI_GUI_PRESENTATION_SCENARIO_ID, GuiPresentationCliDocument, build_gui_presentation_document,
+};
 pub use information::{CLI_INFORMATION_LABEL_SCHEMA, CliInformation, CliInformationLabel};
 pub use match_replay::{
   CLI_MATCH_REPLAY_SCENARIO_ID, MatchReplayTranscript, build_match_replay_transcript,

@@ -934,3 +934,34 @@ fn alpha_release_checks_report_is_deterministic() {
   let second = super::release_checks::build_alpha_release_checks_report().expect("second report");
   assert_eq!(first, second);
 }
+
+// --- M11 GUI presentation document exporter ---
+
+#[test]
+fn gui_presentation_document_builds_and_is_compliant() {
+  let doc = super::gui_presentation::build_gui_presentation_document()
+    .expect("benchmark gui scenario executes and renders");
+  assert!(doc.is_compliant());
+  let html = doc.html();
+  assert!(html.starts_with("<!DOCTYPE html>"));
+  assert!(html.contains("<html lang=\"en\">"));
+  assert!(html.contains("<meta name=\"viewport\""));
+  assert!(html.contains("<header"));
+  assert!(html.contains("<nav"));
+  assert!(html.contains("<main"));
+  assert!(html.contains("<aside"));
+  assert!(html.contains("<footer"));
+  assert!(html.contains("<svg"));
+  assert!(!html.contains("<script"));
+  assert!(!html.contains("<link href=\"http"));
+  assert!(!html.contains("<img src=\"http"));
+  assert!(!html.contains("StateHash"));
+  assert!(!html.contains('\u{1b}'));
+}
+
+#[test]
+fn gui_presentation_document_is_deterministic() {
+  let first = super::gui_presentation::build_gui_presentation_document().expect("first doc");
+  let second = super::gui_presentation::build_gui_presentation_document().expect("second doc");
+  assert_eq!(first, second);
+}
