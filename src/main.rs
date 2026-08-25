@@ -91,9 +91,32 @@ fn main() -> ExitCode {
       }
     };
   }
-  let mut command_loop = match options.run_dir() {
-    Some(path) => CliCommandLoop::fixture_with_store(CliRunStore::new(path)),
-    None => CliCommandLoop::fixture(),
+  let mut command_loop = match options.scenario() {
+    CliApplicationScenario::M2StrategyHappyPath => match options.run_dir() {
+      Some(path) => CliCommandLoop::strategy_with_store(
+        fog_of_intent::lane::StrategyFixtureId::HappyPath,
+        CliRunStore::new(path),
+      ),
+      None => CliCommandLoop::strategy(fog_of_intent::lane::StrategyFixtureId::HappyPath),
+    },
+    CliApplicationScenario::M2StrategyRiskTaking => match options.run_dir() {
+      Some(path) => CliCommandLoop::strategy_with_store(
+        fog_of_intent::lane::StrategyFixtureId::RiskTaking,
+        CliRunStore::new(path),
+      ),
+      None => CliCommandLoop::strategy(fog_of_intent::lane::StrategyFixtureId::RiskTaking),
+    },
+    CliApplicationScenario::M2StrategyConservative => match options.run_dir() {
+      Some(path) => CliCommandLoop::strategy_with_store(
+        fog_of_intent::lane::StrategyFixtureId::Conservative,
+        CliRunStore::new(path),
+      ),
+      None => CliCommandLoop::strategy(fog_of_intent::lane::StrategyFixtureId::Conservative),
+    },
+    _ => match options.run_dir() {
+      Some(path) => CliCommandLoop::fixture_with_store(CliRunStore::new(path)),
+      None => CliCommandLoop::fixture(),
+    },
   };
   let result = if stdin_is_terminal && stdout_is_terminal {
     command_loop.run_repl(color_enabled)

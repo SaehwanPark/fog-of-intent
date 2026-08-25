@@ -194,6 +194,13 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - M1 ruleset, codec, fixtures, hashes, and test behavior remain unchanged. The
   complete M2 exit criteria below remain unchecked.
 
+#### Delivered in the interactive strategy playthrough follow-up — 2026-08-25
+
+- Added interactive CLI runner scenario support for all three canonical M2 strategy playthroughs (`m2-strategy-happy-path-v1`, `m2-strategy-risk-taking-v1`, `m2-strategy-conservative-v1`) with optional `--run-dir` persistence.
+- Connected `CliScenarioHost::strategy(id)` and `CliScenarioHost::strategy_with_store(id, store)` wiring strategy-specific execution inputs into playable two-window sessions.
+- Integrated automated advance condition checking in `CliScenarioHost::advance` validating window advance predicates against actor-visible options.
+- Added comprehensive unit, integration, and playtest verification with `foi-test-player` confirming distinct strategy outcomes (`held_space` vs `yielded_space`), zero latent-truth leakage, clean debrief projections, and persistence compatibility.
+
 #### Delivered in the bounded actor-roster follow-up
 
 - Added `LaneActorRole`, `LaneActorRoster`, and the stable

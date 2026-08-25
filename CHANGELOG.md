@@ -6,6 +6,16 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.220] - 2026-08-25
+
+### Added
+
+- Interactive CLI scenario support for the three canonical M2 strategy playthroughs (`--scenario m2-strategy-happy-path-v1`, `--scenario m2-strategy-risk-taking-v1`, `--scenario m2-strategy-conservative-v1`) in `src/command_loop.rs` and `src/main.rs`.
+- `CliScenarioHost::strategy(id)` and `CliScenarioHost::strategy_with_store(id, store)` in `src/host/scenario_host.rs` wiring strategy-specific execution inputs (e.g. `HappyPath` wave advancement and contest damage, `RiskTaking` fallback damage and wave loss, `Conservative` wave hold) into two-window playable sessions.
+- Automated advance-condition integration in `CliScenarioHost::advance` evaluating `state.window().advance_condition().evaluate(has_committed_intent, legal_intent_count)` against actor-visible options to ensure host progression satisfies declared advance conditions.
+- 6 new automated tests across `src/command_loop.rs` and `tests/binary_run_dir.rs` covering strategy argument parsing, interactive loop execution, persistence round-tripping, and binary executable integration.
+- Playtest verification through `foi-test-player` subagent confirming distinct outcomes (`held_space` vs `yielded_space`), zero latent-truth leakage, clean debrief projections, and persistent `--run-dir` artifact compatibility.
+
 ## [0.1.219] - 2026-08-25
 
 ### Added

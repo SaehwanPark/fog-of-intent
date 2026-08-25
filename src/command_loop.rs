@@ -23,12 +23,21 @@ pub const CLI_COMMAND_LOOP_SCHEMA: &str = "m3-cli-command-loop-v1";
 /// The only executable scenario identifier currently supported by the fixture.
 pub const CLI_FIXTURE_SCENARIO_ID: &str = "m3-two-window-fixture-v1";
 
+/// Scenario identifier for the HappyPath strategy playthrough fixture.
+pub const CLI_STRATEGY_HAPPY_PATH_SCENARIO_ID: &str = "m2-strategy-happy-path-v1";
+
+/// Scenario identifier for the RiskTaking strategy playthrough fixture.
+pub const CLI_STRATEGY_RISK_TAKING_SCENARIO_ID: &str = "m2-strategy-risk-taking-v1";
+
+/// Scenario identifier for the Conservative strategy playthrough fixture.
+pub const CLI_STRATEGY_CONSERVATIVE_SCENARIO_ID: &str = "m2-strategy-conservative-v1";
+
 /// Package-derived version line for standalone executable metadata requests.
 pub const CLI_APPLICATION_VERSION: &str =
   concat!("fog-of-intent ", env!("CARGO_PKG_VERSION"), "\n");
 
 /// Bounded process-level usage for the executable wrapper.
-pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --run-dir <path>  store bounded run artifacts in this directory (fixture only)\n  --color <mode>    auto, always, or never (default auto)\n  --help            show this help\n  --version, -V     show package version\n";
+pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --run-dir <path>  store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>    auto, always, or never (default auto)\n  --help            show this help\n  --version, -V     show package version\n";
 
 /// Closed set of executable fixture constructors.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
@@ -36,12 +45,31 @@ pub enum CliApplicationScenario {
   /// The deterministic two-window M3 reference fixture.
   #[default]
   M3TwoWindowFixture,
+  /// The HappyPath strategy scenario playthrough.
+  M2StrategyHappyPath,
+  /// The RiskTaking strategy scenario playthrough.
+  M2StrategyRiskTaking,
+  /// The Conservative strategy scenario playthrough.
+  M2StrategyConservative,
   /// The replay-verified M9 complete-match transcript; prints and exits.
   M9CompleteMatchReplay,
   /// The verified actor-visible M11 GUI presentation document; prints and exits.
   M11GuiPresentation,
   /// The M12 Public Alpha release readiness check report; prints and exits.
   M12AlphaReleaseChecks,
+}
+
+impl CliApplicationScenario {
+  /// Whether this scenario supports interactive lane decision play and artifact storage.
+  pub const fn is_interactive_lane(self) -> bool {
+    matches!(
+      self,
+      Self::M3TwoWindowFixture
+        | Self::M2StrategyHappyPath
+        | Self::M2StrategyRiskTaking
+        | Self::M2StrategyConservative
+    )
+  }
 }
 
 /// Errors raised while parsing executable arguments before the command loop.
@@ -78,7 +106,7 @@ impl CliApplicationArgsError {
       Self::UnsupportedColor => "unsupported --color mode; use auto, always, or never",
       Self::UnsupportedScenario => "unsupported --scenario ID; use --help",
       Self::RunDirectoryRequiresFixture => {
-        "--run-dir is available only for the two-window fixture scenario"
+        "--run-dir is available only for interactive lane scenarios"
       }
       Self::UnexpectedArgument => "unexpected executable argument; use --help",
     }
@@ -186,6 +214,12 @@ pub fn parse_application_args(
         }
         if args[index] == CLI_FIXTURE_SCENARIO_ID {
           scenario = Some(CliApplicationScenario::M3TwoWindowFixture);
+        } else if args[index] == CLI_STRATEGY_HAPPY_PATH_SCENARIO_ID {
+          scenario = Some(CliApplicationScenario::M2StrategyHappyPath);
+        } else if args[index] == CLI_STRATEGY_RISK_TAKING_SCENARIO_ID {
+          scenario = Some(CliApplicationScenario::M2StrategyRiskTaking);
+        } else if args[index] == CLI_STRATEGY_CONSERVATIVE_SCENARIO_ID {
+          scenario = Some(CliApplicationScenario::M2StrategyConservative);
         } else if args[index] == crate::cli::CLI_MATCH_REPLAY_SCENARIO_ID {
           scenario = Some(CliApplicationScenario::M9CompleteMatchReplay);
         } else if args[index] == crate::cli::CLI_GUI_PRESENTATION_SCENARIO_ID {
@@ -236,7 +270,7 @@ pub fn parse_application_args(
     index += 1;
   }
   let scenario = scenario.unwrap_or_default();
-  if run_dir.is_some() && scenario != CliApplicationScenario::M3TwoWindowFixture {
+  if run_dir.is_some() && !scenario.is_interactive_lane() {
     // The match-replay, gui-presentation, and release-checks scenarios print and
     // exit without creating run artifacts; accepting a store path would silently ignore it.
     return Err(CliApplicationArgsError::RunDirectoryRequiresFixture);
@@ -303,6 +337,16 @@ impl CliCommandLoop {
   /// Build the deterministic fixture with an explicitly configured file store.
   pub fn fixture_with_store(store: CliRunStore) -> Self {
     Self::new(CliScenarioHost::fixture_with_store(store))
+  }
+
+  /// Build a loop for a specific strategy fixture.
+  pub fn strategy(id: crate::lane::StrategyFixtureId) -> Self {
+    Self::new(CliScenarioHost::strategy(id))
+  }
+
+  /// Build a loop for a specific strategy fixture with an explicit file store.
+  pub fn strategy_with_store(id: crate::lane::StrategyFixtureId, store: CliRunStore) -> Self {
+    Self::new(CliScenarioHost::strategy_with_store(id, store))
   }
 
   /// Read newline-delimited commands, write one rendered result per command,
@@ -435,7 +479,7 @@ mod tests {
     );
     assert_eq!(
       CLI_APPLICATION_HELP,
-      "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --run-dir <path>  store bounded run artifacts in this directory (fixture only)\n  --color <mode>    auto, always, or never (default auto)\n  --help            show this help\n  --version, -V     show package version\n"
+      "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --run-dir <path>  store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>    auto, always, or never (default auto)\n  --help            show this help\n  --version, -V     show package version\n"
     );
     assert_eq!(
       parse_application_args(&[OsString::from("--version")]),
@@ -745,9 +789,103 @@ mod tests {
   #[test]
   fn help_lists_all_executable_scenarios() {
     assert!(CLI_APPLICATION_HELP.contains("m3-two-window-fixture-v1"));
+    assert!(CLI_APPLICATION_HELP.contains("m2-strategy-happy-path-v1"));
+    assert!(CLI_APPLICATION_HELP.contains("m2-strategy-risk-taking-v1"));
+    assert!(CLI_APPLICATION_HELP.contains("m2-strategy-conservative-v1"));
     assert!(CLI_APPLICATION_HELP.contains("m9-complete-match-replay-v1"));
     assert!(CLI_APPLICATION_HELP.contains("m11-gui-presentation-v1"));
     assert!(CLI_APPLICATION_HELP.contains("m12-alpha-release-checks-v1"));
+  }
+
+  #[test]
+  fn application_args_parse_strategy_scenarios() {
+    for (scenario_id, expected_scenario) in [
+      (
+        "m2-strategy-happy-path-v1",
+        CliApplicationScenario::M2StrategyHappyPath,
+      ),
+      (
+        "m2-strategy-risk-taking-v1",
+        CliApplicationScenario::M2StrategyRiskTaking,
+      ),
+      (
+        "m2-strategy-conservative-v1",
+        CliApplicationScenario::M2StrategyConservative,
+      ),
+    ] {
+      let args = [
+        OsString::from("--scenario"),
+        OsString::from(scenario_id),
+        OsString::from("--run-dir"),
+        OsString::from("runs"),
+      ];
+      let command = parse_application_args(&args).expect("strategy scenario with run dir");
+      match command {
+        CliApplicationCommand::Run(options) => {
+          assert_eq!(options.scenario(), expected_scenario);
+          assert_eq!(options.run_dir(), Some(Path::new("runs")));
+          assert!(options.scenario().is_interactive_lane());
+        }
+        other => panic!("unexpected command: {other:?}"),
+      }
+    }
+  }
+
+  #[test]
+  fn strategy_loop_runs_happy_path_transcript() {
+    let mut output = Vec::new();
+    let exit = CliCommandLoop::strategy(crate::lane::StrategyFixtureId::HappyPath)
+      .run(
+        Cursor::new(
+          "observe\nplan contest\ncommit\nadvance\nplan contest\ncommit\nadvance\ndebrief\nquit\n",
+        ),
+        &mut output,
+      )
+      .expect("loop I/O");
+    let output = String::from_utf8(output).expect("plain UTF-8 output");
+
+    assert_eq!(exit, CliLoopExit::Quit);
+    assert!(output.contains("observation: schema="));
+    assert!(output.contains("advanced: window=first outcome=held_space"));
+    assert!(output.contains("advanced: window=second outcome=held_space"));
+    assert!(output.contains("debrief: schema="));
+    assert!(output.ends_with("quit: status=closed\n"));
+  }
+
+  #[test]
+  fn strategy_loop_runs_risk_taking_transcript() {
+    let mut output = Vec::new();
+    let exit = CliCommandLoop::strategy(crate::lane::StrategyFixtureId::RiskTaking)
+      .run(
+        Cursor::new("observe\nplan contest\ncommit\nadvance\nplan stabilize\ncommit\nadvance\ndebrief\nquit\n"),
+        &mut output,
+      )
+      .expect("loop I/O");
+    let output = String::from_utf8(output).expect("plain UTF-8 output");
+
+    assert_eq!(exit, CliLoopExit::Quit);
+    assert!(output.contains("observation: schema="));
+    assert!(output.contains("advanced: window=first outcome=yielded_space"));
+    assert!(output.contains("debrief: schema="));
+    assert!(output.ends_with("quit: status=closed\n"));
+  }
+
+  #[test]
+  fn strategy_loop_runs_conservative_transcript() {
+    let mut output = Vec::new();
+    let exit = CliCommandLoop::strategy(crate::lane::StrategyFixtureId::Conservative)
+      .run(
+        Cursor::new("observe\nplan stabilize\ncommit\nadvance\nplan stabilize\ncommit\nadvance\ndebrief\nquit\n"),
+        &mut output,
+      )
+      .expect("loop I/O");
+    let output = String::from_utf8(output).expect("plain UTF-8 output");
+
+    assert_eq!(exit, CliLoopExit::Quit);
+    assert!(output.contains("observation: schema="));
+    assert!(output.contains("advanced: window=first outcome=yielded_space"));
+    assert!(output.contains("debrief: schema="));
+    assert!(output.ends_with("quit: status=closed\n"));
   }
 
   #[test]

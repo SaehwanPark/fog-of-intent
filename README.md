@@ -48,11 +48,11 @@ The full invariant list is in [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md).
 | --- | --- |
 | Current roadmap milestone | M2 — One-Lane Vertical Slice (Active) |
 | Repository governance and canonical docs | Complete — M0 |
-| Rust package | `0.1.219`, edition 2024, Rust `1.96`, one deferred edge crate (`reedline`), single package |
-| Executable behavior | Standalone `--version`/`-V`, the two-window fixture with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, `--color auto/always/never`), the replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1`, the verified actor-visible HTML5 presentation document with `--scenario m11-gui-presentation-v1`, or the public alpha release readiness audit report with `--scenario m12-alpha-release-checks-v1` |
+| Rust package | `0.1.220`, edition 2024, Rust `1.96`, one deferred edge crate (`reedline`), single package |
+| Executable behavior | Standalone `--version`/`-V`, the two-window fixture with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, `--color auto/always/never`), 3 interactive strategy scenario playthroughs (`--scenario m2-strategy-happy-path-v1`, `--scenario m2-strategy-risk-taking-v1`, `--scenario m2-strategy-conservative-v1`), the replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1`, the verified actor-visible HTML5 presentation document with `--scenario m11-gui-presentation-v1`, or the public alpha release readiness audit report with `--scenario m12-alpha-release-checks-v1` |
 | Deterministic kernel | M1 complete; M2 v3 lane-window, roster, intent, observation, branch, replay, and debrief contracts implemented internally |
 | One-lane scenario | Bounded diagnostic windows and fixtures; full scenario not complete |
-| CLI reference experience | TTY prompt, Tab completion, optional color, and `help`/`?` topics; pipes stay labeled plain text. Broader scenario selection remains open |
+| CLI reference experience | TTY prompt, Tab completion, optional color, and `help`/`?` topics; pipes stay labeled plain text. Strategy scenario selection available |
 | Agent ecology and MCP | Library-only M4–M6 scripted-policy, protocol DTO, and experiment-fixture evidence; no MCP server |
 | Behavioral experiments and calibration | Library-only M6/M7 fixture evidence; live provider calibration remains open |
 | Team communication and shot-calling | Library-only M8 contracts; not reachable from the runner |
@@ -71,6 +71,12 @@ Install a Rust toolchain with Rust 2024 edition support (this repository pins
 
 ```sh
 cargo run -- --scenario m3-two-window-fixture-v1
+```
+
+Or run one of the three canonical strategy scenario playthroughs:
+
+```sh
+cargo run -- --scenario m2-strategy-happy-path-v1
 ```
 
 On a terminal you get a `> ` prompt, a one-line status, and Tab completion.

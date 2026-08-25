@@ -178,7 +178,7 @@ fn binary_help_is_successful_and_bounded() {
   assert!(output.status.success());
   assert_eq!(
     String::from_utf8(output.stdout).expect("help UTF-8 output"),
-    "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --run-dir <path>  store bounded run artifacts in this directory (fixture only)\n  --color <mode>    auto, always, or never (default auto)\n  --help            show this help\n  --version, -V     show package version\n"
+    "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --run-dir <path>  store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>    auto, always, or never (default auto)\n  --help            show this help\n  --version, -V     show package version\n"
   );
   assert!(output.stderr.is_empty());
 }
@@ -234,6 +234,73 @@ fn binary_completes_the_documented_two_window_transcript() {
   assert!(!stdout.contains("hash"));
   assert!(!stdout.contains("source_"));
   assert!(!stdout.contains("error:"));
+}
+
+#[test]
+fn binary_completes_happy_path_strategy_playthrough() {
+  let binary = binary_path();
+  let root = temporary_root();
+
+  let output = run_binary_with_scenario(
+    &binary,
+    &root,
+    Some("m2-strategy-happy-path-v1"),
+    "observe\nplan contest\ncommit\nadvance\nplan contest\ncommit\nadvance\nsave happy-run\nreplay\ndebrief\nquit\n",
+  );
+
+  assert!(output.status.success(), "stderr: {:?}", output.stderr);
+  assert!(output.stderr.is_empty());
+  let stdout = String::from_utf8(output.stdout).expect("transcript UTF-8");
+  assert!(stdout.contains("observation: schema="));
+  assert!(stdout.contains("commit: status=committed intent=contest"));
+  assert!(stdout.contains("advanced: window=first outcome=held_space"));
+  assert!(stdout.contains("advanced: window=second outcome=held_space"));
+  assert!(stdout.contains("save: status=saved run_id=happy-run records=2"));
+  assert!(stdout.contains("replay: status=verified run_id=current records=2"));
+  assert!(stdout.contains("debrief: schema="));
+  assert!(stdout.ends_with("quit: status=closed\n"));
+  assert!(root.join("happy-run.foi-artifact").is_file());
+
+  let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn binary_completes_risk_taking_strategy_playthrough() {
+  let output = run_scenario_binary(
+    &binary_path(),
+    "m2-strategy-risk-taking-v1",
+    "observe\nplan contest\ncommit\nadvance\nplan stabilize\ncommit\nadvance\nreplay\ndebrief\nquit\n",
+  );
+
+  assert!(output.status.success(), "stderr: {:?}", output.stderr);
+  assert!(output.stderr.is_empty());
+  let stdout = String::from_utf8(output.stdout).expect("transcript UTF-8");
+  assert!(stdout.contains("observation: schema="));
+  assert!(stdout.contains("commit: status=committed intent=contest"));
+  assert!(stdout.contains("advanced: window=first outcome=yielded_space"));
+  assert!(stdout.contains("commit: status=committed intent=stabilize"));
+  assert!(stdout.contains("replay: status=verified run_id=current records=2"));
+  assert!(stdout.contains("debrief: schema="));
+  assert!(stdout.ends_with("quit: status=closed\n"));
+}
+
+#[test]
+fn binary_completes_conservative_strategy_playthrough() {
+  let output = run_scenario_binary(
+    &binary_path(),
+    "m2-strategy-conservative-v1",
+    "observe\nplan stabilize\ncommit\nadvance\nplan stabilize\ncommit\nadvance\nreplay\ndebrief\nquit\n",
+  );
+
+  assert!(output.status.success(), "stderr: {:?}", output.stderr);
+  assert!(output.stderr.is_empty());
+  let stdout = String::from_utf8(output.stdout).expect("transcript UTF-8");
+  assert!(stdout.contains("observation: schema="));
+  assert!(stdout.contains("commit: status=committed intent=stabilize"));
+  assert!(stdout.contains("advanced: window=first outcome=yielded_space"));
+  assert!(stdout.contains("replay: status=verified run_id=current records=2"));
+  assert!(stdout.contains("debrief: schema="));
+  assert!(stdout.ends_with("quit: status=closed\n"));
 }
 
 #[test]

@@ -31,8 +31,8 @@ sequencing or checklist differs from this file, this file governs current work.
 | --- | --- | --- |
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
-| Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs` | Standalone package version reporting, a bounded fixture transcript with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, TTY prompt/completion, `--color`), a replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1`, a verified actor-visible HTML5 presentation document with `--scenario m11-gui-presentation-v1`, and a public alpha release readiness audit report with `--scenario m12-alpha-release-checks-v1` |
-| Package | `Cargo.toml` | Version `0.1.219`, one deferred edge crate (`reedline`) |
+| Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs` | Standalone package version reporting, bounded fixture transcript with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, TTY prompt/completion, `--color`), 3 interactive strategy scenario playthroughs (`--scenario m2-strategy-happy-path-v1`, `--scenario m2-strategy-risk-taking-v1`, `--scenario m2-strategy-conservative-v1`), a replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1`, a verified actor-visible HTML5 presentation document with `--scenario m11-gui-presentation-v1`, and a public alpha release readiness audit report with `--scenario m12-alpha-release-checks-v1` |
+| Package | `Cargo.toml` | Version `0.1.220`, one deferred edge crate (`reedline`) |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -809,9 +809,9 @@ This evidence establishes one bounded poultice consumable resource. It does not 
 
 ### Active Developer Action Items (M2 Exit Promotion)
 
-- [ ] Connect the full multi-window lane scenario to the interactive CLI runner.
-- [ ] Validate three distinct playable strategy playthroughs (HappyPath, RiskTaking, Conservative) through the interactive runner.
-- [ ] Verify automated advance condition integration in the interactive runner.
+- [x] Connect the full multi-window lane scenario to the interactive CLI runner.
+- [x] Validate three distinct playable strategy playthroughs (HappyPath, RiskTaking, Conservative) through the interactive runner.
+- [x] Verify automated advance condition integration in the interactive runner.
 - [ ] Finalize M2 exit evidence review and promote M2 from Active to Complete in SPEC.md.
 
 ### Deliverables
