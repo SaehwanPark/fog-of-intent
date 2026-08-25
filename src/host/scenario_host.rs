@@ -10,7 +10,8 @@ use crate::kernel::{DrawId, InputTrace, StreamId};
 use crate::lane::{
   BranchExecutionSelection, LaneDamage, LaneHistory, LaneIntent, LaneIntentRequest, LaneOutcome,
   LaneResolvedInputs, LaneScenarioHistory, LaneWaveResult, ObservationId, PLAYER_LANER,
-  ScenarioWindow, branch_from_window, build_scenario_debrief, observe_player,
+  ScenarioWindow, StrategyFixtureId, branch_from_window, build_scenario_debrief, observe_player,
+  strategy_fixture,
 };
 use crate::protocol::{
   ActorActionDto, ActorActionResultDto, ActorActionResultOutcome, ActorActionResultWindow,
@@ -75,6 +76,21 @@ impl CliScenarioHost {
   /// Build a host with explicit inputs and an injected artifact store.
   pub fn with_store(execution_inputs: [LaneResolvedInputs; 2], store: CliRunStore) -> Self {
     let mut host = Self::new(execution_inputs);
+    host.store = Some(store);
+    host
+  }
+
+  /// Build a host configured for one of the canonical strategy playthroughs.
+  pub fn strategy(id: StrategyFixtureId) -> Self {
+    let fixture = strategy_fixture(id).expect("canonical strategy fixture must be valid");
+    let first_inputs = fixture.lane_inputs();
+    let second_inputs = fixture_inputs(0, LaneWaveResult::Held, 2);
+    Self::new([first_inputs, second_inputs])
+  }
+
+  /// Build a strategy scenario host backed by an explicit artifact store.
+  pub fn strategy_with_store(id: StrategyFixtureId, store: CliRunStore) -> Self {
+    let mut host = Self::strategy(id);
     host.store = Some(store);
     host
   }
@@ -1087,6 +1103,22 @@ impl CliScenarioHost {
   }
 
   fn advance(&mut self) -> Result<CliHostOutput, CliHostError<'static>> {
+    let state = self.history.current_state();
+    let observation_id = self.next_observation_id();
+    let receipt = observe_player(&state, observation_id);
+    let obs = receipt.observation();
+    let legal_intent_count: u8 = if obs.available_threat_response().is_some() {
+      5
+    } else {
+      4
+    };
+
+    let condition = state.window().advance_condition();
+    let decision = condition.evaluate(self.committed_intent.is_some(), legal_intent_count);
+    if decision != crate::lane::LaneAdvanceDecision::AdvanceAutomatically {
+      return Err(CliHostError::MissingCommittedIntent);
+    }
+
     let intent = self
       .committed_intent
       .ok_or(CliHostError::MissingCommittedIntent)?;
@@ -1096,8 +1128,6 @@ impl CliScenarioHost {
       .get(index)
       .copied()
       .ok_or(CliHostError::ScenarioComplete)?;
-    let state = self.history.current_state();
-    let receipt = observe_player(&state, self.next_observation_id());
     let request =
       LaneIntentRequest::new(PLAYER_LANER, receipt.observation().observation_id(), intent);
     let result = self
