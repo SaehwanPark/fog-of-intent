@@ -475,3 +475,27 @@ fn binary_interactive_select_retries_on_invalid_and_runs() {
   assert!(stdout.contains("unknown scenario selection: 'invalid-choice'"));
   assert!(stdout.ends_with("quit: status=closed\n"));
 }
+
+#[test]
+fn binary_supports_interactive_branch_exploration_across_windows() {
+  let output = run_scenario_binary(
+    &binary_path(),
+    "m3-two-window-fixture-v1",
+    "plan contest\ncommit\nadvance\nplan yield\nbranch first\nplan stabilize\ncommit\nadvance\nplan contest\nbranch second\nplan yield\nbranch first\nquit\n",
+  );
+  assert!(
+    output.status.success(),
+    "transcript stderr: {:?}",
+    output.stderr
+  );
+  assert!(output.stderr.is_empty());
+  let stdout = String::from_utf8(output.stdout).expect("transcript UTF-8 output");
+  assert!(
+    stdout
+      .contains("branch: status=verified point=first parent_intent=contest branch_intent=yield")
+  );
+  assert!(stdout.contains(
+    "branch: status=verified point=second parent_intent=stabilize branch_intent=contest"
+  ));
+  assert!(stdout.ends_with("quit: status=closed\n"));
+}

@@ -174,13 +174,18 @@ fn output_story(output: &CliHostOutput, style: PresentationStyle) -> Option<Stri
       format!("Replay verified {records} committed record(s).")
     }
     CliHostOutput::Branched {
+      point_id,
       parent_intent,
       branch_intent,
+      parent_outcome,
+      branch_outcome,
       ..
     } => format!(
-      "Counterfactual at the first window: {} versus {}.",
+      "Counterfactual branch at window `{point_id}`: {} ({}) versus {} ({}).",
       intent_name(*parent_intent),
-      intent_name(*branch_intent)
+      outcome_label(*parent_outcome),
+      intent_name(*branch_intent),
+      outcome_label(*branch_outcome)
     ),
     CliHostOutput::Saved { run_id, records } => {
       format!("Saved `{run_id}` with {records} committed window(s).")
