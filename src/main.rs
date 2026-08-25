@@ -2,9 +2,10 @@ use std::io::{self, IsTerminal, Write};
 use std::process::ExitCode;
 
 use fog_of_intent::command_loop::{
-  CLI_APPLICATION_HELP, CLI_APPLICATION_VERSION, CliApplicationCommand, CliApplicationScenario,
-  CliColorMode, CliCommandLoop, parse_application_args, resolve_color,
+  CLI_APPLICATION_HELP, CLI_APPLICATION_VERSION, CliApplicationArgsError, CliApplicationCommand,
+  CliApplicationScenario, CliColorMode, CliCommandLoop, parse_application_args, resolve_color,
 };
+use fog_of_intent::presentation::PresentationStyle;
 use fog_of_intent::run_store::CliRunStore;
 
 fn main() -> ExitCode {
@@ -54,10 +55,50 @@ fn main() -> ExitCode {
   let stdout_is_terminal = io::stdout().is_terminal();
   let no_color = std::env::var_os("NO_COLOR").is_some();
   let color_enabled = resolve_color(options.color(), stdout_is_terminal, no_color);
-  if matches!(
-    options.scenario(),
-    CliApplicationScenario::M9CompleteMatchReplay
-  ) {
+  let style = PresentationStyle::from_enabled(color_enabled);
+
+  let scenario = if options.interactive_select()
+    || (!options.has_explicit_scenario() && stdin_is_terminal && stdout_is_terminal)
+  {
+    if stdin_is_terminal && stdout_is_terminal {
+      let mut editor = fog_of_intent::repl::create_editor(color_enabled);
+      match fog_of_intent::repl::select_scenario_with_editor(&mut editor, style) {
+        Ok(Some(chosen)) => chosen,
+        Ok(None) => return ExitCode::SUCCESS,
+        Err(error) => {
+          eprintln!("scenario selection failed: {error}");
+          return ExitCode::FAILURE;
+        }
+      }
+    } else {
+      let stdin = io::stdin();
+      let mut stdout = io::stdout().lock();
+      match fog_of_intent::command_loop::select_scenario_interactively(
+        stdin.lock(),
+        &mut stdout,
+        style,
+      ) {
+        Ok(Some(chosen)) => chosen,
+        Ok(None) => return ExitCode::SUCCESS,
+        Err(error) => {
+          eprintln!("scenario selection failed: {error}");
+          return ExitCode::FAILURE;
+        }
+      }
+    }
+  } else {
+    options.scenario()
+  };
+
+  if options.run_dir().is_some() && !scenario.is_interactive_lane() {
+    eprintln!(
+      "argument error: {}",
+      CliApplicationArgsError::RunDirectoryRequiresFixture.message()
+    );
+    return ExitCode::FAILURE;
+  }
+
+  if matches!(scenario, CliApplicationScenario::M9CompleteMatchReplay) {
     let stdout = io::stdout();
     return match fog_of_intent::command_loop::write_match_replay_transcript(stdout.lock()) {
       Ok(()) => ExitCode::SUCCESS,
@@ -67,10 +108,7 @@ fn main() -> ExitCode {
       }
     };
   }
-  if matches!(
-    options.scenario(),
-    CliApplicationScenario::M11GuiPresentation
-  ) {
+  if matches!(scenario, CliApplicationScenario::M11GuiPresentation) {
     let stdout = io::stdout();
     return match fog_of_intent::command_loop::write_gui_presentation_document(stdout.lock()) {
       Ok(true) => ExitCode::SUCCESS,
@@ -84,10 +122,7 @@ fn main() -> ExitCode {
       }
     };
   }
-  if matches!(
-    options.scenario(),
-    CliApplicationScenario::M12AlphaReleaseChecks
-  ) {
+  if matches!(scenario, CliApplicationScenario::M12AlphaReleaseChecks) {
     let stdout = io::stdout();
     return match fog_of_intent::command_loop::write_alpha_release_checks_report(stdout.lock()) {
       Ok(true) => ExitCode::SUCCESS,
@@ -101,7 +136,8 @@ fn main() -> ExitCode {
       }
     };
   }
-  let mut command_loop = match options.scenario() {
+
+  let mut command_loop = match scenario {
     CliApplicationScenario::M2StrategyHappyPath => match options.run_dir() {
       Some(path) => CliCommandLoop::strategy_with_store(
         fog_of_intent::lane::StrategyFixtureId::HappyPath,

@@ -37,7 +37,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
 | Internal kernel/replay fixture | `src/kernel.rs`, `src/serialization.rs` | M1 complete; not playable |
-| Scenario, CLI, MCP, research, GUI | Grammar, bounded host, pure text, fixture loop, scenario catalog discovery, injected file artifacts, explicit binary store wiring, and strategy scenario selection; broader scenario selection remains open | Reference CLI active; MCP, research, and GUI in library/presentation contracts |
+| Scenario, CLI, MCP, research, GUI | Grammar, bounded host, pure text, fixture loop, scenario catalog discovery, injected file artifacts, explicit binary store wiring, and dynamic interactive scenario selection; broader runtime branching remains open | Reference CLI active; MCP, research, and GUI in library/presentation contracts |
 
 ## Milestone Map
 
@@ -1009,7 +1009,7 @@ the complete M3 reference client or human accessibility evidence.
 
 ### Developer Action Items
 
-- [ ] Dynamic interactive scenario selection in the CLI runner (allowing players to choose between M2 lane scenarios and M9 match scenarios without hardcoded flags).
+- [x] Dynamic interactive scenario selection in the CLI runner (allowing players to choose between M2 lane scenarios and M9 match scenarios without hardcoded flags).
 - [ ] Interactive branch exploration directly within the command loop.
 - [ ] Terminal resize handling and accessibility auditing for pure text presentation.
 

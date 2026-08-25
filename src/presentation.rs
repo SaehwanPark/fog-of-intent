@@ -27,21 +27,45 @@ impl PresentationStyle {
     if enabled { Self::Color } else { Self::Plain }
   }
 
-  fn paint(self, code: &str, text: &str) -> String {
+  pub fn paint(self, code: &str, text: &str) -> String {
     match self {
       Self::Plain => text.to_owned(),
       Self::Color => format!("{code}{text}{RESET}"),
     }
   }
+
+  pub fn paint_bold(self, text: &str) -> String {
+    self.paint(BOLD, text)
+  }
+
+  pub fn paint_dim(self, text: &str) -> String {
+    self.paint(DIM, text)
+  }
+
+  pub fn paint_cyan(self, text: &str) -> String {
+    self.paint(CYAN, text)
+  }
+
+  pub fn paint_red(self, text: &str) -> String {
+    self.paint(RED, text)
+  }
+
+  pub fn paint_green(self, text: &str) -> String {
+    self.paint(GREEN, text)
+  }
+
+  pub fn paint_yellow(self, text: &str) -> String {
+    self.paint(YELLOW, text)
+  }
 }
 
 /// Startup banner for an interactive fixture session.
 pub fn render_banner(style: PresentationStyle) -> String {
-  let title = style.paint(BOLD, "Fog of Intent");
-  let fixture = style.paint(DIM, "two-window lane fixture");
+  let title = style.paint_bold("Fog of Intent");
+  let fixture = style.paint_dim("two-window lane fixture");
   format!(
     "{title} — {fixture}\nYou are the laner. Type a command, or {help} for help.\ncommands: observe  plan  commit  advance  help  quit\n",
-    help = style.paint(CYAN, "?")
+    help = style.paint_cyan("?")
   )
 }
 

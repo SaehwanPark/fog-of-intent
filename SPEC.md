@@ -144,6 +144,13 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Support uncommitted choice edit/undo, deterministic branch exploration, replay verification, and causal debrief projections.
 - Maintain pure synchronous simulation authority in the host and keep presentation and terminal I/O at the application edge.
 
+#### Delivered in the dynamic interactive scenario selection slice — 2026-08-25
+
+- Added pure scenario selection parsing (`parse_scenario_selection`) supporting catalog indices (`1`..=`7`), exact scenario IDs, and short aliases (`m3`, `happy`, `risk`, `conservative`, `m9`, `gui`, `alpha`) case-insensitively with whitespace trimming.
+- Added formatted interactive scenario menu (`format_scenario_menu`) and prompt engines (`select_scenario_interactively` and `select_scenario_with_editor` with reedline `ScenarioPrompt`).
+- Added `--select` (`-s`) process CLI option and interactive TTY fallback when launching without explicit `--scenario` flags, with fail-closed argument conflict detection (`ConflictingScenarioSelection`, `DuplicateSelect`).
+- Added comprehensive unit and binary tests across `src/command_loop.rs` and `tests/binary_run_dir.rs`.
+
 #### Delivered in the scenario catalog discovery follow-up — 2026-08-25
 
 - Added `CliScenarioCatalogEntry`, `ScenarioExecutionMode`, and `CLI_SCENARIO_CATALOG` in `src/command_loop.rs` registering all 7 canonical scenarios across M2 strategy playthroughs, M3 reference fixtures, M9 complete matches, M11 GUI presentations, and M12 alpha release checks.

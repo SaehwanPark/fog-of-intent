@@ -178,7 +178,7 @@ fn binary_help_is_successful_and_bounded() {
   assert!(output.status.success());
   assert_eq!(
     String::from_utf8(output.stdout).expect("help UTF-8 output"),
-    "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --list-scenarios   list all available scenarios and descriptions\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --help             show this help\n  --version, -V      show package version\n"
+    "usage: fog-of-intent [--scenario <id>] [--select] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --help             show this help\n  --version, -V      show package version\n"
   );
   assert!(output.stderr.is_empty());
 }
@@ -414,4 +414,64 @@ fn binary_prints_alpha_release_checks_report() {
   assert!(stdout.contains("compatibility-matrix"));
   assert!(stdout.contains("data-redaction"));
   assert!(stdout.ends_with('\n'));
+}
+
+fn run_select_binary(binary: &Path, input: &str) -> Output {
+  let mut child = Command::new(binary)
+    .arg("--select")
+    .stdin(Stdio::piped())
+    .stdout(Stdio::piped())
+    .stderr(Stdio::piped())
+    .spawn()
+    .expect("spawn select binary");
+  child
+    .stdin
+    .as_mut()
+    .expect("select stdin")
+    .write_all(input.as_bytes())
+    .expect("write select input");
+  child.wait_with_output().expect("wait for select binary")
+}
+
+#[test]
+fn binary_interactive_select_runs_chosen_strategy_scenario() {
+  let binary = binary_path();
+  let output = run_select_binary(&binary, "2\nobserve\nquit\n");
+  assert!(output.status.success(), "stderr: {:?}", output.stderr);
+  let stdout = String::from_utf8(output.stdout).expect("UTF-8 output");
+  assert!(stdout.contains("Fog of Intent — Scenario Selection"));
+  assert!(stdout.contains("[2] HappyPath Strategy Playthrough"));
+  assert!(stdout.contains("observation: schema="));
+  assert!(stdout.ends_with("quit: status=closed\n"));
+}
+
+#[test]
+fn binary_interactive_select_runs_match_replay_via_alias() {
+  let binary = binary_path();
+  let output = run_select_binary(&binary, "m9\n");
+  assert!(output.status.success(), "stderr: {:?}", output.stderr);
+  let stdout = String::from_utf8(output.stdout).expect("UTF-8 output");
+  assert!(stdout.contains("Fog of Intent — Scenario Selection"));
+  assert!(stdout.contains("match-replay: begin"));
+  assert!(stdout.contains("match-replay: complete"));
+}
+
+#[test]
+fn binary_interactive_select_cancels_on_quit() {
+  let binary = binary_path();
+  let output = run_select_binary(&binary, "q\n");
+  assert!(output.status.success(), "stderr: {:?}", output.stderr);
+  let stdout = String::from_utf8(output.stdout).expect("UTF-8 output");
+  assert!(stdout.contains("Fog of Intent — Scenario Selection"));
+  assert!(output.stderr.is_empty());
+}
+
+#[test]
+fn binary_interactive_select_retries_on_invalid_and_runs() {
+  let binary = binary_path();
+  let output = run_select_binary(&binary, "invalid-choice\n1\nquit\n");
+  assert!(output.status.success(), "stderr: {:?}", output.stderr);
+  let stdout = String::from_utf8(output.stdout).expect("UTF-8 output");
+  assert!(stdout.contains("unknown scenario selection: 'invalid-choice'"));
+  assert!(stdout.ends_with("quit: status=closed\n"));
 }
