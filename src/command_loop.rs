@@ -37,7 +37,116 @@ pub const CLI_APPLICATION_VERSION: &str =
   concat!("fog-of-intent ", env!("CARGO_PKG_VERSION"), "\n");
 
 /// Bounded process-level usage for the executable wrapper.
-pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --run-dir <path>  store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>    auto, always, or never (default auto)\n  --help            show this help\n  --version, -V     show package version\n";
+pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --list-scenarios   list all available scenarios and descriptions\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --help             show this help\n  --version, -V      show package version\n";
+
+/// Execution mode for a scenario entry in the scenario catalog.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScenarioExecutionMode {
+  /// Interactive lane decision loop supporting intent planning, advance, debrief, and persistence.
+  InteractiveLane,
+  /// Deterministic batch replay verification transcript; prints and exits.
+  BatchReplayTranscript,
+  /// Actor-visible HTML5/SVG presentation document export; prints and exits.
+  HtmlPresentationExport,
+  /// Public Alpha release readiness check suite; prints and exits.
+  ReleaseChecksReport,
+}
+
+impl ScenarioExecutionMode {
+  /// Stable display label for the scenario mode.
+  pub const fn label(self) -> &'static str {
+    match self {
+      Self::InteractiveLane => "interactive-lane",
+      Self::BatchReplayTranscript => "replay-transcript",
+      Self::HtmlPresentationExport => "html-presentation",
+      Self::ReleaseChecksReport => "release-checks",
+    }
+  }
+}
+
+/// Metadata entry in the CLI scenario catalog.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct CliScenarioCatalogEntry {
+  pub id: &'static str,
+  pub display_name: &'static str,
+  pub milestone: &'static str,
+  pub mode: ScenarioExecutionMode,
+  pub description: &'static str,
+}
+
+/// Canonical catalog of all executable and interactive scenarios.
+pub const CLI_SCENARIO_CATALOG: &[CliScenarioCatalogEntry] = &[
+  CliScenarioCatalogEntry {
+    id: CLI_FIXTURE_SCENARIO_ID,
+    display_name: "Two-Window Lane Reference Fixture",
+    milestone: "M3",
+    mode: ScenarioExecutionMode::InteractiveLane,
+    description: "Interactive reference 2-window lane scenario with intent planning, advance, debrief, and run persistence.",
+  },
+  CliScenarioCatalogEntry {
+    id: CLI_STRATEGY_HAPPY_PATH_SCENARIO_ID,
+    display_name: "HappyPath Strategy Playthrough",
+    milestone: "M2",
+    mode: ScenarioExecutionMode::InteractiveLane,
+    description: "Interactive lane playthrough executing the HappyPath strategy (favorable trades and space holding).",
+  },
+  CliScenarioCatalogEntry {
+    id: CLI_STRATEGY_RISK_TAKING_SCENARIO_ID,
+    display_name: "RiskTaking Strategy Playthrough",
+    milestone: "M2",
+    mode: ScenarioExecutionMode::InteractiveLane,
+    description: "Interactive lane playthrough executing the RiskTaking strategy (aggressive contest and fallback tradeoffs).",
+  },
+  CliScenarioCatalogEntry {
+    id: CLI_STRATEGY_CONSERVATIVE_SCENARIO_ID,
+    display_name: "Conservative Strategy Playthrough",
+    milestone: "M2",
+    mode: ScenarioExecutionMode::InteractiveLane,
+    description: "Interactive lane playthrough executing the Conservative strategy (stabilization and defensive positioning).",
+  },
+  CliScenarioCatalogEntry {
+    id: crate::cli::CLI_MATCH_REPLAY_SCENARIO_ID,
+    display_name: "Complete Match Replay Transcript",
+    milestone: "M9",
+    mode: ScenarioExecutionMode::BatchReplayTranscript,
+    description: "Replay-verified M9 multi-lane match execution transcript with objective cycles and structure sieges.",
+  },
+  CliScenarioCatalogEntry {
+    id: crate::cli::CLI_GUI_PRESENTATION_SCENARIO_ID,
+    display_name: "Shared-Boundary GUI Presentation Document",
+    milestone: "M11",
+    mode: ScenarioExecutionMode::HtmlPresentationExport,
+    description: "Accessible standalone HTML5/SVG tactical map and causal debrief presentation export.",
+  },
+  CliScenarioCatalogEntry {
+    id: crate::cli::CLI_ALPHA_RELEASE_CHECKS_SCENARIO_ID,
+    display_name: "Public Alpha Release Readiness Checks",
+    milestone: "M12",
+    mode: ScenarioExecutionMode::ReleaseChecksReport,
+    description: "Public Research-Capable Alpha release verification suite across 6 compliance and integrity domains.",
+  },
+];
+
+/// Render the scenario catalog as an aligned, readable plain-text table without ANSI styling.
+pub fn format_scenario_catalog() -> String {
+  let mut output = String::new();
+  output.push_str("Fog of Intent — Scenario Catalog\n\n");
+  output.push_str(&format!(
+    "{:<32} {:<6} {:<18} {}\n",
+    "SCENARIO ID", "MILE", "MODE", "DESCRIPTION"
+  ));
+  output.push_str(&format!("{:-<32} {:-<6} {:-<18} {:-<45}\n", "", "", "", ""));
+  for entry in CLI_SCENARIO_CATALOG {
+    output.push_str(&format!(
+      "{:<32} {:<6} {:<18} {}\n",
+      entry.id,
+      entry.milestone,
+      entry.mode.label(),
+      entry.description
+    ));
+  }
+  output
+}
 
 /// Closed set of executable fixture constructors.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
@@ -149,6 +258,7 @@ pub enum CliApplicationCommand {
   Run(CliApplicationOptions),
   Help,
   Version,
+  ListScenarios,
 }
 
 /// Explicit executable configuration for the bounded fixture loop.
@@ -195,6 +305,12 @@ pub fn parse_application_args(
       value if value == "--version" || value == "-V" => {
         if args.len() == 1 {
           return Ok(CliApplicationCommand::Version);
+        }
+        return Err(CliApplicationArgsError::UnexpectedArgument);
+      }
+      value if value == "--list-scenarios" || value == "-l" => {
+        if args.len() == 1 {
+          return Ok(CliApplicationCommand::ListScenarios);
         }
         return Err(CliApplicationArgsError::UnexpectedArgument);
       }
@@ -468,6 +584,9 @@ mod tests {
       }
       CliApplicationCommand::Help => panic!("run arguments must not select help"),
       CliApplicationCommand::Version => panic!("run arguments must not select version"),
+      CliApplicationCommand::ListScenarios => {
+        panic!("run arguments must not select list scenarios")
+      }
     }
   }
 
@@ -479,7 +598,7 @@ mod tests {
     );
     assert_eq!(
       CLI_APPLICATION_HELP,
-      "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --run-dir <path>  store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>    auto, always, or never (default auto)\n  --help            show this help\n  --version, -V     show package version\n"
+      "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --list-scenarios   list all available scenarios and descriptions\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --help             show this help\n  --version, -V      show package version\n"
     );
     assert_eq!(
       parse_application_args(&[OsString::from("--version")]),
@@ -605,6 +724,7 @@ mod tests {
         }
         CliApplicationCommand::Help => panic!("options must select a run"),
         CliApplicationCommand::Version => panic!("options must select a run"),
+        CliApplicationCommand::ListScenarios => panic!("options must select a run"),
       }
     }
   }
@@ -987,5 +1107,59 @@ mod tests {
     assert!(text.contains("# Fog of Intent — Public Alpha Release Readiness Audit Report"));
     assert!(text.contains("READY FOR PUBLIC ALPHA"));
     assert!(text.ends_with('\n'));
+  }
+
+  #[test]
+  fn scenario_catalog_format_and_metadata_are_complete() {
+    assert_eq!(CLI_SCENARIO_CATALOG.len(), 7);
+    for entry in CLI_SCENARIO_CATALOG {
+      assert!(!entry.id.is_empty());
+      assert!(!entry.display_name.is_empty());
+      assert!(!entry.milestone.is_empty());
+      assert!(!entry.description.is_empty());
+    }
+
+    assert_eq!(
+      ScenarioExecutionMode::InteractiveLane.label(),
+      "interactive-lane"
+    );
+    assert_eq!(
+      ScenarioExecutionMode::BatchReplayTranscript.label(),
+      "replay-transcript"
+    );
+    assert_eq!(
+      ScenarioExecutionMode::HtmlPresentationExport.label(),
+      "html-presentation"
+    );
+    assert_eq!(
+      ScenarioExecutionMode::ReleaseChecksReport.label(),
+      "release-checks"
+    );
+
+    let catalog_text = format_scenario_catalog();
+    assert!(catalog_text.starts_with("Fog of Intent — Scenario Catalog\n\n"));
+    assert!(catalog_text.contains("m3-two-window-fixture-v1"));
+    assert!(catalog_text.contains("m2-strategy-happy-path-v1"));
+    assert!(catalog_text.contains("m2-strategy-risk-taking-v1"));
+    assert!(catalog_text.contains("m2-strategy-conservative-v1"));
+    assert!(catalog_text.contains("m9-complete-match-replay-v1"));
+    assert!(catalog_text.contains("m11-gui-presentation-v1"));
+    assert!(catalog_text.contains("m12-alpha-release-checks-v1"));
+    assert!(!catalog_text.contains('\u{1b}')); // No ANSI escape codes
+  }
+
+  #[test]
+  fn application_args_parse_list_scenarios() {
+    for flag in ["--list-scenarios", "-l"] {
+      let args = [OsString::from(flag)];
+      let command = parse_application_args(&args).expect("list scenarios command");
+      assert_eq!(command, CliApplicationCommand::ListScenarios);
+    }
+
+    let trailing = [OsString::from("--list-scenarios"), OsString::from("extra")];
+    assert_eq!(
+      parse_application_args(&trailing),
+      Err(CliApplicationArgsError::UnexpectedArgument)
+    );
   }
 }

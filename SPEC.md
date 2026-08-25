@@ -123,15 +123,51 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - The codec remains a local fixture contract; it does not claim external
   compatibility, human experience, or a playable simulation.
 
-## Present
+### M2 — First complete one-lane scenario — 2026-08-25
 
-### M2 — First bounded one-lane decision window
-
-**Status:** Active
+**Status:** Complete
 **Started:** 2026-08-04
 **Selected after:** M1 replay and codec promotion
 
+## Present
+
+### M3 — CLI reference experience
+
+**Status:** Active
+**Started:** 2026-08-25
+**Selected after:** M2 one-lane scenario exit promotion
+
 #### Target slice
+
+- Define stable top-level and in-session CLI commands, scenario catalog metadata, and discovery (`--list-scenarios`).
+- Provide interactive reference experience and strategy scenario execution loops with actor-safe text/TTY presentation, command autocompletion, contextual help, and durable run artifact save/load.
+- Support uncommitted choice edit/undo, deterministic branch exploration, replay verification, and causal debrief projections.
+- Maintain pure synchronous simulation authority in the host and keep presentation and terminal I/O at the application edge.
+
+#### Delivered in the scenario catalog discovery follow-up — 2026-08-25
+
+- Added `CliScenarioCatalogEntry`, `ScenarioExecutionMode`, and `CLI_SCENARIO_CATALOG` in `src/command_loop.rs` registering all 7 canonical scenarios across M2 strategy playthroughs, M3 reference fixtures, M9 complete matches, M11 GUI presentations, and M12 alpha release checks.
+- Added `--list-scenarios` (`-l`) process-level CLI flag and `format_scenario_catalog()` generating aligned, deterministic plain-text table output without ANSI escapes.
+- Added comprehensive unit and binary tests in `src/command_loop.rs` and `tests/binary_run_dir.rs`.
+
+#### Delivered in previous M3 grammar, host, and presentation slices
+
+- Reference line-oriented command loop (`src/command_loop.rs`), reedline TTY editor (`src/repl.rs`), and actor-safe ANSI/plain-text formatting (`src/presentation.rs`, `src/terminal.rs`).
+- Injected file storage (`src/run_store.rs`) and `--run-dir` process flag for artifact save/load.
+- Standalone package version reporting (`--version`, `-V`).
+
+#### Deferred
+
+- Dynamic runtime graph branching directly in the interactive command loop.
+- Full-screen TUI and browser GUI.
+- Human accessibility trial verification.
+
+#### Historical M2 contracts and deliverable inventory
+
+The following records preserve the verified M2 vertical slice implementation
+contracts and deliverable history.
+
+##### M2 Scope and Contract Summary
 
 - Define the smallest typed lane snapshot needed for one decision window.
 - Project actor-valid observation text/data for the human laner without latent

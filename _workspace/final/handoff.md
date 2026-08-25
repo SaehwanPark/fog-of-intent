@@ -1,26 +1,20 @@
-# Handoff: M10 Study Protocol and Evaluation Framework (m10-study-protocol-v1)
+# Handoff: M2 Exit Promotion and CLI Scenario Catalog Discovery
 
-## Summary
-
-- Delivered the initial bounded vertical slice of Phase 10 (M10 — Human Usability and Accessibility Alpha).
-- Formalized study protocol definitions, privacy/consent invariants, participant cohort schemas across 4 groups, 10 canonical evaluation dimensions, and finding taxonomy with 4 categories, 4 severity tiers, and issue-linked disposition tracking.
-- Implemented pure deterministic cohort evaluation (`evaluate_study_cohort`) producing exact integer basis-point metrics ($[0..=10,000]$ bp), cohort performance tables, finding counts, accessibility claims qualification gate checks, and structured Markdown reports.
-- Registered 3 canonical benchmark study scenarios in `StudyProtocolCatalog` with reproducible execution and verified expectations.
-- Proportional verification: 8 focused tests covering all invariants, errors, dispositions, basis-point math, and markdown hygiene; all 548 tests pass cleanly.
-
-## Key Boundaries
-
-- `src/study/mod.rs`
-- `src/study/protocol.rs`
-- `src/study/session.rs`
-- `src/study/finding.rs`
-- `src/study/evaluation.rs`
-- `src/study/catalog.rs`
-- `src/study/tests.rs`
+## Summary of Changes
+1. **M2 Exit Evidence Finalization & Milestone Promotion:**
+   - Formalized completion of Milestone M2 (One-Lane Vertical Slice) across `ROADMAP.md` and `SPEC.md`.
+   - Promoted Milestone M3 (CLI Reference Experience) to `Active`.
+   - Updated `README.md` and `CHANGELOG.md` to reflect version `0.1.221` and active M3 milestone status.
+2. **Scenario Catalog Discovery:**
+   - Defined `ScenarioExecutionMode` (`interactive-lane`, `replay-transcript`, `html-presentation`, `release-checks`) and `CliScenarioCatalogEntry` in `src/command_loop.rs`.
+   - Registered `CLI_SCENARIO_CATALOG` containing all 7 canonical scenarios (`m3-two-window-fixture-v1`, `m2-strategy-happy-path-v1`, `m2-strategy-risk-taking-v1`, `m2-strategy-conservative-v1`, `m9-complete-match-replay-v1`, `m11-gui-presentation-v1`, `m12-alpha-release-checks-v1`).
+   - Implemented `format_scenario_catalog()` rendering clean, aligned plain-text tables without ANSI styling.
+   - Implemented `--list-scenarios` / `-l` process-level CLI flag in `parse_application_args` and `src/main.rs`.
+   - Added unit tests in `src/command_loop.rs` and executable integration tests in `tests/binary_run_dir.rs`.
 
 ## Verification
-
-- `cargo +1.96.0 fmt --all -- --check` (pass)
-- `cargo +1.96.0 clippy --locked --all-targets --all-features -- -D warnings` (pass)
-- `cargo +1.96.0 test --locked` (pass, 548 tests)
-- `python3 scripts/check_repository.py` (pass)
+- `cargo +1.96.0 fmt --all -- --check`
+- `cargo +1.96.0 clippy --locked --all-targets --all-features -- -D warnings`
+- `cargo +1.96.0 test --locked` (681 tests passed: 664 unit, 14 binary, 3 doc)
+- `python3 scripts/check_repository.py`
+- `python3 -m unittest scripts/test_check_repository.py`

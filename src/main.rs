@@ -36,9 +36,19 @@ fn main() -> ExitCode {
       }
     };
   }
+  if matches!(&application_command, CliApplicationCommand::ListScenarios) {
+    let catalog = fog_of_intent::command_loop::format_scenario_catalog();
+    return match write_metadata(&catalog) {
+      Ok(()) => ExitCode::SUCCESS,
+      Err(error) => {
+        eprintln!("scenario list output failed: {error}");
+        ExitCode::FAILURE
+      }
+    };
+  }
 
   let CliApplicationCommand::Run(options) = application_command else {
-    unreachable!("help and version are handled above");
+    unreachable!("help, version, and list-scenarios are handled above");
   };
   let stdin_is_terminal = io::stdin().is_terminal();
   let stdout_is_terminal = io::stdout().is_terminal();

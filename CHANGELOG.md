@@ -6,7 +6,22 @@ not increment the package version.
 
 ## Unreleased
 
-## [0.1.220] - 2026-08-25
+## [0.1.221] - 2026-08-25
+
+### Added
+
+- Scenario catalog discovery in `src/command_loop.rs` and `src/main.rs`:
+  - `CliScenarioCatalogEntry` and `ScenarioExecutionMode` modeling canonical scenario metadata (`interactive-lane`, `replay-transcript`, `html-presentation`, `release-checks`).
+  - `CLI_SCENARIO_CATALOG` registering all 7 canonical scenarios across M2, M3, M9, M11, and M12.
+  - `format_scenario_catalog()` generating aligned, deterministic plain-text tables without ANSI styling.
+  - `--list-scenarios` / `-l` process-level CLI flag and `CliApplicationCommand::ListScenarios` for instant standalone scenario discovery.
+- 3 new unit and integration tests across `src/command_loop.rs` and `tests/binary_run_dir.rs` covering catalog formatting, execution mode labeling, argument parsing, and executable output verification.
+
+### Changed
+
+- Milestone M2 (One-Lane Vertical Slice) promoted from `Active` to `Complete` in `ROADMAP.md` and `SPEC.md` following full verification of all 14 scope items, strategy playthroughs, automated advance condition checking, and exit evidence.
+- Milestone M3 (CLI Reference Experience) transitioned from `Planned` to `Active` in `ROADMAP.md`, `SPEC.md`, and `README.md`.
+
 
 ### Added
 

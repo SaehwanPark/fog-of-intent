@@ -2,8 +2,8 @@
 
 **Document role:** Canonical milestone order, scope, and promotion gates
 **Status:** Active
-**Current milestone:** M2 — One-Lane Vertical Slice
-**Last reviewed:** 2026-08-16
+**Current milestone:** M3 — CLI Reference Experience
+**Last reviewed:** 2026-08-25
 
 This document is the authoritative execution roadmap. The project proposal
 explains the broader vision and preserves the original roadmap concept; when its
@@ -31,13 +31,13 @@ sequencing or checklist differs from this file, this file governs current work.
 | --- | --- | --- |
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
-| Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs` | Standalone package version reporting, bounded fixture transcript with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, TTY prompt/completion, `--color`), 3 interactive strategy scenario playthroughs (`--scenario m2-strategy-happy-path-v1`, `--scenario m2-strategy-risk-taking-v1`, `--scenario m2-strategy-conservative-v1`), a replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1`, a verified actor-visible HTML5 presentation document with `--scenario m11-gui-presentation-v1`, and a public alpha release readiness audit report with `--scenario m12-alpha-release-checks-v1` |
-| Package | `Cargo.toml` | Version `0.1.220`, one deferred edge crate (`reedline`) |
+| Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs` | Standalone package version reporting, scenario catalog listing (`--list-scenarios`), bounded fixture transcript with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, TTY prompt/completion, `--color`), 3 interactive strategy scenario playthroughs (`--scenario m2-strategy-happy-path-v1`, `--scenario m2-strategy-risk-taking-v1`, `--scenario m2-strategy-conservative-v1`), a replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1`, a verified actor-visible HTML5 presentation document with `--scenario m11-gui-presentation-v1`, and a public alpha release readiness audit report with `--scenario m12-alpha-release-checks-v1` |
+| Package | `Cargo.toml` | Version `0.1.221`, one deferred edge crate (`reedline`) |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
 | Internal kernel/replay fixture | `src/kernel.rs`, `src/serialization.rs` | M1 complete; not playable |
-| Scenario, CLI, MCP, research, GUI | Grammar, bounded host, pure text, fixture loop, injected file artifacts, explicit binary store wiring, and one-fixture scenario selection; broader scenario selection remains open | Not implemented as complete user-facing flows |
+| Scenario, CLI, MCP, research, GUI | Grammar, bounded host, pure text, fixture loop, scenario catalog discovery, injected file artifacts, explicit binary store wiring, and strategy scenario selection; broader scenario selection remains open | Reference CLI active; MCP, research, and GUI in library/presentation contracts |
 
 ## Milestone Map
 
@@ -45,8 +45,8 @@ sequencing or checklist differs from this file, this file governs current work.
 | --- | --- | --- | --- |
 | M0 | Governed repository baseline | Complete | Repository inception |
 | M1 | Replayable deterministic kernel | Complete | M0 |
-| M2 | First complete one-lane scenario | Active | M1 |
-| M3 | CLI reference experience | Planned | M2 |
+| M2 | First complete one-lane scenario | Complete | M1 |
+| M3 | CLI reference experience | Active | M2 |
 | M4 | Interpretable bounded-agent population | Planned | M2; preferably M3 |
 | M5 | Model-agnostic MCP play | Planned | M3 and stable actor contracts |
 | M6 | Automated behavioral validation | Planned | M4 and M5 |
@@ -279,7 +279,7 @@ async, terminal, database, or model-provider dependencies in the core.
 ## Phase 2 — One-Lane Vertical Slice
 
 **Milestone:** M2
-**Status:** Active
+**Status:** Complete
 **Depends on:** M1
 
 ### Initial bounded slice
@@ -812,7 +812,15 @@ This evidence establishes one bounded poultice consumable resource. It does not 
 - [x] Connect the full multi-window lane scenario to the interactive CLI runner.
 - [x] Validate three distinct playable strategy playthroughs (HappyPath, RiskTaking, Conservative) through the interactive runner.
 - [x] Verify automated advance condition integration in the interactive runner.
-- [ ] Finalize M2 exit evidence review and promote M2 from Active to Complete in SPEC.md.
+- [x] Finalize M2 exit evidence review and promote M2 from Active to Complete in SPEC.md.
+
+### Promotion evidence
+
+- The complete M2 scope checklist and all 4 developer action items are verified.
+- Three canonical playable strategy scenario playthroughs (`HappyPath`, `RiskTaking`, `Conservative`) execute through the interactive CLI runner, resolving distinct outcomes (`held_space` vs `yielded_space`), zero latent-truth leakage, and clean debrief projections.
+- Automated advance conditions are integrated into host execution.
+- Deterministic replay reproduces authoritative terminal state hashes across single-window, two-window, and counterfactual branch histories.
+- `SPEC.md` records M2 as Past and transitions M3 to Active.
 
 ### Deliverables
 
@@ -843,7 +851,7 @@ This evidence establishes one bounded poultice consumable resource. It does not 
 ## Phase 3 — CLI Reference Experience
 
 **Milestone:** M3
-**Status:** Planned — early bounded grammar evidence
+**Status:** Active
 **Depends on:** M2
 
 ### Outcome
