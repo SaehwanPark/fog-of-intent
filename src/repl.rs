@@ -100,7 +100,7 @@ impl FogCompleter {
     } else if verb == "plan" {
       &CLI_PLAN_INTENTS
     } else if verb == "branch" {
-      &["first"]
+      &["first", "second"]
     } else {
       &[]
     };
@@ -270,7 +270,7 @@ mod tests {
         .iter()
         .map(|item| item.value.as_str())
         .collect::<Vec<_>>(),
-      vec!["first"]
+      vec!["first", "second"]
     );
   }
 

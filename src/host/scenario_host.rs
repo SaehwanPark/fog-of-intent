@@ -933,8 +933,25 @@ impl CliScenarioHost {
   }
 
   fn branch<'a>(&self, point_id: Option<&str>) -> Result<CliHostOutput, CliHostError<'a>> {
-    let point_id = point_id.unwrap_or("first");
-    if point_id != "first" || self.history.records().len() != 1 {
+    let (target_index, canonical_point_id) = match point_id {
+      None => {
+        if self.history.records().is_empty() {
+          return Err(CliHostError::BranchUnavailable);
+        }
+        let index = self.history.records().len() - 1;
+        let label = if index == 0 { "first" } else { "second" };
+        (index, label.to_string())
+      }
+      Some(id) => {
+        let trimmed = id.trim().to_ascii_lowercase();
+        match trimmed.as_str() {
+          "first" | "1" | "0" | "rec-0" | "window-1" | "w1" => (0, "first".to_string()),
+          "second" | "2" | "rec-1" | "window-2" | "w2" => (1, "second".to_string()),
+          _ => return Err(CliHostError::BranchUnavailable),
+        }
+      }
+    };
+    if target_index >= self.history.records().len() {
       return Err(CliHostError::BranchUnavailable);
     }
     let alternate_text = self
@@ -949,11 +966,11 @@ impl CliScenarioHost {
     let scenario_record = self
       .history
       .records()
-      .first()
+      .get(target_index)
       .ok_or(CliHostError::BranchUnavailable)?;
     let transition = scenario_record.transition().clone();
     let parent_intent = transition.command().intent();
-    let mut parent = LaneHistory::new(self.history.initial_state())
+    let mut parent = LaneHistory::new(scenario_record.start_state())
       .map_err(|_| CliHostError::BranchUnavailable)?;
     parent.current_state = transition.result().next_state();
     parent.records.push(transition);
@@ -972,7 +989,7 @@ impl CliScenarioHost {
       .review(&parent)
       .map_err(|_| CliHostError::BranchUnavailable)?;
     Ok(CliHostOutput::Branched {
-      point_id: point_id.to_owned(),
+      point_id: canonical_point_id,
       parent_intent,
       branch_intent: review.branch_intent(),
       parent_outcome: review.parent_outcome(),

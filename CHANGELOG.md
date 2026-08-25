@@ -8,6 +8,13 @@ not increment the package version.
 
 ### Added
 
+- Interactive branch exploration directly within the command loop:
+  - Extended `CliScenarioHost::branch` in `src/host/scenario_host.rs` to support multi-window counterfactual exploration across any committed window index (`0` / `1`) using canonical labels (`first`, `second`), aliases (`1`, `2`, `rec-0`, `rec-1`, `w1`, `w2`), or defaulting to the latest window.
+  - Added REPL autocompletion for `branch first` and `branch second` in `src/repl.rs`.
+  - Enhanced `CliHostOutput::Branched` presentation in `src/presentation.rs` with window identification and outcome labels.
+  - Updated session help catalog and usage examples in `src/cli/session_grammar.rs`.
+  - 3 new unit and binary integration tests across `src/host/tests.rs`, `src/repl.rs`, and `tests/binary_run_dir.rs`.
+
 - Dynamic interactive scenario selection in `src/command_loop.rs`, `src/repl.rs`, `src/presentation.rs`, and `src/main.rs`:
   - `parse_scenario_selection()` parsing catalog numeric indices (`1`..=`7`), exact scenario IDs, and short aliases (`m3`, `happy`, `risk`, `conservative`, `m9`, `gui`, `alpha`) case-insensitively with whitespace trimming.
   - `format_scenario_menu()` rendering human-readable interactive scenario selection menus with display names, milestones, modes, and descriptions.

@@ -144,6 +144,14 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 - Support uncommitted choice edit/undo, deterministic branch exploration, replay verification, and causal debrief projections.
 - Maintain pure synchronous simulation authority in the host and keep presentation and terminal I/O at the application edge.
 
+#### Delivered in the interactive branch exploration slice — 2026-08-25
+
+- Extended `CliScenarioHost::branch` to support deterministic counterfactual exploration at any committed window index (window 1 / window 2) with support for canonical labels (`first`, `second`), aliases (`1`, `2`, `rec-0`, `rec-1`, `w1`, `w2`), and default resolution to the latest committed window.
+- Added REPL autocompletion support for `branch first` and `branch second` in `src/repl.rs`.
+- Enhanced `CliHostOutput::Branched` presentation in `src/presentation.rs` with clear window identification and outcome comparisons (`parent_outcome` vs `branch_outcome`).
+- Updated in-session help and examples for `branch` in `src/cli/session_grammar.rs`.
+- Added comprehensive unit, error boundary, and binary integration tests across `src/host/tests.rs`, `src/repl.rs`, and `tests/binary_run_dir.rs`.
+
 #### Delivered in the dynamic interactive scenario selection slice — 2026-08-25
 
 - Added pure scenario selection parsing (`parse_scenario_selection`) supporting catalog indices (`1`..=`7`), exact scenario IDs, and short aliases (`m3`, `happy`, `risk`, `conservative`, `m9`, `gui`, `alpha`) case-insensitively with whitespace trimming.

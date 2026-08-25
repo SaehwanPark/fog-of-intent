@@ -2200,6 +2200,10 @@ fn branch_rejects_missing_invalid_same_and_unsupported_requests() {
     host.apply_line("branch first"),
     Err(CliHostError::BranchUnavailable)
   );
+  assert_eq!(
+    host.apply_line("branch"),
+    Err(CliHostError::BranchUnavailable)
+  );
   for command in ["plan contest", "commit", "advance"] {
     host.apply_line(command).expect("parent command");
   }
@@ -2211,7 +2215,7 @@ fn branch_rejects_missing_invalid_same_and_unsupported_requests() {
   assert_eq!(
     host.apply_line("branch first"),
     Err(CliHostError::InvalidPlan {
-      text: "???".to_owned()
+      text: "???".to_owned(),
     })
   );
   host
@@ -2226,7 +2230,14 @@ fn branch_rejects_missing_invalid_same_and_unsupported_requests() {
     host.apply_line("branch second"),
     Err(CliHostError::BranchUnavailable)
   );
-  host.apply_line("plan yield").expect("valid alternate plan");
+  assert_eq!(
+    host.apply_line("branch 2"),
+    Err(CliHostError::BranchUnavailable)
+  );
+  assert_eq!(
+    host.apply_line("branch third"),
+    Err(CliHostError::BranchUnavailable)
+  );
   host.apply_line("branch first").expect("valid branch");
   host
     .apply_line("plan stabilize")
@@ -2234,8 +2245,154 @@ fn branch_rejects_missing_invalid_same_and_unsupported_requests() {
   host.apply_line("commit").expect("second-window commit");
   host.apply_line("advance").expect("second-window advance");
   assert_eq!(
-    host.apply_line("branch first"),
+    host.apply_line("branch third"),
     Err(CliHostError::BranchUnavailable)
+  );
+  assert_eq!(
+    host.apply_line("branch 99"),
+    Err(CliHostError::BranchUnavailable)
+  );
+  assert_eq!(
+    host.apply_line("branch second"),
+    Err(CliHostError::BranchMissingPlan)
+  );
+}
+
+#[test]
+fn interactive_branch_exploration_across_multiple_windows() {
+  let mut host = CliScenarioHost::fixture();
+  host.apply_line("plan contest").expect("plan w1");
+  host.apply_line("commit").expect("commit w1");
+  host.apply_line("advance").expect("advance w1");
+
+  // Exploration at window 1
+  host.apply_line("plan yield").expect("alt plan yield w1");
+  let b1 = host.apply_line("branch first").expect("branch first");
+  assert_eq!(
+    b1,
+    CliHostOutput::Branched {
+      point_id: "first".to_owned(),
+      parent_intent: LaneIntent::Contest,
+      branch_intent: LaneIntent::Yield,
+      parent_outcome: LaneOutcome::HeldSpace,
+      branch_outcome: LaneOutcome::YieldedSpace,
+      execution_relation: LaneExecutionRelation::Matched,
+    }
+  );
+
+  // Default branch when 1 window is committed targets first window
+  let b_default = host.apply_line("branch").expect("branch default w1");
+  assert_eq!(
+    b_default,
+    CliHostOutput::Branched {
+      point_id: "first".to_owned(),
+      parent_intent: LaneIntent::Contest,
+      branch_intent: LaneIntent::Yield,
+      parent_outcome: LaneOutcome::HeldSpace,
+      branch_outcome: LaneOutcome::YieldedSpace,
+      execution_relation: LaneExecutionRelation::Matched,
+    }
+  );
+
+  // Play through window 2
+  host.apply_line("plan stabilize").expect("plan w2");
+  host.apply_line("commit").expect("commit w2");
+  host.apply_line("advance").expect("advance w2");
+
+  // Exploration at window 2
+  host
+    .apply_line("plan contest")
+    .expect("alt plan contest w2");
+  let b2 = host.apply_line("branch second").expect("branch second");
+  assert_eq!(
+    b2,
+    CliHostOutput::Branched {
+      point_id: "second".to_owned(),
+      parent_intent: LaneIntent::Stabilize,
+      branch_intent: LaneIntent::Contest,
+      parent_outcome: LaneOutcome::YieldedSpace,
+      branch_outcome: LaneOutcome::HeldSpace,
+      execution_relation: LaneExecutionRelation::Matched,
+    }
+  );
+
+  // Alias forms for window 2
+  let b2_alias = host.apply_line("branch 2").expect("branch 2");
+  assert_eq!(
+    b2_alias,
+    CliHostOutput::Branched {
+      point_id: "second".to_owned(),
+      parent_intent: LaneIntent::Stabilize,
+      branch_intent: LaneIntent::Contest,
+      parent_outcome: LaneOutcome::YieldedSpace,
+      branch_outcome: LaneOutcome::HeldSpace,
+      execution_relation: LaneExecutionRelation::Matched,
+    }
+  );
+
+  let b2_rec = host.apply_line("branch rec-1").expect("branch rec-1");
+  assert_eq!(
+    b2_rec,
+    CliHostOutput::Branched {
+      point_id: "second".to_owned(),
+      parent_intent: LaneIntent::Stabilize,
+      branch_intent: LaneIntent::Contest,
+      parent_outcome: LaneOutcome::YieldedSpace,
+      branch_outcome: LaneOutcome::HeldSpace,
+      execution_relation: LaneExecutionRelation::Matched,
+    }
+  );
+
+  // Default branch when 2 windows are committed targets latest window (second)
+  let b2_default = host.apply_line("branch").expect("branch default w2");
+  assert_eq!(
+    b2_default,
+    CliHostOutput::Branched {
+      point_id: "second".to_owned(),
+      parent_intent: LaneIntent::Stabilize,
+      branch_intent: LaneIntent::Contest,
+      parent_outcome: LaneOutcome::YieldedSpace,
+      branch_outcome: LaneOutcome::HeldSpace,
+      execution_relation: LaneExecutionRelation::Matched,
+    }
+  );
+
+  // Exploration back to window 1 even after window 2 is complete
+  host.apply_line("plan yield").expect("alt plan yield w1");
+  let b1_retro = host.apply_line("branch first").expect("branch first retro");
+  assert_eq!(
+    b1_retro,
+    CliHostOutput::Branched {
+      point_id: "first".to_owned(),
+      parent_intent: LaneIntent::Contest,
+      branch_intent: LaneIntent::Yield,
+      parent_outcome: LaneOutcome::HeldSpace,
+      branch_outcome: LaneOutcome::YieldedSpace,
+      execution_relation: LaneExecutionRelation::Matched,
+    }
+  );
+
+  let b1_alias = host.apply_line("branch 1").expect("branch 1 retro");
+  assert_eq!(
+    b1_alias,
+    CliHostOutput::Branched {
+      point_id: "first".to_owned(),
+      parent_intent: LaneIntent::Contest,
+      branch_intent: LaneIntent::Yield,
+      parent_outcome: LaneOutcome::HeldSpace,
+      branch_outcome: LaneOutcome::YieldedSpace,
+      execution_relation: LaneExecutionRelation::Matched,
+    }
+  );
+
+  // Verify that history and replay are unchanged after branching
+  assert_eq!(host.record_count(), 2);
+  assert_eq!(
+    host.apply_line("replay"),
+    Ok(CliHostOutput::ReplayVerified {
+      run_id: None,
+      records: 2,
+    })
   );
 }
 
