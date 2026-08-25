@@ -7,6 +7,7 @@
 mod draft;
 mod information;
 mod match_replay;
+mod release_checks;
 mod run_id;
 mod session_grammar;
 mod top_level_grammar;
@@ -18,6 +19,10 @@ pub use draft::{CLI_DRAFT_SCHEMA, CliCommittedDraft, CliDraft, CliDraftStageErro
 pub use information::{CLI_INFORMATION_LABEL_SCHEMA, CliInformation, CliInformationLabel};
 pub use match_replay::{
   CLI_MATCH_REPLAY_SCENARIO_ID, MatchReplayTranscript, build_match_replay_transcript,
+};
+pub use release_checks::{
+  AlphaReleaseChecksCliReport, CLI_ALPHA_RELEASE_CHECKS_SCENARIO_ID,
+  build_alpha_release_checks_report,
 };
 pub use run_id::{CLI_RUN_ID_SCHEMA, CliRunId, CliRunIdError, MAX_CLI_RUN_ID_BYTES};
 pub use session_grammar::{

@@ -57,6 +57,23 @@ fn main() -> ExitCode {
       }
     };
   }
+  if matches!(
+    options.scenario(),
+    CliApplicationScenario::M12AlphaReleaseChecks
+  ) {
+    let stdout = io::stdout();
+    return match fog_of_intent::command_loop::write_alpha_release_checks_report(stdout.lock()) {
+      Ok(true) => ExitCode::SUCCESS,
+      Ok(false) => {
+        eprintln!("release checks detected unfulfilled readiness requirements");
+        ExitCode::FAILURE
+      }
+      Err(error) => {
+        eprintln!("release checks failed: {error}");
+        ExitCode::FAILURE
+      }
+    };
+  }
   let mut command_loop = match options.run_dir() {
     Some(path) => CliCommandLoop::fixture_with_store(CliRunStore::new(path)),
     None => CliCommandLoop::fixture(),

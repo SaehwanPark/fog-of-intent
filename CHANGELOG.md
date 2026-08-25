@@ -6,6 +6,12 @@ not increment the package version.
 
 ## Unreleased
 
+### Added
+
+- `m12-alpha-release-checks-v1` CLI scenario runner (`src/cli/release_checks.rs`, `src/command_loop.rs`, `src/main.rs`) adding executable support for `--scenario m12-alpha-release-checks-v1`, running the canonical compliant Public Alpha release verification check suite, rendering the structured Markdown report, and verifying clean exit status.
+- `docs/adr/0004-cargo-workspace-partitioning.md` establishing ADR-0004 formalizing the post-alpha Cargo workspace partitioning architecture across 8 domain member crates (`foi-kernel`, `foi-lane`, `foi-map`, `foi-agent`, `foi-protocol`, `foi-study`, `foi-gui`, `foi-alpha`) and 2 thin application binaries (`fog-of-intent`, `fog-of-intent-mcp`).
+- 5 new tests in `src/cli/tests.rs`, `src/command_loop.rs`, and `tests/binary_run_dir.rs` covering argument parsing, report formatting, readiness status, `--run-dir` rejection, and executable invocation.
+
 ## [0.1.218] - 2026-08-25
 
 ### Added
