@@ -59,6 +59,23 @@ fn main() -> ExitCode {
   }
   if matches!(
     options.scenario(),
+    CliApplicationScenario::M11GuiPresentation
+  ) {
+    let stdout = io::stdout();
+    return match fog_of_intent::command_loop::write_gui_presentation_document(stdout.lock()) {
+      Ok(true) => ExitCode::SUCCESS,
+      Ok(false) => {
+        eprintln!("gui presentation document failed compliance verification");
+        ExitCode::FAILURE
+      }
+      Err(error) => {
+        eprintln!("gui presentation rendering failed: {error}");
+        ExitCode::FAILURE
+      }
+    };
+  }
+  if matches!(
+    options.scenario(),
     CliApplicationScenario::M12AlphaReleaseChecks
   ) {
     let stdout = io::stdout();

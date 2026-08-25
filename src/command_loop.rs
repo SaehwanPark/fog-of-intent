@@ -28,7 +28,7 @@ pub const CLI_APPLICATION_VERSION: &str =
   concat!("fog-of-intent ", env!("CARGO_PKG_VERSION"), "\n");
 
 /// Bounded process-level usage for the executable wrapper.
-pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1, m9-complete-match-replay-v1, or m12-alpha-release-checks-v1\n  --run-dir <path>  store bounded run artifacts in this directory (fixture only)\n  --color <mode>    auto, always, or never (default auto)\n  --help            show this help\n  --version, -V     show package version\n";
+pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --run-dir <path>  store bounded run artifacts in this directory (fixture only)\n  --color <mode>    auto, always, or never (default auto)\n  --help            show this help\n  --version, -V     show package version\n";
 
 /// Closed set of executable fixture constructors.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
@@ -38,6 +38,8 @@ pub enum CliApplicationScenario {
   M3TwoWindowFixture,
   /// The replay-verified M9 complete-match transcript; prints and exits.
   M9CompleteMatchReplay,
+  /// The verified actor-visible M11 GUI presentation document; prints and exits.
+  M11GuiPresentation,
   /// The M12 Public Alpha release readiness check report; prints and exits.
   M12AlphaReleaseChecks,
 }
@@ -186,6 +188,8 @@ pub fn parse_application_args(
           scenario = Some(CliApplicationScenario::M3TwoWindowFixture);
         } else if args[index] == crate::cli::CLI_MATCH_REPLAY_SCENARIO_ID {
           scenario = Some(CliApplicationScenario::M9CompleteMatchReplay);
+        } else if args[index] == crate::cli::CLI_GUI_PRESENTATION_SCENARIO_ID {
+          scenario = Some(CliApplicationScenario::M11GuiPresentation);
         } else if args[index] == crate::cli::CLI_ALPHA_RELEASE_CHECKS_SCENARIO_ID {
           scenario = Some(CliApplicationScenario::M12AlphaReleaseChecks);
         } else {
@@ -233,8 +237,8 @@ pub fn parse_application_args(
   }
   let scenario = scenario.unwrap_or_default();
   if run_dir.is_some() && scenario != CliApplicationScenario::M3TwoWindowFixture {
-    // The match-replay and release-checks scenarios print and exit without
-    // creating run artifacts; accepting a store path would silently ignore it.
+    // The match-replay, gui-presentation, and release-checks scenarios print and
+    // exit without creating run artifacts; accepting a store path would silently ignore it.
     return Err(CliApplicationArgsError::RunDirectoryRequiresFixture);
   }
   Ok(CliApplicationCommand::Run(CliApplicationOptions {
@@ -253,6 +257,15 @@ pub fn write_match_replay_transcript<W: Write>(mut output: W) -> io::Result<()> 
     output.write_all(b"\n")?;
   }
   output.flush()
+}
+
+/// Print the actor-visible M11 GUI presentation document and stop. Used by
+/// the executable edge for `--scenario m11-gui-presentation-v1`.
+pub fn write_gui_presentation_document<W: Write>(mut output: W) -> io::Result<bool> {
+  let document = crate::cli::build_gui_presentation_document().map_err(io::Error::other)?;
+  output.write_all(document.html().as_bytes())?;
+  output.flush()?;
+  Ok(document.is_compliant())
 }
 
 /// Print the Public Alpha release readiness check report and stop. Used by
@@ -422,7 +435,7 @@ mod tests {
     );
     assert_eq!(
       CLI_APPLICATION_HELP,
-      "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1, m9-complete-match-replay-v1, or m12-alpha-release-checks-v1\n  --run-dir <path>  store bounded run artifacts in this directory (fixture only)\n  --color <mode>    auto, always, or never (default auto)\n  --help            show this help\n  --version, -V     show package version\n"
+      "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --run-dir <path>  store bounded run artifacts in this directory (fixture only)\n  --color <mode>    auto, always, or never (default auto)\n  --help            show this help\n  --version, -V     show package version\n"
     );
     assert_eq!(
       parse_application_args(&[OsString::from("--version")]),
@@ -733,6 +746,7 @@ mod tests {
   fn help_lists_all_executable_scenarios() {
     assert!(CLI_APPLICATION_HELP.contains("m3-two-window-fixture-v1"));
     assert!(CLI_APPLICATION_HELP.contains("m9-complete-match-replay-v1"));
+    assert!(CLI_APPLICATION_HELP.contains("m11-gui-presentation-v1"));
     assert!(CLI_APPLICATION_HELP.contains("m12-alpha-release-checks-v1"));
   }
 
@@ -746,6 +760,51 @@ mod tests {
     assert_eq!(lines[0], "match-replay: begin");
     assert_eq!(lines[5], "match-replay: complete");
     assert!(text.ends_with('\n'));
+  }
+
+  #[test]
+  fn application_args_parse_the_gui_presentation_scenario() {
+    let args = [
+      OsString::from("--scenario"),
+      OsString::from("m11-gui-presentation-v1"),
+    ];
+    let command = parse_application_args(&args).expect("gui presentation scenario");
+    match command {
+      CliApplicationCommand::Run(options) => {
+        assert_eq!(
+          options.scenario(),
+          CliApplicationScenario::M11GuiPresentation
+        );
+        assert_eq!(options.run_dir(), None);
+      }
+      other => panic!("unexpected command: {other:?}"),
+    }
+  }
+
+  #[test]
+  fn gui_presentation_scenario_rejects_run_directory() {
+    let args = [
+      OsString::from("--scenario"),
+      OsString::from("m11-gui-presentation-v1"),
+      OsString::from("--run-dir"),
+      OsString::from("runs"),
+    ];
+    assert_eq!(
+      parse_application_args(&args),
+      Err(CliApplicationArgsError::RunDirectoryRequiresFixture)
+    );
+  }
+
+  #[test]
+  fn gui_presentation_document_writer_outputs_html() {
+    let mut buffer: Vec<u8> = Vec::new();
+    let is_compliant = write_gui_presentation_document(&mut buffer).expect("document writes");
+    assert!(is_compliant);
+    let text = String::from_utf8(buffer).expect("UTF-8 HTML");
+    assert!(text.starts_with("<!DOCTYPE html>"));
+    assert!(text.contains("<html lang=\"en\">"));
+    assert!(text.contains("<meta name=\"viewport\""));
+    assert!(text.contains("<svg"));
   }
 
   #[test]

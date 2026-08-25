@@ -2049,17 +2049,18 @@ behavioral research claims remain deferred until study data is collected.
   `HighContrastAccessible`, `TouchMobileViewport`, `TextFallbackHeadless`) and 4 benchmark scenarios (`scenario-gui-browser-standard-flow-v1`,
   `scenario-gui-browser-network-recovery-v1`, `scenario-gui-browser-accessibility-flow-v1`, `scenario-gui-browser-degraded-fallback-v1`)
   verifying clean state restoration, degraded fallback, and zero authority desync under connection loss.
-- 43 focused unit tests in `src/gui/tests.rs` cover domain/severity round trips, threshold rules,
+- `m11-gui-presentation-v1` CLI scenario runner (`src/cli/gui_presentation.rs`, `src/command_loop.rs`, `src/main.rs`) adding executable support for `--scenario m11-gui-presentation-v1`, rendering the canonical actor-visible HTML5 presentation document, verifying W3C/semantic/anti-leak compliance, and verifying clean exit status.
+- 43 focused unit tests in `src/gui/tests.rs` plus 2 CLI runner tests and binary integration tests cover domain/severity round trips, threshold rules,
   fail-closed validation, error Display coverage, DTO construction, invariant leak rejection, CoT omission,
   catalog execution, active tab/view mode round trips, client state transitions, reversibility, zoom bounds,
   triple projection parity verification, asset kind/license/fallback round trips, asset governance audit rules,
   HTML document generation, verification rules, transport message round trips, session request handling,
-  browser target/capability round trips, recovery strategies, flow audits, and Markdown report hygiene.
+  browser target/capability round trips, recovery strategies, flow audits, HTML export, and Markdown report hygiene.
 
 #### Verification
 
-- `cargo test --locked gui::` passes 43 unit tests (610 total library tests).
-- All benchmark catalog scenarios verify deficit impacts, GUI justification, invariant preservation, asset governance compliance, HTML document integrity, transport session lifecycle, and browser flow resilience.
+- `cargo test --locked` passes 671 tests with zero failures.
+- All benchmark catalog scenarios verify deficit impacts, GUI justification, invariant preservation, asset governance compliance, HTML document integrity, transport session lifecycle, browser flow resilience, and CLI presentation export.
 - Repository checker scans confirm zero async/network primitives in `src/gui/`.
 
 #### Deferred
