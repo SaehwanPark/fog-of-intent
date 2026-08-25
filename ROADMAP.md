@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs` | Standalone package version reporting, a bounded fixture transcript with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, TTY prompt/completion, `--color`), and a replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1` |
-| Package | `Cargo.toml` | Version `0.1.217`, one deferred edge crate (`reedline`) |
+| Package | `Cargo.toml` | Version `0.1.218`, one deferred edge crate (`reedline`) |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -53,7 +53,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | M7 | Semantic-to-parametric calibration proof | Planned | M6 |
 | M8 | Coordinated team decision play | Planned | M4 and M5 |
 | M9 | Bounded multi-lane match prototype | Planned | M8 |
-| M10 | Human-usable and accessibility-tested alpha | Complete | Stable M9 candidate; informal checks start earlier |
+| M10 | Human-usable and accessibility-tested alpha | Planned (library complete) | Stable M9 candidate; informal checks start earlier |
 | M11 | Optional shared-boundary GUI | Planned and optional | Demonstrated presentation need; stable host contracts |
 | M12 | Public research-capable alpha | Planned | M10; M11 only if adopted |
 
@@ -807,9 +807,12 @@ This evidence establishes one bounded poultice consumable resource. It does not 
 - [x] Reject incomplete histories and tampered source identities, window
   summaries, objective reviews, terminal hashes, final disposition, or report.
 
-This evidence establishes a deterministic committed-facts final debrief for
-two ordinary windows. It does not establish a complete scenario, pacing,
-communication, strategy quality, balance, or human experience.
+### Active Developer Action Items (M2 Exit Promotion)
+
+- [ ] Connect the full multi-window lane scenario to the interactive CLI runner.
+- [ ] Validate three distinct playable strategy playthroughs (HappyPath, RiskTaking, Conservative) through the interactive runner.
+- [ ] Verify automated advance condition integration in the interactive runner.
+- [ ] Finalize M2 exit evidence review and promote M2 from Active to Complete in SPEC.md.
 
 ### Deliverables
 
@@ -995,6 +998,12 @@ the complete M3 reference client or human accessibility evidence.
   remains the script contract.
 - [ ] Validate complete interactive behavior, keyboard/focus behavior, and
   screen-reader semantics with human-oriented inspection.
+
+### Developer Action Items
+
+- [ ] Dynamic interactive scenario selection in the CLI runner (allowing players to choose between M2 lane scenarios and M9 match scenarios without hardcoded flags).
+- [ ] Interactive branch exploration directly within the command loop.
+- [ ] Terminal resize handling and accessibility auditing for pure text presentation.
 
 ### Deliverables
 
@@ -1334,6 +1343,12 @@ transition authority.
 - [x] Verify that transport and async orchestration stay outside the core with
   a repository checker that scans every deterministic core module for async,
   wall-clock, and network transport primitives; adapter-edge I/O remains open.
+
+### Developer Action Items
+
+- [ ] Implement standalone `fog-of-intent-mcp` binary adapter communicating over JSON-RPC stdio.
+- [ ] Wire `ActorMessageDto` and `ActorDraftDto` into live tool call schemas.
+- [ ] Validate MCP protocol integration against external LLM agent harnesses.
 
 ### Deliverables
 
@@ -2068,6 +2083,11 @@ This delivers the bounded CLI portion of the "Complete CLI and MCP match
 replays" deliverable. MCP match replays, interactive match play, save/load
 of match replays, and human pacing evidence remain deferred.
 
+### Developer Action Items
+
+- [ ] Implement interactive 5v5 multi-lane CLI session runner (expanding beyond print-and-exit transcript replay).
+- [ ] Support dynamic multi-turn tactical commands (`rotate`, `ward`, `contest`, `siege`) in the CLI.
+
 ### Deliverables
 
 - Versioned match scenario and ruleset.
@@ -2092,7 +2112,7 @@ of match replays, and human pacing evidence remain deferred.
 ## Phase 10 — Human Usability and Accessibility Alpha
 
 **Milestone:** M10
-**Status:** Complete
+**Status:** Planned (library evaluation framework complete; live human trials planned)
 **Depends on:** Stable M9 candidate; informal checks should occur during M2-M9
 
 ### Outcome
@@ -2163,7 +2183,11 @@ project reports accessibility and usability limits honestly.
 This establishes a bounded deterministic study protocol, dimension assessment framework, interaction
 mode auditing, informal check protocol, remediation evaluation, sampling limits auditing, and alpha
 synthesis reporting for M10. Empirical human participant recruitment, live study execution, and research
-claims remain deferred until study data is collected.
+### Developer Action Items (Live Human Trials)
+
+- [ ] Recruit human participants across the 4 specified cohorts (`StrategyGamer`, `MobaPlayer`, `AccessNeeds`, `NoviceStrategy`).
+- [ ] Conduct structured clinical playtest sessions and record interaction transcripts.
+- [ ] Run empirical transcripts through `evaluate_study_cohort` and synthesize alpha readiness findings.
 
 ### Deliverables
 
@@ -2278,8 +2302,10 @@ This establishes the formal presentation need evaluation framework, ADR-0003 arc
 decision record, versioned actor-visible GUI DTO models, reversible client state machine,
 triple CLI/MCP/GUI projection parity verification, asset governance / fallback rules,
 standalone HTML5/CSS/SVG GUI presentation document generator, loopback transport protocol / session adapter,
-and browser flow resilience / recovery evaluation suite for M11. Live browser-to-host interaction tests remain open.
+### Developer Action Items (Browser Client)
 
+- [ ] Wire standalone HTML presentation viewer to local file / loopback server for real-time visual inspection during play.
+- [ ] Validate browser flow recovery on live browser sessions.
 
 ### Deliverables
 
@@ -2403,6 +2429,11 @@ in its legal, accessibility, entertainment, and research claims.
 
 This establishes the formal release readiness verification check suite, multi-domain compliance auditing, blocker rejection, and release eligibility framework for M12. Release candidate human testing and release tag archiving remain open.
 
+### Developer Action Items (Public Release)
+
+- [ ] Package official research reproducibility bundles with verified 16-hex FNV-1a checksums.
+- [ ] Execute release candidate verification check suite (`audit_release_checks`).
+- [ ] Create official tagged research release bundle with governance documentation.
 
 ### Deliverables
 
@@ -2426,6 +2457,22 @@ This establishes the formal release readiness verification check suite, multi-do
   beyond validated scope.
 - Post-alpha expansion requires a new evidence-based roadmap revision.
 
+## Architecture & Governance Evolution Targets (ADR-0004 Planning)
+
+As identified in the independent technical audit ([`docs/AUDIT_REPORT.md`](docs/AUDIT_REPORT.md)), the codebase (~85k LOC across 12 milestone domains) is prepared for structured modularization:
+
+- [ ] Author ADR-0004 (Cargo Workspace Partitioning).
+- [ ] Partition the monolithic single crate into dedicated workspace members:
+  - `crates/foi-kernel` (authoritative transition & units)
+  - `crates/foi-lane` (one-lane vertical slice)
+  - `crates/foi-map` (5v5 multi-lane spatial map topology, structures & contest mechanics)
+  - `crates/foi-agent` (behavioral policies, calibration & team communication)
+  - `crates/foi-protocol` (model-agnostic DTOs & MCP codecs)
+  - `crates/foi-study` (human usability, accessibility & alpha synthesis)
+  - `crates/foi-gui` (presentation-only HTML5/CSS/SVG generator & parity engine)
+  - `crates/foi-alpha` (release governance, compatibility & readiness checks)
+- [ ] Maintain thin application binaries at workspace root (`fog-of-intent` CLI runner, `fog-of-intent-mcp` MCP server).
+
 ## Roadmap Maintenance
 
 When a milestone changes:
@@ -2439,3 +2486,4 @@ When a milestone changes:
 
 Roadmap revisions should explain why ordering, scope, or gates changed. They
 should not rewrite completed history to make the current plan appear inevitable.
+

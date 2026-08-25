@@ -6,6 +6,20 @@ not increment the package version.
 
 ## Unreleased
 
+## [0.1.218] - 2026-08-25
+
+### Added
+
+- `docs/AUDIT_REPORT.md` recording the comprehensive independent technical and architectural audit report covering simulation determinism, domain authority, information-leak prevention, security, code quality, verification rigor, and milestone steering.
+- Developer action items with explicit tracking checkboxes across active and planned milestones (M2, M3, M5, M9, M10, M11, M12) in `ROADMAP.md` to steer future development.
+- Target architecture and governance evolution planning for Cargo workspace modularization (ADR-0004 planning) in `ROADMAP.md`.
+
+### Fixed
+
+- Added `sys.path` bootstrap to `scripts/test_check_repository.py` enabling standalone test discovery and execution via `python3 -m unittest scripts/test_check_repository.py`.
+- Reconciled Phase 10 status in the milestone summary table and section header in `ROADMAP.md`.
+- Synchronized canonical document references in `README.md` and `SPEC.md`.
+
 ## [0.1.217] - 2026-08-24
 
 ### Added
