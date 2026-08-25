@@ -908,3 +908,29 @@ fn match_replay_transcript_is_deterministic_and_hash_value_free() {
     assert!(!line.contains('\u{1b}'));
   }
 }
+
+// --- M12 Public Alpha release readiness checks report ---
+
+#[test]
+fn alpha_release_checks_report_builds_and_is_ready() {
+  let report = super::release_checks::build_alpha_release_checks_report()
+    .expect("compliant release checks manifest executes and audits");
+  assert!(report.is_ready());
+  let md = report.markdown();
+  assert!(md.contains("# Fog of Intent — Public Alpha Release Readiness Audit Report"));
+  assert!(md.contains("READY FOR PUBLIC ALPHA"));
+  assert!(md.contains("clean-install"));
+  assert!(md.contains("reproducibility"));
+  assert!(md.contains("security-advisory"));
+  assert!(md.contains("license-compliance"));
+  assert!(md.contains("compatibility-matrix"));
+  assert!(md.contains("data-redaction"));
+  assert!(!md.contains('\u{1b}'));
+}
+
+#[test]
+fn alpha_release_checks_report_is_deterministic() {
+  let first = super::release_checks::build_alpha_release_checks_report().expect("first report");
+  let second = super::release_checks::build_alpha_release_checks_report().expect("second report");
+  assert_eq!(first, second);
+}

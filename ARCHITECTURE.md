@@ -16,13 +16,15 @@ surface.
 
 Fog of Intent is currently a single Rust 2024 package. The binary reports
 package metadata through standalone `--version`/`-V` and runs the bounded
-fixture loop with `--scenario m3-two-window-fixture-v1`, optional `--run-dir`,
-and `--color auto|always|never`. One deferred edge crate, `reedline`, is used
-only for TTY line editing. Kernel, lane, host, CLI grammar, and labeled
-terminal-text modules remain free of that crate. Internal `kernel` and `lane`
-modules provide bounded deterministic transitions, in-memory history, replay,
-branching, coordination, objective, and debrief fixtures. No playable complete
-match, MCP, research, or GUI component exists yet; an injected
+fixture loop with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`,
+and `--color auto|always|never`), the replay-verified complete-match transcript
+with `--scenario m9-complete-match-replay-v1`, or the public alpha release
+readiness audit report with `--scenario m12-alpha-release-checks-v1`. One deferred
+edge crate, `reedline`, is used only for TTY line editing. Kernel, lane, host,
+CLI grammar, and labeled terminal-text modules remain free of that crate. Internal
+`kernel` and `lane` modules provide bounded deterministic transitions, in-memory
+history, replay, branching, coordination, objective, and debrief fixtures. No
+playable complete match, MCP, research, or GUI component exists yet; an injected
 persistent file store now exists as a library boundary, and the binary injects
 it only when that option is supplied. M1 is complete as an internal fixture; M2
 remains a bounded lane contract, and M3 now adds a bounded two-window host
@@ -879,7 +881,7 @@ Verified today:
 
 Proposed but not adopted:
 
-- additional Cargo workspace boundaries; ADR-0002 keeps M1 in one package;
+- additional Cargo workspace boundaries; ADR-0002 kept M1 in one package; ADR-0004 ([`docs/adr/0004-cargo-workspace-partitioning.md`](docs/adr/0004-cargo-workspace-partitioning.md)) establishes post-alpha multi-crate workspace partitioning;
 - Serde/JSON and explicit seeded RNG at edges;
 - Clap or a small interactive shell;
 - Tokio and the official Rust MCP SDK at adapter boundaries;

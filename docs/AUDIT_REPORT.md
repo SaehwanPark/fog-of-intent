@@ -90,10 +90,10 @@ The repository exhibits a unique architectural dynamic:
 - [ ] **M9 Interactive 5v5 Match Loop:** Expand the print-and-exit M9 replay runner into an interactive role-based macro decision session.
 - [ ] **M10 Live Human Subject Study:** Execute empirical playtest trials across the 4 cohorts using the `src/study/` evaluation engine.
 - [ ] **M11 Browser Presentation Viewer:** Provide a local file/loopback viewing flow for the standalone HTML presentation renderer.
-- [ ] **M12 Public Alpha Release:** Package official reproducibility bundles and run the automated release readiness suite.
+- [x] **M12 Public Alpha Release:** Package official reproducibility bundles and run the automated release readiness suite via `--scenario m12-alpha-release-checks-v1`.
 
 ### 2. Architectural Evolution (Cargo Workspace Transition)
-- [ ] **ADR-0004 Authoring:** Document the transition from single-crate to multi-crate Cargo workspace.
+- [x] **ADR-0004 Authoring:** Document the transition from single-crate to multi-crate Cargo workspace in [`docs/adr/0004-cargo-workspace-partitioning.md`](adr/0004-cargo-workspace-partitioning.md).
 - [ ] **Crate Extraction:** Partition into `crates/foi-kernel`, `crates/foi-lane`, `crates/foi-map`, `crates/foi-agent`, `crates/foi-protocol`, `crates/foi-study`, `crates/foi-gui`, and `crates/foi-alpha`.
 - [ ] **Application Root:** Maintain thin executable crates (`fog-of-intent`, `fog-of-intent-mcp`) at the workspace boundary.
 

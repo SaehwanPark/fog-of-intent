@@ -28,7 +28,7 @@ pub const CLI_APPLICATION_VERSION: &str =
   concat!("fog-of-intent ", env!("CARGO_PKG_VERSION"), "\n");
 
 /// Bounded process-level usage for the executable wrapper.
-pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1 or m9-complete-match-replay-v1\n  --run-dir <path>  store bounded run artifacts in this directory (fixture only)\n  --color <mode>    auto, always, or never (default auto)\n  --help            show this help\n  --version, -V     show package version\n";
+pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1, m9-complete-match-replay-v1, or m12-alpha-release-checks-v1\n  --run-dir <path>  store bounded run artifacts in this directory (fixture only)\n  --color <mode>    auto, always, or never (default auto)\n  --help            show this help\n  --version, -V     show package version\n";
 
 /// Closed set of executable fixture constructors.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
@@ -38,6 +38,8 @@ pub enum CliApplicationScenario {
   M3TwoWindowFixture,
   /// The replay-verified M9 complete-match transcript; prints and exits.
   M9CompleteMatchReplay,
+  /// The M12 Public Alpha release readiness check report; prints and exits.
+  M12AlphaReleaseChecks,
 }
 
 /// Errors raised while parsing executable arguments before the command loop.
@@ -184,6 +186,8 @@ pub fn parse_application_args(
           scenario = Some(CliApplicationScenario::M3TwoWindowFixture);
         } else if args[index] == crate::cli::CLI_MATCH_REPLAY_SCENARIO_ID {
           scenario = Some(CliApplicationScenario::M9CompleteMatchReplay);
+        } else if args[index] == crate::cli::CLI_ALPHA_RELEASE_CHECKS_SCENARIO_ID {
+          scenario = Some(CliApplicationScenario::M12AlphaReleaseChecks);
         } else {
           return Err(CliApplicationArgsError::UnsupportedScenario);
         }
@@ -229,8 +233,8 @@ pub fn parse_application_args(
   }
   let scenario = scenario.unwrap_or_default();
   if run_dir.is_some() && scenario != CliApplicationScenario::M3TwoWindowFixture {
-    // The match-replay transcript prints and exits without creating run
-    // artifacts; accepting a store path would silently ignore it.
+    // The match-replay and release-checks scenarios print and exit without
+    // creating run artifacts; accepting a store path would silently ignore it.
     return Err(CliApplicationArgsError::RunDirectoryRequiresFixture);
   }
   Ok(CliApplicationCommand::Run(CliApplicationOptions {
@@ -249,6 +253,15 @@ pub fn write_match_replay_transcript<W: Write>(mut output: W) -> io::Result<()> 
     output.write_all(b"\n")?;
   }
   output.flush()
+}
+
+/// Print the Public Alpha release readiness check report and stop. Used by
+/// the executable edge for `--scenario m12-alpha-release-checks-v1`.
+pub fn write_alpha_release_checks_report<W: Write>(mut output: W) -> io::Result<bool> {
+  let report = crate::cli::build_alpha_release_checks_report().map_err(io::Error::other)?;
+  output.write_all(report.markdown().as_bytes())?;
+  output.flush()?;
+  Ok(report.is_ready())
 }
 
 /// Why the command loop stopped reading input.
@@ -409,7 +422,7 @@ mod tests {
     );
     assert_eq!(
       CLI_APPLICATION_HELP,
-      "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1 or m9-complete-match-replay-v1\n  --run-dir <path>  store bounded run artifacts in this directory (fixture only)\n  --color <mode>    auto, always, or never (default auto)\n  --help            show this help\n  --version, -V     show package version\n"
+      "usage: fog-of-intent [--scenario <id>] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>   select m3-two-window-fixture-v1, m9-complete-match-replay-v1, or m12-alpha-release-checks-v1\n  --run-dir <path>  store bounded run artifacts in this directory (fixture only)\n  --color <mode>    auto, always, or never (default auto)\n  --help            show this help\n  --version, -V     show package version\n"
     );
     assert_eq!(
       parse_application_args(&[OsString::from("--version")]),
@@ -717,9 +730,10 @@ mod tests {
   }
 
   #[test]
-  fn help_lists_both_executable_scenarios() {
+  fn help_lists_all_executable_scenarios() {
     assert!(CLI_APPLICATION_HELP.contains("m3-two-window-fixture-v1"));
     assert!(CLI_APPLICATION_HELP.contains("m9-complete-match-replay-v1"));
+    assert!(CLI_APPLICATION_HELP.contains("m12-alpha-release-checks-v1"));
   }
 
   #[test]
@@ -731,6 +745,50 @@ mod tests {
     assert_eq!(lines.len(), 6);
     assert_eq!(lines[0], "match-replay: begin");
     assert_eq!(lines[5], "match-replay: complete");
+    assert!(text.ends_with('\n'));
+  }
+
+  #[test]
+  fn application_args_parse_the_alpha_release_checks_scenario() {
+    let args = [
+      OsString::from("--scenario"),
+      OsString::from("m12-alpha-release-checks-v1"),
+    ];
+    let command = parse_application_args(&args).expect("alpha release checks scenario");
+    match command {
+      CliApplicationCommand::Run(options) => {
+        assert_eq!(
+          options.scenario(),
+          CliApplicationScenario::M12AlphaReleaseChecks
+        );
+        assert_eq!(options.run_dir(), None);
+      }
+      other => panic!("unexpected command: {other:?}"),
+    }
+  }
+
+  #[test]
+  fn alpha_release_checks_scenario_rejects_run_directory() {
+    let args = [
+      OsString::from("--scenario"),
+      OsString::from("m12-alpha-release-checks-v1"),
+      OsString::from("--run-dir"),
+      OsString::from("runs"),
+    ];
+    assert_eq!(
+      parse_application_args(&args),
+      Err(CliApplicationArgsError::RunDirectoryRequiresFixture)
+    );
+  }
+
+  #[test]
+  fn alpha_release_checks_report_writer_outputs_markdown() {
+    let mut buffer: Vec<u8> = Vec::new();
+    let is_ready = write_alpha_release_checks_report(&mut buffer).expect("report writes");
+    assert!(is_ready);
+    let text = String::from_utf8(buffer).expect("UTF-8 report");
+    assert!(text.contains("# Fog of Intent — Public Alpha Release Readiness Audit Report"));
+    assert!(text.contains("READY FOR PUBLIC ALPHA"));
     assert!(text.ends_with('\n'));
   }
 }
