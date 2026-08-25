@@ -13,6 +13,7 @@ Canonical direction and state live in:
 - `ROADMAP.md` — authoritative milestone order and promotion gates;
 - `ARCHITECTURE.md` — verified current structure and target boundaries;
 - `CHANGELOG.md` — meaningful contributor- and user-visible history;
+- `docs/AUDIT_REPORT.md` — independent technical and architectural audit report;
 - `docs/project-proposal.md` — detailed product and research vision;
 - `docs/tech-stack-consideration.md` — proposed technology choices.
 
