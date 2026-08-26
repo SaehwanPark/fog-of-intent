@@ -225,6 +225,22 @@ impl CompleteMatchState {
     self.opposing_objectives_secured
   }
 
+  pub fn map(&self) -> &MatchMapState {
+    &self.map
+  }
+
+  pub fn objectives(&self) -> &MatchObjectiveState {
+    &self.objectives
+  }
+
+  pub fn vision(&self) -> &MapVisionState {
+    &self.vision
+  }
+
+  pub fn structures(&self) -> &MatchStructureState {
+    &self.structures
+  }
+
   /// Deterministic FNV-1a hash committing every subsystem state plus the
   /// turn and secure counters.
   pub fn combined_hash(&self) -> StateHash {
@@ -452,7 +468,7 @@ impl CompleteMatchPlan {
 
 impl CompleteMatchState {
   /// Apply one action at the current turn and advance the turn.
-  fn apply_action(
+  pub fn apply_action(
     &mut self,
     action: &CompleteMatchAction,
   ) -> Result<(MatchPhaseKind, usize, usize), CompleteMatchError> {

@@ -40,13 +40,15 @@ pub const CLI_APPLICATION_VERSION: &str =
   concat!("fog-of-intent ", env!("CARGO_PKG_VERSION"), "\n");
 
 /// Bounded process-level usage for the executable wrapper.
-pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--select] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n";
+pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--select] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n";
 
 /// Execution mode for a scenario entry in the scenario catalog.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ScenarioExecutionMode {
   /// Interactive lane decision loop supporting intent planning, advance, debrief, and persistence.
   InteractiveLane,
+  /// Interactive 5v5 multi-lane tactical match session supporting rotations, wards, contests, sieges, and debriefs.
+  InteractiveMatch,
   /// Deterministic batch replay verification transcript; prints and exits.
   BatchReplayTranscript,
   /// Actor-visible HTML5/SVG presentation document export; prints and exits.
@@ -60,6 +62,7 @@ impl ScenarioExecutionMode {
   pub const fn label(self) -> &'static str {
     match self {
       Self::InteractiveLane => "interactive-lane",
+      Self::InteractiveMatch => "interactive-match",
       Self::BatchReplayTranscript => "replay-transcript",
       Self::HtmlPresentationExport => "html-presentation",
       Self::ReleaseChecksReport => "release-checks",
@@ -106,6 +109,13 @@ pub const CLI_SCENARIO_CATALOG: &[CliScenarioCatalogEntry] = &[
     milestone: "M2",
     mode: ScenarioExecutionMode::InteractiveLane,
     description: "Interactive lane playthrough executing the Conservative strategy (stabilization and defensive positioning).",
+  },
+  CliScenarioCatalogEntry {
+    id: crate::host::CLI_INTERACTIVE_MATCH_SCENARIO_ID,
+    display_name: "Interactive 5v5 Tactical Match Playthrough",
+    milestone: "M9",
+    mode: ScenarioExecutionMode::InteractiveMatch,
+    description: "Interactive multi-lane match command loop supporting tactical rotations, wards, contests, sieges, and debriefs.",
   },
   CliScenarioCatalogEntry {
     id: crate::cli::CLI_MATCH_REPLAY_SCENARIO_ID,
@@ -200,6 +210,8 @@ pub enum CliApplicationScenario {
   M2StrategyRiskTaking,
   /// The Conservative strategy scenario playthrough.
   M2StrategyConservative,
+  /// The interactive 5v5 multi-lane tactical match playthrough.
+  M9InteractiveMatch,
   /// The replay-verified M9 complete-match transcript; prints and exits.
   M9CompleteMatchReplay,
   /// The verified actor-visible M11 GUI presentation document; prints and exits.
@@ -218,6 +230,11 @@ impl CliApplicationScenario {
         | Self::M2StrategyRiskTaking
         | Self::M2StrategyConservative
     )
+  }
+
+  /// Whether this scenario is an interactive scenario (lane or 5v5 match).
+  pub const fn is_interactive(self) -> bool {
+    self.is_interactive_lane() || matches!(self, Self::M9InteractiveMatch)
   }
 }
 
@@ -433,6 +450,8 @@ pub fn parse_application_args(
           scenario = Some(CliApplicationScenario::M2StrategyRiskTaking);
         } else if args[index] == CLI_STRATEGY_CONSERVATIVE_SCENARIO_ID {
           scenario = Some(CliApplicationScenario::M2StrategyConservative);
+        } else if args[index] == crate::host::CLI_INTERACTIVE_MATCH_SCENARIO_ID {
+          scenario = Some(CliApplicationScenario::M9InteractiveMatch);
         } else if args[index] == crate::cli::CLI_MATCH_REPLAY_SCENARIO_ID {
           scenario = Some(CliApplicationScenario::M9CompleteMatchReplay);
         } else if args[index] == crate::cli::CLI_GUI_PRESENTATION_SCENARIO_ID {
@@ -555,15 +574,45 @@ pub enum CliLoopExit {
   EndOfInput,
 }
 
-/// Thin stdin/stdout adapter around the bounded scenario host.
+/// Target execution host backing the command loop.
+pub enum CliCommandLoopHost {
+  /// Bounded two-window lane scenario host.
+  Scenario(CliScenarioHost),
+  /// Interactive 5v5 multi-lane tactical match host.
+  Match(crate::host::CliMatchHost),
+}
+
+/// Thin stdin/stdout adapter around the bounded scenario or match host.
 pub struct CliCommandLoop {
-  host: CliScenarioHost,
+  host: CliCommandLoopHost,
 }
 
 impl CliCommandLoop {
-  /// Build a loop around explicit host state and resolved execution inputs.
+  /// Build a loop around explicit lane scenario host state and resolved execution inputs.
   pub fn new(host: CliScenarioHost) -> Self {
-    Self { host }
+    Self {
+      host: CliCommandLoopHost::Scenario(host),
+    }
+  }
+
+  /// Build a loop around an interactive match host.
+  pub fn match_host(host: crate::host::CliMatchHost) -> Self {
+    Self {
+      host: CliCommandLoopHost::Match(host),
+    }
+  }
+
+  /// Build the default interactive 5v5 tactical match session.
+  pub fn match_session() -> Self {
+    Self::match_host(crate::host::CliMatchHost::default_session())
+  }
+
+  /// Build an interactive 5v5 match session from a registered scenario ID.
+  pub fn match_session_from_id(id: &str) -> Self {
+    Self::match_host(
+      crate::host::CliMatchHost::from_scenario_id(id)
+        .unwrap_or_else(crate::host::CliMatchHost::default_session),
+    )
   }
 
   /// Build the deterministic two-window reference fixture.
@@ -599,28 +648,59 @@ impl CliCommandLoop {
     mut output: W,
     dimensions: TerminalDimensions,
   ) -> io::Result<CliLoopExit> {
-    for line in input.lines() {
-      let line = line?;
-      match self.host.apply_line(&line) {
-        Ok(result) => {
-          let should_quit = matches!(result, CliHostOutput::Quit);
-          output.write_all(render_output_with_dimensions(&result, dimensions).as_bytes())?;
-          output.flush()?;
-          if should_quit {
-            return Ok(CliLoopExit::Quit);
+    match &mut self.host {
+      CliCommandLoopHost::Scenario(host) => {
+        for line in input.lines() {
+          let line = line?;
+          match host.apply_line(&line) {
+            Ok(result) => {
+              let should_quit = matches!(result, CliHostOutput::Quit);
+              output.write_all(render_output_with_dimensions(&result, dimensions).as_bytes())?;
+              output.flush()?;
+              if should_quit {
+                return Ok(CliLoopExit::Quit);
+              }
+            }
+            Err(error) => {
+              writeln!(
+                output,
+                "{}",
+                render_error_with_dimensions(&error, dimensions).trim_end()
+              )?;
+              output.flush()?;
+            }
           }
         }
-        Err(error) => {
-          writeln!(
-            output,
-            "{}",
-            render_error_with_dimensions(&error, dimensions).trim_end()
-          )?;
-          output.flush()?;
+        Ok(CliLoopExit::EndOfInput)
+      }
+      CliCommandLoopHost::Match(host) => {
+        for line in input.lines() {
+          let line = line?;
+          match host.apply_line(&line) {
+            Ok(result) => {
+              let should_quit = matches!(result, crate::host::CliMatchOutput::Quit);
+              output.write_all(
+                crate::terminal::render_match_output_with_dimensions(&result, dimensions)
+                  .as_bytes(),
+              )?;
+              output.flush()?;
+              if should_quit {
+                return Ok(CliLoopExit::Quit);
+              }
+            }
+            Err(error) => {
+              writeln!(
+                output,
+                "{}",
+                crate::terminal::render_match_error_with_dimensions(&error, dimensions).trim_end()
+              )?;
+              output.flush()?;
+            }
+          }
         }
+        Ok(CliLoopExit::EndOfInput)
       }
     }
-    Ok(CliLoopExit::EndOfInput)
   }
 
   /// Render friendlier presentation for `--color always` pipes without reedline.
@@ -647,17 +727,33 @@ impl CliCommandLoop {
     dimensions: TerminalDimensions,
   ) -> io::Result<CliLoopExit> {
     let style = PresentationStyle::from_enabled(color_enabled);
-    output.write_all(render_banner_with_dimensions(style, dimensions).as_bytes())?;
-    for line in input.lines() {
-      let line = line?;
-      output.write_all(
-        render_chrome_with_dimensions(&self.host.session_view(), style, dimensions).as_bytes(),
-      )?;
-      if apply_presented_with_dimensions(&mut self.host, &line, &mut output, style, dimensions)? {
-        return Ok(CliLoopExit::Quit);
+    match &mut self.host {
+      CliCommandLoopHost::Scenario(host) => {
+        output.write_all(render_banner_with_dimensions(style, dimensions).as_bytes())?;
+        for line in input.lines() {
+          let line = line?;
+          output.write_all(
+            render_chrome_with_dimensions(&host.session_view(), style, dimensions).as_bytes(),
+          )?;
+          if apply_presented_with_dimensions(host, &line, &mut output, style, dimensions)? {
+            return Ok(CliLoopExit::Quit);
+          }
+        }
+        Ok(CliLoopExit::EndOfInput)
+      }
+      CliCommandLoopHost::Match(host) => {
+        output.write_all(
+          crate::presentation::render_match_banner_with_dimensions(style, dimensions).as_bytes(),
+        )?;
+        for line in input.lines() {
+          let line = line?;
+          if apply_presented_match_with_dimensions(host, &line, &mut output, style, dimensions)? {
+            return Ok(CliLoopExit::Quit);
+          }
+        }
+        Ok(CliLoopExit::EndOfInput)
       }
     }
-    Ok(CliLoopExit::EndOfInput)
   }
 
   /// Interactive TTY loop with prompt, completion, and session chrome.
@@ -674,27 +770,59 @@ impl CliCommandLoop {
     let style = PresentationStyle::from_enabled(color_enabled);
     let mut editor = create_editor(color_enabled);
     let mut stdout = std::io::stdout();
-    stdout.write_all(render_banner_with_dimensions(style, dimensions).as_bytes())?;
-    stdout.flush()?;
-    loop {
-      stdout.write_all(
-        render_chrome_with_dimensions(&self.host.session_view(), style, dimensions).as_bytes(),
-      )?;
-      stdout.flush()?;
-      match read_line(&mut editor)? {
-        ReadLine::Quit => {
-          let _ = self.host.apply_line("quit");
+    match &mut self.host {
+      CliCommandLoopHost::Scenario(host) => {
+        stdout.write_all(render_banner_with_dimensions(style, dimensions).as_bytes())?;
+        stdout.flush()?;
+        loop {
           stdout.write_all(
-            render_presented_output_with_dimensions(&CliHostOutput::Quit, style, dimensions)
-              .as_bytes(),
+            render_chrome_with_dimensions(&host.session_view(), style, dimensions).as_bytes(),
           )?;
           stdout.flush()?;
-          return Ok(CliLoopExit::Quit);
+          match read_line(&mut editor)? {
+            ReadLine::Quit => {
+              let _ = host.apply_line("quit");
+              stdout.write_all(
+                render_presented_output_with_dimensions(&CliHostOutput::Quit, style, dimensions)
+                  .as_bytes(),
+              )?;
+              stdout.flush()?;
+              return Ok(CliLoopExit::Quit);
+            }
+            ReadLine::Line(line) => {
+              if apply_presented_with_dimensions(host, &line, &mut stdout, style, dimensions)? {
+                return Ok(CliLoopExit::Quit);
+              }
+            }
+          }
         }
-        ReadLine::Line(line) => {
-          if apply_presented_with_dimensions(&mut self.host, &line, &mut stdout, style, dimensions)?
-          {
-            return Ok(CliLoopExit::Quit);
+      }
+      CliCommandLoopHost::Match(host) => {
+        stdout.write_all(
+          crate::presentation::render_match_banner_with_dimensions(style, dimensions).as_bytes(),
+        )?;
+        stdout.flush()?;
+        loop {
+          match read_line(&mut editor)? {
+            ReadLine::Quit => {
+              let _ = host.apply_line("quit");
+              stdout.write_all(
+                crate::presentation::render_presented_match_output_with_dimensions(
+                  &crate::host::CliMatchOutput::Quit,
+                  style,
+                  dimensions,
+                )
+                .as_bytes(),
+              )?;
+              stdout.flush()?;
+              return Ok(CliLoopExit::Quit);
+            }
+            ReadLine::Line(line) => {
+              if apply_presented_match_with_dimensions(host, &line, &mut stdout, style, dimensions)?
+              {
+                return Ok(CliLoopExit::Quit);
+              }
+            }
           }
         }
       }
@@ -727,7 +855,39 @@ fn apply_presented_with_dimensions<W: Write>(
   }
 }
 
-/// Parse a user selection input (number 1-7, scenario identifier, or short alias) into a scenario.
+fn apply_presented_match_with_dimensions<W: Write>(
+  host: &mut crate::host::CliMatchHost,
+  line: &str,
+  output: &mut W,
+  style: PresentationStyle,
+  dimensions: TerminalDimensions,
+) -> io::Result<bool> {
+  match host.apply_line(line) {
+    Ok(result) => {
+      let should_quit = matches!(result, crate::host::CliMatchOutput::Quit);
+      output.write_all(
+        crate::presentation::render_presented_match_output_with_dimensions(
+          &result, style, dimensions,
+        )
+        .as_bytes(),
+      )?;
+      output.flush()?;
+      Ok(should_quit)
+    }
+    Err(error) => {
+      output.write_all(
+        crate::presentation::render_presented_match_error_with_dimensions(
+          &error, style, dimensions,
+        )
+        .as_bytes(),
+      )?;
+      output.flush()?;
+      Ok(false)
+    }
+  }
+}
+
+/// Parse a user selection input (number 1-8, scenario identifier, or short alias) into a scenario.
 pub fn parse_scenario_selection(input: &str) -> Option<CliApplicationScenario> {
   let trimmed = input.trim();
   if trimmed.is_empty() {
@@ -739,9 +899,10 @@ pub fn parse_scenario_selection(input: &str) -> Option<CliApplicationScenario> {
       2 => Some(CliApplicationScenario::M2StrategyHappyPath),
       3 => Some(CliApplicationScenario::M2StrategyRiskTaking),
       4 => Some(CliApplicationScenario::M2StrategyConservative),
-      5 => Some(CliApplicationScenario::M9CompleteMatchReplay),
-      6 => Some(CliApplicationScenario::M11GuiPresentation),
-      7 => Some(CliApplicationScenario::M12AlphaReleaseChecks),
+      5 => Some(CliApplicationScenario::M9InteractiveMatch),
+      6 => Some(CliApplicationScenario::M9CompleteMatchReplay),
+      7 => Some(CliApplicationScenario::M11GuiPresentation),
+      8 => Some(CliApplicationScenario::M12AlphaReleaseChecks),
       _ => None,
     };
   }
@@ -759,7 +920,13 @@ pub fn parse_scenario_selection(input: &str) -> Option<CliApplicationScenario> {
     CLI_STRATEGY_CONSERVATIVE_SCENARIO_ID | "conservative" => {
       Some(CliApplicationScenario::M2StrategyConservative)
     }
-    crate::cli::CLI_MATCH_REPLAY_SCENARIO_ID | "match-replay" | "match" | "m9" => {
+    crate::host::CLI_INTERACTIVE_MATCH_SCENARIO_ID
+    | "interactive-match"
+    | "match-interactive"
+    | "match"
+    | "5v5"
+    | "m9-match" => Some(CliApplicationScenario::M9InteractiveMatch),
+    crate::cli::CLI_MATCH_REPLAY_SCENARIO_ID | "match-replay" | "replay-match" | "m9" => {
       Some(CliApplicationScenario::M9CompleteMatchReplay)
     }
     crate::cli::CLI_GUI_PRESENTATION_SCENARIO_ID | "gui-presentation" | "gui" | "m11" => {
@@ -817,7 +984,7 @@ pub fn format_scenario_menu_with_dimensions(
   }
   let wrap = dimensions.wrap_width();
   for line in crate::terminal::wrap_labeled_line(
-    "Select scenario by number [1-7], scenario ID, or short alias.",
+    "Select scenario by number [1-8], scenario ID, or short alias.",
     wrap,
   ) {
     output.push_str(&line);
@@ -855,7 +1022,7 @@ pub fn select_scenario_interactively_with_dimensions<R: BufRead, W: Write>(
 ) -> io::Result<Option<CliApplicationScenario>> {
   output.write_all(format_scenario_menu_with_dimensions(style, dimensions).as_bytes())?;
   output.flush()?;
-  let prompt = style.paint_cyan("scenario [1-7]> ");
+  let prompt = style.paint_cyan("scenario [1-8]> ");
   let mut line = String::new();
   loop {
     output.write_all(prompt.as_bytes())?;
@@ -878,7 +1045,7 @@ pub fn select_scenario_interactively_with_dimensions<R: BufRead, W: Write>(
       return Ok(Some(scenario));
     }
     let err_msg = style.paint_red(&format!(
-      "unknown scenario selection: '{trimmed}'. Please enter 1-7, scenario ID, alias, or 'q' to cancel.\n"
+      "unknown scenario selection: '{trimmed}'. Please enter 1-8, scenario ID, alias, or 'q' to cancel.\n"
     ));
     output.write_all(err_msg.as_bytes())?;
     output.flush()?;
@@ -930,7 +1097,7 @@ mod tests {
     );
     assert_eq!(
       CLI_APPLICATION_HELP,
-      "usage: fog-of-intent [--scenario <id>] [--select] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n"
+      "usage: fog-of-intent [--scenario <id>] [--select] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n"
     );
     assert_eq!(
       parse_application_args(&[OsString::from("--version")]),
@@ -1443,7 +1610,7 @@ mod tests {
 
   #[test]
   fn scenario_catalog_format_and_metadata_are_complete() {
-    assert_eq!(CLI_SCENARIO_CATALOG.len(), 7);
+    assert_eq!(CLI_SCENARIO_CATALOG.len(), 8);
     for entry in CLI_SCENARIO_CATALOG {
       assert!(!entry.id.is_empty());
       assert!(!entry.display_name.is_empty());
@@ -1454,6 +1621,10 @@ mod tests {
     assert_eq!(
       ScenarioExecutionMode::InteractiveLane.label(),
       "interactive-lane"
+    );
+    assert_eq!(
+      ScenarioExecutionMode::InteractiveMatch.label(),
+      "interactive-match"
     );
     assert_eq!(
       ScenarioExecutionMode::BatchReplayTranscript.label(),
@@ -1474,6 +1645,7 @@ mod tests {
     assert!(catalog_text.contains("m2-strategy-happy-path-v1"));
     assert!(catalog_text.contains("m2-strategy-risk-taking-v1"));
     assert!(catalog_text.contains("m2-strategy-conservative-v1"));
+    assert!(catalog_text.contains("m9-interactive-match-v1"));
     assert!(catalog_text.contains("m9-complete-match-replay-v1"));
     assert!(catalog_text.contains("m11-gui-presentation-v1"));
     assert!(catalog_text.contains("m12-alpha-release-checks-v1"));
@@ -1560,14 +1732,18 @@ mod tests {
     );
     assert_eq!(
       parse_scenario_selection("5"),
-      Some(CliApplicationScenario::M9CompleteMatchReplay)
+      Some(CliApplicationScenario::M9InteractiveMatch)
     );
     assert_eq!(
       parse_scenario_selection("6"),
-      Some(CliApplicationScenario::M11GuiPresentation)
+      Some(CliApplicationScenario::M9CompleteMatchReplay)
     );
     assert_eq!(
       parse_scenario_selection("7"),
+      Some(CliApplicationScenario::M11GuiPresentation)
+    );
+    assert_eq!(
+      parse_scenario_selection("8"),
       Some(CliApplicationScenario::M12AlphaReleaseChecks)
     );
 
@@ -1587,6 +1763,10 @@ mod tests {
     assert_eq!(
       parse_scenario_selection(CLI_STRATEGY_CONSERVATIVE_SCENARIO_ID),
       Some(CliApplicationScenario::M2StrategyConservative)
+    );
+    assert_eq!(
+      parse_scenario_selection(crate::host::CLI_INTERACTIVE_MATCH_SCENARIO_ID),
+      Some(CliApplicationScenario::M9InteractiveMatch)
     );
     assert_eq!(
       parse_scenario_selection(crate::cli::CLI_MATCH_REPLAY_SCENARIO_ID),
@@ -1635,11 +1815,27 @@ mod tests {
       Some(CliApplicationScenario::M2StrategyConservative)
     );
     assert_eq!(
+      parse_scenario_selection("interactive-match"),
+      Some(CliApplicationScenario::M9InteractiveMatch)
+    );
+    assert_eq!(
+      parse_scenario_selection("match"),
+      Some(CliApplicationScenario::M9InteractiveMatch)
+    );
+    assert_eq!(
+      parse_scenario_selection("5v5"),
+      Some(CliApplicationScenario::M9InteractiveMatch)
+    );
+    assert_eq!(
+      parse_scenario_selection("m9-match"),
+      Some(CliApplicationScenario::M9InteractiveMatch)
+    );
+    assert_eq!(
       parse_scenario_selection("match-replay"),
       Some(CliApplicationScenario::M9CompleteMatchReplay)
     );
     assert_eq!(
-      parse_scenario_selection("match"),
+      parse_scenario_selection("replay-match"),
       Some(CliApplicationScenario::M9CompleteMatchReplay)
     );
     assert_eq!(
@@ -1681,7 +1877,7 @@ mod tests {
       Some(CliApplicationScenario::M2StrategyHappyPath)
     );
     assert_eq!(
-      parse_scenario_selection("  5\n"),
+      parse_scenario_selection("  6\n"),
       Some(CliApplicationScenario::M9CompleteMatchReplay)
     );
     assert_eq!(
@@ -1693,7 +1889,7 @@ mod tests {
     assert_eq!(parse_scenario_selection(""), None);
     assert_eq!(parse_scenario_selection("   "), None);
     assert_eq!(parse_scenario_selection("0"), None);
-    assert_eq!(parse_scenario_selection("8"), None);
+    assert_eq!(parse_scenario_selection("9"), None);
     assert_eq!(parse_scenario_selection("99"), None);
     assert_eq!(parse_scenario_selection("unknown-scenario"), None);
   }
@@ -1706,9 +1902,10 @@ mod tests {
     assert!(menu.contains("[2] HappyPath Strategy Playthrough"));
     assert!(menu.contains("[3] RiskTaking Strategy Playthrough"));
     assert!(menu.contains("[4] Conservative Strategy Playthrough"));
-    assert!(menu.contains("[5] Complete Match Replay Transcript"));
-    assert!(menu.contains("[6] Shared-Boundary GUI Presentation Document"));
-    assert!(menu.contains("[7] Public Alpha Release Readiness Checks"));
+    assert!(menu.contains("[5] Interactive 5v5 Tactical Match Playthrough"));
+    assert!(menu.contains("[6] Complete Match Replay Transcript"));
+    assert!(menu.contains("[7] Shared-Boundary GUI Presentation Document"));
+    assert!(menu.contains("[8] Public Alpha Release Readiness Checks"));
     assert!(menu.contains("Press Enter for default [1]"));
   }
 

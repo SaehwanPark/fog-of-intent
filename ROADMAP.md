@@ -31,8 +31,8 @@ sequencing or checklist differs from this file, this file governs current work.
 | --- | --- | --- |
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
-| Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs` | Standalone package version reporting, scenario catalog listing (`--list-scenarios`), bounded fixture transcript with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, TTY prompt/completion, `--color`), 3 interactive strategy scenario playthroughs (`--scenario m2-strategy-happy-path-v1`, `--scenario m2-strategy-risk-taking-v1`, `--scenario m2-strategy-conservative-v1`), a replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1`, a verified actor-visible HTML5 presentation document with `--scenario m11-gui-presentation-v1`, and a public alpha release readiness audit report with `--scenario m12-alpha-release-checks-v1` |
-| Package | `Cargo.toml` | Version `0.1.221`, one deferred edge crate (`reedline`) |
+| Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs` | Standalone package version reporting, scenario catalog listing (`--list-scenarios`), bounded fixture transcript with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, TTY prompt/completion, `--color`), 3 interactive strategy scenario playthroughs (`--scenario m2-strategy-happy-path-v1`, `--scenario m2-strategy-risk-taking-v1`, `--scenario m2-strategy-conservative-v1`), the interactive 5v5 tactical match runner with `--scenario m9-interactive-match-v1`, a replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1`, a verified actor-visible HTML5 presentation document with `--scenario m11-gui-presentation-v1`, and a public alpha release readiness audit report with `--scenario m12-alpha-release-checks-v1` |
+| Package | `Cargo.toml` | Version `0.1.223`, one deferred edge crate (`reedline`) |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -2093,8 +2093,8 @@ of match replays, and human pacing evidence remain deferred.
 
 ### Developer Action Items
 
-- [ ] Implement interactive 5v5 multi-lane CLI session runner (expanding beyond print-and-exit transcript replay).
-- [ ] Support dynamic multi-turn tactical commands (`rotate`, `ward`, `contest`, `siege`) in the CLI.
+- [x] Implement interactive 5v5 multi-lane CLI session runner (`--scenario m9-interactive-match-v1`).
+- [x] Support dynamic multi-turn tactical commands (`rotate`, `ward`, `contest`, `siege`, `evaluate`, `idle`) in the CLI match host.
 
 ### Deliverables
 

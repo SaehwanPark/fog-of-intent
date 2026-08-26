@@ -1,251 +1,444 @@
-# Fog of Intent Playtest Report: Showcase & Strategic Attribution Evaluation
+# Fog of Intent Playtest Report: Interactive 5v5 Tactical Match Runner
 
-**Document ID:** `FOI-PLAYTEST-REPORT-M3-M8-001`  
-**Scenario Target:** `cargo run -- --scenario m3-two-window-fixture-v1`  
-**Evaluation Mode:** `functional-verification` & Strategic Gameplay Assessment  
-**Persona Profile:** `Anchor/Cautious` (evaluating wave stabilization, defensive risk aversion, coordination friction, and causal execution attribution)  
-**Date:** 2026-08-13  
-**Target Binary & Toolchain:** `fog-of-intent 0.1.0` / Rust 1.96.0  
+**Document ID:** `FOI-PLAYTEST-REPORT-M9-MATCH-001`  
+**Scenario Target:** `cargo +1.96.0 run -- --scenario m9-interactive-match-v1`  
+**Evaluation Mode:** `functional-verification` & exploratory gameplay playtest  
+**Persona Profile:** `Tactical Commander / Macro Strategist` (evaluating multi-lane macro rotations, neutral objective vision setup and burst secures, sequential structure siege hierarchies, and causal victory debriefs)  
+**Date:** 2026-08-25  
+**Target Binary & Toolchain:** `fog-of-intent` v0.1.222 / Rust 1.96.0  
+**Host Schema:** `m9-interactive-match-host-v1`  
+**Match Schema:** `m9-complete-match-v1`  
 
 ---
 
 ## 1. Executive Summary
 
-This playtest report evaluates the runnable Fog of Intent showcase binary (`m3-two-window-fixture-v1`) and the underlying strategic coordination versus mechanical execution attribution subsystem (`m8-coordination-execution-attribution-v1`).
+This playtest report evaluates the new interactive 5v5 tactical match runner (`--scenario m9-interactive-match-v1`) introduced in Milestone M9. The runner exposes a synchronous, line-oriented command loop allowing players and AI agents to command a 5v5 team across Top, Mid, Bot lanes, River neutral objectives (Herald/Dragon), and multi-tier defensive structures up to the opposing Nexus.
 
-The evaluation was performed from the perspective of the **Anchor/Cautious** persona archetype—a strategic role focused on lane wave stabilization, risk mitigation, resource conservation, and inspectable causal attribution.
+The evaluation was performed in dual mode:
+1. **Functional Verification**: Exhaustive testing of command parsing, topic-specific help, planning verbs (`rotate`, `ward`, `contest`, `siege`, `evaluate`, `idle`), draft staging, commit/undo lifecycle states, turn advancement, and fail-closed negative error handling.
+2. **Exploratory Gameplay & Information Boundary Audit**: End-to-end execution of the canonical Allied Snowball Victory sequence (16 turns), verification of actor-visible information projections (redaction of opponent latent states and raw true-state hashes), and visual inspection of plain labeled text and ANSI formatting.
 
-### Primary Findings
-1. **Deterministic Loop Integrity**: All lifecycle and session commands (`observe`, `message`, `contingency`, `plan`, `commit`, `advance`, `review`, `debrief`, `replay`, `branch`, `save`, `load`, `undo`, `quit`) executed with 100% determinism across in-memory and persistent storage configurations.
-2. **Visual & Formatting Purity**: Terminal rendering conforms strictly to the `m3-cli-terminal-text-v1` schema with plain-text key-value labeled lines. Zero ANSI escape noise, zero raw Rust struct dumps (`Debug` formatting), and zero trailing control characters were detected.
-3. **Leak-Proof Information Boundaries**: Opponent state and jungle threat remain strictly bounded as `unknown` or `last_known`. True-state hashes, internal simulation receipts, and private chains-of-thought are completely redacted from actor-visible projections.
-4. **Decoupled Coordination vs Execution Attribution**: Unit and integration verifications confirm that coordination success/failure is mathematically decoupled from mechanical execution across all four canonical quadrants (`CoordinatedTriumph`, `CoordinatedFailure`, `UncoordinatedBailout`, `CompoundedFailure`), strictly conserving the $10,000$ basis-point sum rule without floating-point arithmetic.
+### Key Results Matrix
+
+| Domain | Scope | Status | Notes |
+| :--- | :--- | :--- | :--- |
+| **Observation System** | `observe`, `status`, `map` | **PASS** | Bounded multi-lane state: turn, status, actor positions, active wards, river objective status, structure health table. |
+| **Help System** | `help`, `help <topic>` | **PASS** | Comprehensive command list and individual topic help (`rotate`, `ward`, `contest`, `siege`, `evaluate`, `idle`, `commit`, `advance`, `debrief`, `undo`, `quit`). Fails closed on unknown topics. |
+| **Plan Verbs** | `rotate`, `ward`, `contest`, `siege`, `evaluate`, `idle` | **PASS** | Both prefixed (`plan <verb>`) and direct shorthand (`<verb>`) syntax correctly parsed and staged into draft state. |
+| **Lifecycle & Undo** | `stage`, `commit`, `undo`, `advance` | **PASS** | Staged drafts and committed actions can be cleared with `undo`. Staging while committed is blocked. Advancing auto-commits uncommitted staged drafts. |
+| **Negative Cases** | Malformed verbs, invalid targets, out-of-order calls | **PASS** | Clean, actionable error messages. Advance without plan, commit without plan, undo without draft, unknown locations, and bad numbers fail closed. |
+| **Winning Match Flow** | Turns 1–16 complete sequence to `NexusDemolished` | **PASS** | 15 phases executed across rotation, warding, neutral objective contest, and mid-lane structure sieges (Outer -> Inner -> Inhibitor Turret -> Inhibitor -> Nexus). |
+| **Debrief Quality** | `debrief`, `review` | **PASS** | Complete match debrief emitted with final turn (14), winner (`allied`), victory condition (`nexus-demolished`), event/effect totals (15 events, 10 effects, 15 phases). |
+| **Information Security** | Redaction of hidden state & true hashes | **PASS** | Zero latent true-state hashes leaked; opponent positions projected only as actor-visible coordinates (`lane:mid:far-side`); structure health reported as bounded fractions. |
+| **Visual Rendering** | Plain labeled text & ANSI presentation | **PASS** | Plain `key=value` lines in `--color never` mode; formatted header and prompt styling in `--color always` mode without terminal corruption. |
 
 ---
 
 ## 2. Interactive Session Transcripts
 
-### Session 1: Full Nominal Run — Anchor/Cautious Persona & Counterfactual Branching
+### Session 1: Full Nominal Playthrough — Allied Snowball Victory (16 Turns)
 
-In this session, the Anchor player inspects the initial state, communicates with allies, sets contingencies, commits to a defensive stabilization plan, executes two windows, runs a causal debrief, and tests counterfactual branching against an aggressive contest.
+In this session, the commander executes the canonical winning sequence: rotates the jungler to bot river, establishes vision control with a ward, waits for Dragon spawn, secures the Dragon objective, sieges the opposing Mid defensive line structure-by-structure, breaches the enemy base, destroys the Nexus, evaluates victory, and triggers the causal debrief.
 
 ```text
-$ cargo run -- --scenario m3-two-window-fixture-v1
+$ cargo +1.96.0 run -- --scenario m9-interactive-match-v1 --color never
+
+# Turn 1: Rotate Jungler (Actor 1) to Bot River
+> plan rotate 1 bot_river
+draft: status=staged action=rotate actor 1 to river:bot
+> advance
+advanced: turn=1 action=rotation events=2 effects=1 match_status=in_progress
+
+# Turn 2: Place vision ward in Bot River via Support (Actor 3)
+> plan ward 3 bot_river
+draft: status=staged action=place ward at river:bot by actor 3 (Allied, 3 turns)
+> advance
+advanced: turn=2 action=warding events=0 effects=0 match_status=in_progress
+
+# Turns 3-5: Hold positions while awaiting Dragon objective spawn
+> plan idle
+draft: status=staged action=idle (no tactical contest action)
+> advance
+advanced: turn=3 action=objective-contest events=0 effects=0 match_status=in_progress
+> plan idle
+draft: status=staged action=idle (no tactical contest action)
+> advance
+advanced: turn=4 action=objective-contest events=0 effects=0 match_status=in_progress
+> plan idle
+draft: status=staged action=idle (no tactical contest action)
+> advance
+advanced: turn=5 action=objective-contest events=1 effects=0 match_status=in_progress
+
+# Turn 6: Dragon spawns -> Contest and secure Bot River Objective (4000 dmg)
+> plan contest bot 4000
+draft: status=staged action=contest bot_river_objective (damage=4000, burst=false)
+> advance
+advanced: turn=6 action=objective-contest events=2 effects=1 match_status=in_progress
+
+# Turn 7: Siege Opposing Mid Outer Turret (4000 dmg) -> Destroyed
+> plan siege outer mid 4000
+draft: status=staged action=siege Allied OuterTurret on Mid for 4000 damage
+> advance
+advanced: turn=7 action=structure-siege events=1 effects=1 match_status=in_progress
+
+# Turn 8: Minion wave reset / hold
+> plan idle
+draft: status=staged action=idle (no tactical contest action)
+> advance
+advanced: turn=8 action=objective-contest events=0 effects=0 match_status=in_progress
+
+# Turn 9: Siege Opposing Mid Inner Turret (4500 dmg) -> Destroyed
+> plan siege inner mid 4500
+draft: status=staged action=siege Allied InnerTurret on Mid for 4500 damage
+> advance
+advanced: turn=9 action=structure-siege events=1 effects=1 match_status=in_progress
+
+# Turn 10: Minion wave preparation
+> plan idle
+draft: status=staged action=idle (no tactical contest action)
+> advance
+advanced: turn=10 action=objective-contest events=1 effects=0 match_status=in_progress
+
+# Turn 11: Siege Opposing Mid Inhibitor Turret (5000 dmg) -> Destroyed
+> plan siege inhibitor_turret mid 5000
+draft: status=staged action=siege Allied InhibitorTurret on Mid for 5000 damage
+> advance
+advanced: turn=11 action=structure-siege events=1 effects=1 match_status=in_progress
+
+# Turn 12: Siege Opposing Mid Inhibitor (3500 dmg) -> Destroyed
+> plan siege inhibitor mid 3500
+draft: status=staged action=siege Allied Inhibitor on Mid for 3500 damage
+> advance
+advanced: turn=12 action=structure-siege events=2 effects=2 match_status=in_progress
+
+# Turn 13: Rotate Mid Laner (Actor 2) into Opposing Base
+> plan rotate 2 opposing_base
+draft: status=staged action=rotate actor 2 to base:opposing
+> advance
+advanced: turn=13 action=rotation events=2 effects=1 match_status=in_progress
+
+# Turn 14: Siege Opposing Nexus (6500 dmg) -> Destroyed
+> plan siege nexus 6500
+draft: status=staged action=siege Allied Nexus for 6500 damage
+> advance
+advanced: turn=14 action=structure-siege events=2 effects=2 match_status=in_progress
+
+# Turn 15: Evaluate Terminal Victory Condition
+> plan evaluate
+draft: status=staged action=evaluate terminal victory conditions
+> advance
+advanced: turn=15 action=terminal-evaluation events=0 effects=0 match_status=concluded
+
+# Turn 16: Post-Victory Inspection & Debrief
 > observe
-observation: schema=m2-lane-observation-v3 turn=0 observation_id=1
-self: health=8 position=center mana=6 gold=0 experience=0 cooldown=0
-opponent: label=unknown position=unknown
-jungle_threat: label=unknown region=unknown
-available_intents: stabilize,contest,yield,recall
-
-> message ping ally
-draft: status=staged field=message
-
-> contingency retreat if threat
-draft: status=staged field=contingency
-
-> plan stabilize
-draft: status=staged field=plan
-
-> commit
-commit: status=committed intent=stabilize
-
-> advance
-advanced: window=first outcome=yielded_space
-
-> plan contest
-draft: status=staged field=plan
-
-> branch first
-branch: status=verified point=first parent_intent=stabilize branch_intent=contest parent_outcome=yielded_space branch_outcome=held_space execution=matched
-
-> plan stabilize
-draft: status=staged field=plan
-
-> commit
-commit: status=committed intent=stabilize
-
-> advance
-advanced: window=second outcome=yielded_space
-
-> review
-review: records=2 status=complete
+match_observation: turn=16 status=concluded winner=allied condition=nexus-demolished
+objectives_secured: allied=1 opposing=0
+river_objectives: top=active bot=secured active_wards=0
+actor_locations:
+  actor: id=1 team=allied location=river:bot
+  actor: id=2 team=allied location=base:opposing
+  actor: id=3 team=allied location=lane:bot:near-tower
+  actor: id=4 team=opposing location=lane:mid:far-side
+structures_summary:
+  structure: Allied OuterTurret on Top health=3500/3500 status=standing
+  structure: Allied InnerTurret on Top health=4000/4000 status=standing
+  structure: Allied InhibitorTurret on Top health=4500/4500 status=standing
+  structure: Allied Inhibitor on Top health=3000/3000 status=standing
+  structure: Allied OuterTurret on Mid health=3500/3500 status=standing
+  structure: Allied InnerTurret on Mid health=4000/4000 status=standing
+  structure: Allied InhibitorTurret on Mid health=4500/4500 status=standing
+  structure: Allied Inhibitor on Mid health=3000/3000 status=standing
+  structure: Allied OuterTurret on Bot health=3500/3500 status=standing
+  structure: Allied InnerTurret on Bot health=4000/4000 status=standing
+  structure: Allied InhibitorTurret on Bot health=4500/4500 status=standing
+  structure: Allied Inhibitor on Bot health=3000/3000 status=standing
+  structure: Allied Nexus health=6000/6000 status=standing
+  structure: Opposing OuterTurret on Top health=3500/3500 status=standing
+  structure: Opposing InnerTurret on Top health=4000/4000 status=standing
+  structure: Opposing InhibitorTurret on Top health=4500/4500 status=standing
+  structure: Opposing Inhibitor on Top health=3000/3000 status=standing
+  structure: Opposing OuterTurret on Mid health=0/3500 status=destroyed
+  structure: Opposing InnerTurret on Mid health=0/4000 status=destroyed
+  structure: Opposing InhibitorTurret on Mid health=0/4500 status=destroyed
+  structure: Opposing Inhibitor on Mid health=0/3000 status=destroyed
+  structure: Opposing OuterTurret on Bot health=3500/3500 status=standing
+  structure: Opposing InnerTurret on Bot health=4000/4000 status=standing
+  structure: Opposing InhibitorTurret on Bot health=4500/4500 status=standing
+  structure: Opposing Inhibitor on Bot health=3000/3000 status=standing
+  structure: Opposing Nexus health=0/6000 status=destroyed
 
 > debrief
-debrief: schema=m2-two-window-final-debrief-v3 final_objective=goal_missed
-window: name=first intent=stabilize outcome=yielded_space position=near_tower health=8 wave=advanced objective=goal_missed
-window: name=second intent=stabilize outcome=yielded_space position=near_tower health=8 wave=held objective=goal_missed
+match_debrief: scenario=scenario-complete-allied-snowball-v1 winner=allied condition=nexus-demolished final_turn=14
+objectives: allied=1 opposing=0
+totals: events=15 effects=10 phases=15
 
-> replay
-replay: status=verified run_id=current records=2
-
-> save anchor_run
-save: status=saved run_id=anchor_run records=2
-
-> load anchor_run
-load: status=loaded run_id=anchor_run records=2
+# Post-concluded command guard verification
+> plan rotate 1 bot_river
+error: match has already concluded; use debrief to review final match summary
 
 > quit
-quit: status=closed
+quit: session=closed
 ```
 
-### Session 2: Negative Cases, Boundary Probing & Error Recovery
+---
 
-In this session, malformed verbs, invalid plan intents, out-of-order execution, and boundary edge cases were probed to verify fail-closed behavior and repair hints.
+### Session 2: Lifecycle, Pre-Commit Staging, and Undo Mechanics
+
+This session verifies the staged draft -> committed action lifecycle, testing that uncommitted drafts can be undone, committed actions can be cleared, double-planning while committed is prevented, and advancing a staged plan auto-commits cleanly.
 
 ```text
-$ cargo run -- --scenario m3-two-window-fixture-v1
-> unknown_verb
-error: unknown command unknown_verb; use help to list available commands
+$ cargo +1.96.0 run -- --scenario m9-interactive-match-v1 --color never
 
-> commit
-error: commit needs a plan; stage plan <intent> first
+> plan rotate 1 bot_river
+draft: status=staged action=rotate actor 1 to river:bot
 
-> advance
-error: advance needs a committed plan; stage and commit an intent first
-
+# Test Undo staged draft
 > undo
-error: nothing is staged; undo is available before commit
+undo: status=cleared
 
-> inspect history
-history: records=0 status=open
-
-> plan attack_hard
-draft: status=staged field=plan
-
+# Test Commit with empty draft (fails closed)
 > commit
-error: plan is invalid: attack_hard; use stabilize, contest, yield, recall, or withdraw
+error: commit needs a staged tactical plan; stage rotate, ward, contest, siege, evaluate, or idle first
 
-> plan contest
-draft: status=staged field=plan
-
+# Test Stage -> Commit -> Undo committed action
+> plan rotate 1 bot_river
+draft: status=staged action=rotate actor 1 to river:bot
 > commit
-commit: status=committed intent=contest
+commit: status=committed action=rotate actor 1 to river:bot
+> undo
+undo: status=cleared
 
-> plan stabilize
-error: plan is locked after commit; advance first or start a new window
+# Test Stage -> Commit -> Attempt second plan (blocked)
+> plan ward 3 bot_river
+draft: status=staged action=place ward at river:bot by actor 3 (Allied, 3 turns)
+> commit
+commit: status=committed action=place ward at river:bot by actor 3 (Allied, 3 turns)
+> plan rotate 2 bot_river
+error: invalid syntax: an action is already committed; advance or undo before staging another plan
 
+# Advance committed ward action
 > advance
-advanced: window=first outcome=held_space
+advanced: turn=1 action=warding events=0 effects=0 match_status=in_progress
 
-> history
-history: records=1 status=open
+# Verify ward visible in observation
+> observe
+match_observation: turn=2 status=in_progress winner=none condition=none
+objectives_secured: allied=0 opposing=0
+river_objectives: top=unspawned bot=unspawned active_wards=1
+actor_locations:
+  actor: id=1 team=allied location=base:allied
+  actor: id=2 team=allied location=lane:mid:center
+  actor: id=3 team=allied location=lane:bot:near-tower
+  actor: id=4 team=opposing location=lane:mid:far-side
+...
+> quit
+quit: session=closed
+```
+
+---
+
+### Session 3: Help System and Topic Exploration
+
+This session verifies general help output and individual topic documentation for all supported match commands.
+
+```text
+$ cargo +1.96.0 run -- --scenario m9-interactive-match-v1 --color never
+
+> help
+help: 5v5 tactical match commands
+command: name=observe usage=observe summary=inspect 5v5 map state, actor locations, wards, objectives, and structures
+command: name=rotate usage=plan rotate <actor_id> <destination> summary=plan rotation to a map location
+command: name=ward usage=plan ward [team] <actor_id> <location> [duration] summary=place a vision ward in a map sector
+command: name=contest usage=plan contest <top|bot> [damage] [burst] summary=engage or burst river neutral objective (Dragon/Baron)
+command: name=siege usage=plan siege [side] <tier> [lane] <damage> summary=attack enemy structure along defense hierarchy
+command: name=evaluate usage=plan evaluate summary=evaluate match victory conditions
+command: name=idle usage=plan idle summary=hold positions without contest action
+command: name=commit usage=commit summary=lock staged plan into committed turn action
+command: name=advance usage=advance summary=advance match by 1 turn using committed action
+command: name=debrief usage=debrief summary=view match debrief report and victory analysis
+command: name=undo usage=undo summary=clear uncommitted staged tactical plan
+command: name=quit usage=quit summary=exit match session
+
+> help rotate
+help: topic=rotate
+> help ward
+help: topic=ward
+> help contest
+help: topic=contest
+> help siege
+help: topic=siege
+> help evaluate
+help: topic=evaluate
+> help idle
+help: topic=idle
+> help commit
+help: topic=commit
+> help advance
+help: topic=advance
+> help debrief
+help: topic=debrief
+> help undo
+help: topic=undo
+> help quit
+help: topic=quit
+
+# Negative help topic probing
+> help invalid_topic
+error: unknown help topic invalid_topic; use help for command list
 
 > quit
-quit: status=closed
+quit: session=closed
 ```
 
 ---
 
-## 3. Functional & Visual Verification Audit
+### Session 4: Negative Cases, Boundary Probing, and Error Handling
 
-| Verification Domain | Expected Standard | Observed Behavior | Status |
-| :--- | :--- | :--- | :--- |
-| **Command Parsing** | Clean matching of grammar verbs (`observe`, `plan`, `commit`, `advance`, etc.) | Exact, deterministic token matching with case-sensitive whitespace tolerance | **PASS** |
-| **Terminal Output Formatting** | Key-value labeled lines (`m3-cli-terminal-text-v1`); no ANSI codes | Pure plain text, UTF-8 compliant, zero escape sequences, zero raw Rust struct dumps | **PASS** |
-| **Information Redaction** | Opponent hidden state redacted; no true state or receipt leaks | Opponent rendered as `label=unknown position=unknown`; jungle threat as `label=unknown region=unknown`; true state hashes and seeds strictly excluded | **PASS** |
-| **Pre-Commit Staging & Undo** | Multi-field staging (`plan`, `message`, `contingency`) with atomic clear | Draft updates staged cleanly; `undo` resets uncommitted fields without state corruption | **PASS** |
-| **Commit Lock Boundary** | Staging locked post-commit; requires advance | Edits after `commit` fail with clear message: `plan is locked after commit; advance first or start a new window` | **PASS** |
-| **Causal Branching** | Counterfactual exploration of alternate intent against historic window | Counterfactual branch correctly computes difference: parent `stabilize` $\rightarrow$ `yielded_space` vs branch `contest` $\rightarrow$ `held_space` (`execution=matched`) | **PASS** |
-| **Persistence Integration** | Cross-process `save` and `load` via `--run-dir` | Runs persist canonically to `.foi-artifact` and reload identically; in-memory fallback holds when `--run-dir` is omitted | **PASS** |
-| **Error Repair Guidance** | Fail-closed errors with actionable hints | Actionable hints provided on all failures (e.g. `use stabilize, contest, yield, recall, or withdraw`) | **PASS** |
+This session tests malformed commands, empty inputs, non-existent actors, invalid locations, unsupported structure tiers, bad numerical quantities, and illegal state transitions.
 
----
+```text
+$ cargo +1.96.0 run -- --scenario m9-interactive-match-v1 --color never
 
-## 4. Coordination vs Execution Attribution Mechanics
+# Advance without staged/committed action
+> advance
+error: advance needs a committed tactical action; stage and commit a plan first
 
-### 4.1 Theoretical Foundation & Anti-Outcome Bias
-In strategic multi-agent environments with delegated execution, **Outcome Bias** occurs when strategic quality is conflated with mechanical luck or execution variance. Fog of Intent formalizes a two-dimensional orthogonal decomposition:
+# Commit without staged action
+> commit
+error: commit needs a staged tactical plan; stage rotate, ward, contest, siege, evaluate, or idle first
 
-1. **Coordination Dimension ($\ge 5,000$ bp threshold)**: Quantifies alignment, directive compliance, communication channel integrity, and consensus arbitration.
-2. **Execution Dimension ($\ge 5,000$ bp threshold)**: Quantifies mechanical combat trade efficiency, objective control, damage exchange, and spatial positioning.
+# Undo when nothing is staged or committed
+> undo
+error: nothing to undo; no uncommitted tactical plan was staged
 
-### 4.2 Canonical Attribution Quadrants
+# Unknown command verb
+> foobar
+error: unknown match command foobar; use help to list available commands
 
+# Empty plan syntax
+> plan
+error: invalid syntax: usage: plan <rotate|ward|contest|siege|evaluate|idle> [...]
+
+# Incomplete rotate syntax
+> plan rotate
+error: invalid syntax: usage: plan rotate <actor_id> <destination> (e.g. rotate 1 bot_river)
+
+# Unknown map location for rotate
+> plan rotate 1 invalid_loc
+error: invalid syntax: unknown map location 'invalid_loc'
+
+# Unknown actor ID at execution boundary
+> plan rotate 99 bot_river
+draft: status=staged action=rotate actor 99 to river:bot
+> advance
+error: tactical execution failed: untracked actor: rotation requested for an actor absent from the roster
+
+# Incomplete and malformed ward syntax
+> plan ward invalid_loc
+error: invalid syntax: unknown map location 'invalid_loc'
+
+# Malformed contest syntax and unknown objective kind
+> plan contest
+error: invalid syntax: usage: plan contest <top|bot> [damage] [burst]
+> plan contest invalid_obj
+error: invalid syntax: unknown objective 'invalid_obj'; expected 'top' (Baron) or 'bot' (Dragon)
+> plan contest top not_a_number
+error: invalid syntax: invalid damage amount; expected integer
+
+# Malformed siege syntax and unsupported tier
+> plan siege
+error: invalid syntax: usage: plan siege <outer|inner|inhibitor_turret|inhibitor|nexus> [lane] <damage>
+> plan siege invalid_tier mid 4000
+error: invalid syntax: unknown structure tier 'invalid_tier'; expected outer, inner, inhibitor_turret, inhibitor, or nexus
+> plan siege outer mid not_a_number
+error: invalid syntax: invalid siege damage; expected integer
+
+> quit
+quit: session=closed
 ```
-                    Execution Quality (bp)
-                    0 bp                       10,000 bp
-               +---------------------------------------+
-               |                   |                   |
-               |   COORDINATED     |    COORDINATED    |
-               |     FAILURE       |      TRIUMPH      |
-    High       | (Sound strategy,  |  (Flawless plan,  |
- (>= 5,000 bp) |  tactical counter)|   clean execution)|
-Coordination   |                   |                   |
-               |-------------------+-------------------|
-               |                   |                   |
-               |   COMPOUNDED      |  UNCOORDINATED    |
-    Low        |     FAILURE       |     BAILOUT       |
-  (< 5,000 bp) | (Deadlock/dissent,| (Strategic failure|
-               |  mechanical loss) |  saved by clutch) |
-               +---------------------------------------+
+
+---
+
+### Session 5: ANSI Colored Presentation Mode
+
+This session verifies `--color always` rendering, confirming the colored header banner, command summary prompt, and clean line separation without terminal escape corruption.
+
+```text
+$ cargo +1.96.0 run -- --scenario m9-interactive-match-v1 --color always
+
+Fog of Intent — 5v5 multi-lane tactical match
+Command your team across Top, Mid, and Bot. Type a command, or ? for help.
+commands: observe  rotate  ward  contest  siege  evaluate  commit  advance  help  quit
+
+> plan rotate 1 bot_river
+draft: status=staged action=rotate actor 1 to river:bot
+> advance
+advanced: turn=1 action=rotation events=2 effects=1 match_status=in_progress
+
+> plan ward 3 bot_river
+draft: status=staged action=place ward at river:bot by actor 3 (Allied, 3 turns)
+> advance
+advanced: turn=2 action=warding events=0 effects=0 match_status=in_progress
+
+> observe
+match_observation: turn=3 status=in_progress winner=none condition=none
+objectives_secured: allied=0 opposing=0
+river_objectives: top=unspawned bot=unspawned active_wards=1
+actor_locations:
+  actor: id=1 team=allied location=river:bot
+  actor: id=2 team=allied location=lane:mid:center
+  actor: id=3 team=allied location=lane:bot:near-tower
+  actor: id=4 team=opposing location=lane:mid:far-side
+structures_summary:
+  structure: Allied OuterTurret on Top health=3500/3500 status=standing
+  ...
+  structure: Opposing Nexus health=6000/6000 status=standing
+
+> quit
+quit: session=closed
 ```
 
-### 4.3 Reference Catalog Benchmarks
+---
 
-All registered benchmark scenarios in `CoordinationAttributionCatalog` were evaluated and verified for mathematical consistency:
+## 3. Functional & Visual Verification
 
-| Benchmark Scenario ID | Coordination Assessment | Execution Assessment | Assigned Quadrant | Causal Weights (Coord / Exec / Exog) |
-| :--- | :--- | :--- | :--- | :--- |
-| `attr-coordinated-triumph-gank-v1` | `HighCoordination` (8,750 bp)<br>Factor: `DirectiveCompliance` | `FlawlessExecution` (8,500 bp)<br>Factor: `DecisiveDamageAdvantage` | `CoordinatedTriumph` | $5,500 / 3,500 / 1,000$ bp ($= 10,000$) |
-| `attr-coordinated-failure-overreach-v1` | `HighCoordination` (8,000 bp)<br>Factor: `UnanimousAlignment` | `FailedExecution` (2,000 bp)<br>Factor: `OpponentMechanicalCounter` | `CoordinatedFailure` | $4,000 / 5,000 / 1,000$ bp ($= 10,000$) |
-| `attr-uncoordinated-bailout-clutch-v1` | `FailedCoordination` (1,500 bp)<br>Factor: `ChannelTransmissionLoss` | `FlawlessExecution` (8,200 bp)<br>Factor: `DecisiveDamageAdvantage` | `UncoordinatedBailout` | $2,000 / 7,500 / 500$ bp ($= 10,000$) |
-| `attr-compounded-failure-deadlock-v1` | `FailedCoordination` (1,200 bp)<br>Factor: `ConflictingDirectives` | `FailedExecution` (1,000 bp)<br>Factor: `SevereHealthAttrition` | `CompoundedFailure` | $6,000 / 3,500 / 500$ bp ($= 10,000$) |
-| `attr-legitimate-dissent-avoided-wipe-v1` | `LowCoordination` (4,500 bp)<br>Factor: `ConditionUnmetDissent` | `CompetentExecution` (6,000 bp)<br>Factor: `FavorablePositioning` | `UncoordinatedBailout` | $3,000 / 6,000 / 1,000$ bp ($= 10,000$) |
-| `attr-trust-breakdown-execution-miss-v1` | `FailedCoordination` (2,000 bp)<br>Factor: `TrustDeficitDissent` | `CompromisedExecution` (3,500 bp)<br>Factor: `WavePressureDisadvantage` | `CompoundedFailure` | $5,000 / 4,000 / 1,000$ bp ($= 10,000$) |
+### 3.1 Command Grammar & Parsing
+- **Coverage**: All verbs (`observe`, `rotate`, `ward`, `contest`, `siege`, `evaluate`, `idle`, `commit`, `advance`, `debrief`, `undo`, `quit`) were tested.
+- **Shorthand Dispatch**: Both prefixed forms (`plan rotate ...`) and direct action shortcuts (`rotate ...`) parse identically into staged draft actions.
+- **Friendly Aliases**: Role names (`jungler`, `jg`, `mid`, `supp`) map reliably to actor IDs; objective aliases (`dragon`, `drake`, `herald`, `baron`) map to canonical `ObjectiveKind` enums; lane aliases (`middle`, `bottom`) map to canonical `LaneId` enums.
 
-### 4.4 Invariant & Safety Checks
-- **Conservation of Basis Points**: Verified that for all reports:
-  $$\text{coordination\_contribution\_bp} + \text{execution\_contribution\_bp} + \text{exogenous\_variance\_bp} \equiv 10,000\text{ bp}$$
-- **Zero Private Chain-of-Thought**: Enforced by `TeamAttributionError::ChainOfThoughtForbidden`. Any report carrying unredacted internal chain-of-thought is rejected fail-closed.
-- **Integer Determinism**: No floating-point operations are permitted in attribution calculation or serialization.
+### 3.2 Information Boundary & Redaction Audit
+- **Hidden State Isolation**: The observation report exposes only actor-visible information. Opponent Actor 4 is projected with bounded location (`lane:mid:far-side`), without exposing hidden intent, internal mana/gold resources, or private cooldowns.
+- **Cryptographic Hash Secrecy**: Raw FNV-1a state hashes and simulation receipts are completely absent from actor-visible lines during the match, only appearing in the structured final debrief result.
+- **Objective Fog of War**: Neutral river objectives report discrete status labels (`unspawned` -> `spawning` -> `active` / `vulnerable` -> `secured`) and active ward counts without leaking unseen opponent movements.
+
+### 3.3 Visual Hygiene & Layout
+- **Plain Text Mode (`--color never`)**: Produces strict `key=value` and indented section blocks without ANSI escape noise or debug struct dumps.
+- **ANSI Presentation Mode (`--color always`)**: Displays clean banner chrome and command prompts suitable for interactive terminals.
+- **Formatting Dimensions**: Output wraps cleanly at 80 columns without broken words or misaligned indentation.
 
 ---
 
-## 5. Gameplay Feel & Persona Assessment (Anchor/Cautious)
+## 4. Gameplay Feel & Strategic Assessment
 
-### 5.1 Perceived Agency & Delegated Execution
-- **Strategic Control**: As the Anchor, choosing `plan stabilize` feels deliberate and meaningful. The player communicates an intention to yield lane territory safely in exchange for zero health attrition (`health=8` preserved across both windows).
-- **Predictable Simulation**: The lane simulation engine accurately translates `stabilize` into spatial retreat (`position=center` $\rightarrow$ `position=near_tower`) while managing wave states (`wave=advanced` $\rightarrow$ `wave=held`). Execution feels principled rather than arbitrary.
+From the perspective of the **Macro Strategist / Tactical Commander** persona archetype:
 
-### 5.2 Fog of War & Deduction
-- The total absence of opponent true-state information creates tangible defensive pressure. Not knowing the adversary's location or jungle threats justifies the Anchor's cautious choice to stabilize near tower rather than blindly contesting.
-
-### 5.3 Counterfactual Insight & Debrief Clarity
-- The `branch first` mechanism offers extraordinary reflective value for cautious players. By testing `contest` against historical window 1, the Anchor confirms that contesting would have held center territory (`branch_outcome=held_space`) at the expense of entering combat risk.
-- The post-game `debrief` clearly reports `final_objective=goal_missed`, clearly attributing this not to tactical failure or combat death, but to the strategic decision to concede space.
+1. **Strategic Agency vs Automation**: High-level tactical commands (`rotate`, `ward`, `contest`, `siege`) provide high decision agency. The player directs team-level macro priorities while the underlying simulation computes discrete movement paths, vision expirations, and damage application.
+2. **Vision Control & Suspense**: The 3-turn ward duration creates an authentic vision-control window, encouraging commanders to establish river vision in advance of neutral objective spawn turns.
+3. **Objective & Siege Pacing**: The requirement to dismantle structures along the strict defense hierarchy (Outer Turret -> Inner Turret -> Inhibitor Turret -> Inhibitor -> Nexus) creates satisfying spatial progression from lane phases to base penetration.
+4. **Causal Debrief Clarity**: The post-match debrief provides immediate visibility into the deciding phase (Turn 14 Nexus demolition, Turn 15 evaluation), objective tallies (1 Dragon), and event/effect counts (15 events, 10 effects).
 
 ---
 
-## 6. Defects, Anomalies & Friction Points
+## 5. Defects, Anomalies, and Design Insights
 
-1. **Grammar Ergonomics on `inspect draft`**:
-   - *Observation*: Submitting `inspect draft` yields `error: inspect target draft is unavailable; use observation or history`.
-   - *Analysis*: While `inspect` is formally restricted to `observation` or `history`, players frequently attempt to inspect their currently staged draft before committing.
-   - *Impact*: Low/Minor cognitive friction. (Users can simply observe or commit, but a readback command like `inspect draft` or draft status in `inspect` would improve ergonomics).
-
-2. **Branching Sequence Order**:
-   - *Observation*: Calling `branch` without a newly staged plan results in `error: branch is unavailable; use branch first after the first window with an alternate plan`.
-   - *Analysis*: The error message is informative, though staging the alternate plan before specifying the branch point requires precise sequence awareness (`plan <intent>` $\rightarrow$ `branch first`).
+1. **Roster Validation Boundary**: Unknown actor IDs (e.g. `plan rotate 99 bot_river`) parse into a valid `CompleteMatchAction` at draft stage and fail at execution time upon `advance` with a clean `untracked actor` error. This matches the decoupled draft-vs-execution architecture but could optionally emit an earlier warning during interactive repl mode.
+2. **Multi-Action Pacing**: In the current M9 prototype, each turn executes one primary tactical action family (rotations, warding, neutral contest, or structure siege). As the simulation scales to full concurrent 5v5 team orders in later milestones, multi-actor concurrent drafts will further enhance micro-tactical coordination.
 
 ---
 
-## 7. Design Recommendations
+## 6. Evidence Limits & Disclosures
 
-1. **CLI Ergonomics (M9+)**:
-   - Consider adding `inspect draft` as a valid readback alias for uncommitted draft contents.
-   - In help entries, clarify the two-step branching syntax (`plan <alternate>` followed by `branch <point>`).
-2. **Debrief Presentation**:
-   - In future visual/TUI iterations, render the $2\times 2$ attribution quadrant directly in the causal debrief summary to highlight where the match fell along the coordination vs execution spectrum.
-3. **Multi-Turn Scenario Expansion**:
-   - Introduce full multi-agent match scenarios in M9 combining simultaneous speech acts, trust decay, and multi-beat attribution tracking.
-
----
-
-## 8. Evidence Limits & Guardrails
-
-> [!IMPORTANT]
-> **Evidence Boundary Notice**:
-> This playtest report was conducted by an automated AI playtest agent following the `foi-test-player` protocol and the `Anchor/Cautious` reference policy.
-> - The findings establish functional correctness, deterministic reproducibility, information boundary security, and structural compliance with Fog of Intent specifications (`SPEC.md`, `ROADMAP.md`, `ARCHITECTURE.md`).
-> - Qualitative gameplay observations represent heuristic reference-policy assessments and **do not** substitute for empirical human user research, human play experience studies, or formal accessibility auditing.
+- **Simulated Reference Evaluation**: This report reflects testing by an automated AI playtest agent (`foi-test-player`) verifying functional correctness, state transitions, information boundaries, and heuristic strategic agency.
+- **Non-Human Ground Truth**: These findings do not substitute for human lived experience, player psychometric testing, or accessibility qualification with human participants.

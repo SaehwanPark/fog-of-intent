@@ -4,9 +4,18 @@ All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 not increment the package version.
 
-## Unreleased
+## [0.1.223] - 2026-08-25
 
 ### Added
+
+- Interactive 5v5 multi-lane tactical match CLI runner (`m9-interactive-match-v1`):
+  - `CliMatchHost`, `CliMatchOutput`, `CliMatchError`, `MatchObservationReport`, and `MatchStructureSummary` in `src/host/match_host.rs` managing synchronous, interactive 5v5 match execution.
+  - Multi-lane tactical intent verbs: `rotate <actor_id> <destination>`, `ward [team] <actor_id> <location> [duration]`, `contest <top|bot> [damage] [burst]`, `siege [side] <tier> [lane] <damage>`, `evaluate`, and `idle`, with prefixed (`plan <verb>`) and shorthand direct forms.
+  - Turn advancement, multi-field draft staging, undoing uncommitted plans, commit locking, and causal match debrief generation (`match_debrief: scenario=... winner=... condition=... final_turn=...`).
+  - Terminal presentation renderers (`render_match_output`, `render_match_error`, `render_match_banner`, `render_presented_match_output_with_dimensions`, `render_presented_match_error_with_dimensions`) in `src/terminal.rs` and `src/presentation.rs`.
+  - Added `m9-interactive-match-v1` to the canonical `CLI_SCENARIO_CATALOG` in `src/command_loop.rs` under `ScenarioExecutionMode::InteractiveMatch` (milestone M9).
+  - Wired interactive match command loop dispatching and scenario selection in `src/command_loop.rs`, `src/repl.rs`, and `src/main.rs`.
+  - Added unit and binary integration tests across `src/host/match_host.rs`, `src/command_loop.rs`, and `tests/binary_run_dir.rs`.
 
 - Interactive branch exploration directly within the command loop:
   - Extended `CliScenarioHost::branch` in `src/host/scenario_host.rs` to support multi-window counterfactual exploration across any committed window index (`0` / `1`) using canonical labels (`first`, `second`), aliases (`1`, `2`, `rec-0`, `rec-1`, `w1`, `w2`), or defaulting to the latest window.
@@ -16,11 +25,11 @@ not increment the package version.
   - 3 new unit and binary integration tests across `src/host/tests.rs`, `src/repl.rs`, and `tests/binary_run_dir.rs`.
 
 - Dynamic interactive scenario selection in `src/command_loop.rs`, `src/repl.rs`, `src/presentation.rs`, and `src/main.rs`:
-  - `parse_scenario_selection()` parsing catalog numeric indices (`1`..=`7`), exact scenario IDs, and short aliases (`m3`, `happy`, `risk`, `conservative`, `m9`, `gui`, `alpha`) case-insensitively with whitespace trimming.
+  - `parse_scenario_selection()` parsing catalog numeric indices (`1`..=`8`), exact scenario IDs, and short aliases (`m3`, `happy`, `risk`, `conservative`, `match`, `5v5`, `m9`, `gui`, `alpha`) case-insensitively with whitespace trimming.
   - `format_scenario_menu()` rendering human-readable interactive scenario selection menus with display names, milestones, modes, and descriptions.
   - `select_scenario_interactively()` and `select_scenario_with_editor()` (with reedline `ScenarioPrompt`) providing interactive scenario selection in both TTY REPL and stream-oriented modes with graceful retry and clean cancellation (`q`/`quit`).
   - `--select` / `-s` process-level CLI flag and interactive TTY fallback when launching without explicit `--scenario` flags, with fail-closed argument conflict detection (`ConflictingScenarioSelection`, `DuplicateSelect`).
-- 8 new unit and binary integration tests across `src/command_loop.rs` and `tests/binary_run_dir.rs` covering interactive scenario selection, alias resolution, index parsing, cancellation, input retry, and scenario dispatching.
+  - 8 new unit and binary integration tests across `src/command_loop.rs` and `tests/binary_run_dir.rs` covering interactive scenario selection, alias resolution, index parsing, cancellation, input retry, and scenario dispatching.
 
 ## [0.1.222] - 2026-08-25
 

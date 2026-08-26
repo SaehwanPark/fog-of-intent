@@ -1,45 +1,23 @@
-# Request Summary: M10 Human Usability and Accessibility Study Protocol & Evaluation Framework
+# Substantial Task Summary: M9 Interactive 5v5 Multi-Lane Tactical Match CLI Runner
 
 ## Requested Outcome
-
-Establish the first bounded vertical slice of Phase 10 (M10 Human Usability and Accessibility Alpha):
-- Define the formal study protocol contract (`m10-study-protocol-v1`) with research questions, participant criteria across 4 cohorts (strategy gamer, MOBA player, access needs, novice), privacy/consent governance (de-identified records, no PII, zero latent state leakage), and 10 declared evaluation dimensions.
-- Define participant session record schema and finding taxonomy (`m10-finding-taxonomy-v1`) with category separation (`Usability`, `Accessibility`, `GameplayBalance`, `BehavioralModel`), severity tiers, and issue-linked disposition tracking.
-- Implement pure deterministic study cohort evaluation (`m10-study-evaluation-v1`) computing overall and per-cohort completion rates (bp), explanation quality (bp), debrief comprehension (bp), finding breakdown, accessibility claims gate qualification, and structured Markdown report generation with zero private chain-of-thought and no floating-point math.
-- Register canonical benchmark study scenarios in `m10-study-catalog-v1`.
+Implement an interactive 5v5 multi-lane tactical match CLI session runner and host, expanding beyond the print-and-exit transcript replay into dynamic multi-turn tactical commands (`rotate`, `ward`, `contest`, `siege`, `evaluate`, `idle`, `advance`, `observe`, `debrief`).
 
 ## Roadmap Milestone
+- Milestone: M9 — Bounded Multi-Lane Match Prototype / M3 CLI Reference Experience
+- Developer Action Items:
+  - Implement interactive 5v5 multi-lane CLI session runner (expanding beyond print-and-exit transcript replay).
+  - Support dynamic multi-turn tactical commands (`rotate`, `ward`, `contest`, `siege`) in the CLI.
 
-- Milestone: Phase 10 — M10 Human Usability and Accessibility Alpha
-- Status: Initial bounded slice
-
-## Current Evidence
-
-- M9 complete-match composition and replay-verified CLI transcript delivered in PR #210 and PR #211.
-- M10 is the active successor milestone focused on human usability, accessibility, and honest evidence boundaries.
-
-## In Scope
-
-- `src/study/mod.rs`
-- `src/study/protocol.rs`
-- `src/study/session.rs`
-- `src/study/finding.rs`
-- `src/study/evaluation.rs`
-- `src/study/catalog.rs`
-- `src/study/tests.rs`
-- Registration in `src/lib.rs` and `scripts/check_repository.py`
-- Version bump to `0.1.204` in `Cargo.toml`
-- Updates to `README.md`, `ROADMAP.md`, `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md`
+## Scope
+1. `CliMatchHost` in `src/host/match_host.rs`: authoritative synchronous host managing complete 5v5 match state, action staging, commitment, turn advancement, event/effect tracking, and victory debrief.
+2. Tactical match command grammar (`observe`, `plan rotate`, `plan ward`, `plan contest`, `plan siege`, `plan evaluate`, `plan idle`, `commit`, `advance`, `debrief`, `undo`, `help`, `quit`).
+3. Pure actor-safe terminal and presented text formatters in `src/terminal.rs` and `src/presentation.rs`.
+4. Scenario catalog registration for `m9-interactive-match-v1` (`ScenarioExecutionMode::InteractiveMatch`).
+5. Process CLI parsing and interactive scenario selection integration in `src/main.rs`, `src/command_loop.rs`, and `src/repl.rs`.
+6. Unit, integration, and AI playtest verification (`foi-test-player`).
 
 ## Non-Goals
-
-- No human participant recruitment or empirical data collection in this PR (this establishes the pure evaluation and protocol framework).
-- No production telemetry or external web services.
-- No GUI client implementation (M11).
-
-## Verification
-
-- `cargo +1.96.0 fmt --all -- --check`
-- `cargo +1.96.0 clippy --locked --all-targets --all-features -- -D warnings`
-- `cargo +1.96.0 test --locked`
-- `python3 scripts/check_repository.py`
+- No floating-point math, async runtimes, or network I/O in the simulation core.
+- No latent opponent hidden state leakage in actor-visible observations.
+- No GUI changes required in this slice.

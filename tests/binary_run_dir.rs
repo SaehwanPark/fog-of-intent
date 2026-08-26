@@ -178,7 +178,7 @@ fn binary_help_is_successful_and_bounded() {
   assert!(output.status.success());
   assert_eq!(
     String::from_utf8(output.stdout).expect("help UTF-8 output"),
-    "usage: fog-of-intent [--scenario <id>] [--select] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n"
+    "usage: fog-of-intent [--scenario <id>] [--select] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n"
   );
   assert!(output.stderr.is_empty());
 }
@@ -566,4 +566,95 @@ fn binary_runs_accessible_two_window_transcript_and_passes_audit() {
     report
   );
   assert_eq!(report.compliance_rate_bp, 10_000);
+}
+
+#[test]
+fn binary_lists_m9_interactive_match_in_scenario_catalog() {
+  let binary = binary_path();
+  let output = Command::new(&binary)
+    .arg("--list-scenarios")
+    .output()
+    .expect("list scenarios");
+  assert!(output.status.success(), "stderr: {:?}", output.stderr);
+  let stdout = String::from_utf8(output.stdout).expect("UTF-8");
+  assert!(
+    stdout.contains("m9-interactive-match-v1"),
+    "catalog missing m9-interactive-match-v1: {stdout}"
+  );
+  assert!(
+    stdout.contains("Interactive 5v5 Tactical Match Playthrough"),
+    "catalog missing scenario display name: {stdout}"
+  );
+}
+
+#[test]
+fn binary_runs_interactive_m9_match_and_reaches_victory() {
+  let binary = binary_path();
+  let commands = [
+    "observe",
+    "rotate 1 bot_river",
+    "advance",
+    "ward allied 3 bot_river 3",
+    "advance",
+    "idle",
+    "advance",
+    "idle",
+    "advance",
+    "idle",
+    "advance",
+    "contest bot 4000",
+    "advance",
+    "siege outer mid 4000",
+    "advance",
+    "idle",
+    "advance",
+    "siege inner mid 4500",
+    "advance",
+    "idle",
+    "advance",
+    "siege inhibitor_turret mid 5000",
+    "advance",
+    "siege inhibitor mid 3500",
+    "advance",
+    "rotate 2 opposing_base",
+    "advance",
+    "siege nexus 6500",
+    "advance",
+    "evaluate",
+    "advance",
+    "debrief",
+    "quit",
+  ]
+  .join("\n");
+  let input = format!("{commands}\n");
+
+  let mut child = Command::new(&binary)
+    .args(["--scenario", "m9-interactive-match-v1"])
+    .stdin(Stdio::piped())
+    .stdout(Stdio::piped())
+    .stderr(Stdio::piped())
+    .spawn()
+    .expect("spawn m9 interactive match binary");
+
+  child
+    .stdin
+    .as_mut()
+    .expect("stdin")
+    .write_all(input.as_bytes())
+    .expect("write stdin");
+
+  let output = child.wait_with_output().expect("wait for match binary");
+  assert!(output.status.success(), "stderr: {:?}", output.stderr);
+  let stdout = String::from_utf8(output.stdout).expect("UTF-8 transcript");
+
+  assert!(stdout.contains("match_observation: turn=1 status=in_progress"));
+  assert!(stdout.contains("advanced: turn=1 action=rotation"));
+  assert!(stdout.contains("advanced: turn=2 action=warding"));
+  assert!(stdout.contains("advanced: turn=6 action=objective-contest"));
+  assert!(stdout.contains("advanced: turn=7 action=structure-siege"));
+  assert!(stdout.contains(
+    "advanced: turn=15 action=terminal-evaluation events=0 effects=0 match_status=concluded"
+  ));
+  assert!(stdout.contains("match_debrief: scenario=scenario-complete-allied-snowball-v1 winner=allied condition=nexus-demolished final_turn=14"));
+  assert!(stdout.contains("quit: session=closed"));
 }

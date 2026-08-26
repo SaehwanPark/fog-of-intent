@@ -493,6 +493,275 @@ pub fn render_error_with_dimensions(
   wrapped
 }
 
+/// Render an actor-valid match host result as stable, labeled plain text.
+pub fn render_match_output(output: &crate::host::CliMatchOutput) -> String {
+  let mut text = String::new();
+  match output {
+    crate::host::CliMatchOutput::Help { topic: None } => {
+      line(&mut text, "help: 5v5 tactical match commands");
+      line(
+        &mut text,
+        "command: name=observe usage=observe summary=inspect 5v5 map state, actor locations, wards, objectives, and structures",
+      );
+      line(
+        &mut text,
+        "command: name=rotate usage=plan rotate <actor_id> <destination> summary=plan rotation to a map location",
+      );
+      line(
+        &mut text,
+        "command: name=ward usage=plan ward [team] <actor_id> <location> [duration] summary=place a vision ward in a map sector",
+      );
+      line(
+        &mut text,
+        "command: name=contest usage=plan contest <top|bot> [damage] [burst] summary=engage or burst river neutral objective (Dragon/Baron)",
+      );
+      line(
+        &mut text,
+        "command: name=siege usage=plan siege [side] <tier> [lane] <damage> summary=attack enemy structure along defense hierarchy",
+      );
+      line(
+        &mut text,
+        "command: name=evaluate usage=plan evaluate summary=evaluate match victory conditions",
+      );
+      line(
+        &mut text,
+        "command: name=idle usage=plan idle summary=hold positions without contest action",
+      );
+      line(
+        &mut text,
+        "command: name=commit usage=commit summary=lock staged plan into committed turn action",
+      );
+      line(
+        &mut text,
+        "command: name=advance usage=advance summary=advance match by 1 turn using committed action",
+      );
+      line(
+        &mut text,
+        "command: name=debrief usage=debrief summary=view match debrief report and victory analysis",
+      );
+      line(
+        &mut text,
+        "command: name=undo usage=undo summary=clear uncommitted staged tactical plan",
+      );
+      line(
+        &mut text,
+        "command: name=quit usage=quit summary=exit match session",
+      );
+    }
+    crate::host::CliMatchOutput::Help { topic: Some(name) } => {
+      line(&mut text, format_args!("help: topic={name}"));
+    }
+    crate::host::CliMatchOutput::Observation(obs) => {
+      line(
+        &mut text,
+        format_args!(
+          "match_observation: turn={} status={} winner={} condition={}",
+          obs.turn,
+          if obs.concluded {
+            "concluded"
+          } else {
+            "in_progress"
+          },
+          obs.winner.map_or("none", |w| match w {
+            crate::map::topology::TeamSide::Allied => "allied",
+            crate::map::topology::TeamSide::Opposing => "opposing",
+          }),
+          obs.condition.map_or("none", |c| c.as_str())
+        ),
+      );
+      line(
+        &mut text,
+        format_args!(
+          "objectives_secured: allied={} opposing={}",
+          obs.allied_objectives_secured, obs.opposing_objectives_secured
+        ),
+      );
+      line(
+        &mut text,
+        format_args!(
+          "river_objectives: top={} bot={} active_wards={}",
+          obs.top_objective_status, obs.bot_objective_status, obs.active_ward_count
+        ),
+      );
+      line(&mut text, "actor_locations:");
+      for (actor, is_allied, loc) in &obs.actor_locations {
+        line(
+          &mut text,
+          format_args!(
+            "  actor: id={} team={} location={}",
+            actor.value(),
+            if *is_allied { "allied" } else { "opposing" },
+            loc.as_str()
+          ),
+        );
+      }
+      line(&mut text, "structures_summary:");
+      for s in &obs.structures_summary {
+        if s.tier == crate::map::structures::StructureTier::Nexus {
+          line(
+            &mut text,
+            format_args!(
+              "  structure: {:?} {:?} health={}/{} status={}",
+              s.side,
+              s.tier,
+              s.current_health,
+              s.max_health,
+              if s.standing { "standing" } else { "destroyed" }
+            ),
+          );
+        } else if let Some(lane) = s.lane {
+          line(
+            &mut text,
+            format_args!(
+              "  structure: {:?} {:?} on {:?} health={}/{} status={}",
+              s.side,
+              s.tier,
+              lane,
+              s.current_health,
+              s.max_health,
+              if s.standing { "standing" } else { "destroyed" }
+            ),
+          );
+        }
+      }
+    }
+    crate::host::CliMatchOutput::DraftStaged { description } => {
+      line(
+        &mut text,
+        format_args!("draft: status=staged action={description}"),
+      );
+    }
+    crate::host::CliMatchOutput::Committed { description } => {
+      line(
+        &mut text,
+        format_args!("commit: status=committed action={description}"),
+      );
+    }
+    crate::host::CliMatchOutput::Advanced {
+      turn,
+      kind,
+      events,
+      effects,
+      concluded,
+    } => {
+      line(
+        &mut text,
+        format_args!(
+          "advanced: turn={turn} action={} events={events} effects={effects} match_status={}",
+          kind.as_str(),
+          if *concluded {
+            "concluded"
+          } else {
+            "in_progress"
+          }
+        ),
+      );
+    }
+    crate::host::CliMatchOutput::Debrief(result) => {
+      line(
+        &mut text,
+        format_args!(
+          "match_debrief: scenario={} winner={} condition={} final_turn={}",
+          result.scenario_id,
+          match result.winner {
+            crate::map::topology::TeamSide::Allied => "allied",
+            crate::map::topology::TeamSide::Opposing => "opposing",
+          },
+          result.condition.as_str(),
+          result.final_turn
+        ),
+      );
+      line(
+        &mut text,
+        format_args!(
+          "objectives: allied={} opposing={}",
+          result.allied_objectives_secured, result.opposing_objectives_secured
+        ),
+      );
+      line(
+        &mut text,
+        format_args!(
+          "totals: events={} effects={} phases={}",
+          result.total_events,
+          result.total_effects,
+          result.phases.len()
+        ),
+      );
+    }
+    crate::host::CliMatchOutput::Undone => {
+      line(&mut text, "undo: status=cleared");
+    }
+    crate::host::CliMatchOutput::Quit => {
+      line(&mut text, "quit: session=closed");
+    }
+  }
+  text
+}
+
+/// Render an actor-valid match host result as stable plain text wrapped to given terminal dimensions.
+pub fn render_match_output_with_dimensions(
+  output: &crate::host::CliMatchOutput,
+  dimensions: TerminalDimensions,
+) -> String {
+  let raw = render_match_output(output);
+  wrap_text_with_dimensions(&raw, dimensions)
+}
+
+/// Render a match host error as actionable plain text.
+pub fn render_match_error(error: &crate::host::CliMatchError) -> String {
+  let message = match error {
+    crate::host::CliMatchError::Closed => "match session is closed; start a new match".to_owned(),
+    crate::host::CliMatchError::EmptyInput => {
+      "enter a command; use help to list available commands".to_owned()
+    }
+    crate::host::CliMatchError::UnknownCommand { verb } => {
+      format!(
+        "unknown match command {}; use help to list available commands",
+        safe_text(verb)
+      )
+    }
+    crate::host::CliMatchError::InvalidSyntax { message } => {
+      format!("invalid syntax: {message}")
+    }
+    crate::host::CliMatchError::MissingAction => {
+      "commit needs a staged tactical plan; stage rotate, ward, contest, siege, evaluate, or idle first".to_owned()
+    }
+    crate::host::CliMatchError::MissingCommittedAction => {
+      "advance needs a committed tactical action; stage and commit a plan first".to_owned()
+    }
+    crate::host::CliMatchError::NothingToUndo => {
+      "nothing to undo; no uncommitted tactical plan was staged".to_owned()
+    }
+    crate::host::CliMatchError::MatchAlreadyConcluded => {
+      "match has already concluded; use debrief to review final match summary".to_owned()
+    }
+    crate::host::CliMatchError::MatchDidNotTerminate => {
+      "match did not reach terminal condition".to_owned()
+    }
+    crate::host::CliMatchError::ExecutionFailed(err) => {
+      format!("tactical execution failed: {err}")
+    }
+    crate::host::CliMatchError::DebriefUnavailable => {
+      "match debrief is unavailable".to_owned()
+    }
+    crate::host::CliMatchError::UnknownHelpTopic { topic } => {
+      format!("unknown help topic {}; use help for command list", safe_text(topic))
+    }
+  };
+  format!("error: {message}")
+}
+
+/// Render a match host error as actionable plain text wrapped to given terminal dimensions.
+pub fn render_match_error_with_dimensions(
+  error: &crate::host::CliMatchError,
+  dimensions: TerminalDimensions,
+) -> String {
+  let raw = render_match_error(error);
+  let mut wrapped = wrap_labeled_line(&raw, dimensions.wrap_width()).join("\n");
+  wrapped.push('\n');
+  wrapped
+}
+
 fn render_parse_error(error: &CliParseError<'_>) -> String {
   match error {
     CliParseError::EmptyInput => "enter a command; use help to list available commands".to_owned(),
