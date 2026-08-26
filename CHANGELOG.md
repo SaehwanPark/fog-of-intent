@@ -6,7 +6,11 @@ not increment the package version.
 
 ## [0.1.231] - 2026-08-26
 
-### Added
+- Dedicated Standalone Model Context Protocol (MCP) Binary Target (`fog-of-intent-mcp`):
+  - Implemented standalone executable `src/bin/fog-of-intent-mcp.rs` and registered `[[bin]]` target in `Cargo.toml` as defined in ADR-0004 for model-agnostic tooling.
+  - Added CLI flag dispatch for `--tools` (lists all 24 MCP tools), `--resources` (lists all 7 resources), `--prompts` (lists all 3 prompts), `--version`/`-V`, and `--help`/`-h`.
+  - Added default stdio JSON-RPC 2.0 serving directly over standard input and output with zero runtime overhead.
+  - Added unit and binary integration tests in `src/bin/fog-of-intent-mcp.rs` and `tests/binary_run_dir.rs`.
 
 - Milestone M11 GUI Browser Interaction Flow & Recovery Evaluation Scenario Runner & MCP Tooling (`m11-gui-browser-flow-v1`):
   - Added `m11-gui-browser-flow-v1` to the canonical `CLI_SCENARIO_CATALOG` in `src/command_loop.rs` under `ScenarioExecutionMode::BrowserFlowBattery` (Milestone M11).

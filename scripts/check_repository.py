@@ -195,6 +195,7 @@ CORE_EDGE_RUST_FILES = frozenset(
 )
 CORE_EDGE_RUST_DIRECTORIES = frozenset(
   {
+    "src/bin",
     "src/cli",
     "src/host",
     "src/mcp",
