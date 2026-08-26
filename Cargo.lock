@@ -169,9 +169,10 @@ checksum = "d45db016d36b838f563236e9193d0ee6ce38f3f68b6c94e914b4929c96bbb890"
 
 [[package]]
 name = "fog-of-intent"
-version = "0.1.237"
+version = "0.1.238"
 dependencies = [
  "foi-agent",
+ "foi-gui",
  "foi-kernel",
  "foi-lane",
  "foi-map",
@@ -182,33 +183,42 @@ dependencies = [
 
 [[package]]
 name = "foi-agent"
-version = "0.1.237"
+version = "0.1.238"
 dependencies = [
  "foi-kernel",
  "foi-lane",
 ]
 
 [[package]]
+name = "foi-gui"
+version = "0.1.238"
+dependencies = [
+ "foi-kernel",
+ "foi-lane",
+ "foi-protocol",
+]
+
+[[package]]
 name = "foi-kernel"
-version = "0.1.237"
+version = "0.1.238"
 
 [[package]]
 name = "foi-lane"
-version = "0.1.237"
+version = "0.1.238"
 dependencies = [
  "foi-kernel",
 ]
 
 [[package]]
 name = "foi-map"
-version = "0.1.237"
+version = "0.1.238"
 dependencies = [
  "foi-kernel",
 ]
 
 [[package]]
 name = "foi-protocol"
-version = "0.1.237"
+version = "0.1.238"
 dependencies = [
  "foi-kernel",
  "foi-lane",
@@ -216,7 +226,7 @@ dependencies = [
 
 [[package]]
 name = "foi-study"
-version = "0.1.237"
+version = "0.1.238"
 
 [[package]]
 name = "futures-core"
