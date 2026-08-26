@@ -4,6 +4,16 @@ All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 not increment the package version.
 
+## [0.1.236] - 2026-08-26
+
+- ADR-0004 Cargo Workspace Partitioning & `crates/foi-protocol` Member Crate Extraction (Phase 4):
+  - Extracted pure model-agnostic actor-visible observation, action, metadata, lifecycle, result, commit, draft, error, history, intent, message, observation, replay, transcript DTOs, and MCP wire codecs into dedicated `crates/foi-protocol` member crate.
+  - Declared `foi-protocol` as a workspace member in root `Cargo.toml` with path dependencies `foi-kernel = { path = "../foi-kernel" }` and `foi-lane = { path = "../foi-lane" }`.
+  - Added `pub use foi_protocol::*;` re-export facade in root `src/protocol/mod.rs` for 100% backward compatibility with existing CLI, host, and MCP adapters.
+  - Updated `scripts/check_repository.py` boundary file tracking for `crates/foi-protocol/src/*.rs`.
+  - Bumped workspace package versions to `0.1.236`.
+  - Verified all 775+ workspace unit, binary, and doc tests pass with zero warnings.
+
 ## [0.1.235] - 2026-08-26
 
 - ADR-0004 Cargo Workspace Partitioning & `crates/foi-agent` Member Crate Extraction (Phase 3):

@@ -34,7 +34,7 @@ impl ActorDebriefObjective {
     }
   }
 
-  pub(crate) const fn from_lane_disposition(disposition: ObjectiveDisposition) -> Self {
+  pub const fn from_lane_disposition(disposition: ObjectiveDisposition) -> Self {
     match disposition {
       ObjectiveDisposition::GoalAchieved => Self::GoalAchieved,
       ObjectiveDisposition::GoalPartiallyAchieved => Self::GoalPartiallyAchieved,
@@ -191,7 +191,7 @@ impl ActorDebriefDto {
     self.attribution_limit
   }
 
-  pub(crate) fn from_report(report: ScenarioDebriefReport) -> Self {
+  pub fn from_report(report: ScenarioDebriefReport) -> Self {
     let windows = report.windows();
     Self::new(
       ActorDebriefWindow::from_report_window(windows[0]),

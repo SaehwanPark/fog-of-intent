@@ -45,7 +45,7 @@ impl ActorCommitDto {
     self.intent
   }
 
-  pub(crate) fn to_lane_intent(self) -> LaneIntent {
+  pub fn to_lane_intent(self) -> LaneIntent {
     self.intent.to_lane_intent()
   }
 

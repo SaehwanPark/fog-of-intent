@@ -21,7 +21,7 @@ pub struct ActorObservationDto {
 
 impl ActorObservationDto {
   /// Project an actor-visible lane observation without exposing domain state.
-  pub(crate) fn from_observation(observation: LanerObservation) -> Self {
+  pub fn from_observation(observation: LanerObservation) -> Self {
     let visible_threat_response = observation
       .available_threat_response()
       .map(ActorProtocolIntent::from_lane_intent);

@@ -47,7 +47,7 @@ impl ActorActionDto {
   }
 
   /// Convert to the host-bound request; legality remains a host concern.
-  pub(crate) fn to_lane_request(self) -> LaneIntentRequest {
+  pub fn to_lane_request(self) -> LaneIntentRequest {
     LaneIntentRequest::new(
       ActorId::new(self.observer),
       ObservationId::new(self.observation_id),
@@ -154,7 +154,7 @@ impl ActorActionResultOutcome {
     }
   }
 
-  pub(crate) const fn from_lane_outcome(outcome: LaneOutcome) -> Self {
+  pub const fn from_lane_outcome(outcome: LaneOutcome) -> Self {
     match outcome {
       LaneOutcome::HeldSpace => Self::HeldSpace,
       LaneOutcome::YieldedSpace => Self::YieldedSpace,
