@@ -8,6 +8,7 @@ mod accessibility;
 mod behavioral_experiments;
 mod calibration_proof;
 mod draft;
+mod gui_browser_flow;
 mod gui_presentation;
 mod information;
 mod match_replay;
@@ -37,6 +38,9 @@ pub use calibration_proof::{
 };
 
 pub use draft::{CLI_DRAFT_SCHEMA, CliCommittedDraft, CliDraft, CliDraftStageError};
+pub use gui_browser_flow::{
+  CLI_GUI_BROWSER_FLOW_SCENARIO_ID, GuiBrowserFlowCliReport, build_gui_browser_flow_report,
+};
 pub use gui_presentation::{
   CLI_GUI_PRESENTATION_SCENARIO_ID, GuiPresentationCliDocument, build_gui_presentation_document,
 };

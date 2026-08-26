@@ -40,7 +40,7 @@ pub const CLI_APPLICATION_VERSION: &str =
   concat!("fog-of-intent ", env!("CARGO_PKG_VERSION"), "\n");
 
 /// Bounded process-level usage for the executable wrapper.
-pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m6-behavioral-experiments-v1, m7-calibration-proof-v1, m8-team-scenarios-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m10-human-study-synthesis-v1, m11-gui-presentation-v1, m12-alpha-release-checks-v1, or m12-reproducibility-bundle-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n";
+pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m6-behavioral-experiments-v1, m7-calibration-proof-v1, m8-team-scenarios-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m10-human-study-synthesis-v1, m11-gui-presentation-v1, m11-gui-browser-flow-v1, m12-alpha-release-checks-v1, or m12-reproducibility-bundle-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n";
 
 /// Execution mode for a scenario entry in the scenario catalog.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -59,6 +59,8 @@ pub enum ScenarioExecutionMode {
   HumanStudySynthesis,
   /// Actor-visible HTML5/SVG presentation document export; prints and exits.
   HtmlPresentationExport,
+  /// Milestone M11 browser interaction flow and recovery evaluation battery; prints and exits.
+  BrowserFlowBattery,
   /// Milestone M7 semantic-to-parametric calibration proof battery; prints and exits.
   CalibrationProofBattery,
   /// Public Alpha release readiness check suite; prints and exits.
@@ -79,6 +81,7 @@ impl ScenarioExecutionMode {
       Self::BatchReplayTranscript => "replay-transcript",
       Self::HumanStudySynthesis => "study-synthesis",
       Self::HtmlPresentationExport => "html-presentation",
+      Self::BrowserFlowBattery => "browser-flow",
       Self::ReleaseChecksReport => "release-checks",
       Self::ReproducibilityBundleReport => "reproducibility-bundle",
     }
@@ -173,6 +176,13 @@ pub const CLI_SCENARIO_CATALOG: &[CliScenarioCatalogEntry] = &[
     milestone: "M11",
     mode: ScenarioExecutionMode::HtmlPresentationExport,
     description: "Accessible standalone HTML5/SVG tactical map and causal debrief presentation export.",
+  },
+  CliScenarioCatalogEntry {
+    id: crate::cli::CLI_GUI_BROWSER_FLOW_SCENARIO_ID,
+    display_name: "GUI Browser Interaction Flow & Recovery Evaluation",
+    milestone: "M11",
+    mode: ScenarioExecutionMode::BrowserFlowBattery,
+    description: "Multi-tab browser navigation, node inspection, causal debrief filtering, network recovery, and accessibility audits.",
   },
   CliScenarioCatalogEntry {
     id: crate::cli::CLI_ALPHA_RELEASE_CHECKS_SCENARIO_ID,
@@ -273,6 +283,8 @@ pub enum CliApplicationScenario {
   M10StudySynthesis,
   /// The shared-boundary GUI HTML5 presentation document.
   M11GuiPresentation,
+  /// Milestone M11 browser interaction flow and recovery evaluation battery.
+  M11GuiBrowserFlow,
   /// Public Alpha release readiness checks report.
   M12AlphaReleaseChecks,
   /// Public Alpha research reproducibility bundle report.
@@ -548,6 +560,8 @@ pub fn parse_application_args(
           scenario = Some(CliApplicationScenario::M10StudySynthesis);
         } else if args[index] == crate::cli::CLI_GUI_PRESENTATION_SCENARIO_ID {
           scenario = Some(CliApplicationScenario::M11GuiPresentation);
+        } else if args[index] == crate::cli::CLI_GUI_BROWSER_FLOW_SCENARIO_ID {
+          scenario = Some(CliApplicationScenario::M11GuiBrowserFlow);
         } else if args[index] == crate::cli::CLI_ALPHA_RELEASE_CHECKS_SCENARIO_ID {
           scenario = Some(CliApplicationScenario::M12AlphaReleaseChecks);
         } else if args[index] == crate::cli::CLI_REPRODUCIBILITY_BUNDLE_SCENARIO_ID {
@@ -686,6 +700,15 @@ pub fn write_gui_presentation_document<W: Write>(mut output: W) -> io::Result<bo
   output.write_all(document.html().as_bytes())?;
   output.flush()?;
   Ok(document.is_compliant())
+}
+
+/// Print the Milestone M11 GUI Browser Interaction Flow & Recovery Evaluation report and stop.
+/// Used by the executable edge for `--scenario m11-gui-browser-flow-v1`.
+pub fn write_browser_flow_report<W: Write>(mut output: W) -> io::Result<bool> {
+  let report = crate::cli::build_gui_browser_flow_report().map_err(io::Error::other)?;
+  output.write_all(report.markdown().as_bytes())?;
+  output.flush()?;
+  Ok(report.is_all_successful())
 }
 
 /// Print the Public Alpha release readiness check report and stop. Used by
@@ -1045,8 +1068,9 @@ pub fn parse_scenario_selection(input: &str) -> Option<CliApplicationScenario> {
       9 => Some(CliApplicationScenario::M9CompleteMatchReplay),
       10 => Some(CliApplicationScenario::M10StudySynthesis),
       11 => Some(CliApplicationScenario::M11GuiPresentation),
-      12 => Some(CliApplicationScenario::M12AlphaReleaseChecks),
-      13 => Some(CliApplicationScenario::M12ReproducibilityBundle),
+      12 => Some(CliApplicationScenario::M11GuiBrowserFlow),
+      13 => Some(CliApplicationScenario::M12AlphaReleaseChecks),
+      14 => Some(CliApplicationScenario::M12ReproducibilityBundle),
       _ => None,
     };
   }
@@ -1104,6 +1128,11 @@ pub fn parse_scenario_selection(input: &str) -> Option<CliApplicationScenario> {
     crate::cli::CLI_GUI_PRESENTATION_SCENARIO_ID | "gui-presentation" | "gui" | "m11" => {
       Some(CliApplicationScenario::M11GuiPresentation)
     }
+    crate::cli::CLI_GUI_BROWSER_FLOW_SCENARIO_ID
+    | "gui-browser-flow"
+    | "browser-flow"
+    | "browser"
+    | "flow" => Some(CliApplicationScenario::M11GuiBrowserFlow),
     crate::cli::CLI_ALPHA_RELEASE_CHECKS_SCENARIO_ID
     | "alpha-release-checks"
     | "alpha-checks"
@@ -1163,7 +1192,7 @@ pub fn format_scenario_menu_with_dimensions(
   }
   let wrap = dimensions.wrap_width();
   for line in crate::terminal::wrap_labeled_line(
-    "Select scenario by number [1-13], scenario ID, or short alias.",
+    "Select scenario by number [1-14], scenario ID, or short alias.",
     wrap,
   ) {
     output.push_str(&line);
@@ -1277,7 +1306,7 @@ mod tests {
     );
     assert_eq!(
       CLI_APPLICATION_HELP,
-      "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m6-behavioral-experiments-v1, m7-calibration-proof-v1, m8-team-scenarios-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m10-human-study-synthesis-v1, m11-gui-presentation-v1, m12-alpha-release-checks-v1, or m12-reproducibility-bundle-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n"
+      "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m6-behavioral-experiments-v1, m7-calibration-proof-v1, m8-team-scenarios-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m10-human-study-synthesis-v1, m11-gui-presentation-v1, m11-gui-browser-flow-v1, m12-alpha-release-checks-v1, or m12-reproducibility-bundle-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n"
     );
     assert_eq!(
       parse_application_args(&[OsString::from("--version")]),
@@ -1816,8 +1845,19 @@ mod tests {
   }
 
   #[test]
+  fn browser_flow_report_writer_outputs_markdown() {
+    let mut buffer: Vec<u8> = Vec::new();
+    let is_passed = write_browser_flow_report(&mut buffer).expect("report writes");
+    assert!(is_passed);
+    let text = String::from_utf8(buffer).expect("UTF-8 report");
+    assert!(text.contains("# Milestone M11: GUI Browser Interaction Flow & Recovery Evaluation"));
+    assert!(text.contains("scenario-gui-browser-standard-flow-v1"));
+    assert!(text.contains("scenario-gui-browser-network-recovery-v1"));
+  }
+
+  #[test]
   fn scenario_catalog_format_and_metadata_are_complete() {
-    assert_eq!(CLI_SCENARIO_CATALOG.len(), 13);
+    assert_eq!(CLI_SCENARIO_CATALOG.len(), 14);
     for entry in CLI_SCENARIO_CATALOG {
       assert!(!entry.id.is_empty());
       assert!(!entry.display_name.is_empty());
@@ -1840,6 +1880,10 @@ mod tests {
     assert_eq!(
       ScenarioExecutionMode::CalibrationProofBattery.label(),
       "calibration-battery"
+    );
+    assert_eq!(
+      ScenarioExecutionMode::BrowserFlowBattery.label(),
+      "browser-flow"
     );
     assert_eq!(
       ScenarioExecutionMode::TeamScenariosBattery.label(),
@@ -1992,10 +2036,14 @@ mod tests {
     );
     assert_eq!(
       parse_scenario_selection("12"),
-      Some(CliApplicationScenario::M12AlphaReleaseChecks)
+      Some(CliApplicationScenario::M11GuiBrowserFlow)
     );
     assert_eq!(
       parse_scenario_selection("13"),
+      Some(CliApplicationScenario::M12AlphaReleaseChecks)
+    );
+    assert_eq!(
+      parse_scenario_selection("14"),
       Some(CliApplicationScenario::M12ReproducibilityBundle)
     );
 
@@ -2043,6 +2091,10 @@ mod tests {
     assert_eq!(
       parse_scenario_selection(crate::cli::CLI_GUI_PRESENTATION_SCENARIO_ID),
       Some(CliApplicationScenario::M11GuiPresentation)
+    );
+    assert_eq!(
+      parse_scenario_selection(crate::cli::CLI_GUI_BROWSER_FLOW_SCENARIO_ID),
+      Some(CliApplicationScenario::M11GuiBrowserFlow)
     );
     assert_eq!(
       parse_scenario_selection(crate::cli::CLI_ALPHA_RELEASE_CHECKS_SCENARIO_ID),
@@ -2211,6 +2263,22 @@ mod tests {
       Some(CliApplicationScenario::M11GuiPresentation)
     );
     assert_eq!(
+      parse_scenario_selection("gui-browser-flow"),
+      Some(CliApplicationScenario::M11GuiBrowserFlow)
+    );
+    assert_eq!(
+      parse_scenario_selection("browser-flow"),
+      Some(CliApplicationScenario::M11GuiBrowserFlow)
+    );
+    assert_eq!(
+      parse_scenario_selection("browser"),
+      Some(CliApplicationScenario::M11GuiBrowserFlow)
+    );
+    assert_eq!(
+      parse_scenario_selection("flow"),
+      Some(CliApplicationScenario::M11GuiBrowserFlow)
+    );
+    assert_eq!(
       parse_scenario_selection("alpha-checks"),
       Some(CliApplicationScenario::M12AlphaReleaseChecks)
     );
@@ -2265,7 +2333,7 @@ mod tests {
     assert_eq!(parse_scenario_selection(""), None);
     assert_eq!(parse_scenario_selection("   "), None);
     assert_eq!(parse_scenario_selection("0"), None);
-    assert_eq!(parse_scenario_selection("14"), None);
+    assert_eq!(parse_scenario_selection("15"), None);
     assert_eq!(parse_scenario_selection("99"), None);
     assert_eq!(parse_scenario_selection("unknown-scenario"), None);
   }
@@ -2285,8 +2353,9 @@ mod tests {
     assert!(menu.contains("[9] Complete Match Replay Transcript"));
     assert!(menu.contains("[10] Human Usability & Accessibility Study Synthesis"));
     assert!(menu.contains("[11] Shared-Boundary GUI Presentation Document"));
-    assert!(menu.contains("[12] Public Alpha Release Readiness Checks"));
-    assert!(menu.contains("[13] Public Alpha Research Reproducibility Bundle"));
+    assert!(menu.contains("[12] GUI Browser Interaction Flow & Recovery Evaluation"));
+    assert!(menu.contains("[13] Public Alpha Release Readiness Checks"));
+    assert!(menu.contains("[14] Public Alpha Research Reproducibility Bundle"));
     assert!(menu.contains("Press Enter for default [1]"));
   }
 

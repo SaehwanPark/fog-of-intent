@@ -448,6 +448,10 @@ impl McpServer {
         Ok(doc) => format_tool_success(doc.html()),
         Err(err) => format_tool_error(err),
       },
+      "gui_browser_flow_run" => match crate::cli::build_gui_browser_flow_report() {
+        Ok(report) => format_tool_success(report.markdown()),
+        Err(err) => format_tool_error(err),
+      },
       "alpha_release_checks_run" => match crate::cli::build_alpha_release_checks_report() {
         Ok(report) => format_tool_success(report.markdown()),
         Err(err) => format_tool_error(err),
@@ -619,6 +623,20 @@ impl McpServer {
           JsonValue::Array(vec![JsonValue::Object(vec![
             ("uri".into(), JsonValue::String(uri.into())),
             ("mimeType".into(), JsonValue::String("text/html".into())),
+            ("text".into(), JsonValue::String(text)),
+          ])]),
+        )]);
+      }
+      "fog-of-intent://presentation/browser-flow" => {
+        let text = match crate::cli::build_gui_browser_flow_report() {
+          Ok(report) => report.markdown().to_string(),
+          Err(_) => "# GUI Browser Flow Report\n\nReport unavailable.".to_string(),
+        };
+        return JsonValue::Object(vec![(
+          "contents".into(),
+          JsonValue::Array(vec![JsonValue::Object(vec![
+            ("uri".into(), JsonValue::String(uri.into())),
+            ("mimeType".into(), JsonValue::String("text/markdown".into())),
             ("text".into(), JsonValue::String(text)),
           ])]),
         )]);

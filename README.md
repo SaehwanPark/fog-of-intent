@@ -118,6 +118,13 @@ actor-visible HTML5/CSS/SVG document from benchmark presentation bundles:
 cargo run -- --scenario m11-gui-presentation-v1 > presentation.html
 ```
 
+The M11 GUI browser interaction flow battery evaluates multi-tab navigation, node inspection,
+causal debrief filtering, network recovery, and accessibility audits across canonical browser targets:
+
+```sh
+cargo run -- --scenario m11-gui-browser-flow-v1
+```
+
 The M12 Public Alpha release checks runner executes the complete multi-domain
 readiness verification audit suite and prints the formatted Markdown report:
 

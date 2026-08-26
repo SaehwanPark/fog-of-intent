@@ -8,6 +8,16 @@ not increment the package version.
 
 ### Added
 
+- Milestone M11 GUI Browser Interaction Flow & Recovery Evaluation Scenario Runner & MCP Tooling (`m11-gui-browser-flow-v1`):
+  - Added `m11-gui-browser-flow-v1` to the canonical `CLI_SCENARIO_CATALOG` in `src/command_loop.rs` under `ScenarioExecutionMode::BrowserFlowBattery` (Milestone M11).
+  - Implemented `build_gui_browser_flow_report` and `GuiBrowserFlowCliReport` in `src/cli/gui_browser_flow.rs` pure module evaluating multi-tab desktop navigation, node inspection, causal debrief filtering, intent submission, network disconnect recovery, accessibility high-contrast workflows, and degraded fallback across the 4 canonical benchmark scenarios.
+  - Added formatted plain text Markdown report generation documenting executive summaries, step audits, recovery states, W3C semantic landmarks, zero latent hash leaks, zero private CoT, and architectural boundaries.
+  - Added `write_browser_flow_report` and wired CLI scenario execution in `src/main.rs`.
+  - Added interactive scenario selection aliases (`"gui-browser-flow"`, `"browser-flow"`, `"browser"`, `"flow"`) and menu slot `[12]` in `parse_scenario_selection`.
+  - Added `gui_browser_flow_run` tool to the Model Context Protocol (MCP) server catalog in `src/mcp/tools.rs` and `src/mcp/server.rs` (expanding server catalog to 24 tools).
+  - Added `fog-of-intent://presentation/browser-flow` MCP resource delivering the formal browser flow evaluation report (expanding server catalog to 7 resources).
+  - Added comprehensive unit and binary integration tests in `src/cli/tests.rs`, `src/command_loop.rs`, `src/mcp/tests.rs`, and `tests/binary_run_dir.rs`.
+
 - Milestone M12 Tagged Research Release Archive Manifest & Hash Inventory Verification (`m12-alpha-archive-v1`):
   - Defined `m12-alpha-archive-v1` in `src/alpha/archive.rs` implementing release archive manifest verification across 11 discrete categories (`SourceManifest`, `LockfileInventory`, `SchemaDefinitions`, `CatalogFixtures`, `ReplayEvidence`, `ModelCards`, `GovernanceManifests`, `CompatibilityMatrix`, `DataDictionary`, `DocumentationGuides`, `ReproducibilityBundle`).
   - Added pure deterministic audit evaluation `audit_release_archive_manifest` enforcing 100% presence of mandatory archive categories, unique item IDs, valid non-escaping relative paths, 16-hex FNV-1a content digest integrity, combined signature verification, integer basis-point completeness scoring ($[0..=10,000]$ bp), and structured Markdown reporting.

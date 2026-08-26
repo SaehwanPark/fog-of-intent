@@ -1022,3 +1022,30 @@ fn calibration_proof_report_is_deterministic() {
   let second = super::calibration_proof::build_calibration_proof_report().expect("second report");
   assert_eq!(first, second);
 }
+
+// --- M11 GUI Browser Interaction Flow & Recovery runner ---
+
+#[test]
+fn gui_browser_flow_report_builds_and_is_successful() {
+  let report = super::gui_browser_flow::build_gui_browser_flow_report()
+    .expect("gui browser flow battery executes and builds");
+  assert!(report.is_all_successful());
+  assert_eq!(report.scenario_count(), 4);
+  let md = report.markdown();
+  assert!(md.contains("# Milestone M11: GUI Browser Interaction Flow & Recovery Evaluation"));
+  assert!(md.contains("**Battery Status:** **ALL SCENARIOS VERIFIED PASS**"));
+  assert!(md.contains("scenario-gui-browser-standard-flow-v1"));
+  assert!(md.contains("scenario-gui-browser-network-recovery-v1"));
+  assert!(md.contains("scenario-gui-browser-accessibility-flow-v1"));
+  assert!(md.contains("scenario-gui-browser-degraded-fallback-v1"));
+  assert!(md.contains("Executive Summary"));
+  assert!(md.contains("Architectural Invariants & Evidence Limits"));
+  assert!(!md.contains('\u{1b}'));
+}
+
+#[test]
+fn gui_browser_flow_report_is_deterministic() {
+  let first = super::gui_browser_flow::build_gui_browser_flow_report().expect("first report");
+  let second = super::gui_browser_flow::build_gui_browser_flow_report().expect("second report");
+  assert_eq!(first, second);
+}

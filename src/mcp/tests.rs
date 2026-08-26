@@ -305,7 +305,7 @@ fn mcp_server_prompts_and_resources() {
     .unwrap()
     .as_array()
     .unwrap();
-  assert_eq!(resources.len(), 6);
+  assert_eq!(resources.len(), 7);
 
   // Resources read rules
   let rread = parse_json(&server.handle_line(r#"{"jsonrpc":"2.0","id":23,"method":"resources/read","params":{"uri":"fog-of-intent://scenario/rules"}}"#).unwrap()).unwrap();
@@ -696,4 +696,45 @@ fn mcp_server_executes_m12_release_archive_tool_and_resource() {
     .unwrap();
   assert!(res_text.contains("# Fog of Intent Release Archive Manifest Audit Report"));
   assert!(res_text.contains("m12-alpha-archive-v1"));
+}
+
+#[test]
+fn mcp_server_executes_m11_browser_flow_tool_and_resource() {
+  let mut server = McpServer::new();
+
+  // Call gui_browser_flow_run tool
+  let req = r#"{"jsonrpc":"2.0","id":99,"method":"tools/call","params":{"name":"gui_browser_flow_run","arguments":{}}}"#;
+  let resp = parse_json(&server.handle_line(req).unwrap()).unwrap();
+  let text = resp
+    .get("result")
+    .unwrap()
+    .get("content")
+    .unwrap()
+    .as_array()
+    .unwrap()[0]
+    .get("text")
+    .unwrap()
+    .as_str()
+    .unwrap();
+  assert!(text.contains("# Milestone M11: GUI Browser Interaction Flow & Recovery Evaluation"));
+  assert!(text.contains("ALL SCENARIOS VERIFIED PASS"));
+  assert!(text.contains("scenario-gui-browser-standard-flow-v1"));
+  assert!(text.contains("scenario-gui-browser-network-recovery-v1"));
+
+  // Read browser-flow resource
+  let res_req = r#"{"jsonrpc":"2.0","id":100,"method":"resources/read","params":{"uri":"fog-of-intent://presentation/browser-flow"}}"#;
+  let res_resp = parse_json(&server.handle_line(res_req).unwrap()).unwrap();
+  let res_text = res_resp
+    .get("result")
+    .unwrap()
+    .get("contents")
+    .unwrap()
+    .as_array()
+    .unwrap()[0]
+    .get("text")
+    .unwrap()
+    .as_str()
+    .unwrap();
+  assert!(res_text.contains("# Milestone M11: GUI Browser Interaction Flow & Recovery Evaluation"));
+  assert!(res_text.contains("m11-gui-browser-catalog-v1"));
 }
