@@ -4,6 +4,19 @@ All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 not increment the package version.
 
+## [0.1.229] - 2026-08-25
+
+### Added
+
+- Model Context Protocol (MCP) JSON-RPC 2.0 Full Milestone Parity Expansion:
+  - Added `gui_presentation_render` MCP tool to `src/mcp/tools.rs` and `src/mcp/server.rs` exporting self-contained, accessibility-compliant HTML5/CSS/SVG tactical map and causal debrief presentation documents (Milestone M11).
+  - Added `alpha_release_checks_run` MCP tool executing the complete 6-domain Public Alpha readiness verification suite (`CleanInstall`, `Reproducibility`, `SecurityAdvisory`, `LicenseCompliance`, `CompatibilityMatrix`, `DataRedaction`) with integer basis-point scoring and blocker auditing (Milestone M12).
+  - Added `alpha_governance_audit` MCP tool evaluating the public alpha governance manifest and policy declarations for compliance and fallback activation (Milestone M12).
+  - Added `alpha_release_audit` MCP prompt providing structured auditor guidelines and live release readiness evaluation context (Milestone M12).
+  - Added `fog-of-intent://release/readiness` MCP resource projecting active release candidate verification status, readiness score, and domain checklist (Milestone M12).
+  - Added `fog-of-intent://presentation/html` MCP resource delivering standalone actor-safe HTML5 presentation document (Milestone M11).
+  - Expanded test suites in `src/mcp/tests.rs` and `scripts/verify_mcp_server.py` covering all 21 tools, 3 prompts, and 4 resources across both CLI entry points (`fog-of-intent mcp serve` and `fog-of-intent --mcp`).
+
 ## [0.1.228] - 2026-08-25
 
 ### Added

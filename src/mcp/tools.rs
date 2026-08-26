@@ -278,6 +278,30 @@ pub fn mcp_tools_catalog() -> Vec<McpTool> {
         ("properties".into(), JsonValue::Object(vec![])),
       ]),
     },
+    McpTool {
+      name: "gui_presentation_render",
+      description: "Generate a self-contained, accessibility-compliant actor-visible HTML5/CSS/SVG presentation document.",
+      input_schema: JsonValue::Object(vec![
+        ("type".into(), JsonValue::String("object".into())),
+        ("properties".into(), JsonValue::Object(vec![])),
+      ]),
+    },
+    McpTool {
+      name: "alpha_release_checks_run",
+      description: "Execute the complete Milestone M12 Public Alpha release readiness verification check suite across 6 domains.",
+      input_schema: JsonValue::Object(vec![
+        ("type".into(), JsonValue::String("object".into())),
+        ("properties".into(), JsonValue::Object(vec![])),
+      ]),
+    },
+    McpTool {
+      name: "alpha_governance_audit",
+      description: "Evaluate the Public Alpha governance manifest and policy declarations for compliance and fallback activation.",
+      input_schema: JsonValue::Object(vec![
+        ("type".into(), JsonValue::String("object".into())),
+        ("properties".into(), JsonValue::Object(vec![])),
+      ]),
+    },
   ]
 }
 
@@ -302,6 +326,15 @@ pub fn mcp_prompts_catalog() -> Vec<McpPrompt> {
         false,
       )],
     },
+    McpPrompt {
+      name: "alpha_release_audit",
+      description: "Release auditor evaluation prompt for inspecting readiness gates, integrity checks, and governance posture.",
+      arguments: vec![(
+        "scope",
+        "Audit scope (e.g. 'all', 'governance', 'checks', 'reproducibility')",
+        false,
+      )],
+    },
   ]
 }
 
@@ -319,6 +352,18 @@ pub fn mcp_resources_catalog() -> Vec<McpResource> {
       name: "Active Simulation State Snapshot",
       description: "Actor-visible projection of the current session state and available commands.",
       mime_type: "application/json",
+    },
+    McpResource {
+      uri: "fog-of-intent://release/readiness",
+      name: "Public Alpha Release Readiness Status",
+      description: "Structured release readiness verification gates, compliance score, and check results.",
+      mime_type: "application/json",
+    },
+    McpResource {
+      uri: "fog-of-intent://presentation/html",
+      name: "Tactical Map & Debrief Presentation Document",
+      description: "Standalone accessibility-compliant HTML5/SVG presentation document.",
+      mime_type: "text/html",
     },
   ]
 }

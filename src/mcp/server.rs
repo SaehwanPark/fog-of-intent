@@ -440,6 +440,23 @@ impl McpServer {
         Ok(report) => format_tool_success(report.markdown()),
         Err(err) => format_tool_error(err),
       },
+      "gui_presentation_render" => match crate::cli::build_gui_presentation_document() {
+        Ok(doc) => format_tool_success(doc.html()),
+        Err(err) => format_tool_error(err),
+      },
+      "alpha_release_checks_run" => match crate::cli::build_alpha_release_checks_report() {
+        Ok(report) => format_tool_success(report.markdown()),
+        Err(err) => format_tool_error(err),
+      },
+      "alpha_governance_audit" => {
+        match crate::alpha::catalog::AlphaScenarioCatalog::execute_governance_compliant() {
+          Ok(report) => {
+            let md = crate::alpha::governance::render_governance_report_markdown(&report);
+            format_tool_success(&md)
+          }
+          Err(_) => format_tool_error("governance-audit: evaluation failed"),
+        }
+      }
       unknown => format_tool_error(&format!("Unknown tool: '{unknown}'")),
     }
   }
@@ -500,6 +517,34 @@ impl McpServer {
           ),
         ])
       }
+      "alpha_release_audit" => {
+        let readiness = match crate::cli::build_alpha_release_checks_report() {
+          Ok(report) if report.is_ready() => "READY FOR PUBLIC ALPHA (10,000 bp)",
+          _ => "BLOCKED BY RELEASE GATES",
+        };
+        let prompt_text = format!(
+          "You are conducting a Public Alpha release audit of Fog of Intent.\n\nCurrent Release Status: {readiness}\n\nInspect multi-domain readiness checks (clean-install, reproducibility, security-advisory, license-compliance, compatibility-matrix, data-redaction), verify policy compliance, and audit known limitations."
+        );
+        JsonValue::Object(vec![
+          (
+            "description".into(),
+            JsonValue::String("Public Alpha release governance and readiness audit prompt".into()),
+          ),
+          (
+            "messages".into(),
+            JsonValue::Array(vec![JsonValue::Object(vec![
+              ("role".into(), JsonValue::String("user".into())),
+              (
+                "content".into(),
+                JsonValue::Object(vec![
+                  ("type".into(), JsonValue::String("text".into())),
+                  ("text".into(), JsonValue::String(prompt_text)),
+                ]),
+              ),
+            ])]),
+          ),
+        ])
+      }
       other => JsonValue::Object(vec![
         (
           "description".into(),
@@ -528,6 +573,40 @@ impl McpServer {
               JsonValue::String("application/json".into()),
             ),
             ("text".into(), JsonValue::String(json_repr)),
+          ])]),
+        )]);
+      }
+      "fog-of-intent://release/readiness" => {
+        let text = match crate::cli::build_alpha_release_checks_report() {
+          Ok(report) => format!(
+            "{{\"is_ready\":{},\"categories_evaluated\":6,\"overall_status\":\"Ready\"}}",
+            report.is_ready()
+          ),
+          Err(_) => "{\"is_ready\":false,\"overall_status\":\"Error\"}".to_string(),
+        };
+        return JsonValue::Object(vec![(
+          "contents".into(),
+          JsonValue::Array(vec![JsonValue::Object(vec![
+            ("uri".into(), JsonValue::String(uri.into())),
+            (
+              "mimeType".into(),
+              JsonValue::String("application/json".into()),
+            ),
+            ("text".into(), JsonValue::String(text)),
+          ])]),
+        )]);
+      }
+      "fog-of-intent://presentation/html" => {
+        let text = match crate::cli::build_gui_presentation_document() {
+          Ok(doc) => doc.html().to_string(),
+          Err(_) => "<!DOCTYPE html><html><body>Presentation unavailable</body></html>".to_string(),
+        };
+        return JsonValue::Object(vec![(
+          "contents".into(),
+          JsonValue::Array(vec![JsonValue::Object(vec![
+            ("uri".into(), JsonValue::String(uri.into())),
+            ("mimeType".into(), JsonValue::String("text/html".into())),
+            ("text".into(), JsonValue::String(text)),
           ])]),
         )]);
       }

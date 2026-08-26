@@ -260,7 +260,7 @@ fn mcp_server_prompts_and_resources() {
     .unwrap()
     .as_array()
     .unwrap();
-  assert_eq!(prompts.len(), 2);
+  assert_eq!(prompts.len(), 3);
 
   // Prompts get
   let pget = parse_json(&server.handle_line(r#"{"jsonrpc":"2.0","id":21,"method":"prompts/get","params":{"name":"lane_decision_window"}}"#).unwrap()).unwrap();
@@ -272,6 +272,24 @@ fn mcp_server_prompts_and_resources() {
     .as_array()
     .unwrap();
   assert_eq!(messages.len(), 1);
+
+  let pget_audit = parse_json(&server.handle_line(r#"{"jsonrpc":"2.0","id":210,"method":"prompts/get","params":{"name":"alpha_release_audit"}}"#).unwrap()).unwrap();
+  let audit_messages = pget_audit
+    .get("result")
+    .unwrap()
+    .get("messages")
+    .unwrap()
+    .as_array()
+    .unwrap();
+  assert_eq!(audit_messages.len(), 1);
+  let audit_text = audit_messages[0]
+    .get("content")
+    .unwrap()
+    .get("text")
+    .unwrap()
+    .as_str()
+    .unwrap();
+  assert!(audit_text.contains("Public Alpha release audit"));
 
   // Resources list
   let rlist = parse_json(
@@ -287,9 +305,9 @@ fn mcp_server_prompts_and_resources() {
     .unwrap()
     .as_array()
     .unwrap();
-  assert_eq!(resources.len(), 2);
+  assert_eq!(resources.len(), 4);
 
-  // Resources read
+  // Resources read rules
   let rread = parse_json(&server.handle_line(r#"{"jsonrpc":"2.0","id":23,"method":"resources/read","params":{"uri":"fog-of-intent://scenario/rules"}}"#).unwrap()).unwrap();
   let contents = rread
     .get("result")
@@ -300,6 +318,31 @@ fn mcp_server_prompts_and_resources() {
     .unwrap();
   let text = contents[0].get("text").unwrap().as_str().unwrap();
   assert!(text.contains("# Fog of Intent Simulation Rules"));
+
+  // Resources read readiness
+  let rread_ready = parse_json(&server.handle_line(r#"{"jsonrpc":"2.0","id":24,"method":"resources/read","params":{"uri":"fog-of-intent://release/readiness"}}"#).unwrap()).unwrap();
+  let ready_contents = rread_ready
+    .get("result")
+    .unwrap()
+    .get("contents")
+    .unwrap()
+    .as_array()
+    .unwrap();
+  let ready_text = ready_contents[0].get("text").unwrap().as_str().unwrap();
+  assert!(ready_text.contains("\"is_ready\":true"));
+
+  // Resources read html presentation
+  let rread_html = parse_json(&server.handle_line(r#"{"jsonrpc":"2.0","id":25,"method":"resources/read","params":{"uri":"fog-of-intent://presentation/html"}}"#).unwrap()).unwrap();
+  let html_contents = rread_html
+    .get("result")
+    .unwrap()
+    .get("contents")
+    .unwrap()
+    .as_array()
+    .unwrap();
+  let html_text = html_contents[0].get("text").unwrap().as_str().unwrap();
+  assert!(html_text.contains("<!DOCTYPE html>"));
+  assert!(html_text.contains("<svg"));
 }
 
 #[test]
@@ -498,4 +541,71 @@ fn mcp_server_executes_m12_reproducibility_bundle_tool() {
   assert!(text.contains("PKG-CALIBRATION-01"));
   assert!(text.contains("PKG-TELEMETRY-01"));
   assert!(text.contains("**Eligible for Release:** Yes"));
+}
+
+#[test]
+fn mcp_server_executes_m11_gui_presentation_tool() {
+  let mut server = McpServer::new();
+
+  let req = r#"{"jsonrpc":"2.0","id":70,"method":"tools/call","params":{"name":"gui_presentation_render","arguments":{}}}"#;
+  let resp = parse_json(&server.handle_line(req).unwrap()).unwrap();
+  let html = resp
+    .get("result")
+    .unwrap()
+    .get("content")
+    .unwrap()
+    .as_array()
+    .unwrap()[0]
+    .get("text")
+    .unwrap()
+    .as_str()
+    .unwrap();
+  assert!(html.starts_with("<!DOCTYPE html>"));
+  assert!(html.contains("<html lang=\"en\">"));
+  assert!(html.contains("<svg"));
+  assert!(!html.contains("<script"));
+}
+
+#[test]
+fn mcp_server_executes_m12_alpha_release_checks_tool() {
+  let mut server = McpServer::new();
+
+  let req = r#"{"jsonrpc":"2.0","id":80,"method":"tools/call","params":{"name":"alpha_release_checks_run","arguments":{}}}"#;
+  let resp = parse_json(&server.handle_line(req).unwrap()).unwrap();
+  let text = resp
+    .get("result")
+    .unwrap()
+    .get("content")
+    .unwrap()
+    .as_array()
+    .unwrap()[0]
+    .get("text")
+    .unwrap()
+    .as_str()
+    .unwrap();
+  assert!(text.contains("# Fog of Intent — Public Alpha Release Readiness Audit Report"));
+  assert!(text.contains("READY FOR PUBLIC ALPHA"));
+  assert!(text.contains("clean-install"));
+  assert!(text.contains("reproducibility"));
+}
+
+#[test]
+fn mcp_server_executes_m12_alpha_governance_audit_tool() {
+  let mut server = McpServer::new();
+
+  let req = r#"{"jsonrpc":"2.0","id":90,"method":"tools/call","params":{"name":"alpha_governance_audit","arguments":{}}}"#;
+  let resp = parse_json(&server.handle_line(req).unwrap()).unwrap();
+  let text = resp
+    .get("result")
+    .unwrap()
+    .get("content")
+    .unwrap()
+    .as_array()
+    .unwrap()[0]
+    .get("text")
+    .unwrap()
+    .as_str()
+    .unwrap();
+  assert!(text.contains("# Public Alpha Governance Evaluation Report"));
+  assert!(text.contains("Release Eligible"));
 }

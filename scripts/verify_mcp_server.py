@@ -407,8 +407,13 @@ def run_suite_for_target(target_name: str, cmd: List[str]) -> Dict[str, Any]:
     plist_resp = client.send_request(plist_req)
     prompts = plist_resp.get("result", {}).get("prompts", []) if plist_resp else []
     prompt_names = [p.get("name") for p in prompts]
-    plist_ok = plist_resp is not None and "lane_decision_window" in prompt_names and "match_macro_turn" in prompt_names
-    record_test("prompts/list (contains lane_decision_window, match_macro_turn)", plist_ok, {
+    plist_ok = (
+      plist_resp is not None
+      and "lane_decision_window" in prompt_names
+      and "match_macro_turn" in prompt_names
+      and "alpha_release_audit" in prompt_names
+    )
+    record_test("prompts/list (contains lane_decision_window, match_macro_turn, alpha_release_audit)", plist_ok, {
       "prompts": prompt_names
     })
 
@@ -444,6 +449,22 @@ def run_suite_for_target(target_name: str, cmd: List[str]) -> Dict[str, Any]:
     )
     record_test("prompts/get (match_macro_turn)", pget_match_ok, {"response": pget_match_resp})
 
+    # 22b. prompts/get -> alpha_release_audit
+    pget_audit_req = {
+      "jsonrpc": "2.0",
+      "id": 281,
+      "method": "prompts/get",
+      "params": {"name": "alpha_release_audit"}
+    }
+    pget_audit_resp = client.send_request(pget_audit_req)
+    pget_audit_messages = pget_audit_resp.get("result", {}).get("messages", []) if pget_audit_resp else []
+    pget_audit_ok = (
+      pget_audit_resp is not None
+      and len(pget_audit_messages) > 0
+      and "Public Alpha release audit" in pget_audit_messages[0].get("content", {}).get("text", "")
+    )
+    record_test("prompts/get (alpha_release_audit)", pget_audit_ok, {"response": pget_audit_resp})
+
     # 23. resources/list
     rlist_req = {"jsonrpc": "2.0", "id": 29, "method": "resources/list"}
     rlist_resp = client.send_request(rlist_req)
@@ -453,8 +474,10 @@ def run_suite_for_target(target_name: str, cmd: List[str]) -> Dict[str, Any]:
       rlist_resp is not None
       and "fog-of-intent://scenario/rules" in resource_uris
       and "fog-of-intent://session/state" in resource_uris
+      and "fog-of-intent://release/readiness" in resource_uris
+      and "fog-of-intent://presentation/html" in resource_uris
     )
-    record_test("resources/list (rules, state)", rlist_ok, {"resource_uris": resource_uris})
+    record_test("resources/list (rules, state, readiness, html)", rlist_ok, {"resource_uris": resource_uris})
 
     # 24. resources/read -> fog-of-intent://scenario/rules
     rread_rules_req = {
@@ -489,6 +512,88 @@ def run_suite_for_target(target_name: str, cmd: List[str]) -> Dict[str, Any]:
       and "records" in rread_state_text
     )
     record_test("resources/read (fog-of-intent://session/state)", rread_state_ok, {"response": rread_state_resp})
+
+    # 25b. resources/read -> fog-of-intent://release/readiness
+    rread_ready_req = {
+      "jsonrpc": "2.0",
+      "id": 311,
+      "method": "resources/read",
+      "params": {"uri": "fog-of-intent://release/readiness"}
+    }
+    rread_ready_resp = client.send_request(rread_ready_req)
+    rread_ready_contents = rread_ready_resp.get("result", {}).get("contents", []) if rread_ready_resp else []
+    rread_ready_text = rread_ready_contents[0].get("text", "") if rread_ready_contents else ""
+    rread_ready_ok = (
+      rread_ready_resp is not None
+      and len(rread_ready_contents) > 0
+      and "is_ready" in rread_ready_text
+    )
+    record_test("resources/read (fog-of-intent://release/readiness)", rread_ready_ok, {"response": rread_ready_resp})
+
+    # 25c. resources/read -> fog-of-intent://presentation/html
+    rread_html_req = {
+      "jsonrpc": "2.0",
+      "id": 312,
+      "method": "resources/read",
+      "params": {"uri": "fog-of-intent://presentation/html"}
+    }
+    rread_html_resp = client.send_request(rread_html_req)
+    rread_html_contents = rread_html_resp.get("result", {}).get("contents", []) if rread_html_resp else []
+    rread_html_text = rread_html_contents[0].get("text", "") if rread_html_contents else ""
+    rread_html_ok = (
+      rread_html_resp is not None
+      and len(rread_html_contents) > 0
+      and "<!DOCTYPE html>" in rread_html_text
+    )
+    record_test("resources/read (fog-of-intent://presentation/html)", rread_html_ok, {"response": rread_html_resp})
+
+    # 25d. tools/call -> reproducibility_bundle_run
+    bundle_req = {
+      "jsonrpc": "2.0",
+      "id": 313,
+      "method": "tools/call",
+      "params": {"name": "reproducibility_bundle_run", "arguments": {}}
+    }
+    bundle_resp = client.send_request(bundle_req)
+    bundle_text = bundle_resp.get("result", {}).get("content", [{}])[0].get("text", "") if bundle_resp else ""
+    bundle_ok = bundle_resp is not None and not bundle_resp.get("result", {}).get("isError") and "PKG-BENCHMARK-01" in bundle_text
+    record_test("tools/call -> reproducibility_bundle_run", bundle_ok, {"response": bundle_resp})
+
+    # 25e. tools/call -> gui_presentation_render
+    gui_req = {
+      "jsonrpc": "2.0",
+      "id": 314,
+      "method": "tools/call",
+      "params": {"name": "gui_presentation_render", "arguments": {}}
+    }
+    gui_resp = client.send_request(gui_req)
+    gui_text = gui_resp.get("result", {}).get("content", [{}])[0].get("text", "") if gui_resp else ""
+    gui_ok = gui_resp is not None and not gui_resp.get("result", {}).get("isError") and "<!DOCTYPE html>" in gui_text
+    record_test("tools/call -> gui_presentation_render", gui_ok, {"response": gui_resp})
+
+    # 25f. tools/call -> alpha_release_checks_run
+    rc_req = {
+      "jsonrpc": "2.0",
+      "id": 315,
+      "method": "tools/call",
+      "params": {"name": "alpha_release_checks_run", "arguments": {}}
+    }
+    rc_resp = client.send_request(rc_req)
+    rc_text = rc_resp.get("result", {}).get("content", [{}])[0].get("text", "") if rc_resp else ""
+    rc_ok = rc_resp is not None and not rc_resp.get("result", {}).get("isError") and "READY FOR PUBLIC ALPHA" in rc_text
+    record_test("tools/call -> alpha_release_checks_run", rc_ok, {"response": rc_resp})
+
+    # 25g. tools/call -> alpha_governance_audit
+    gov_req = {
+      "jsonrpc": "2.0",
+      "id": 316,
+      "method": "tools/call",
+      "params": {"name": "alpha_governance_audit", "arguments": {}}
+    }
+    gov_resp = client.send_request(gov_req)
+    gov_text = gov_resp.get("result", {}).get("content", [{}])[0].get("text", "") if gov_resp else ""
+    gov_ok = gov_resp is not None and not gov_resp.get("result", {}).get("isError") and "Release Eligible" in gov_text
+    record_test("tools/call -> alpha_governance_audit", gov_ok, {"response": gov_resp})
 
     # 26. Negative test: Invalid JSON (-32700)
     client.send_raw("{malformed_json_without_quotes}")
@@ -560,9 +665,11 @@ def run_suite_for_target(target_name: str, cmd: List[str]) -> Dict[str, Any]:
       obs_text, stage_text, read_text, commit_text, adv_text, hist_text, debrief_text,
       clear_text, branch_text, replay_text,
       mobs_text, rotate_text, ward_text, contest_text, siege_text, eval_text, idle_text, madv_text, mdeb_text,
+      bundle_text, gui_text, rc_text, gov_text,
       pget_lane_messages[0].get("content", {}).get("text", "") if pget_lane_messages else "",
       pget_match_messages[0].get("content", {}).get("text", "") if pget_match_messages else "",
-      rread_rules_text, rread_state_text
+      pget_audit_messages[0].get("content", {}).get("text", "") if pget_audit_messages else "",
+      rread_rules_text, rread_state_text, rread_ready_text, rread_html_text
     ]
     leak_findings = []
     for i, blob in enumerate(all_text_blobs):

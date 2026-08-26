@@ -1580,4 +1580,12 @@ canonical policy instead of duplicating it.
 - Resolution: Update `CLI_SCENARIO_CATALOG` length assertions, increment invalid test bounds (e.g. `parse_scenario_selection("13") == None`), synchronize interactive selection prompt ranges (`scenario [1-12]>`), and verify exact markdown title strings against module definitions.
 - Prevention: When adding scenario entries to `CLI_SCENARIO_CATALOG`, always search for numeric boundary assertions (`[1-N]`) and verify exact header output from report renderers.
 
+## Maintain JSON-RPC protocol surface parity and information boundary audits across milestone expansions
+
+- Context: As simulation and release auditing modules mature (M11 GUI presentation, M12 release checks, M12 governance audits), external agent interfaces (MCP JSON-RPC) must expose corresponding tools, prompts, and resources without leaking latent simulation state.
+- Symptom: Discrepancies where CLI runners exist for milestones but MCP agent clients lack equivalent inspection tools or resources, or where resource content inadvertently leaks raw state hashes or private latent values.
+- Cause: Implementing CLI scenario runners without concurrently registering corresponding tools in `mcp_tools_catalog()`, prompts in `mcp_prompts_catalog()`, resources in `mcp_resources_catalog()`, and dispatch arms in `McpServer`.
+- Resolution: Pair every major simulation capability with its model-agnostic MCP tool, prompt, and resource representations, ensure returned payloads project only actor-visible information or clean Markdown summaries, and verify zero latent truth leakage across all response blobs in `scripts/verify_mcp_server.py`.
+- Prevention: Run dual MCP entry point tests (`fog-of-intent mcp serve` and `fog-of-intent --mcp`) checking both success responses and boundary sanitization whenever adding domain tools.
+
 

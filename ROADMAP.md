@@ -2441,7 +2441,8 @@ This establishes the formal release readiness verification check suite, multi-do
 ### Developer Action Items (Public Release)
 
 - [x] Package official research reproducibility bundles with verified 16-hex FNV-1a checksums via `--scenario m12-reproducibility-bundle-v1` and MCP tool `reproducibility_bundle_run`.
-- [x] Execute release candidate verification check suite (`audit_release_checks`) via `--scenario m12-alpha-release-checks-v1`.
+- [x] Execute release candidate verification check suite (`audit_release_checks`) via `--scenario m12-alpha-release-checks-v1` and MCP tool `alpha_release_checks_run`.
+- [x] Complete MCP JSON-RPC protocol surface parity across all 12 milestones with 21 tools, 3 prompts, and 4 resources (including `gui_presentation_render`, `alpha_governance_audit`, prompt `alpha_release_audit`, and resources `fog-of-intent://release/readiness`, `fog-of-intent://presentation/html`).
 - [ ] Create official tagged research release bundle with governance documentation.
 
 ### Deliverables
