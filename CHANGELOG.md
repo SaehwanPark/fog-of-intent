@@ -4,6 +4,16 @@ All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 not increment the package version.
 
+## [0.1.235] - 2026-08-26
+
+- ADR-0004 Cargo Workspace Partitioning & `crates/foi-agent` Member Crate Extraction (Phase 3):
+  - Extracted pure M4/M6/M7/M8 behavioral policies, empirical calibrations, semantic trait dictionaries, regularized parametric policy fitting, diagnostic choice batteries, 8 canonical team speech acts, dialogue sessions, caller reputation tracking, transmission channel physics, designated shot-calling heuristics, decentralized consensus arbitration, private submission collection, simultaneous multi-agent resolution, decoupled coordination vs execution attribution, causal communication and leadership debriefs, strategic disagreement proofs, and canonical scenario benchmark catalogs into dedicated `crates/foi-agent` member crate.
+  - Declared `foi-agent` as a workspace member in root `Cargo.toml` with path dependencies `foi-kernel = { path = "../foi-kernel" }` and `foi-lane = { path = "../foi-lane" }`.
+  - Added `pub use foi_agent::*;` re-export facade in root `src/agent/mod.rs` for 100% backward compatibility with existing CLI, host, and MCP adapters.
+  - Updated `scripts/check_repository.py` boundary file tracking for `crates/foi-agent/src/*.rs`.
+  - Bumped workspace package versions to `0.1.235`.
+  - Verified all 775+ workspace unit, binary, and doc tests pass with zero warnings.
+
 ## [0.1.234] - 2026-08-26
 
 - ADR-0004 Cargo Workspace Partitioning & `crates/foi-map` Member Crate Extraction (Phase 2):
