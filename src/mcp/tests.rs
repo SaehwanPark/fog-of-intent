@@ -362,3 +362,46 @@ fn mcp_server_stdio_stream_runner() {
   let resp3 = parse_json(lines[2]).unwrap();
   assert_eq!(resp3.get("id"), Some(&JsonValue::Number(3)));
 }
+
+#[test]
+fn mcp_server_executes_m8_team_scenarios_tool() {
+  let mut server = McpServer::new();
+
+  // Run full battery
+  let run_all_req = r#"{"jsonrpc":"2.0","id":30,"method":"tools/call","params":{"name":"team_scenarios_run","arguments":{"scenario_id":"all"}}}"#;
+  let all_resp = parse_json(&server.handle_line(run_all_req).unwrap()).unwrap();
+  let all_text = all_resp
+    .get("result")
+    .unwrap()
+    .get("content")
+    .unwrap()
+    .as_array()
+    .unwrap()[0]
+    .get("text")
+    .unwrap()
+    .as_str()
+    .unwrap();
+  assert!(
+    all_text.contains("# Fog of Intent — Milestone M8 Team Communication & Shot-Calling Battery")
+  );
+  assert!(all_text.contains("scenario-high-trust-gank-v1"));
+  assert!(all_text.contains("scenario-strategic-dissent-survival-v1"));
+  assert!(all_text.contains("Benchmark Battery Summary"));
+
+  // Run single specific scenario
+  let run_single_req = r#"{"jsonrpc":"2.0","id":31,"method":"tools/call","params":{"name":"team_scenarios_run","arguments":{"scenario_id":"scenario-strategic-dissent-survival-v1"}}}"#;
+  let single_resp = parse_json(&server.handle_line(run_single_req).unwrap()).unwrap();
+  let single_text = single_resp
+    .get("result")
+    .unwrap()
+    .get("content")
+    .unwrap()
+    .as_array()
+    .unwrap()[0]
+    .get("text")
+    .unwrap()
+    .as_str()
+    .unwrap();
+  assert!(single_text.contains("Strategic Disagreement Evaluation"));
+  assert!(single_text.contains("LegitimateDissent"));
+}

@@ -12,6 +12,7 @@ mod match_replay;
 mod release_checks;
 mod run_id;
 mod session_grammar;
+mod team_scenarios;
 mod top_level_grammar;
 
 #[cfg(test)]
@@ -42,6 +43,9 @@ pub use session_grammar::{
   CliProcessError, CliProcessRequest, CliReadError, CliReadRequest, CliSessionError,
   CliSessionRequest, CliWriteError, CliWriteRequest, help_catalog, parse_command, process_request,
   read_request, session_request, suggest_command_names, write_request,
+};
+pub use team_scenarios::{
+  CLI_TEAM_SCENARIOS_SCENARIO_ID, TeamScenariosCliReport, build_team_scenarios_report,
 };
 pub use top_level_grammar::{
   CliInteractionMode, CliPrivilegeLevel, CliTopLevelCommand, CliTopLevelError,

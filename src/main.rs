@@ -116,6 +116,20 @@ fn main() -> ExitCode {
     return ExitCode::FAILURE;
   }
 
+  if matches!(scenario, CliApplicationScenario::M8TeamScenarios) {
+    let stdout = io::stdout();
+    return match fog_of_intent::command_loop::write_team_scenarios_report(stdout.lock()) {
+      Ok(true) => ExitCode::SUCCESS,
+      Ok(false) => {
+        eprintln!("team scenarios benchmark battery failed verification");
+        ExitCode::FAILURE
+      }
+      Err(error) => {
+        eprintln!("team scenarios execution failed: {error}");
+        ExitCode::FAILURE
+      }
+    };
+  }
   if matches!(scenario, CliApplicationScenario::M9CompleteMatchReplay) {
     let stdout = io::stdout();
     return match fog_of_intent::command_loop::write_match_replay_transcript(stdout.lock()) {

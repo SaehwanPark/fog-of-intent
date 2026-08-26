@@ -31,13 +31,13 @@ sequencing or checklist differs from this file, this file governs current work.
 | --- | --- | --- |
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
-| Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs`, `src/mcp/` | Standalone package version reporting, scenario catalog listing (`--list-scenarios`), Model Context Protocol (MCP) JSON-RPC stdio server (`fog-of-intent mcp serve` or `--mcp`), bounded fixture transcript with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, TTY prompt/completion, `--color`), 3 interactive strategy scenario playthroughs (`--scenario m2-strategy-happy-path-v1`, `--scenario m2-strategy-risk-taking-v1`, `--scenario m2-strategy-conservative-v1`), the interactive 5v5 tactical match runner with `--scenario m9-interactive-match-v1`, a replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1`, a verified actor-visible HTML5 presentation document with `--scenario m11-gui-presentation-v1`, and a public alpha release readiness audit report with `--scenario m12-alpha-release-checks-v1` |
-| Package | `Cargo.toml` | Version `0.1.224`, one deferred edge crate (`reedline`) |
+| Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs`, `src/mcp/`, `src/cli/team_scenarios.rs` | Standalone package version reporting, scenario catalog listing (`--list-scenarios`), Model Context Protocol (MCP) JSON-RPC stdio server (`fog-of-intent mcp serve` or `--mcp`), bounded fixture transcript with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, TTY prompt/completion, `--color`), 3 interactive strategy scenario playthroughs (`--scenario m2-strategy-happy-path-v1`, `--scenario m2-strategy-risk-taking-v1`, `--scenario m2-strategy-conservative-v1`), the team communication & shot-calling benchmark battery with `--scenario m8-team-scenarios-v1`, the interactive 5v5 tactical match runner with `--scenario m9-interactive-match-v1`, a replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1`, a verified actor-visible HTML5 presentation document with `--scenario m11-gui-presentation-v1`, and a public alpha release readiness audit report with `--scenario m12-alpha-release-checks-v1` |
+| Package | `Cargo.toml` | Version `0.1.225`, one deferred edge crate (`reedline`) |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
 | Internal kernel/replay fixture | `src/kernel.rs`, `src/serialization.rs` | M1 complete; not playable |
-| Scenario, CLI, MCP, research, GUI | Grammar, bounded host, pure text, fixture loop, scenario catalog discovery, injected file artifacts, explicit binary store wiring, dynamic interactive scenario selection, and Model Context Protocol (MCP) JSON-RPC stdio server; broader runtime branching remains open | Reference CLI and MCP active; research and GUI in library/presentation contracts |
+| Scenario, CLI, MCP, research, GUI | Grammar, bounded host, pure text, fixture loop, scenario catalog discovery, injected file artifacts, explicit binary store wiring, dynamic interactive scenario selection, Model Context Protocol (MCP) JSON-RPC stdio server, and M8 team benchmark battery; broader runtime branching remains open | Reference CLI, MCP, and team benchmark active; research and GUI in library/presentation contracts |
 
 ## Milestone Map
 
@@ -51,7 +51,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | M5 | Model-agnostic MCP play | Planned | M3 and stable actor contracts |
 | M6 | Automated behavioral validation | Planned | M4 and M5 |
 | M7 | Semantic-to-parametric calibration proof | Planned | M6 |
-| M8 | Coordinated team decision play | Planned | M4 and M5 |
+| M8 | Coordinated team decision play | Complete | M4 and M5 |
 | M9 | Bounded multi-lane match prototype | Planned | M8 |
 | M10 | Human-usable and accessibility-tested alpha | Planned (library complete) | Stable M9 candidate; informal checks start earlier |
 | M11 | Optional shared-boundary GUI | Planned and optional | Demonstrated presentation need; stable host contracts |
@@ -1606,7 +1606,7 @@ uncertainty and evidence limits reported.
 ## Phase 8 — Team Communication and Shot-Calling
 
 **Milestone:** M8
-**Status:** Planned
+**Status:** Complete
 **Depends on:** M4 and M5
 
 ### Outcome

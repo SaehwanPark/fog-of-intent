@@ -389,6 +389,34 @@ impl McpServer {
           format_tool_error(&format!("unsupported replay scenario ID: '{scenario_id}'"))
         }
       }
+      "team_scenarios_run" => {
+        let scenario_id = args.get("scenario_id").and_then(JsonValue::as_str);
+        match scenario_id {
+          Some(id) if id != "all" && !id.is_empty() => {
+            match crate::agent::scenarios::TeamScenarioCatalog::get(id).and_then(|def| def.run()) {
+              Ok(res) => {
+                let mut text = res.debrief_report.render_markdown();
+                if let Some(ref eval) = res.disagreement_evaluation {
+                  text.push_str("\n\n### Strategic Disagreement Evaluation\n");
+                  text.push_str(&format!(
+                    "Classification: {:?}\nDissent Reason: {:?}\nCounterfactual Delta: {} bp\nExplanation: {}",
+                    eval.classification(),
+                    eval.dissent_reason(),
+                    eval.counterfactual_delta_bp(),
+                    eval.explanation()
+                  ));
+                }
+                format_tool_success(&text)
+              }
+              Err(err) => format_tool_error(&format!("scenario failed: {err}")),
+            }
+          }
+          _ => match crate::cli::build_team_scenarios_report() {
+            Ok(report) => format_tool_success(report.markdown()),
+            Err(err) => format_tool_error(err),
+          },
+        }
+      }
       unknown => format_tool_error(&format!("Unknown tool: '{unknown}'")),
     }
   }
