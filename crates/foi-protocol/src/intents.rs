@@ -27,7 +27,7 @@ impl ActorProtocolIntent {
     }
   }
 
-  pub(crate) const fn from_lane_intent(intent: LaneIntent) -> Self {
+  pub const fn from_lane_intent(intent: LaneIntent) -> Self {
     match intent {
       LaneIntent::Stabilize => Self::Stabilize,
       LaneIntent::Contest => Self::Contest,
@@ -37,7 +37,7 @@ impl ActorProtocolIntent {
     }
   }
 
-  pub(crate) const fn to_lane_intent(self) -> LaneIntent {
+  pub const fn to_lane_intent(self) -> LaneIntent {
     match self {
       Self::Stabilize => LaneIntent::Stabilize,
       Self::Contest => LaneIntent::Contest,

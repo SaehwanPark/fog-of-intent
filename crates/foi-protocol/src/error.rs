@@ -158,7 +158,7 @@ impl ActorProtocolError {
     self.repair
   }
 
-  pub(crate) const fn new(code: ActorProtocolErrorCode, repair: ActorProtocolRepairHint) -> Self {
+  pub const fn new(code: ActorProtocolErrorCode, repair: ActorProtocolRepairHint) -> Self {
     Self {
       schema: ACTOR_PROTOCOL_ERROR_SCHEMA,
       code,
