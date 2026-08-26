@@ -1,5 +1,7 @@
-//! Benchmark scenarios and canonical test catalogs for Public Alpha governance, compatibility, limitations, guides, and reproducibility.
-
+use crate::alpha::archive::{
+  AlphaArchiveError, ReleaseArchiveAuditReport, audit_release_archive_manifest,
+  canonical_alpha_release_archive_manifest,
+};
 use crate::alpha::checks::{
   ALPHA_RELEASE_CHECKS_SCHEMA_VERSION, AlphaReleaseChecksError, AlphaReleaseChecksManifest,
   CheckVerificationStatus, ReleaseCheckCategory, ReleaseCheckDefinition, ReleaseCheckSeverity,
@@ -46,6 +48,7 @@ pub enum AlphaScenarioKind {
   GuidesAudit,
   ReproducibilityAudit,
   ReleaseChecksAudit,
+  ReleaseArchiveAudit,
 }
 
 impl AlphaScenarioKind {
@@ -58,6 +61,7 @@ impl AlphaScenarioKind {
       Self::GuidesAudit => "guides-audit",
       Self::ReproducibilityAudit => "reproducibility-audit",
       Self::ReleaseChecksAudit => "release-checks-audit",
+      Self::ReleaseArchiveAudit => "release-archive-audit",
     }
   }
 }
@@ -193,7 +197,15 @@ impl AlphaScenarioCatalog {
       expected_eligible: false,
     };
 
-  pub const ALL: [AlphaScenarioDefinition; 14] = [
+  pub const SCENARIO_RELEASE_ARCHIVE_COMPLIANT: AlphaScenarioDefinition = AlphaScenarioDefinition {
+    scenario_id: "scenario-alpha-release-archive-v1",
+    title: "Public Alpha Tagged Release Archive Inventory",
+    kind: AlphaScenarioKind::ReleaseArchiveAudit,
+    description: "Evaluates the canonical tagged release archive manifest with 11 categories, 16-hex FNV-1a content digests, and combined signature verification.",
+    expected_eligible: true,
+  };
+
+  pub const ALL: [AlphaScenarioDefinition; 15] = [
     Self::SCENARIO_GOVERNANCE_COMPLIANT,
     Self::SCENARIO_GOVERNANCE_FALLBACK,
     Self::SCENARIO_COMPATIBILITY_MATRIX,
@@ -208,6 +220,7 @@ impl AlphaScenarioCatalog {
     Self::SCENARIO_RELEASE_CHECKS_COMPLIANT,
     Self::SCENARIO_RELEASE_CHECKS_BLOCKER_REJECTED,
     Self::SCENARIO_RELEASE_CHECKS_MISSING_CATEGORY_REJECTED,
+    Self::SCENARIO_RELEASE_ARCHIVE_COMPLIANT,
   ];
 
   pub fn lookup(scenario_id: &str) -> Option<&'static AlphaScenarioDefinition> {
@@ -1131,6 +1144,13 @@ impl AlphaScenarioCatalog {
   -> Result<ReleaseChecksAuditReport, AlphaReleaseChecksError> {
     let manifest = Self::build_missing_category_release_checks_manifest();
     audit_release_checks(&manifest)
+  }
+
+  /// Runs the compliant release archive benchmark.
+  pub fn execute_release_archive_compliant() -> Result<ReleaseArchiveAuditReport, AlphaArchiveError>
+  {
+    let manifest = canonical_alpha_release_archive_manifest();
+    audit_release_archive_manifest(&manifest)
   }
 }
 

@@ -1,3 +1,8 @@
+use crate::alpha::archive::{
+  ALPHA_ARCHIVE_SCHEMA_VERSION, AlphaArchiveError, ArchiveCategoryKind,
+  audit_release_archive_manifest, canonical_alpha_release_archive_manifest, compute_fnv1a_16hex,
+  is_valid_16hex, render_release_archive_report_markdown,
+};
 use crate::alpha::catalog::{AlphaScenarioCatalog, render_alpha_scenario_markdown};
 use crate::alpha::checks::{
   ALPHA_RELEASE_CHECKS_SCHEMA_VERSION, AlphaReleaseChecksError, CheckVerificationStatus,
@@ -1481,4 +1486,149 @@ fn markdown_report_rendering_hygiene() {
   let checks_md = render_release_checks_report_markdown(&checks_rep);
   assert!(checks_md.starts_with("# Fog of Intent — Public Alpha Release Readiness Audit Report"));
   assert!(!checks_md.contains('\x1b'));
+
+  let archive_rep = AlphaScenarioCatalog::execute_release_archive_compliant().unwrap();
+  let archive_md = render_release_archive_report_markdown(&archive_rep);
+  assert!(archive_md.starts_with("# Fog of Intent Release Archive Manifest Audit Report"));
+  assert!(!archive_md.contains('\x1b'));
+}
+
+#[test]
+fn archive_category_kind_round_trips() {
+  for cat in ArchiveCategoryKind::all() {
+    let s = cat.as_str();
+    assert_eq!(ArchiveCategoryKind::parse(s), Some(cat));
+    assert_eq!(cat.to_string(), s);
+  }
+  assert_eq!(ArchiveCategoryKind::parse("invalid-cat"), None);
+}
+
+#[test]
+fn archive_hash_helpers_validate() {
+  assert!(is_valid_16hex("0123456789abcdef"));
+  assert!(!is_valid_16hex("0123456789ABCDEF"));
+  assert!(!is_valid_16hex("short"));
+  assert!(!is_valid_16hex("toolongtoolong12345"));
+  assert!(!is_valid_16hex("0123456789abcdeg")); // non-hex 'g'
+
+  let hash = compute_fnv1a_16hex(b"hello world");
+  assert_eq!(hash.len(), 16);
+  assert!(is_valid_16hex(&hash));
+}
+
+#[test]
+fn canonical_release_archive_manifest_passes_audit() {
+  let manifest = canonical_alpha_release_archive_manifest();
+  let report = audit_release_archive_manifest(&manifest).expect("audit canonical manifest");
+
+  assert_eq!(report.schema_version, ALPHA_ARCHIVE_SCHEMA_VERSION);
+  assert_eq!(report.release_tag, "v0.1.231");
+  assert_eq!(report.package_version, "0.1.231");
+  assert_eq!(report.total_items, 11);
+  assert_eq!(report.mandatory_items, 11);
+  assert_eq!(report.category_summaries.len(), 11);
+  assert_eq!(report.completeness_score_bp, 10_000);
+  assert!(report.is_release_archive_ready);
+  assert!(report.combined_digest_verified);
+
+  let md = render_release_archive_report_markdown(&report);
+  assert!(md.contains("READY FOR TAGGED RELEASE"));
+  assert!(md.contains("100.00% (10000 bp)"));
+}
+
+#[test]
+fn release_archive_error_display_coverage() {
+  let errors = [
+    AlphaArchiveError::EmptyManifest,
+    AlphaArchiveError::MissingReleaseTag,
+    AlphaArchiveError::MissingPackageVersion,
+    AlphaArchiveError::MissingMandatoryCategory(ArchiveCategoryKind::LockfileInventory),
+    AlphaArchiveError::DuplicateItemId("dup-id"),
+    AlphaArchiveError::InvalidHashFormat("invalid-hash"),
+    AlphaArchiveError::InvalidRelativePath("../bad/path"),
+    AlphaArchiveError::ZeroByteMandatoryItem("zero-item"),
+    AlphaArchiveError::CombinedDigestMismatch {
+      expected: "expected-hash",
+      calculated: "calc-hash".to_string(),
+    },
+  ];
+
+  for err in errors {
+    let display_str = err.to_string();
+    assert!(!display_str.is_empty());
+  }
+}
+
+#[test]
+fn release_archive_fail_closed_validation() {
+  let mut manifest = canonical_alpha_release_archive_manifest();
+  manifest.release_tag = "";
+  assert_eq!(
+    audit_release_archive_manifest(&manifest),
+    Err(AlphaArchiveError::MissingReleaseTag)
+  );
+
+  let mut manifest = canonical_alpha_release_archive_manifest();
+  manifest.package_version = "  ";
+  assert_eq!(
+    audit_release_archive_manifest(&manifest),
+    Err(AlphaArchiveError::MissingPackageVersion)
+  );
+
+  let mut manifest = canonical_alpha_release_archive_manifest();
+  manifest.items.clear();
+  assert_eq!(
+    audit_release_archive_manifest(&manifest),
+    Err(AlphaArchiveError::EmptyManifest)
+  );
+
+  let mut manifest = canonical_alpha_release_archive_manifest();
+  manifest
+    .items
+    .retain(|i| i.category != ArchiveCategoryKind::SourceManifest);
+  assert_eq!(
+    audit_release_archive_manifest(&manifest),
+    Err(AlphaArchiveError::MissingMandatoryCategory(
+      ArchiveCategoryKind::SourceManifest
+    ))
+  );
+
+  let mut manifest = canonical_alpha_release_archive_manifest();
+  manifest.items[1].item_id = manifest.items[0].item_id;
+  assert_eq!(
+    audit_release_archive_manifest(&manifest),
+    Err(AlphaArchiveError::DuplicateItemId(
+      manifest.items[0].item_id
+    ))
+  );
+
+  let mut manifest = canonical_alpha_release_archive_manifest();
+  manifest.items[0].relative_path = "/absolute/path";
+  assert_eq!(
+    audit_release_archive_manifest(&manifest),
+    Err(AlphaArchiveError::InvalidRelativePath("/absolute/path"))
+  );
+
+  let mut manifest = canonical_alpha_release_archive_manifest();
+  manifest.items[0].fnv1a_16hex_hash = "not-16-hex";
+  assert_eq!(
+    audit_release_archive_manifest(&manifest),
+    Err(AlphaArchiveError::InvalidHashFormat("not-16-hex"))
+  );
+
+  let mut manifest = canonical_alpha_release_archive_manifest();
+  manifest.items[0].byte_size = 0;
+  assert_eq!(
+    audit_release_archive_manifest(&manifest),
+    Err(AlphaArchiveError::ZeroByteMandatoryItem(
+      manifest.items[0].item_id
+    ))
+  );
+
+  let mut manifest = canonical_alpha_release_archive_manifest();
+  manifest.combined_digest_16hex = "0000000000000000";
+  assert!(matches!(
+    audit_release_archive_manifest(&manifest),
+    Err(AlphaArchiveError::CombinedDigestMismatch { .. })
+  ));
 }

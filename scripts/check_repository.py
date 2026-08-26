@@ -67,6 +67,7 @@ CORE_RUST_FILES = (
   "src/agent/team_plan.rs",
   "src/agent/trust.rs",
   "src/agent/uncertainty.rs",
+  "src/alpha/archive.rs",
   "src/alpha/catalog.rs",
   "src/alpha/checks.rs",
   "src/alpha/compatibility.rs",

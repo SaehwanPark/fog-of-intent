@@ -2362,8 +2362,8 @@ in its legal, accessibility, entertainment, and research claims.
 - [x] Run clean-install, reproducibility, security, license, and compatibility
   checks.
 - [ ] Conduct release-candidate human testing appropriate to public claims.
-- [ ] Archive source, lockfiles, schemas, fixtures, evidence, artifacts, and
-  hashes for the release tag.
+- [x] Archive source, lockfiles, schemas, fixtures, evidence, artifacts, and
+  hashes for the release tag (`m12-alpha-archive-v1`, MCP tool `alpha_release_archive_run`, resource `fog-of-intent://release/archive`).
 
 ### Current M12 release governance, compatibility matrix, data dictionary, and benchmark catalog evidence
 
@@ -2442,8 +2442,8 @@ This establishes the formal release readiness verification check suite, multi-do
 
 - [x] Package official research reproducibility bundles with verified 16-hex FNV-1a checksums via `--scenario m12-reproducibility-bundle-v1` and MCP tool `reproducibility_bundle_run`.
 - [x] Execute release candidate verification check suite (`audit_release_checks`) via `--scenario m12-alpha-release-checks-v1` and MCP tool `alpha_release_checks_run`.
-- [x] Complete MCP JSON-RPC protocol surface parity across all 12 milestones with 21 tools, 3 prompts, and 4 resources (including `gui_presentation_render`, `alpha_governance_audit`, prompt `alpha_release_audit`, and resources `fog-of-intent://release/readiness`, `fog-of-intent://presentation/html`).
-- [ ] Create official tagged research release bundle with governance documentation.
+- [x] Complete MCP JSON-RPC protocol surface parity across all 12 milestones with 23 tools, 3 prompts, and 6 resources (including `gui_presentation_render`, `alpha_governance_audit`, `alpha_release_archive_run`, prompt `alpha_release_audit`, and resources `fog-of-intent://release/readiness`, `fog-of-intent://presentation/html`, `fog-of-intent://calibration/model-card`, `fog-of-intent://release/archive`).
+- [x] Create official tagged research release bundle with governance documentation and 16-hex FNV-1a digests (`m12-alpha-archive-v1`).
 
 ### Deliverables
 

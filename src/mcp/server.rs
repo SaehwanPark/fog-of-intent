@@ -461,6 +461,15 @@ impl McpServer {
           Err(_) => format_tool_error("governance-audit: evaluation failed"),
         }
       }
+      "alpha_release_archive_run" => {
+        match crate::alpha::catalog::AlphaScenarioCatalog::execute_release_archive_compliant() {
+          Ok(report) => {
+            let md = crate::alpha::archive::render_release_archive_report_markdown(&report);
+            format_tool_success(&md)
+          }
+          Err(err) => format_tool_error(&format!("release-archive-audit: {err}")),
+        }
+      }
       unknown => format_tool_error(&format!("Unknown tool: '{unknown}'")),
     }
   }
@@ -617,6 +626,20 @@ impl McpServer {
       "fog-of-intent://calibration/model-card" => {
         let model_card = crate::agent::recalibration::CalibrationModelCardReport::canonical_m7();
         let text = model_card.to_markdown();
+        return JsonValue::Object(vec![(
+          "contents".into(),
+          JsonValue::Array(vec![JsonValue::Object(vec![
+            ("uri".into(), JsonValue::String(uri.into())),
+            ("mimeType".into(), JsonValue::String("text/markdown".into())),
+            ("text".into(), JsonValue::String(text)),
+          ])]),
+        )]);
+      }
+      "fog-of-intent://release/archive" => {
+        let manifest = crate::alpha::archive::canonical_alpha_release_archive_manifest();
+        let report = crate::alpha::archive::audit_release_archive_manifest(&manifest)
+          .expect("audit canonical release archive manifest");
+        let text = crate::alpha::archive::render_release_archive_report_markdown(&report);
         return JsonValue::Object(vec![(
           "contents".into(),
           JsonValue::Array(vec![JsonValue::Object(vec![

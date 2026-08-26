@@ -595,6 +595,64 @@ def run_suite_for_target(target_name: str, cmd: List[str]) -> Dict[str, Any]:
     gov_ok = gov_resp is not None and not gov_resp.get("result", {}).get("isError") and "Release Eligible" in gov_text
     record_test("tools/call -> alpha_governance_audit", gov_ok, {"response": gov_resp})
 
+    # 25h. tools/call -> calibration_proof_run
+    cal_req = {
+      "jsonrpc": "2.0",
+      "id": 317,
+      "method": "tools/call",
+      "params": {"name": "calibration_proof_run", "arguments": {}}
+    }
+    cal_resp = client.send_request(cal_req)
+    cal_text = cal_resp.get("result", {}).get("content", [{}])[0].get("text", "") if cal_resp else ""
+    cal_ok = cal_resp is not None and not cal_resp.get("result", {}).get("isError") and "cautious-laner-semantic-v1" in cal_text
+    record_test("tools/call -> calibration_proof_run", cal_ok, {"response": cal_resp})
+
+    # 25i. tools/call -> alpha_release_archive_run
+    arch_req = {
+      "jsonrpc": "2.0",
+      "id": 318,
+      "method": "tools/call",
+      "params": {"name": "alpha_release_archive_run", "arguments": {}}
+    }
+    arch_resp = client.send_request(arch_req)
+    arch_text = arch_resp.get("result", {}).get("content", [{}])[0].get("text", "") if arch_resp else ""
+    arch_ok = arch_resp is not None and not arch_resp.get("result", {}).get("isError") and "READY FOR TAGGED RELEASE" in arch_text
+    record_test("tools/call -> alpha_release_archive_run", arch_ok, {"response": arch_resp})
+
+    # 25j. resources/read -> fog-of-intent://calibration/model-card
+    rread_cal_req = {
+      "jsonrpc": "2.0",
+      "id": 319,
+      "method": "resources/read",
+      "params": {"uri": "fog-of-intent://calibration/model-card"}
+    }
+    rread_cal_resp = client.send_request(rread_cal_req)
+    rread_cal_contents = rread_cal_resp.get("result", {}).get("contents", []) if rread_cal_resp else []
+    rread_cal_text = rread_cal_contents[0].get("text", "") if rread_cal_contents else ""
+    rread_cal_ok = (
+      rread_cal_resp is not None
+      and len(rread_cal_contents) > 0
+      and "m7-calibration-model-card-v1" in rread_cal_text
+    )
+    record_test("resources/read (fog-of-intent://calibration/model-card)", rread_cal_ok, {"response": rread_cal_resp})
+
+    # 25k. resources/read -> fog-of-intent://release/archive
+    rread_arch_req = {
+      "jsonrpc": "2.0",
+      "id": 320,
+      "method": "resources/read",
+      "params": {"uri": "fog-of-intent://release/archive"}
+    }
+    rread_arch_resp = client.send_request(rread_arch_req)
+    rread_arch_contents = rread_arch_resp.get("result", {}).get("contents", []) if rread_arch_resp else []
+    rread_arch_text = rread_arch_contents[0].get("text", "") if rread_arch_contents else ""
+    rread_arch_ok = (
+      rread_arch_resp is not None
+      and len(rread_arch_contents) > 0
+      and "m12-alpha-archive-v1" in rread_arch_text
+    )
+    record_test("resources/read (fog-of-intent://release/archive)", rread_arch_ok, {"response": rread_arch_resp})
+
     # 26. Negative test: Invalid JSON (-32700)
     client.send_raw("{malformed_json_without_quotes}")
     bad_json_line = client.read_line()

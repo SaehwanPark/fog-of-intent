@@ -310,6 +310,14 @@ pub fn mcp_tools_catalog() -> Vec<McpTool> {
         ("properties".into(), JsonValue::Object(vec![])),
       ]),
     },
+    McpTool {
+      name: "alpha_release_archive_run",
+      description: "Evaluate the Public Alpha tagged release archive manifest, category inventories, and 16-hex FNV-1a digests.",
+      input_schema: JsonValue::Object(vec![
+        ("type".into(), JsonValue::String("object".into())),
+        ("properties".into(), JsonValue::Object(vec![])),
+      ]),
+    },
   ]
 }
 
@@ -339,7 +347,7 @@ pub fn mcp_prompts_catalog() -> Vec<McpPrompt> {
       description: "Release auditor evaluation prompt for inspecting readiness gates, integrity checks, and governance posture.",
       arguments: vec![(
         "scope",
-        "Audit scope (e.g. 'all', 'governance', 'checks', 'reproducibility')",
+        "Audit scope (e.g. 'all', 'governance', 'checks', 'reproducibility', 'archive')",
         false,
       )],
     },
@@ -377,6 +385,12 @@ pub fn mcp_resources_catalog() -> Vec<McpResource> {
       uri: "fog-of-intent://calibration/model-card",
       name: "M7 Semantic-to-Parametric Calibration Model Card",
       description: "Formal model card certifying empirical calibration benchmarks and held-out generalization gates.",
+      mime_type: "text/markdown",
+    },
+    McpResource {
+      uri: "fog-of-intent://release/archive",
+      name: "Public Alpha Release Archive Manifest",
+      description: "Official tagged release artifact inventory, 16-hex FNV-1a digests, and verification report.",
       mime_type: "text/markdown",
     },
   ]
