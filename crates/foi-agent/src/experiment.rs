@@ -583,7 +583,7 @@ impl ScriptedAgentBatchCheckpoint {
       && self.input_fingerprint == batch_input_fingerprint(observation, manifests)
   }
 
-  pub(crate) fn with_completed_count(self, completed_count: usize) -> Self {
+  pub fn with_completed_count(self, completed_count: usize) -> Self {
     Self {
       completed_count: u8::try_from(completed_count).expect("batch cap fits in u8"),
       ..self

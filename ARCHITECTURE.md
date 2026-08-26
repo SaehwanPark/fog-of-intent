@@ -102,9 +102,12 @@ crates/
   foi-map/
     Cargo.toml
     src/
+  foi-agent/
+    Cargo.toml
+    src/
 src/main.rs
 src/lib.rs
-src/agent.rs
+src/agent/
 src/cli.rs
 src/agent_batch_store.rs
 src/agent_operational_store.rs
@@ -135,10 +138,10 @@ _workspace/
 ```
 
 `src/lib.rs`, `src/cli.rs`, `src/agent_batch_store.rs`, `src/agent_operational_store.rs`, `src/gui/`, `src/host.rs`, `src/host_artifact.rs`, `src/run_store.rs`, `src/terminal.rs`, `src/presentation.rs`, `src/repl.rs`, `src/protocol.rs`, `src/session.rs`, `src/study/`, `src/kernel/`,
-`src/lane/`, `src/map/`, and `src/serialization.rs` are the current root crate
-adapter/fixture surface; pure deterministic transition logic lives in `crates/foi-kernel`, `crates/foi-lane`, and `crates/foi-map`;
+`src/lane/`, `src/map/`, `src/agent/`, and `src/serialization.rs` are the current root crate
+adapter/fixture surface; pure deterministic transition and domain logic lives in `crates/foi-kernel`, `crates/foi-lane`, `crates/foi-map`, and `crates/foi-agent`;
 `src/main.rs` parses bounded process options and runs the fixture loop, using
-reedline only when stdin and stdout are terminals. The lane surface is housed in `crates/foi-lane` and the 5v5 map simulation surface in `crates/foi-map`, both cleanly re-exported via root crate facades (`crate::lane::*` and `crate::map::*`). The other paths are
+reedline only when stdin and stdout are terminals. The lane surface is housed in `crates/foi-lane`, the 5v5 map simulation surface in `crates/foi-map`, and the behavioral agent / team communication surface in `crates/foi-agent`, cleanly re-exported via root crate facades (`crate::lane::*`, `crate::map::*`, and `crate::agent::*`). The other paths are
 project-state, design-source, and agent-workflow artifacts.
 
 `src/agent.rs` is a pure, versioned policy boundary. Its
