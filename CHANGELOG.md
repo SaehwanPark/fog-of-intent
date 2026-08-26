@@ -4,6 +4,16 @@ All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 not increment the package version.
 
+## [0.1.239] - 2026-08-26
+
+- ADR-0004 Cargo Workspace Partitioning & `crates/foi-alpha` Member Crate Extraction (Phase 7):
+  - Extracted pure M12 public research-capable alpha release governance, backward compatibility policies, data dictionary fog-of-war redactions, research limitations/evidence boundaries, documentation guides audit, reproducibility package digests, and release readiness verification gates into dedicated `crates/foi-alpha` member crate.
+  - Declared `foi-alpha` as a workspace member in root `Cargo.toml`.
+  - Added `pub use foi_alpha::*;` re-export facade in root `src/alpha/mod.rs` for 100% backward compatibility with existing CLI, host, and MCP adapters.
+  - Updated `scripts/check_repository.py` boundary file tracking for `crates/foi-alpha/src/*.rs`.
+  - Bumped workspace package versions to `0.1.239`.
+  - Verified all 775+ workspace unit, binary, and doc tests pass with zero warnings.
+
 ## [0.1.238] - 2026-08-26
 
 - ADR-0004 Cargo Workspace Partitioning & `crates/foi-gui` Member Crate Extraction (Phase 6):

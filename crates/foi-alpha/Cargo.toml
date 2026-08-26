@@ -1,10 +1,10 @@
 [package]
-name = "foi-study"
+name = "foi-alpha"
 version = "0.1.239"
 edition = "2024"
 rust-version = "1.96"
 license = "MIT"
-description = "Human usability, accessibility alpha study protocol and synthesis framework for Fog of Intent"
+description = "Public alpha release governance, backward compatibility, and readiness audit framework for Fog of Intent"
 
 [lints.clippy]
 as_conversions = "deny"
