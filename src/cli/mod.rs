@@ -5,6 +5,7 @@
 //! boundary.
 
 mod accessibility;
+mod alpha_archive;
 mod behavioral_experiments;
 mod calibration_proof;
 mod draft;
@@ -27,6 +28,9 @@ pub use accessibility::{
   CLI_ACCESSIBILITY_SCHEMA, CliAccessibilityAuditCheck, CliAccessibilityAuditReport,
   MAX_ACCESSIBLE_LINE_WIDTH, MIN_ACCESSIBLE_LINE_WIDTH, STANDARD_LINE_WIDTH,
   audit_cli_presentation_text,
+};
+pub use alpha_archive::{
+  AlphaArchiveCliReport, CLI_ALPHA_ARCHIVE_SCENARIO_ID, build_alpha_archive_report,
 };
 pub use behavioral_experiments::{
   BEHAVIORAL_EXPERIMENTS_REPORT_SCHEMA_V1, BehavioralExperimentsCliReport,

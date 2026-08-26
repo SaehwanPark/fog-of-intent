@@ -26,9 +26,11 @@ not increment the package version.
   - Defined `m12-alpha-archive-v1` in `src/alpha/archive.rs` implementing release archive manifest verification across 11 discrete categories (`SourceManifest`, `LockfileInventory`, `SchemaDefinitions`, `CatalogFixtures`, `ReplayEvidence`, `ModelCards`, `GovernanceManifests`, `CompatibilityMatrix`, `DataDictionary`, `DocumentationGuides`, `ReproducibilityBundle`).
   - Added pure deterministic audit evaluation `audit_release_archive_manifest` enforcing 100% presence of mandatory archive categories, unique item IDs, valid non-escaping relative paths, 16-hex FNV-1a content digest integrity, combined signature verification, integer basis-point completeness scoring ($[0..=10,000]$ bp), and structured Markdown reporting.
   - Added canonical tagged release archive benchmark scenario `scenario-alpha-release-archive-v1` to `AlphaScenarioCatalog`.
-  - Added `alpha_release_archive_run` tool to the Model Context Protocol (MCP) server catalog in `src/mcp/tools.rs` and `src/mcp/server.rs` (expanding server catalog to 23 tools).
-  - Added `fog-of-intent://release/archive` MCP resource delivering the formal release archive audit report (expanding server catalog to 6 resources).
-  - Added comprehensive unit and integration tests in `src/alpha/tests.rs`, `src/mcp/tests.rs`, and `scripts/verify_mcp_server.py`.
+  - Implemented `build_alpha_archive_report` and `AlphaArchiveCliReport` in `src/cli/alpha_archive.rs` pure module for `--scenario m12-alpha-archive-v1`.
+  - Added `m12-alpha-archive-v1` to `CLI_SCENARIO_CATALOG` under `ScenarioExecutionMode::ReleaseArchiveReport` in `src/command_loop.rs`, added interactive selection aliases (`"archive"`, `"release-archive"`, `"alpha-archive"`, `"inventory"`, `"m12-archive"`), menu slot `[15]`, and wired process execution in `src/main.rs`.
+  - Added `alpha_release_archive_run` tool to the Model Context Protocol (MCP) server catalog in `src/mcp/tools.rs` and `src/mcp/server.rs`.
+  - Added `fog-of-intent://release/archive` MCP resource delivering the formal release archive audit report.
+  - Added comprehensive unit and binary integration tests in `src/cli/tests.rs`, `src/command_loop.rs`, `src/alpha/tests.rs`, `src/mcp/tests.rs`, and `tests/binary_run_dir.rs`.
 
 ## [0.1.230] - 2026-08-26
 
