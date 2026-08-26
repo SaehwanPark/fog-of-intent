@@ -237,6 +237,14 @@ pub fn mcp_tools_catalog() -> Vec<McpTool> {
       ]),
     },
     McpTool {
+      name: "behavioral_experiments_run",
+      description: "Execute the Milestone M6 automated behavioral experiments and population validation benchmark battery.",
+      input_schema: JsonValue::Object(vec![
+        ("type".into(), JsonValue::String("object".into())),
+        ("properties".into(), JsonValue::Object(vec![])),
+      ]),
+    },
+    McpTool {
       name: "team_scenarios_run",
       description: "Execute the Milestone M8 canonical team communication, shot-calling, and strategic dissent benchmark battery.",
       input_schema: JsonValue::Object(vec![

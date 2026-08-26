@@ -5,6 +5,7 @@
 //! boundary.
 
 mod accessibility;
+mod behavioral_experiments;
 mod draft;
 mod gui_presentation;
 mod information;
@@ -23,6 +24,10 @@ pub use accessibility::{
   CLI_ACCESSIBILITY_SCHEMA, CliAccessibilityAuditCheck, CliAccessibilityAuditReport,
   MAX_ACCESSIBLE_LINE_WIDTH, MIN_ACCESSIBLE_LINE_WIDTH, STANDARD_LINE_WIDTH,
   audit_cli_presentation_text,
+};
+pub use behavioral_experiments::{
+  BEHAVIORAL_EXPERIMENTS_REPORT_SCHEMA_V1, BehavioralExperimentsCliReport,
+  CLI_BEHAVIORAL_EXPERIMENTS_SCENARIO_ID, build_behavioral_experiments_report,
 };
 
 pub use draft::{CLI_DRAFT_SCHEMA, CliCommittedDraft, CliDraft, CliDraftStageError};

@@ -31,13 +31,13 @@ sequencing or checklist differs from this file, this file governs current work.
 | --- | --- | --- |
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
-| Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs`, `src/mcp/`, `src/cli/study_synthesis.rs`, `src/cli/team_scenarios.rs` | Standalone package version reporting, scenario catalog listing (`--list-scenarios`), Model Context Protocol (MCP) JSON-RPC stdio server (`fog-of-intent mcp serve` or `--mcp`), bounded fixture transcript with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, TTY prompt/completion, `--color`), 3 interactive strategy scenario playthroughs (`--scenario m2-strategy-happy-path-v1`, `--scenario m2-strategy-risk-taking-v1`, `--scenario m2-strategy-conservative-v1`), the team communication & shot-calling benchmark battery with `--scenario m8-team-scenarios-v1`, the interactive 5v5 tactical match runner with `--scenario m9-interactive-match-v1`, a replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1`, the human usability & accessibility alpha study synthesis report with `--scenario m10-human-study-synthesis-v1`, a verified actor-visible HTML5 presentation document with `--scenario m11-gui-presentation-v1`, and a public alpha release readiness audit report with `--scenario m12-alpha-release-checks-v1` |
-| Package | `Cargo.toml` | Version `0.1.226`, one deferred edge crate (`reedline`) |
+| Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs`, `src/mcp/`, `src/cli/behavioral_experiments.rs`, `src/cli/study_synthesis.rs`, `src/cli/team_scenarios.rs` | Standalone package version reporting, scenario catalog listing (`--list-scenarios`), Model Context Protocol (MCP) JSON-RPC stdio server (`fog-of-intent mcp serve` or `--mcp`), bounded fixture transcript with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, TTY prompt/completion, `--color`), 3 interactive strategy scenario playthroughs (`--scenario m2-strategy-happy-path-v1`, `--scenario m2-strategy-risk-taking-v1`, `--scenario m2-strategy-conservative-v1`), the automated behavioral experiments battery with `--scenario m6-behavioral-experiments-v1`, the team communication & shot-calling benchmark battery with `--scenario m8-team-scenarios-v1`, the interactive 5v5 tactical match runner with `--scenario m9-interactive-match-v1`, a replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1`, the human usability & accessibility alpha study synthesis report with `--scenario m10-human-study-synthesis-v1`, a verified actor-visible HTML5 presentation document with `--scenario m11-gui-presentation-v1`, and a public alpha release readiness audit report with `--scenario m12-alpha-release-checks-v1` |
+| Package | `Cargo.toml` | Version `0.1.227`, one deferred edge crate (`reedline`) |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
 | Internal kernel/replay fixture | `src/kernel.rs`, `src/serialization.rs` | M1 complete; not playable |
-| Scenario, CLI, MCP, research, GUI | Grammar, bounded host, pure text, fixture loop, scenario catalog discovery, injected file artifacts, explicit binary store wiring, dynamic interactive scenario selection, Model Context Protocol (MCP) JSON-RPC stdio server, M8 team benchmark battery, and M10 study synthesis runner; broader runtime branching remains open | Reference CLI, MCP, team benchmark, and study synthesis active; research and GUI in library/presentation contracts |
+| Scenario, CLI, MCP, research, GUI | Grammar, bounded host, pure text, fixture loop, scenario catalog discovery, injected file artifacts, explicit binary store wiring, dynamic interactive scenario selection, Model Context Protocol (MCP) JSON-RPC stdio server, M6 behavioral experiment runner, M8 team benchmark battery, and M10 study synthesis runner; broader runtime branching remains open | Reference CLI, MCP, behavioral experiments, team benchmark, and study synthesis active; research and GUI in library/presentation contracts |
 
 ## Milestone Map
 
@@ -49,7 +49,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | M3 | CLI reference experience | Active | M2 |
 | M4 | Interpretable bounded-agent population | Planned | M2; preferably M3 |
 | M5 | Model-agnostic MCP play | Planned | M3 and stable actor contracts |
-| M6 | Automated behavioral validation | Planned | M4 and M5 |
+| M6 | Automated behavioral validation | Complete | M4 and M5 |
 | M7 | Semantic-to-parametric calibration proof | Planned | M6 |
 | M8 | Coordinated team decision play | Complete | M4 and M5 |
 | M9 | Bounded multi-lane match prototype | Planned | M8 |
@@ -1384,7 +1384,7 @@ transition authority.
 ## Phase 6 — Automated Behavioral Validation
 
 **Milestone:** M6
-**Status:** Planned
+**Status:** Complete
 **Depends on:** M4 and M5
 
 ### Outcome

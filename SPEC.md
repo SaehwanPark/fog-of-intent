@@ -2147,7 +2147,16 @@ behavioral research claims remain deferred until study data is collected.
 
 #### Deferred
 
-- Live browser-to-host interaction parity tests.
+### M6 — Automated Behavioral Experiments & Population Validation Runner — 2026-08-25
+
+**Status:** Complete
+
+#### Delivered
+
+- `m6-behavioral-experiments-v1` (`src/cli/behavioral_experiments.rs`, `src/command_loop.rs`, `src/main.rs`) registers and runs the multi-profile matched-scenario behavioral validation benchmark battery across Anchor, Duelist, and Pacer profiles.
+- `build_behavioral_experiments_report` evaluates 4-scenario matched observation pairs, generating selected-intent tallies, distribution basis points ($[0..=10,000]$ bp summing to 10,000 bp), bounded stress population matrices (illegal command, exploit seeking, communication abuse, degenerate policy), and regression no-change gate verification.
+- `behavioral_experiments_run` tool added to the Model Context Protocol (MCP) server catalog in `src/mcp/tools.rs` and `src/mcp/server.rs`.
+- Interactive scenario selection aliases (`"behavioral"`, `"experiments"`, `"population"`, `"m6"`, `"behavioral-experiments"`, `"agent-experiments"`, `"m6-experiments"`) enabled in `parse_scenario_selection`.
 
 ### M8 — Team Communication, Leadership & Strategic Dissent Runner — 2026-08-25
 

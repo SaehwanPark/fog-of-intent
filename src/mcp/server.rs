@@ -389,6 +389,10 @@ impl McpServer {
           format_tool_error(&format!("unsupported replay scenario ID: '{scenario_id}'"))
         }
       }
+      "behavioral_experiments_run" => match crate::cli::build_behavioral_experiments_report() {
+        Ok(report) => format_tool_success(report.markdown()),
+        Err(err) => format_tool_error(err),
+      },
       "team_scenarios_run" => {
         let scenario_id = args.get("scenario_id").and_then(JsonValue::as_str);
         match scenario_id {

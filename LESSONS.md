@@ -5,6 +5,13 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Account for Markdown bolding markers in structured line assertions
+
+- Context: Report generation often formats summary lines as `- **Key:** Value` (e.g. `- **Regression Gate Status:** PASS`).
+- Symptom: String search assertions (`contains("Regression Gate Status: PASS")`) fail because the `**` bolding delimiter breaks exact substring matching.
+- Resolution: Include the formatting markers in the assertion (`contains("**Regression Gate Status:** PASS")`) or assert on individual tokens.
+- Prevention: Check the exact format string in the report builder when authoring assertion matches for rendered report headings and bullet items.
+
 ## Align enum string assertions across Display, Debug, and custom as_str representations in report generators
 
 - Context: Report builders and CLI presenters often mix `Debug` formatting (`"{:?}"` -> `"AlphaReady"`) in summary tables with domain `as_str()`/`Display` formatting (`"alpha-ready"`) in rendered markdown blocks.
