@@ -40,7 +40,7 @@ pub const CLI_APPLICATION_VERSION: &str =
   concat!("fog-of-intent ", env!("CARGO_PKG_VERSION"), "\n");
 
 /// Bounded process-level usage for the executable wrapper.
-pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--select] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n";
+pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n";
 
 /// Execution mode for a scenario entry in the scenario catalog.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -115,7 +115,7 @@ pub const CLI_SCENARIO_CATALOG: &[CliScenarioCatalogEntry] = &[
     display_name: "Interactive 5v5 Tactical Match Playthrough",
     milestone: "M9",
     mode: ScenarioExecutionMode::InteractiveMatch,
-    description: "Interactive multi-lane match command loop supporting tactical rotations, wards, contests, sieges, and debriefs.",
+    description: "Interactive multi-lane command loop supporting tactical rotations, wards, contests, sieges, and debriefs.",
   },
   CliScenarioCatalogEntry {
     id: crate::cli::CLI_MATCH_REPLAY_SCENARIO_ID,
@@ -198,30 +198,29 @@ pub fn format_scenario_catalog_with_dimensions(dimensions: TerminalDimensions) -
   }
 }
 
-/// Closed set of executable fixture constructors.
-#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+/// Closed scenario selection for the executable wrapper.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum CliApplicationScenario {
-  /// The deterministic two-window M3 reference fixture.
-  #[default]
+  /// The bounded two-window reference fixture.
   M3TwoWindowFixture,
-  /// The HappyPath strategy scenario playthrough.
+  /// The HappyPath strategy playthrough fixture.
   M2StrategyHappyPath,
-  /// The RiskTaking strategy scenario playthrough.
+  /// The RiskTaking strategy playthrough fixture.
   M2StrategyRiskTaking,
-  /// The Conservative strategy scenario playthrough.
+  /// The Conservative strategy playthrough fixture.
   M2StrategyConservative,
   /// The interactive 5v5 multi-lane tactical match playthrough.
   M9InteractiveMatch,
-  /// The replay-verified M9 complete-match transcript; prints and exits.
+  /// The replay-verified complete-match transcript.
   M9CompleteMatchReplay,
-  /// The verified actor-visible M11 GUI presentation document; prints and exits.
+  /// The shared-boundary GUI HTML5 presentation document.
   M11GuiPresentation,
-  /// The M12 Public Alpha release readiness check report; prints and exits.
+  /// Public Alpha release readiness checks report.
   M12AlphaReleaseChecks,
 }
 
 impl CliApplicationScenario {
-  /// Whether this scenario supports interactive lane decision play and artifact storage.
+  /// Whether the scenario is an interactive lane fixture.
   pub const fn is_interactive_lane(self) -> bool {
     matches!(
       self,
@@ -232,14 +231,14 @@ impl CliApplicationScenario {
     )
   }
 
-  /// Whether this scenario is an interactive scenario (lane or 5v5 match).
+  /// Whether the scenario supports interactive command loops (either lane or match).
   pub const fn is_interactive(self) -> bool {
     self.is_interactive_lane() || matches!(self, Self::M9InteractiveMatch)
   }
 }
 
-/// Errors raised while parsing executable arguments before the command loop.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+/// Errors raised when parsing process arguments before session execution.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum CliApplicationArgsError {
   MissingScenario,
   EmptyScenario,
@@ -263,7 +262,7 @@ pub enum CliApplicationArgsError {
 }
 
 impl CliApplicationArgsError {
-  /// Return a stable, path-free message suitable for stderr.
+  /// Stable message for argument errors.
   pub const fn message(self) -> &'static str {
     match self {
       Self::MissingScenario => "--scenario needs an ID",
@@ -322,12 +321,14 @@ pub fn resolve_color(mode: CliColorMode, stdout_is_terminal: bool, no_color: boo
     CliColorMode::Auto => stdout_is_terminal && !no_color,
   }
 }
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum CliApplicationCommand {
   Run(CliApplicationOptions),
   Help,
   Version,
   ListScenarios,
+  McpServe,
 }
 
 /// Explicit executable configuration for the bounded fixture loop.
@@ -390,6 +391,23 @@ impl CliApplicationOptions {
 pub fn parse_application_args(
   args: &[OsString],
 ) -> Result<CliApplicationCommand, CliApplicationArgsError> {
+  if !args.is_empty() && args[0] == "mcp" {
+    if args.len() == 1 {
+      return Ok(CliApplicationCommand::McpServe);
+    }
+    if args.len() == 2 && args[1] == "serve" {
+      return Ok(CliApplicationCommand::McpServe);
+    }
+    if args.len() == 4
+      && args[1] == "serve"
+      && (args[2] == "--transport" || args[2] == "-t")
+      && args[3] == "stdio"
+    {
+      return Ok(CliApplicationCommand::McpServe);
+    }
+    return Err(CliApplicationArgsError::UnexpectedArgument);
+  }
+
   let mut scenario = None;
   let mut interactive_select = false;
   let mut run_dir = None;
@@ -413,6 +431,12 @@ pub fn parse_application_args(
       value if value == "--list-scenarios" || value == "-l" => {
         if args.len() == 1 {
           return Ok(CliApplicationCommand::ListScenarios);
+        }
+        return Err(CliApplicationArgsError::UnexpectedArgument);
+      }
+      value if value == "--mcp" => {
+        if args.len() == 1 {
+          return Ok(CliApplicationCommand::McpServe);
         }
         return Err(CliApplicationArgsError::UnexpectedArgument);
       }
@@ -1086,6 +1110,7 @@ mod tests {
       CliApplicationCommand::ListScenarios => {
         panic!("run arguments must not select list scenarios")
       }
+      CliApplicationCommand::McpServe => panic!("run arguments must not select mcp"),
     }
   }
 
@@ -1097,7 +1122,7 @@ mod tests {
     );
     assert_eq!(
       CLI_APPLICATION_HELP,
-      "usage: fog-of-intent [--scenario <id>] [--select] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n"
+      "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n"
     );
     assert_eq!(
       parse_application_args(&[OsString::from("--version")]),
@@ -1224,6 +1249,7 @@ mod tests {
         CliApplicationCommand::Help => panic!("options must select a run"),
         CliApplicationCommand::Version => panic!("options must select a run"),
         CliApplicationCommand::ListScenarios => panic!("options must select a run"),
+        CliApplicationCommand::McpServe => panic!("options must select a run"),
       }
     }
   }

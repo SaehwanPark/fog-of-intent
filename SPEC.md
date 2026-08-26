@@ -1205,10 +1205,14 @@ transport-integrated sessions and broader protocol compatibility remain open.
   bounded actor-safe errors, and never exposes health, position, wave,
   coordination, delayed-origin, execution-trace, hash, snapshot, or replay
   fields.
-  This is a pure library boundary, not an MCP transport or complete-session
-  claim; detailed causal debrief, communication delivery, transport,
-  host-integrated simultaneous resolution/coordination, and broader host-error
-  projection remain open.
+- `src/mcp/` implements the Model Context Protocol (MCP) JSON-RPC 2.0 stdio server (`m5-mcp-stdio-adapter-v1`):
+  - `McpServer` provides a deterministic line-delimited JSON-RPC 2.0 stdio runner handling standard MCP lifecycle (`initialize`, `notifications/initialized`, `ping`, `tools/list`, `tools/call`, `prompts/list`, `prompts/get`, `resources/list`, `resources/read`).
+  - Exposes typed lane tools (`observe`, `stage_draft`, `read_draft`, `clear_draft`, `commit_plan`, `advance_window`, `inspect_history`, `get_debrief`, `branch_scenario`), 5v5 multi-lane match tools (`match_observe`, `match_plan_action`, `match_advance`, `match_debrief`), and scenario verification tool (`replay_scenario`).
+  - Standard JSON-RPC error codes (`-32700`, `-32600`, `-32601`, `-32602`, `-32603`) enforce strict fail-closed boundary safety.
+  - Executable wiring through `fog-of-intent mcp`, `fog-of-intent mcp serve [--transport stdio]`, and `fog-of-intent --mcp`.
+  - Comprehensive unit and binary integration test coverage with zero external dependencies.
+
+This establishes the Milestone M5 exit evidence for model-agnostic MCP agent play.
 
 ### M6 — Experiment manifest boundary — 2026-08-08
 

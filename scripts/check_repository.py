@@ -196,6 +196,7 @@ CORE_EDGE_RUST_DIRECTORIES = frozenset(
   {
     "src/cli",
     "src/host",
+    "src/mcp",
   }
 )
 CORE_BOUNDARY_PATTERNS = (

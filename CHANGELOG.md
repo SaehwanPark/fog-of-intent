@@ -4,6 +4,22 @@ All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 not increment the package version.
 
+## [0.1.224] - 2026-08-25
+
+### Added
+
+- Model-Agnostic Model Context Protocol (MCP) JSON-RPC 2.0 stdio server (`m5-mcp-stdio-adapter-v1`):
+  - Standalone MCP server implementation in `src/mcp/` (`McpServer`, `McpTool`, `McpPrompt`, `McpResource`, `JsonValue`, `JsonRpcRequest`, `JsonRpcResponse`, `JsonRpcError`).
+  - Standard JSON-RPC 2.0 lifecycle dispatcher handling `initialize`, `notifications/initialized`, `ping`, `tools/list`, `tools/call`, `prompts/list`, `prompts/get`, `resources/list`, and `resources/read`.
+  - Comprehensive tool catalog exposing:
+    - 1-lane tactical tools: `observe`, `stage_draft`, `read_draft`, `clear_draft`, `commit_plan`, `advance_window`, `inspect_history`, `get_debrief`, and `branch_scenario`.
+    - 5v5 multi-lane match tools: `match_observe`, `match_plan_action` (`rotate`, `ward`, `contest`, `siege`, `evaluate`, `idle`), `match_advance`, and `match_debrief`.
+    - Scenario verification tool: `replay_scenario`.
+  - Structured prompt templates (`lane_decision_window`, `match_macro_turn`) and simulation resources (`fog-of-intent://scenario/rules`, `fog-of-intent://session/state`).
+  - Stdio streaming execution loop (`McpServer::run_stdio`) reading line-delimited JSON-RPC from standard input and emitting responses to standard output.
+  - Process-level command and CLI flag wiring: `fog-of-intent mcp`, `fog-of-intent mcp serve [--transport stdio]`, and `fog-of-intent --mcp`.
+  - Comprehensive unit and binary integration tests across `src/mcp/tests.rs` and `tests/binary_run_dir.rs`.
+
 ## [0.1.223] - 2026-08-25
 
 ### Added
