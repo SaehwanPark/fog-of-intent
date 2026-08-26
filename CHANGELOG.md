@@ -4,6 +4,20 @@ All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 not increment the package version.
 
+## [0.1.230] - 2026-08-26
+
+### Added
+
+- Milestone M7 Semantic-to-Parametric Calibration Proof Benchmark Battery Runner & MCP Tooling (`m7-calibration-proof-v1`):
+  - Added `m7-calibration-proof-v1` to the canonical `CLI_SCENARIO_CATALOG` in `src/command_loop.rs` under `ScenarioExecutionMode::CalibrationProofBattery` (Milestone M7).
+  - Implemented `build_calibration_proof_report` and `CalibrationProofCliReport` in `src/cli/calibration_proof.rs` pure module evaluating semantic profiles, 7 diagnostic dilemma domains, regularized parametric policy fitting, held-out generalization, multi-model prompt protocol empirical alignment, and recalibration policies.
+  - Added formatted plain text Markdown report generation documenting per-profile regularization strength, held-out generalization loss/accuracy, diagnostic dilemma domains, empirical total variation distance (TVD), parameter identifiability sensitivities, and model card certification.
+  - Added `write_calibration_proof_report` and wired CLI scenario execution in `src/main.rs`.
+  - Added interactive scenario selection aliases (`"calibration-proof"`, `"calibration"`, `"parametric"`, `"m7"`, `"m7-calibration"`) in `parse_scenario_selection`.
+  - Added `calibration_proof_run` tool to the Model Context Protocol (MCP) server catalog in `src/mcp/tools.rs` and `src/mcp/server.rs`.
+  - Added `fog-of-intent://calibration/model-card` MCP resource delivering the formal M7 calibration proof model card Markdown.
+  - Added comprehensive unit and binary integration tests in `src/cli/tests.rs`, `src/command_loop.rs`, `src/mcp/tests.rs`, and `tests/binary_run_dir.rs`.
+
 ## [0.1.229] - 2026-08-25
 
 ### Added

@@ -6,6 +6,7 @@
 
 mod accessibility;
 mod behavioral_experiments;
+mod calibration_proof;
 mod draft;
 mod gui_presentation;
 mod information;
@@ -29,6 +30,10 @@ pub use accessibility::{
 pub use behavioral_experiments::{
   BEHAVIORAL_EXPERIMENTS_REPORT_SCHEMA_V1, BehavioralExperimentsCliReport,
   CLI_BEHAVIORAL_EXPERIMENTS_SCENARIO_ID, build_behavioral_experiments_report,
+};
+pub use calibration_proof::{
+  CALIBRATION_PROOF_REPORT_SCHEMA_V1, CLI_CALIBRATION_PROOF_SCENARIO_ID, CalibrationProofCliReport,
+  build_calibration_proof_report,
 };
 
 pub use draft::{CLI_DRAFT_SCHEMA, CliCommittedDraft, CliDraft, CliDraftStageError};

@@ -393,6 +393,10 @@ impl McpServer {
         Ok(report) => format_tool_success(report.markdown()),
         Err(err) => format_tool_error(err),
       },
+      "calibration_proof_run" => match crate::cli::build_calibration_proof_report() {
+        Ok(report) => format_tool_success(report.markdown()),
+        Err(err) => format_tool_error(err),
+      },
       "team_scenarios_run" => {
         let scenario_id = args.get("scenario_id").and_then(JsonValue::as_str);
         match scenario_id {
@@ -606,6 +610,18 @@ impl McpServer {
           JsonValue::Array(vec![JsonValue::Object(vec![
             ("uri".into(), JsonValue::String(uri.into())),
             ("mimeType".into(), JsonValue::String("text/html".into())),
+            ("text".into(), JsonValue::String(text)),
+          ])]),
+        )]);
+      }
+      "fog-of-intent://calibration/model-card" => {
+        let model_card = crate::agent::recalibration::CalibrationModelCardReport::canonical_m7();
+        let text = model_card.to_markdown();
+        return JsonValue::Object(vec![(
+          "contents".into(),
+          JsonValue::Array(vec![JsonValue::Object(vec![
+            ("uri".into(), JsonValue::String(uri.into())),
+            ("mimeType".into(), JsonValue::String("text/markdown".into())),
             ("text".into(), JsonValue::String(text)),
           ])]),
         )]);

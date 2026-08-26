@@ -991,3 +991,34 @@ fn reproducibility_bundle_report_is_deterministic() {
     super::reproducibility::build_reproducibility_bundle_report().expect("second report");
   assert_eq!(first, second);
 }
+
+// --- M7 Semantic-to-parametric calibration proof runner ---
+
+#[test]
+fn calibration_proof_report_builds_and_is_valid() {
+  let report = super::calibration_proof::build_calibration_proof_report()
+    .expect("calibration proof battery executes and builds");
+  assert!(report.is_generalization_passed());
+  assert!(report.is_alignment_passed());
+  assert_eq!(report.profile_count(), 3);
+  assert_eq!(report.diagnostic_domain_count(), 7);
+  let md = report.markdown();
+  assert!(
+    md.contains("# Fog of Intent — Milestone M7 Semantic-to-Parametric Calibration Proof Battery")
+  );
+  assert!(md.contains("cautious-laner-semantic-v1"));
+  assert!(md.contains("risk-taking-laner-semantic-v1"));
+  assert!(md.contains("yielding-laner-semantic-v1"));
+  assert!(md.contains("Diagnostic Choice Dilemma Catalog"));
+  assert!(md.contains("Multi-Model Empirical Alignment"));
+  assert!(md.contains("Calibration Proof Battery Summary"));
+  assert!(md.contains("**Recalibration Trigger Gate Status:** PASS"));
+  assert!(!md.contains('\u{1b}'));
+}
+
+#[test]
+fn calibration_proof_report_is_deterministic() {
+  let first = super::calibration_proof::build_calibration_proof_report().expect("first report");
+  let second = super::calibration_proof::build_calibration_proof_report().expect("second report");
+  assert_eq!(first, second);
+}

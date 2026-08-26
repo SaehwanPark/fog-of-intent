@@ -40,7 +40,7 @@ pub const CLI_APPLICATION_VERSION: &str =
   concat!("fog-of-intent ", env!("CARGO_PKG_VERSION"), "\n");
 
 /// Bounded process-level usage for the executable wrapper.
-pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m6-behavioral-experiments-v1, m8-team-scenarios-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m10-human-study-synthesis-v1, m11-gui-presentation-v1, m12-alpha-release-checks-v1, or m12-reproducibility-bundle-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n";
+pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m6-behavioral-experiments-v1, m7-calibration-proof-v1, m8-team-scenarios-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m10-human-study-synthesis-v1, m11-gui-presentation-v1, m12-alpha-release-checks-v1, or m12-reproducibility-bundle-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n";
 
 /// Execution mode for a scenario entry in the scenario catalog.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -59,6 +59,8 @@ pub enum ScenarioExecutionMode {
   HumanStudySynthesis,
   /// Actor-visible HTML5/SVG presentation document export; prints and exits.
   HtmlPresentationExport,
+  /// Milestone M7 semantic-to-parametric calibration proof battery; prints and exits.
+  CalibrationProofBattery,
   /// Public Alpha release readiness check suite; prints and exits.
   ReleaseChecksReport,
   /// Public Alpha research reproducibility bundle integrity audit; prints and exits.
@@ -72,6 +74,7 @@ impl ScenarioExecutionMode {
       Self::InteractiveLane => "interactive-lane",
       Self::InteractiveMatch => "interactive-match",
       Self::BehavioralExperimentsBattery => "behavioral-battery",
+      Self::CalibrationProofBattery => "calibration-battery",
       Self::TeamScenariosBattery => "team-battery",
       Self::BatchReplayTranscript => "replay-transcript",
       Self::HumanStudySynthesis => "study-synthesis",
@@ -128,6 +131,13 @@ pub const CLI_SCENARIO_CATALOG: &[CliScenarioCatalogEntry] = &[
     milestone: "M6",
     mode: ScenarioExecutionMode::BehavioralExperimentsBattery,
     description: "Multi-profile matched-scenario selected-intent tallies, bounded stress population matrix, and regression gate checks.",
+  },
+  CliScenarioCatalogEntry {
+    id: crate::cli::CLI_CALIBRATION_PROOF_SCENARIO_ID,
+    display_name: "Semantic-to-Parametric Calibration Proof Battery",
+    milestone: "M7",
+    mode: ScenarioExecutionMode::CalibrationProofBattery,
+    description: "Multi-model calibration proof, diagnostic choice dilemma catalog, regularized parametric policy fitting, and held-out generalization gates.",
   },
   CliScenarioCatalogEntry {
     id: crate::cli::CLI_TEAM_SCENARIOS_SCENARIO_ID,
@@ -251,6 +261,8 @@ pub enum CliApplicationScenario {
   M2StrategyConservative,
   /// Milestone M6 automated behavioral experiments and population validation battery.
   M6BehavioralExperiments,
+  /// Milestone M7 semantic-to-parametric calibration proof battery.
+  M7CalibrationProof,
   /// Milestone M8 team communication and shot-calling benchmark battery.
   M8TeamScenarios,
   /// The interactive 5v5 multi-lane tactical match playthrough.
@@ -524,6 +536,8 @@ pub fn parse_application_args(
           scenario = Some(CliApplicationScenario::M2StrategyConservative);
         } else if args[index] == crate::cli::CLI_BEHAVIORAL_EXPERIMENTS_SCENARIO_ID {
           scenario = Some(CliApplicationScenario::M6BehavioralExperiments);
+        } else if args[index] == crate::cli::CLI_CALIBRATION_PROOF_SCENARIO_ID {
+          scenario = Some(CliApplicationScenario::M7CalibrationProof);
         } else if args[index] == crate::cli::CLI_TEAM_SCENARIOS_SCENARIO_ID {
           scenario = Some(CliApplicationScenario::M8TeamScenarios);
         } else if args[index] == crate::host::CLI_INTERACTIVE_MATCH_SCENARIO_ID {
@@ -625,6 +639,15 @@ pub fn write_behavioral_experiments_report<W: Write>(mut output: W) -> io::Resul
   output.write_all(report.markdown().as_bytes())?;
   output.flush()?;
   Ok(report.is_regression_passed())
+}
+
+/// Print the Milestone M7 Semantic-to-Parametric Calibration Proof Battery report and stop.
+/// Used by the executable edge for `--scenario m7-calibration-proof-v1`.
+pub fn write_calibration_proof_report<W: Write>(mut output: W) -> io::Result<bool> {
+  let report = crate::cli::build_calibration_proof_report().map_err(io::Error::other)?;
+  output.write_all(report.markdown().as_bytes())?;
+  output.flush()?;
+  Ok(report.is_generalization_passed() && report.is_alignment_passed())
 }
 
 /// Print the Milestone M8 Team Communication & Shot-Calling Benchmark Battery report and stop.
@@ -1016,13 +1039,14 @@ pub fn parse_scenario_selection(input: &str) -> Option<CliApplicationScenario> {
       3 => Some(CliApplicationScenario::M2StrategyRiskTaking),
       4 => Some(CliApplicationScenario::M2StrategyConservative),
       5 => Some(CliApplicationScenario::M6BehavioralExperiments),
-      6 => Some(CliApplicationScenario::M8TeamScenarios),
-      7 => Some(CliApplicationScenario::M9InteractiveMatch),
-      8 => Some(CliApplicationScenario::M9CompleteMatchReplay),
-      9 => Some(CliApplicationScenario::M10StudySynthesis),
-      10 => Some(CliApplicationScenario::M11GuiPresentation),
-      11 => Some(CliApplicationScenario::M12AlphaReleaseChecks),
-      12 => Some(CliApplicationScenario::M12ReproducibilityBundle),
+      6 => Some(CliApplicationScenario::M7CalibrationProof),
+      7 => Some(CliApplicationScenario::M8TeamScenarios),
+      8 => Some(CliApplicationScenario::M9InteractiveMatch),
+      9 => Some(CliApplicationScenario::M9CompleteMatchReplay),
+      10 => Some(CliApplicationScenario::M10StudySynthesis),
+      11 => Some(CliApplicationScenario::M11GuiPresentation),
+      12 => Some(CliApplicationScenario::M12AlphaReleaseChecks),
+      13 => Some(CliApplicationScenario::M12ReproducibilityBundle),
       _ => None,
     };
   }
@@ -1048,6 +1072,12 @@ pub fn parse_scenario_selection(input: &str) -> Option<CliApplicationScenario> {
     | "m6"
     | "agent-experiments"
     | "m6-experiments" => Some(CliApplicationScenario::M6BehavioralExperiments),
+    crate::cli::CLI_CALIBRATION_PROOF_SCENARIO_ID
+    | "calibration-proof"
+    | "calibration"
+    | "parametric"
+    | "m7"
+    | "m7-calibration" => Some(CliApplicationScenario::M7CalibrationProof),
     crate::cli::CLI_TEAM_SCENARIOS_SCENARIO_ID
     | "team-scenarios"
     | "team"
@@ -1133,7 +1163,7 @@ pub fn format_scenario_menu_with_dimensions(
   }
   let wrap = dimensions.wrap_width();
   for line in crate::terminal::wrap_labeled_line(
-    "Select scenario by number [1-12], scenario ID, or short alias.",
+    "Select scenario by number [1-13], scenario ID, or short alias.",
     wrap,
   ) {
     output.push_str(&line);
@@ -1171,7 +1201,7 @@ pub fn select_scenario_interactively_with_dimensions<R: BufRead, W: Write>(
 ) -> io::Result<Option<CliApplicationScenario>> {
   output.write_all(format_scenario_menu_with_dimensions(style, dimensions).as_bytes())?;
   output.flush()?;
-  let prompt = style.paint_cyan("scenario [1-12]> ");
+  let prompt = style.paint_cyan("scenario [1-13]> ");
   let mut line = String::new();
   loop {
     output.write_all(prompt.as_bytes())?;
@@ -1194,7 +1224,7 @@ pub fn select_scenario_interactively_with_dimensions<R: BufRead, W: Write>(
       return Ok(Some(scenario));
     }
     let err_msg = style.paint_red(&format!(
-      "unknown scenario selection: '{trimmed}'. Please enter 1-8, scenario ID, alias, or 'q' to cancel.\n"
+      "unknown scenario selection: '{trimmed}'. Please enter 1-13, scenario ID, alias, or 'q' to cancel.\n"
     ));
     output.write_all(err_msg.as_bytes())?;
     output.flush()?;
@@ -1247,7 +1277,7 @@ mod tests {
     );
     assert_eq!(
       CLI_APPLICATION_HELP,
-      "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m6-behavioral-experiments-v1, m8-team-scenarios-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m10-human-study-synthesis-v1, m11-gui-presentation-v1, m12-alpha-release-checks-v1, or m12-reproducibility-bundle-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n"
+      "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m6-behavioral-experiments-v1, m7-calibration-proof-v1, m8-team-scenarios-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m10-human-study-synthesis-v1, m11-gui-presentation-v1, m12-alpha-release-checks-v1, or m12-reproducibility-bundle-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n"
     );
     assert_eq!(
       parse_application_args(&[OsString::from("--version")]),
@@ -1771,8 +1801,23 @@ mod tests {
   }
 
   #[test]
+  fn calibration_proof_report_writer_outputs_markdown() {
+    let mut buffer: Vec<u8> = Vec::new();
+    let is_passed = write_calibration_proof_report(&mut buffer).expect("report writes");
+    assert!(is_passed);
+    let text = String::from_utf8(buffer).expect("UTF-8 report");
+    assert!(
+      text.contains(
+        "# Fog of Intent — Milestone M7 Semantic-to-Parametric Calibration Proof Battery"
+      )
+    );
+    assert!(text.contains("cautious-laner-semantic-v1"));
+    assert!(text.contains("Calibration Proof Battery Summary"));
+  }
+
+  #[test]
   fn scenario_catalog_format_and_metadata_are_complete() {
-    assert_eq!(CLI_SCENARIO_CATALOG.len(), 12);
+    assert_eq!(CLI_SCENARIO_CATALOG.len(), 13);
     for entry in CLI_SCENARIO_CATALOG {
       assert!(!entry.id.is_empty());
       assert!(!entry.display_name.is_empty());
@@ -1791,6 +1836,10 @@ mod tests {
     assert_eq!(
       ScenarioExecutionMode::BehavioralExperimentsBattery.label(),
       "behavioral-battery"
+    );
+    assert_eq!(
+      ScenarioExecutionMode::CalibrationProofBattery.label(),
+      "calibration-battery"
     );
     assert_eq!(
       ScenarioExecutionMode::TeamScenariosBattery.label(),
@@ -1824,6 +1873,7 @@ mod tests {
     assert!(catalog_text.contains("m2-strategy-risk-taking-v1"));
     assert!(catalog_text.contains("m2-strategy-conservative-v1"));
     assert!(catalog_text.contains("m6-behavioral-experiments-v1"));
+    assert!(catalog_text.contains("m7-calibration-proof-v1"));
     assert!(catalog_text.contains("m8-team-scenarios-v1"));
     assert!(catalog_text.contains("m9-interactive-match-v1"));
     assert!(catalog_text.contains("m9-complete-match-replay-v1"));
@@ -1918,30 +1968,34 @@ mod tests {
     );
     assert_eq!(
       parse_scenario_selection("6"),
-      Some(CliApplicationScenario::M8TeamScenarios)
+      Some(CliApplicationScenario::M7CalibrationProof)
     );
     assert_eq!(
       parse_scenario_selection("7"),
-      Some(CliApplicationScenario::M9InteractiveMatch)
+      Some(CliApplicationScenario::M8TeamScenarios)
     );
     assert_eq!(
       parse_scenario_selection("8"),
-      Some(CliApplicationScenario::M9CompleteMatchReplay)
+      Some(CliApplicationScenario::M9InteractiveMatch)
     );
     assert_eq!(
       parse_scenario_selection("9"),
-      Some(CliApplicationScenario::M10StudySynthesis)
+      Some(CliApplicationScenario::M9CompleteMatchReplay)
     );
     assert_eq!(
       parse_scenario_selection("10"),
-      Some(CliApplicationScenario::M11GuiPresentation)
+      Some(CliApplicationScenario::M10StudySynthesis)
     );
     assert_eq!(
       parse_scenario_selection("11"),
-      Some(CliApplicationScenario::M12AlphaReleaseChecks)
+      Some(CliApplicationScenario::M11GuiPresentation)
     );
     assert_eq!(
       parse_scenario_selection("12"),
+      Some(CliApplicationScenario::M12AlphaReleaseChecks)
+    );
+    assert_eq!(
+      parse_scenario_selection("13"),
       Some(CliApplicationScenario::M12ReproducibilityBundle)
     );
 
@@ -1965,6 +2019,10 @@ mod tests {
     assert_eq!(
       parse_scenario_selection(crate::cli::CLI_BEHAVIORAL_EXPERIMENTS_SCENARIO_ID),
       Some(CliApplicationScenario::M6BehavioralExperiments)
+    );
+    assert_eq!(
+      parse_scenario_selection(crate::cli::CLI_CALIBRATION_PROOF_SCENARIO_ID),
+      Some(CliApplicationScenario::M7CalibrationProof)
     );
     assert_eq!(
       parse_scenario_selection(crate::cli::CLI_TEAM_SCENARIOS_SCENARIO_ID),
@@ -2047,6 +2105,22 @@ mod tests {
     assert_eq!(
       parse_scenario_selection("m6"),
       Some(CliApplicationScenario::M6BehavioralExperiments)
+    );
+    assert_eq!(
+      parse_scenario_selection("calibration-proof"),
+      Some(CliApplicationScenario::M7CalibrationProof)
+    );
+    assert_eq!(
+      parse_scenario_selection("calibration"),
+      Some(CliApplicationScenario::M7CalibrationProof)
+    );
+    assert_eq!(
+      parse_scenario_selection("parametric"),
+      Some(CliApplicationScenario::M7CalibrationProof)
+    );
+    assert_eq!(
+      parse_scenario_selection("m7"),
+      Some(CliApplicationScenario::M7CalibrationProof)
     );
     assert_eq!(
       parse_scenario_selection("team-scenarios"),
@@ -2179,7 +2253,7 @@ mod tests {
       Some(CliApplicationScenario::M2StrategyHappyPath)
     );
     assert_eq!(
-      parse_scenario_selection("  7\n"),
+      parse_scenario_selection("  8\n"),
       Some(CliApplicationScenario::M9InteractiveMatch)
     );
     assert_eq!(
@@ -2191,7 +2265,7 @@ mod tests {
     assert_eq!(parse_scenario_selection(""), None);
     assert_eq!(parse_scenario_selection("   "), None);
     assert_eq!(parse_scenario_selection("0"), None);
-    assert_eq!(parse_scenario_selection("13"), None);
+    assert_eq!(parse_scenario_selection("14"), None);
     assert_eq!(parse_scenario_selection("99"), None);
     assert_eq!(parse_scenario_selection("unknown-scenario"), None);
   }
@@ -2205,13 +2279,14 @@ mod tests {
     assert!(menu.contains("[3] RiskTaking Strategy Playthrough"));
     assert!(menu.contains("[4] Conservative Strategy Playthrough"));
     assert!(menu.contains("[5] Automated Behavioral Experiments & Population Validation"));
-    assert!(menu.contains("[6] Team Communication & Shot-Calling Battery"));
-    assert!(menu.contains("[7] Interactive 5v5 Tactical Match Playthrough"));
-    assert!(menu.contains("[8] Complete Match Replay Transcript"));
-    assert!(menu.contains("[9] Human Usability & Accessibility Study Synthesis"));
-    assert!(menu.contains("[10] Shared-Boundary GUI Presentation Document"));
-    assert!(menu.contains("[11] Public Alpha Release Readiness Checks"));
-    assert!(menu.contains("[12] Public Alpha Research Reproducibility Bundle"));
+    assert!(menu.contains("[6] Semantic-to-Parametric Calibration Proof Battery"));
+    assert!(menu.contains("[7] Team Communication & Shot-Calling Battery"));
+    assert!(menu.contains("[8] Interactive 5v5 Tactical Match Playthrough"));
+    assert!(menu.contains("[9] Complete Match Replay Transcript"));
+    assert!(menu.contains("[10] Human Usability & Accessibility Study Synthesis"));
+    assert!(menu.contains("[11] Shared-Boundary GUI Presentation Document"));
+    assert!(menu.contains("[12] Public Alpha Release Readiness Checks"));
+    assert!(menu.contains("[13] Public Alpha Research Reproducibility Bundle"));
     assert!(menu.contains("Press Enter for default [1]"));
   }
 
