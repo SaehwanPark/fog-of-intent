@@ -238,6 +238,20 @@ fn main() -> ExitCode {
       }
     };
   }
+  if matches!(scenario, CliApplicationScenario::M12AlphaArchive) {
+    let stdout = io::stdout();
+    return match fog_of_intent::command_loop::write_alpha_archive_report(stdout.lock()) {
+      Ok(true) => ExitCode::SUCCESS,
+      Ok(false) => {
+        eprintln!("release archive manifest detected incomplete categories or hash errors");
+        ExitCode::FAILURE
+      }
+      Err(error) => {
+        eprintln!("release archive audit failed: {error}");
+        ExitCode::FAILURE
+      }
+    };
+  }
 
   let mut command_loop = match scenario {
     CliApplicationScenario::M2StrategyHappyPath => match options.run_dir() {

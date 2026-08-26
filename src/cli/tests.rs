@@ -1049,3 +1049,28 @@ fn gui_browser_flow_report_is_deterministic() {
   let second = super::gui_browser_flow::build_gui_browser_flow_report().expect("second report");
   assert_eq!(first, second);
 }
+
+// --- M12 Public Alpha Release Archive runner ---
+
+#[test]
+fn alpha_archive_report_builds_and_is_ready() {
+  let report = super::alpha_archive::build_alpha_archive_report()
+    .expect("alpha archive manifest audits and builds");
+  assert!(report.is_ready());
+  assert_eq!(report.completeness_score_bp(), 10_000);
+  let md = report.markdown();
+  assert!(md.contains("# Fog of Intent Release Archive Manifest Audit Report"));
+  assert!(md.contains("**Archive Disposition:** **READY FOR TAGGED RELEASE**"));
+  assert!(md.contains("source-manifest"));
+  assert!(md.contains("lockfile-inventory"));
+  assert!(md.contains("reproducibility-bundle"));
+  assert!(md.contains("Evidence Boundaries & Archival Guidance"));
+  assert!(!md.contains('\u{1b}'));
+}
+
+#[test]
+fn alpha_archive_report_is_deterministic() {
+  let first = super::alpha_archive::build_alpha_archive_report().expect("first report");
+  let second = super::alpha_archive::build_alpha_archive_report().expect("second report");
+  assert_eq!(first, second);
+}

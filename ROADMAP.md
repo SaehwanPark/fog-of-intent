@@ -2364,7 +2364,7 @@ in its legal, accessibility, entertainment, and research claims.
   checks.
 - [ ] Conduct release-candidate human testing appropriate to public claims.
 - [x] Archive source, lockfiles, schemas, fixtures, evidence, artifacts, and
-  hashes for the release tag (`m12-alpha-archive-v1`, MCP tool `alpha_release_archive_run`, resource `fog-of-intent://release/archive`).
+  hashes for the release tag (`m12-alpha-archive-v1`, `--scenario m12-alpha-archive-v1`, MCP tool `alpha_release_archive_run`, resource `fog-of-intent://release/archive`).
 
 ### Current M12 release governance, compatibility matrix, data dictionary, and benchmark catalog evidence
 
@@ -2482,7 +2482,9 @@ As identified in the independent technical audit ([`docs/AUDIT_REPORT.md`](docs/
   - `crates/foi-study` (human usability, accessibility & alpha synthesis)
   - `crates/foi-gui` (presentation-only HTML5/CSS/SVG generator & parity engine)
   - `crates/foi-alpha` (release governance, compatibility & readiness checks)
-- [ ] Maintain thin application binaries at workspace root (`fog-of-intent` CLI runner, `fog-of-intent-mcp` MCP server).
+- [x] Standalone dedicated binary `fog-of-intent-mcp` (`src/bin/fog-of-intent-mcp.rs`, `Cargo.toml [[bin]]`) for direct Model Context Protocol stdio serving.
+- [ ] Partition the monolithic single crate into dedicated workspace members:
+  - `crates/foi-kernel` (authoritative transition & units)
 
 ## Roadmap Maintenance
 
