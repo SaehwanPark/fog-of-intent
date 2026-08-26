@@ -1,0 +1,10 @@
+[package]
+name = "foi-kernel"
+version = "0.1.232"
+edition = "2024"
+rust-version = "1.96"
+license = "MIT"
+description = "Authoritative deterministic simulation transition kernel for Fog of Intent"
+
+[lints.clippy]
+as_conversions = "deny"

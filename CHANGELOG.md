@@ -6,6 +6,13 @@ not increment the package version.
 
 ## [0.1.232] - 2026-08-26
 
+- ADR-0004 Cargo Workspace Partitioning & `crates/foi-kernel` Member Crate Extraction (Phase 2):
+  - Declared `[workspace]` in root `Cargo.toml` with member `crates/foi-kernel` and root package `fog-of-intent`.
+  - Extracted pure deterministic transition core into dedicated `crates/foi-kernel` member crate (`ActorId`, `Turn`, `RulesetId`, `StreamId`, `DrawId`, `Units`, `BoundsError`, `StateHash`, `FNV_OFFSET_BASIS`, `FNV_PRIME`, `hash_bytes`, `Command`, `ValidatedCommand`, `ValidationError`, `validate_command`, `WorldState`, `ActorState`, `TransitionRecord`, `History`, `HistoryError`, `ReplayError`, `ResolvedInputs`, `InputTrace`, `transition`, `TransitionResult`, `TransitionError`, `Event`, `Effect`, `EffectCause`).
+  - Added `foi-kernel` path dependency to root `fog-of-intent` crate and re-exported `pub use foi_kernel::*;` in `src/kernel/mod.rs` for 100% backward compatibility.
+  - Updated `scripts/check_repository.py` to discover workspace member crates under `crates/*/src` and permit in-tree path dependencies.
+  - Verified zero regressions across all 757+ workspace unit, binary, and doc tests.
+
 - Milestone M10 Empirical Multi-Cohort Study Trials Battery Runner & MCP Tooling (`m10-empirical-cohort-study-v1`):
   - Implemented `src/study/empirical_trials.rs` formalizing deterministic integer basis-point evaluation ($[0..=10,000]$ bp) across all 4 canonical participant cohorts (`StrategyGamer`, `MobaPlayer`, `AccessNeeds`, `NoviceStrategy`), measuring completion rates, decision explanation qualities, debrief causal comprehensions, cognitive friction indicators, fail-closed validation, and structured Markdown report generation.
   - Implemented `src/study/empirical_trials_catalog.rs` registering 4 benchmark multi-cohort scenarios (`scenario-cohort-trial-balanced-alpha-v1`, `scenario-cohort-trial-access-focused-v1`, `scenario-cohort-trial-novice-onboarding-v1`, `scenario-cohort-trial-strategy-moba-contrast-v1`).

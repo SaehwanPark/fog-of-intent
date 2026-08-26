@@ -93,13 +93,14 @@ CORE_RUST_FILES = (
   "src/gui/state_catalog.rs",
   "src/gui/transport.rs",
   "src/gui/transport_catalog.rs",
-  "src/kernel/command.rs",
-  "src/kernel/history.rs",
-  "src/kernel/inputs.rs",
+  "crates/foi-kernel/src/command.rs",
+  "crates/foi-kernel/src/history.rs",
+  "crates/foi-kernel/src/inputs.rs",
+  "crates/foi-kernel/src/lib.rs",
+  "crates/foi-kernel/src/primitives.rs",
+  "crates/foi-kernel/src/state.rs",
+  "crates/foi-kernel/src/transition.rs",
   "src/kernel/mod.rs",
-  "src/kernel/primitives.rs",
-  "src/kernel/state.rs",
-  "src/kernel/transition.rs",
   "src/lane/branch.rs",
   "src/lane/coordination.rs",
   "src/lane/encoding.rs",
@@ -476,15 +477,19 @@ def _is_core_edge_path(relative: str) -> bool:
 def discover_core_rust_files(root: Path) -> set[str]:
   """Collect non-edge Rust sources that belong to the deterministic core."""
   discovered: set[str] = set()
-  src = root / "src"
-  if not src.exists():
-    return discovered
-  for path in src.rglob("*.rs"):
-    relative_path = path.relative_to(root)
-    relative = relative_path.as_posix()
-    if _is_core_edge_path(relative) or _is_core_test_path(relative_path):
-      continue
-    discovered.add(relative)
+  search_roots = [root / "src"]
+  crates_dir = root / "crates"
+  if crates_dir.exists():
+    for member in sorted(crates_dir.iterdir()):
+      if member.is_dir() and (member / "src").exists():
+        search_roots.append(member / "src")
+  for search_root in search_roots:
+    for path in search_root.rglob("*.rs"):
+      relative_path = path.relative_to(root)
+      relative = relative_path.as_posix()
+      if _is_core_edge_path(relative) or _is_core_test_path(relative_path):
+        continue
+      discovered.add(relative)
   return discovered
 
 
@@ -528,6 +533,8 @@ def validate_dependency_exceptions(
     "source",
   }
   for dependency in dependencies:
+    if dependency.get("path"):
+      continue
     dependency_name = dependency["name"]
     exception = exceptions.get(dependency_name, {})
     if not required.issubset(exception):
