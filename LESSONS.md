@@ -1572,4 +1572,12 @@ canonical policy instead of duplicating it.
 - Resolution: Gate submission inspection behind the `Ready` phase, redact private intents in `Debug` during collection, return payload-free receipts upon acceptance, and evaluate multi-agent decisions simultaneously across plan alignment, proposal trust compliance, and leadership consensus into exact integer basis-point cohesion.
 - Prevention: Strictly enforce zero private chain-of-thought (`chain_of_thought_present == false`) and maintain clear lifecycle state machines (`CollectingSubmissions` -> `Ready` -> `Resolved` -> `Closed`).
 
+## Synchronize scenario catalog size, numeric selection bounds, and report markdown titles
+
+- Context: When introducing a new executable CLI scenario (such as `m12-reproducibility-bundle-v1`), multiple components across CLI catalog, scenario parser, interactive selection prompt, and test fixtures must be updated in lockstep.
+- Symptom: Tests asserting invalid scenario numeric inputs (e.g. `parse_scenario_selection("12") == None`) or catalog lengths (`len() == 11`) fail when a new 12th scenario is registered.
+- Cause: Outdated invalid numeric indices in tests colliding with newly registered valid indices, or mismatching report titles between pure markdown renderers and test assertions.
+- Resolution: Update `CLI_SCENARIO_CATALOG` length assertions, increment invalid test bounds (e.g. `parse_scenario_selection("13") == None`), synchronize interactive selection prompt ranges (`scenario [1-12]>`), and verify exact markdown title strings against module definitions.
+- Prevention: When adding scenario entries to `CLI_SCENARIO_CATALOG`, always search for numeric boundary assertions (`[1-N]`) and verify exact header output from report renderers.
+
 

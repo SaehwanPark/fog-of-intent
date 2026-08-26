@@ -965,3 +965,29 @@ fn gui_presentation_document_is_deterministic() {
   let second = super::gui_presentation::build_gui_presentation_document().expect("second doc");
   assert_eq!(first, second);
 }
+
+// --- M12 Public Alpha research reproducibility bundle runner ---
+
+#[test]
+fn reproducibility_bundle_report_builds_and_is_eligible() {
+  let report = super::reproducibility::build_reproducibility_bundle_report()
+    .expect("compliant reproducibility bundle executes and audits");
+  assert!(report.is_eligible());
+  let md = report.markdown();
+  assert!(md.contains("# Public Alpha Reproducibility Bundle Audit Report"));
+  assert!(md.contains("**Eligible for Release:** Yes"));
+  assert!(md.contains("PKG-BENCHMARK-01"));
+  assert!(md.contains("PKG-REPLAY-01"));
+  assert!(md.contains("PKG-EXPERIMENT-01"));
+  assert!(md.contains("PKG-CALIBRATION-01"));
+  assert!(md.contains("PKG-TELEMETRY-01"));
+  assert!(!md.contains('\u{1b}'));
+}
+
+#[test]
+fn reproducibility_bundle_report_is_deterministic() {
+  let first = super::reproducibility::build_reproducibility_bundle_report().expect("first report");
+  let second =
+    super::reproducibility::build_reproducibility_bundle_report().expect("second report");
+  assert_eq!(first, second);
+}

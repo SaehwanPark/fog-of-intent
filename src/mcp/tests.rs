@@ -473,3 +473,29 @@ fn mcp_server_executes_m6_behavioral_experiments_tool() {
   assert!(text.contains("Benchmark Battery Summary"));
   assert!(text.contains("**Regression Gate Status:** PASS"));
 }
+
+#[test]
+fn mcp_server_executes_m12_reproducibility_bundle_tool() {
+  let mut server = McpServer::new();
+
+  let req = r#"{"jsonrpc":"2.0","id":60,"method":"tools/call","params":{"name":"reproducibility_bundle_run","arguments":{}}}"#;
+  let resp = parse_json(&server.handle_line(req).unwrap()).unwrap();
+  let text = resp
+    .get("result")
+    .unwrap()
+    .get("content")
+    .unwrap()
+    .as_array()
+    .unwrap()[0]
+    .get("text")
+    .unwrap()
+    .as_str()
+    .unwrap();
+  assert!(text.contains("# Public Alpha Reproducibility Bundle Audit Report"));
+  assert!(text.contains("PKG-BENCHMARK-01"));
+  assert!(text.contains("PKG-REPLAY-01"));
+  assert!(text.contains("PKG-EXPERIMENT-01"));
+  assert!(text.contains("PKG-CALIBRATION-01"));
+  assert!(text.contains("PKG-TELEMETRY-01"));
+  assert!(text.contains("**Eligible for Release:** Yes"));
+}

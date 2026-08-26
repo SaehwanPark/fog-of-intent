@@ -2440,7 +2440,7 @@ This establishes the formal release readiness verification check suite, multi-do
 
 ### Developer Action Items (Public Release)
 
-- [ ] Package official research reproducibility bundles with verified 16-hex FNV-1a checksums.
+- [x] Package official research reproducibility bundles with verified 16-hex FNV-1a checksums via `--scenario m12-reproducibility-bundle-v1` and MCP tool `reproducibility_bundle_run`.
 - [x] Execute release candidate verification check suite (`audit_release_checks`) via `--scenario m12-alpha-release-checks-v1`.
 - [ ] Create official tagged research release bundle with governance documentation.
 
