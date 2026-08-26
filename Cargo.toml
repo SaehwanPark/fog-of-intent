@@ -10,3 +10,12 @@ as_conversions = "deny"
 
 [dependencies]
 reedline = "0.49"
+
+[[bin]]
+name = "fog-of-intent"
+path = "src/main.rs"
+
+[[bin]]
+name = "fog-of-intent-mcp"
+path = "src/bin/fog-of-intent-mcp.rs"
+

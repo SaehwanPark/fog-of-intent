@@ -2135,7 +2135,8 @@ behavioral research claims remain deferred until study data is collected.
 - `m11-gui-presentation-v1` CLI scenario runner (`src/cli/gui_presentation.rs`, `src/command_loop.rs`, `src/main.rs`) adding executable support for `--scenario m11-gui-presentation-v1`, rendering the canonical actor-visible HTML5 presentation document, verifying W3C/semantic/anti-leak compliance, and verifying clean exit status.
 - `m11-gui-browser-flow-v1` CLI scenario runner (`src/cli/gui_browser_flow.rs`, `src/command_loop.rs`, `src/main.rs`) adding executable support for `--scenario m11-gui-browser-flow-v1`, evaluating the 4 benchmark browser interaction and recovery scenarios (`scenario-gui-browser-standard-flow-v1`, `scenario-gui-browser-network-recovery-v1`, `scenario-gui-browser-accessibility-flow-v1`, `scenario-gui-browser-degraded-fallback-v1`), verifying step audits, W3C landmarks, zero leak, and zero private CoT invariants, and outputting formatted Markdown reports.
 - `gui_browser_flow_run` MCP tool and `fog-of-intent://presentation/browser-flow` MCP resource (`src/mcp/tools.rs`, `src/mcp/server.rs`) delivering full browser flow evaluation battery capabilities to external agents over stdio JSON-RPC.
-- 43 focused unit tests in `src/gui/tests.rs` plus 2 CLI runner tests and binary integration tests cover domain/severity round trips, threshold rules,
+- `fog-of-intent-mcp` dedicated standalone binary (`src/bin/fog-of-intent-mcp.rs`, `Cargo.toml [[bin]]`) providing direct stdio JSON-RPC 2.0 serving for external AI agents and research harnesses with CLI catalog inspection (`--tools`, `--resources`, `--prompts`).
+- 43 focused unit tests in `src/gui/tests.rs` plus 2 CLI runner tests, 2 MCP binary tests, and binary integration tests cover domain/severity round trips, threshold rules,
   fail-closed validation, error Display coverage, DTO construction, invariant leak rejection, CoT omission,
   catalog execution, active tab/view mode round trips, client state transitions, reversibility, zoom bounds,
   triple projection parity verification, asset kind/license/fallback round trips, asset governance audit rules,
@@ -2144,7 +2145,7 @@ behavioral research claims remain deferred until study data is collected.
 
 #### Verification
 
-- `cargo test --locked` passes 671 tests with zero failures.
+- `cargo test --locked` passes 721 unit tests, 41 binary integration tests, and 3 doc-tests with zero failures.
 - All benchmark catalog scenarios verify deficit impacts, GUI justification, invariant preservation, asset governance compliance, HTML document integrity, transport session lifecycle, browser flow resilience, and CLI presentation export.
 - Repository checker scans confirm zero async/network primitives in `src/gui/`.
 

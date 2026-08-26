@@ -28,6 +28,22 @@ fn binary_path() -> PathBuf {
   path
 }
 
+fn mcp_binary_path() -> PathBuf {
+  if let Some(path) = std::env::var_os("CARGO_BIN_EXE_fog-of-intent-mcp") {
+    return PathBuf::from(path);
+  }
+  if let Some(path) = std::env::var_os("CARGO_BIN_EXE_fog_of_intent_mcp") {
+    return PathBuf::from(path);
+  }
+  let mut path = std::env::current_exe().expect("integration test path");
+  path.pop();
+  path.pop();
+  path.push("fog-of-intent-mcp");
+  #[cfg(windows)]
+  path.set_extension("exe");
+  path
+}
+
 fn run_binary_with_scenario(
   binary: &Path,
   root: &Path,
@@ -950,4 +966,116 @@ fn binary_interactive_select_runs_browser_flow_via_alias() {
   assert!(stdout.contains("Fog of Intent — Scenario Selection"));
   assert!(stdout.contains("# Milestone M11: GUI Browser Interaction Flow & Recovery Evaluation"));
   assert!(stdout.contains("scenario-gui-browser-standard-flow-v1"));
+}
+
+// --- Dedicated fog-of-intent-mcp standalone binary integration tests ---
+
+#[test]
+fn mcp_binary_help_and_version_are_successful() {
+  let binary = mcp_binary_path();
+
+  let help_output = Command::new(&binary)
+    .arg("--help")
+    .output()
+    .expect("run mcp binary --help");
+  assert!(
+    help_output.status.success(),
+    "stderr: {:?}",
+    help_output.stderr
+  );
+  let help_text = String::from_utf8(help_output.stdout).expect("help UTF-8");
+  assert!(help_text.contains("usage: fog-of-intent-mcp"));
+  assert!(help_text.contains("--tools"));
+  assert!(help_text.contains("--resources"));
+  assert!(help_text.contains("--prompts"));
+
+  let version_output = Command::new(&binary)
+    .arg("--version")
+    .output()
+    .expect("run mcp binary --version");
+  assert!(
+    version_output.status.success(),
+    "stderr: {:?}",
+    version_output.stderr
+  );
+  let version_text = String::from_utf8(version_output.stdout).expect("version UTF-8");
+  assert!(version_text.starts_with("fog-of-intent-mcp "));
+}
+
+#[test]
+fn mcp_binary_tools_resources_prompts_listings() {
+  let binary = mcp_binary_path();
+
+  let tools_out = Command::new(&binary)
+    .arg("--tools")
+    .output()
+    .expect("run mcp binary --tools");
+  assert!(tools_out.status.success());
+  let tools_text = String::from_utf8(tools_out.stdout).expect("tools UTF-8");
+  assert!(tools_text.contains("# Fog of Intent MCP Tools Catalog"));
+  assert!(tools_text.contains("`observe`:"));
+  assert!(tools_text.contains("`gui_browser_flow_run`:"));
+
+  let res_out = Command::new(&binary)
+    .arg("--resources")
+    .output()
+    .expect("run mcp binary --resources");
+  assert!(res_out.status.success());
+  let res_text = String::from_utf8(res_out.stdout).expect("resources UTF-8");
+  assert!(res_text.contains("# Fog of Intent MCP Resources Catalog"));
+  assert!(res_text.contains("`fog-of-intent://scenario/rules`"));
+
+  let prompts_out = Command::new(&binary)
+    .arg("--prompts")
+    .output()
+    .expect("run mcp binary --prompts");
+  assert!(prompts_out.status.success());
+  let prompts_text = String::from_utf8(prompts_out.stdout).expect("prompts UTF-8");
+  assert!(prompts_text.contains("# Fog of Intent MCP Prompts Catalog"));
+  assert!(prompts_text.contains("`lane_decision_window`:"));
+}
+
+#[test]
+fn mcp_binary_runs_stdio_json_rpc() {
+  let binary = mcp_binary_path();
+
+  let mut child = Command::new(&binary)
+    .stdin(Stdio::piped())
+    .stdout(Stdio::piped())
+    .stderr(Stdio::piped())
+    .spawn()
+    .expect("spawn mcp binary");
+
+  let init_req =
+    r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}"#;
+  let tools_req = r#"{"jsonrpc":"2.0","id":2,"method":"tools/list"}"#;
+  let input = format!("{init_req}\n{tools_req}\n");
+
+  child
+    .stdin
+    .as_mut()
+    .expect("stdin")
+    .write_all(input.as_bytes())
+    .expect("write json-rpc requests");
+
+  let output = child.wait_with_output().expect("wait for mcp binary");
+  assert!(output.status.success(), "stderr: {:?}", output.stderr);
+  let stdout = String::from_utf8(output.stdout).expect("mcp stdout UTF-8");
+  assert!(stdout.contains(r#""protocolVersion":"2024-11-05""#));
+  assert!(stdout.contains(r#""serverInfo":{"name":"fog-of-intent""#));
+  assert!(stdout.contains(r#""name":"observe""#));
+  assert!(stdout.contains(r#""name":"gui_browser_flow_run""#));
+}
+
+#[test]
+fn mcp_binary_rejects_invalid_args() {
+  let binary = mcp_binary_path();
+
+  let output = Command::new(&binary)
+    .arg("--unknown-flag")
+    .output()
+    .expect("run mcp binary with invalid arg");
+  assert!(!output.status.success());
+  let stderr = String::from_utf8(output.stderr).expect("stderr UTF-8");
+  assert!(stderr.contains("unexpected executable argument; use --help"));
 }
