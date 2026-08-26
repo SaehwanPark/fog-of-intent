@@ -178,7 +178,7 @@ fn binary_help_is_successful_and_bounded() {
   assert!(output.status.success());
   assert_eq!(
     String::from_utf8(output.stdout).expect("help UTF-8 output"),
-    "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m8-team-scenarios-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m10-human-study-synthesis-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n"
+    "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m6-behavioral-experiments-v1, m8-team-scenarios-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m10-human-study-synthesis-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n"
   );
   assert!(output.stderr.is_empty());
 }
@@ -198,6 +198,7 @@ fn binary_list_scenarios_outputs_catalog_table() {
     assert!(stdout.contains("m2-strategy-happy-path-v1"));
     assert!(stdout.contains("m2-strategy-risk-taking-v1"));
     assert!(stdout.contains("m2-strategy-conservative-v1"));
+    assert!(stdout.contains("m6-behavioral-experiments-v1"));
     assert!(stdout.contains("m8-team-scenarios-v1"));
     assert!(stdout.contains("m9-interactive-match-v1"));
     assert!(stdout.contains("m9-complete-match-replay-v1"));
@@ -205,6 +206,7 @@ fn binary_list_scenarios_outputs_catalog_table() {
     assert!(stdout.contains("m11-gui-presentation-v1"));
     assert!(stdout.contains("m12-alpha-release-checks-v1"));
     assert!(stdout.contains("interactive-lane"));
+    assert!(stdout.contains("behavioral-battery"));
     assert!(stdout.contains("team-battery"));
     assert!(stdout.contains("replay-transcript"));
     assert!(stdout.contains("study-synthesis"));
@@ -819,5 +821,39 @@ fn binary_interactive_select_runs_study_synthesis_via_alias() {
     "# Fog of Intent — Milestone M10 Human Usability & Accessibility Alpha Synthesis Battery"
   ));
   assert!(stdout.contains("scenario-alpha-synthesis-baseline-v1"));
+  assert!(stdout.contains("Benchmark Battery Summary"));
+}
+
+#[test]
+fn binary_runs_m6_behavioral_experiments_and_prints_battery() {
+  let output = Command::new(binary_path())
+    .args(["--scenario", "m6-behavioral-experiments-v1"])
+    .output()
+    .expect("run m6 behavioral experiments");
+
+  assert!(output.status.success(), "stderr: {:?}", output.stderr);
+  let stdout = String::from_utf8(output.stdout).expect("m6 behavioral experiments UTF-8 output");
+  assert!(stdout.starts_with(
+    "# Fog of Intent — Milestone M6 Automated Behavioral Experiments & Population Validation Battery"
+  ));
+  assert!(stdout.contains("cautious-laner-v1"));
+  assert!(stdout.contains("risk-taking-laner-v1"));
+  assert!(stdout.contains("yielding-laner-v1"));
+  assert!(stdout.contains("Benchmark Battery Summary"));
+  assert!(stdout.contains("**Regression Gate Status:** PASS"));
+  assert!(output.stderr.is_empty());
+}
+
+#[test]
+fn binary_interactive_select_runs_behavioral_experiments_via_alias() {
+  let binary = binary_path();
+  let output = run_select_binary(&binary, "behavioral\n");
+  assert!(output.status.success(), "stderr: {:?}", output.stderr);
+  let stdout = String::from_utf8(output.stdout).expect("UTF-8 output");
+  assert!(stdout.contains("Fog of Intent — Scenario Selection"));
+  assert!(stdout.contains(
+    "# Fog of Intent — Milestone M6 Automated Behavioral Experiments & Population Validation Battery"
+  ));
+  assert!(stdout.contains("cautious-laner-v1"));
   assert!(stdout.contains("Benchmark Battery Summary"));
 }

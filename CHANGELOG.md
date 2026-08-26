@@ -4,6 +4,19 @@ All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 not increment the package version.
 
+## [0.1.227] - 2026-08-25
+
+### Added
+
+- Automated Behavioral Experiments & Population Validation Runner (`m6-behavioral-experiments-v1`):
+  - Added `m6-behavioral-experiments-v1` to the canonical `CLI_SCENARIO_CATALOG` in `src/command_loop.rs` under `ScenarioExecutionMode::BehavioralExperimentsBattery` (Milestone M6).
+  - Implemented `build_behavioral_experiments_report` and `BehavioralExperimentsCliReport` in `src/cli/behavioral_experiments.rs` executing multi-profile matched-scenario selected-intent tallies across Anchor, Duelist, and Pacer profiles.
+  - Added comprehensive Markdown reporting evaluating intent distribution shares ($[0..=10,000]$ bp summing to 10,000 bp), bounded stress population matrix (illegal command, exploit seeking, communication abuse, degenerate policy), and regression no-change gate verification.
+  - Added `write_behavioral_experiments_report` and wired CLI scenario execution in `src/main.rs`.
+  - Added interactive scenario selection aliases (`"behavioral"`, `"experiments"`, `"population"`, `"m6"`, `"behavioral-experiments"`, `"agent-experiments"`, `"m6-experiments"`) in `parse_scenario_selection`.
+  - Added `behavioral_experiments_run` tool to the Model Context Protocol (MCP) server catalog in `src/mcp/tools.rs` and `src/mcp/server.rs`.
+  - Comprehensive unit and binary integration tests in `src/command_loop.rs`, `src/mcp/tests.rs`, and `tests/binary_run_dir.rs`.
+
 ## [0.1.226] - 2026-08-25
 
 ### Added

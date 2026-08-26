@@ -448,3 +448,28 @@ fn mcp_server_executes_m10_study_synthesis_tool() {
   assert!(single_text.contains("# M10 Human Usability & Accessibility Alpha Evidence Synthesis"));
   assert!(single_text.contains("alpha-ready"));
 }
+
+#[test]
+fn mcp_server_executes_m6_behavioral_experiments_tool() {
+  let mut server = McpServer::new();
+
+  let req = r#"{"jsonrpc":"2.0","id":50,"method":"tools/call","params":{"name":"behavioral_experiments_run","arguments":{}}}"#;
+  let resp = parse_json(&server.handle_line(req).unwrap()).unwrap();
+  let text = resp
+    .get("result")
+    .unwrap()
+    .get("content")
+    .unwrap()
+    .as_array()
+    .unwrap()[0]
+    .get("text")
+    .unwrap()
+    .as_str()
+    .unwrap();
+  assert!(text.contains("# Fog of Intent — Milestone M6 Automated Behavioral Experiments & Population Validation Battery"));
+  assert!(text.contains("cautious-laner-v1"));
+  assert!(text.contains("risk-taking-laner-v1"));
+  assert!(text.contains("yielding-laner-v1"));
+  assert!(text.contains("Benchmark Battery Summary"));
+  assert!(text.contains("**Regression Gate Status:** PASS"));
+}

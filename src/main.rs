@@ -116,6 +116,20 @@ fn main() -> ExitCode {
     return ExitCode::FAILURE;
   }
 
+  if matches!(scenario, CliApplicationScenario::M6BehavioralExperiments) {
+    let stdout = io::stdout();
+    return match fog_of_intent::command_loop::write_behavioral_experiments_report(stdout.lock()) {
+      Ok(true) => ExitCode::SUCCESS,
+      Ok(false) => {
+        eprintln!("behavioral experiments battery failed regression gate");
+        ExitCode::FAILURE
+      }
+      Err(error) => {
+        eprintln!("behavioral experiments execution failed: {error}");
+        ExitCode::FAILURE
+      }
+    };
+  }
   if matches!(scenario, CliApplicationScenario::M8TeamScenarios) {
     let stdout = io::stdout();
     return match fog_of_intent::command_loop::write_team_scenarios_report(stdout.lock()) {
