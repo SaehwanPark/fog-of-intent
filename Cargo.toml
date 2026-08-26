@@ -6,12 +6,13 @@ members = [
   "crates/foi-map",
   "crates/foi-agent",
   "crates/foi-protocol",
+  "crates/foi-study",
 ]
 resolver = "2"
 
 [package]
 name = "fog-of-intent"
-version = "0.1.236"
+version = "0.1.237"
 edition = "2024"
 rust-version = "1.96"
 license = "MIT"
@@ -26,6 +27,7 @@ foi-lane = { path = "crates/foi-lane" }
 foi-map = { path = "crates/foi-map" }
 foi-agent = { path = "crates/foi-agent" }
 foi-protocol = { path = "crates/foi-protocol" }
+foi-study = { path = "crates/foi-study" }
 reedline = "0.49"
 
 [[bin]]
