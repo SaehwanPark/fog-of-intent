@@ -194,6 +194,11 @@ impl LanerObservation {
     self.observer
   }
 
+  pub const fn with_observer(mut self, observer: ActorId) -> Self {
+    self.observer = observer;
+    self
+  }
+
   pub const fn actors(self) -> LaneActorRoster {
     self.actors
   }

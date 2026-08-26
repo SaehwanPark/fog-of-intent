@@ -1,0 +1,13 @@
+[package]
+name = "foi-lane"
+version = "0.1.233"
+edition = "2024"
+rust-version = "1.96"
+license = "MIT"
+description = "Authoritative M2 lane decision window and simulation for Fog of Intent"
+
+[lints.clippy]
+as_conversions = "deny"
+
+[dependencies]
+foi-kernel = { path = "../foi-kernel" }

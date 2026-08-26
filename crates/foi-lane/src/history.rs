@@ -54,6 +54,24 @@ impl LaneHistory {
     })
   }
 
+  pub fn from_records(
+    initial_state: LaneSnapshot,
+    records: Vec<LaneTransitionRecord>,
+  ) -> Result<Self, LaneHistoryError> {
+    if !initial_state.is_valid_lane_state() || initial_state.phase() != LanePhase::Open {
+      return Err(LaneHistoryError::InvalidInitialState);
+    }
+    let mut current_state = initial_state;
+    for record in &records {
+      current_state = record.result().next_state();
+    }
+    Ok(Self {
+      initial_state,
+      current_state,
+      records,
+    })
+  }
+
   pub fn initial_state(&self) -> LaneSnapshot {
     self.initial_state
   }

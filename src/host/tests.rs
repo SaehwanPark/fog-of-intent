@@ -286,7 +286,7 @@ fn actor_replay_projection_verifies_history_without_exposing_records() {
   tampered
     .apply_line("advance")
     .expect("first window advances");
-  tampered.history.replay_id = "tampered";
+  tampered.history.tamper_replay_id_for_test("tampered");
   assert_eq!(
     tampered.actor_replay(),
     Err(ActorProtocolError::new(
@@ -343,7 +343,7 @@ fn actor_replay_records_are_verified_categorical_projections() {
   for command in ["plan contest", "commit", "advance"] {
     tampered.apply_line(command).expect("first window advances");
   }
-  tampered.history.replay_id = "tampered";
+  tampered.history.tamper_replay_id_for_test("tampered");
   assert_eq!(
     tampered.actor_replay_records(),
     Err(ActorProtocolError::new(
@@ -419,7 +419,7 @@ fn actor_replay_debrief_records_are_complete_and_categorical() {
   ] {
     tampered.apply_line(command).expect("fixture completes");
   }
-  tampered.history.replay_id = "tampered";
+  tampered.history.tamper_replay_id_for_test("tampered");
   assert_eq!(
     tampered.actor_replay_debrief_records(),
     Err(ActorProtocolError::new(

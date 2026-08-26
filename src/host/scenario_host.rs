@@ -979,10 +979,8 @@ impl CliScenarioHost {
       .ok_or(CliHostError::BranchUnavailable)?;
     let transition = scenario_record.transition().clone();
     let parent_intent = transition.command().intent();
-    let mut parent = LaneHistory::new(scenario_record.start_state())
+    let parent = LaneHistory::from_records(scenario_record.start_state(), vec![transition])
       .map_err(|_| CliHostError::BranchUnavailable)?;
-    parent.current_state = transition.result().next_state();
-    parent.records.push(transition);
     let request = LaneIntentRequest::new(
       PLAYER_LANER,
       scenario_record.transition().command().observation_id(),

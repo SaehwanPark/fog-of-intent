@@ -394,7 +394,7 @@ fn branch_execution_trace(branch_id: BranchId) -> InputTrace {
   InputTrace::new(StreamId::new(128 + branch_id.0), DrawId::new(0))
 }
 
-pub(crate) fn lane_record_identity(record: &LaneTransitionRecord) -> StateHash {
+pub fn lane_record_identity(record: &LaneTransitionRecord) -> StateHash {
   let mut hash = FNV_OFFSET_BASIS;
   hash = hash_bytes(hash, record.replay_id.as_bytes());
   hash = hash_bytes(hash, &[record.command.actor.value()]);

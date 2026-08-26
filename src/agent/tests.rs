@@ -4,8 +4,8 @@ use crate::kernel::{DrawId, StreamId};
 use crate::lane::{
   ALLIED_AUTONOMOUS_ACTOR, JungleThreatTruth, LaneAbortCondition, LaneActorRole, LaneCommitment,
   LaneFallbackBehavior, LaneHealth, LaneIntent, LaneOutcome, LanePingSignal, LaneSnapshot,
-  LaneStatus, LaneTargetFocus, LanerObservation, M2_LANE_RULESET, ObservationId, PLAYER_LANER,
-  PlayerLaneState, WavePressure, WaveState, observe_player, validate_lane_request,
+  LaneStatus, LaneTargetFocus, M2_LANE_RULESET, ObservationId, PLAYER_LANER, PlayerLaneState,
+  WavePressure, WaveState, observe_player, validate_lane_request,
 };
 use crate::protocol::{
   ActorActionDto, ActorMessageDto, ActorProtocolCodecError, ActorProtocolIntent,
@@ -1105,8 +1105,7 @@ fn matched_observation_sample_is_stable_and_bounded() {
       .expect("matched sample repeats")
   );
 
-  let mut mixed_observation = observations[1];
-  mixed_observation.observer = ALLIED_AUTONOMOUS_ACTOR;
+  let mixed_observation = observations[1].with_observer(ALLIED_AUTONOMOUS_ACTOR);
   let mixed_actor = [observations[0], mixed_observation];
   assert_eq!(
     ScriptedAgentMatchedSample::from_observations(mixed_actor, &manifests),
@@ -1464,7 +1463,7 @@ fn matched_scenario_sample_set_preserves_order_and_bounds() {
     })
   );
   let mut mixed = pairs;
-  mixed[1][1].observer = ALLIED_AUTONOMOUS_ACTOR;
+  mixed[1][1] = mixed[1][1].with_observer(ALLIED_AUTONOMOUS_ACTOR);
   assert_eq!(
     ScriptedAgentMatchedScenarioSample::from_observations(&mixed, &manifests),
     Err(ScriptedAgentMatchedScenarioSampleError::MismatchedObserver)
@@ -2095,10 +2094,7 @@ fn exploit_seeking_population_is_bounded_and_fixed_fixture_only() {
     ]),
     Err(ScriptedAgentExploitSeekingPopulationError::DuplicateObservationId)
   );
-  let allied_observation = LanerObservation {
-    observer: ALLIED_AUTONOMOUS_ACTOR,
-    ..observations[0]
-  };
+  let allied_observation = observations[0].with_observer(ALLIED_AUTONOMOUS_ACTOR);
   assert_eq!(
     ScriptedAgentExploitSeekingPopulationReport::from_observations(&[
       observations[0],
@@ -2443,8 +2439,8 @@ fn profile_aware_tally_comparison_preserves_rows_and_signed_deltas() {
 
   let mut alternate_observations = candidate_population.observations();
   for pair in &mut alternate_observations {
-    pair[0].observer = ALLIED_AUTONOMOUS_ACTOR;
-    pair[1].observer = ALLIED_AUTONOMOUS_ACTOR;
+    pair[0] = pair[0].with_observer(ALLIED_AUTONOMOUS_ACTOR);
+    pair[1] = pair[1].with_observer(ALLIED_AUTONOMOUS_ACTOR);
   }
   let alternate_sample =
     ScriptedAgentMatchedScenarioSample::from_observations(&alternate_observations, &manifests)
@@ -4191,10 +4187,9 @@ fn action_tally_reports_bounded_profile_counts_and_rejects_mixed_observers() {
     .expect("threat tally request is legal");
   }
 
-  let mixed_observer = LanerObservation {
-    observer: ALLIED_AUTONOMOUS_ACTOR,
-    ..safe_receipt.observation()
-  };
+  let mixed_observer = safe_receipt
+    .observation()
+    .with_observer(ALLIED_AUTONOMOUS_ACTOR);
   assert_eq!(
     ScriptedAgentActionTallyReport::from_observations(
       [safe_receipt.observation(), mixed_observer,]
@@ -7266,18 +7261,18 @@ fn team_plan_evaluator_evaluates_conditional_compliance_with_observation() {
 
   // Low health observation (2 hp < 3) -> Condition not satisfied -> ConditionalCompliance
   let low_state = LaneSnapshot::new(
-    high_state.ruleset,
-    high_state.turn,
-    high_state.status,
+    high_state.ruleset(),
+    high_state.turn(),
+    high_state.status(),
     PlayerLaneState::new(
       PLAYER_LANER,
       LaneHealth::new(2).unwrap(),
-      high_state.player.resources,
-      high_state.player.position,
+      high_state.player().resources(),
+      high_state.player().position(),
     ),
-    high_state.opponent,
-    high_state.wave,
-    high_state.jungle_threat,
+    high_state.opponent(),
+    high_state.wave(),
+    high_state.jungle_threat(),
   );
   let low_health_obs = observe_player(&low_state, ObservationId::new(902)).observation();
   let eval_low =
