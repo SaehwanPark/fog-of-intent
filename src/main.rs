@@ -196,6 +196,20 @@ fn main() -> ExitCode {
       }
     };
   }
+  if matches!(scenario, CliApplicationScenario::M12ReproducibilityBundle) {
+    let stdout = io::stdout();
+    return match fog_of_intent::command_loop::write_reproducibility_bundle_report(stdout.lock()) {
+      Ok(true) => ExitCode::SUCCESS,
+      Ok(false) => {
+        eprintln!("reproducibility bundle detected checksum or integrity failures");
+        ExitCode::FAILURE
+      }
+      Err(error) => {
+        eprintln!("reproducibility bundle audit failed: {error}");
+        ExitCode::FAILURE
+      }
+    };
+  }
 
   let mut command_loop = match scenario {
     CliApplicationScenario::M2StrategyHappyPath => match options.run_dir() {

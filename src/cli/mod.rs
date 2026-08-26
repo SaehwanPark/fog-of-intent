@@ -11,6 +11,7 @@ mod gui_presentation;
 mod information;
 mod match_replay;
 mod release_checks;
+mod reproducibility;
 mod run_id;
 mod session_grammar;
 mod study_synthesis;
@@ -41,6 +42,10 @@ pub use match_replay::{
 pub use release_checks::{
   AlphaReleaseChecksCliReport, CLI_ALPHA_RELEASE_CHECKS_SCENARIO_ID,
   build_alpha_release_checks_report,
+};
+pub use reproducibility::{
+  CLI_REPRODUCIBILITY_BUNDLE_SCENARIO_ID, ReproducibilityBundleCliReport,
+  build_reproducibility_bundle_report,
 };
 pub use run_id::{CLI_RUN_ID_SCHEMA, CliRunId, CliRunIdError, MAX_CLI_RUN_ID_BYTES};
 pub use session_grammar::{

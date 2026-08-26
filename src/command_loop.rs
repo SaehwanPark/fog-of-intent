@@ -40,7 +40,7 @@ pub const CLI_APPLICATION_VERSION: &str =
   concat!("fog-of-intent ", env!("CARGO_PKG_VERSION"), "\n");
 
 /// Bounded process-level usage for the executable wrapper.
-pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m6-behavioral-experiments-v1, m8-team-scenarios-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m10-human-study-synthesis-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n";
+pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m6-behavioral-experiments-v1, m8-team-scenarios-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m10-human-study-synthesis-v1, m11-gui-presentation-v1, m12-alpha-release-checks-v1, or m12-reproducibility-bundle-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n";
 
 /// Execution mode for a scenario entry in the scenario catalog.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -61,6 +61,8 @@ pub enum ScenarioExecutionMode {
   HtmlPresentationExport,
   /// Public Alpha release readiness check suite; prints and exits.
   ReleaseChecksReport,
+  /// Public Alpha research reproducibility bundle integrity audit; prints and exits.
+  ReproducibilityBundleReport,
 }
 
 impl ScenarioExecutionMode {
@@ -75,6 +77,7 @@ impl ScenarioExecutionMode {
       Self::HumanStudySynthesis => "study-synthesis",
       Self::HtmlPresentationExport => "html-presentation",
       Self::ReleaseChecksReport => "release-checks",
+      Self::ReproducibilityBundleReport => "reproducibility-bundle",
     }
   }
 }
@@ -168,6 +171,13 @@ pub const CLI_SCENARIO_CATALOG: &[CliScenarioCatalogEntry] = &[
     mode: ScenarioExecutionMode::ReleaseChecksReport,
     description: "Public Research-Capable Alpha release verification suite across 6 compliance and integrity domains.",
   },
+  CliScenarioCatalogEntry {
+    id: crate::cli::CLI_REPRODUCIBILITY_BUNDLE_SCENARIO_ID,
+    display_name: "Public Alpha Research Reproducibility Bundle",
+    milestone: "M12",
+    mode: ScenarioExecutionMode::ReproducibilityBundleReport,
+    description: "Audits sample reproducibility bundles across scenario benchmarks, replays, experiments, calibrations, and telemetries with verified 16-hex FNV-1a checksums.",
+  },
 ];
 
 /// Render the scenario catalog as an aligned, readable plain-text table without ANSI styling.
@@ -253,6 +263,8 @@ pub enum CliApplicationScenario {
   M11GuiPresentation,
   /// Public Alpha release readiness checks report.
   M12AlphaReleaseChecks,
+  /// Public Alpha research reproducibility bundle report.
+  M12ReproducibilityBundle,
 }
 
 impl CliApplicationScenario {
@@ -524,6 +536,8 @@ pub fn parse_application_args(
           scenario = Some(CliApplicationScenario::M11GuiPresentation);
         } else if args[index] == crate::cli::CLI_ALPHA_RELEASE_CHECKS_SCENARIO_ID {
           scenario = Some(CliApplicationScenario::M12AlphaReleaseChecks);
+        } else if args[index] == crate::cli::CLI_REPRODUCIBILITY_BUNDLE_SCENARIO_ID {
+          scenario = Some(CliApplicationScenario::M12ReproducibilityBundle);
         } else {
           return Err(CliApplicationArgsError::UnsupportedScenario);
         }
@@ -591,7 +605,7 @@ pub fn parse_application_args(
     && run_dir.is_some()
     && !explicit.is_interactive_lane()
   {
-    // The match-replay, gui-presentation, and release-checks scenarios print and
+    // The match-replay, gui-presentation, release-checks, and reproducibility-bundle scenarios print and
     // exit without creating run artifacts; accepting a store path would silently ignore it.
     return Err(CliApplicationArgsError::RunDirectoryRequiresFixture);
   }
@@ -658,6 +672,15 @@ pub fn write_alpha_release_checks_report<W: Write>(mut output: W) -> io::Result<
   output.write_all(report.markdown().as_bytes())?;
   output.flush()?;
   Ok(report.is_ready())
+}
+
+/// Print the Public Alpha research reproducibility bundle report and stop. Used by
+/// the executable edge for `--scenario m12-reproducibility-bundle-v1`.
+pub fn write_reproducibility_bundle_report<W: Write>(mut output: W) -> io::Result<bool> {
+  let report = crate::cli::build_reproducibility_bundle_report().map_err(io::Error::other)?;
+  output.write_all(report.markdown().as_bytes())?;
+  output.flush()?;
+  Ok(report.is_eligible())
 }
 
 /// Why the command loop stopped reading input.
@@ -999,6 +1022,7 @@ pub fn parse_scenario_selection(input: &str) -> Option<CliApplicationScenario> {
       9 => Some(CliApplicationScenario::M10StudySynthesis),
       10 => Some(CliApplicationScenario::M11GuiPresentation),
       11 => Some(CliApplicationScenario::M12AlphaReleaseChecks),
+      12 => Some(CliApplicationScenario::M12ReproducibilityBundle),
       _ => None,
     };
   }
@@ -1056,6 +1080,13 @@ pub fn parse_scenario_selection(input: &str) -> Option<CliApplicationScenario> {
     | "alpha"
     | "m12"
     | "checks" => Some(CliApplicationScenario::M12AlphaReleaseChecks),
+    crate::cli::CLI_REPRODUCIBILITY_BUNDLE_SCENARIO_ID
+    | "reproducibility-bundle"
+    | "reproducibility"
+    | "bundle"
+    | "artifacts"
+    | "m12-bundle"
+    | "pkg" => Some(CliApplicationScenario::M12ReproducibilityBundle),
     _ => None,
   }
 }
@@ -1102,7 +1133,7 @@ pub fn format_scenario_menu_with_dimensions(
   }
   let wrap = dimensions.wrap_width();
   for line in crate::terminal::wrap_labeled_line(
-    "Select scenario by number [1-8], scenario ID, or short alias.",
+    "Select scenario by number [1-12], scenario ID, or short alias.",
     wrap,
   ) {
     output.push_str(&line);
@@ -1140,7 +1171,7 @@ pub fn select_scenario_interactively_with_dimensions<R: BufRead, W: Write>(
 ) -> io::Result<Option<CliApplicationScenario>> {
   output.write_all(format_scenario_menu_with_dimensions(style, dimensions).as_bytes())?;
   output.flush()?;
-  let prompt = style.paint_cyan("scenario [1-8]> ");
+  let prompt = style.paint_cyan("scenario [1-12]> ");
   let mut line = String::new();
   loop {
     output.write_all(prompt.as_bytes())?;
@@ -1216,7 +1247,7 @@ mod tests {
     );
     assert_eq!(
       CLI_APPLICATION_HELP,
-      "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m6-behavioral-experiments-v1, m8-team-scenarios-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m10-human-study-synthesis-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n"
+      "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m6-behavioral-experiments-v1, m8-team-scenarios-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m10-human-study-synthesis-v1, m11-gui-presentation-v1, m12-alpha-release-checks-v1, or m12-reproducibility-bundle-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n"
     );
     assert_eq!(
       parse_application_args(&[OsString::from("--version")]),
@@ -1741,7 +1772,7 @@ mod tests {
 
   #[test]
   fn scenario_catalog_format_and_metadata_are_complete() {
-    assert_eq!(CLI_SCENARIO_CATALOG.len(), 11);
+    assert_eq!(CLI_SCENARIO_CATALOG.len(), 12);
     for entry in CLI_SCENARIO_CATALOG {
       assert!(!entry.id.is_empty());
       assert!(!entry.display_name.is_empty());
@@ -1781,6 +1812,10 @@ mod tests {
       ScenarioExecutionMode::ReleaseChecksReport.label(),
       "release-checks"
     );
+    assert_eq!(
+      ScenarioExecutionMode::ReproducibilityBundleReport.label(),
+      "reproducibility-bundle"
+    );
 
     let catalog_text = format_scenario_catalog();
     assert!(catalog_text.starts_with("Fog of Intent — Scenario Catalog\n\n"));
@@ -1795,6 +1830,7 @@ mod tests {
     assert!(catalog_text.contains("m10-human-study-synthesis-v1"));
     assert!(catalog_text.contains("m11-gui-presentation-v1"));
     assert!(catalog_text.contains("m12-alpha-release-checks-v1"));
+    assert!(catalog_text.contains("m12-reproducibility-bundle-v1"));
     assert!(!catalog_text.contains('\u{1b}')); // No ANSI escape codes
   }
 
@@ -1904,6 +1940,10 @@ mod tests {
       parse_scenario_selection("11"),
       Some(CliApplicationScenario::M12AlphaReleaseChecks)
     );
+    assert_eq!(
+      parse_scenario_selection("12"),
+      Some(CliApplicationScenario::M12ReproducibilityBundle)
+    );
 
     // Exact IDs
     assert_eq!(
@@ -1949,6 +1989,10 @@ mod tests {
     assert_eq!(
       parse_scenario_selection(crate::cli::CLI_ALPHA_RELEASE_CHECKS_SCENARIO_ID),
       Some(CliApplicationScenario::M12AlphaReleaseChecks)
+    );
+    assert_eq!(
+      parse_scenario_selection(crate::cli::CLI_REPRODUCIBILITY_BUNDLE_SCENARIO_ID),
+      Some(CliApplicationScenario::M12ReproducibilityBundle)
     );
 
     // Aliases and slug variants
@@ -2108,6 +2152,26 @@ mod tests {
       parse_scenario_selection("checks"),
       Some(CliApplicationScenario::M12AlphaReleaseChecks)
     );
+    assert_eq!(
+      parse_scenario_selection("reproducibility-bundle"),
+      Some(CliApplicationScenario::M12ReproducibilityBundle)
+    );
+    assert_eq!(
+      parse_scenario_selection("reproducibility"),
+      Some(CliApplicationScenario::M12ReproducibilityBundle)
+    );
+    assert_eq!(
+      parse_scenario_selection("bundle"),
+      Some(CliApplicationScenario::M12ReproducibilityBundle)
+    );
+    assert_eq!(
+      parse_scenario_selection("artifacts"),
+      Some(CliApplicationScenario::M12ReproducibilityBundle)
+    );
+    assert_eq!(
+      parse_scenario_selection("pkg"),
+      Some(CliApplicationScenario::M12ReproducibilityBundle)
+    );
 
     // Whitespace and case insensitivity
     assert_eq!(
@@ -2127,7 +2191,7 @@ mod tests {
     assert_eq!(parse_scenario_selection(""), None);
     assert_eq!(parse_scenario_selection("   "), None);
     assert_eq!(parse_scenario_selection("0"), None);
-    assert_eq!(parse_scenario_selection("12"), None);
+    assert_eq!(parse_scenario_selection("13"), None);
     assert_eq!(parse_scenario_selection("99"), None);
     assert_eq!(parse_scenario_selection("unknown-scenario"), None);
   }
@@ -2147,6 +2211,7 @@ mod tests {
     assert!(menu.contains("[9] Human Usability & Accessibility Study Synthesis"));
     assert!(menu.contains("[10] Shared-Boundary GUI Presentation Document"));
     assert!(menu.contains("[11] Public Alpha Release Readiness Checks"));
+    assert!(menu.contains("[12] Public Alpha Research Reproducibility Bundle"));
     assert!(menu.contains("Press Enter for default [1]"));
   }
 

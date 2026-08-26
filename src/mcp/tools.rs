@@ -270,6 +270,14 @@ pub fn mcp_tools_catalog() -> Vec<McpTool> {
         ])),
       ]),
     },
+    McpTool {
+      name: "reproducibility_bundle_run",
+      description: "Execute the Milestone M12 Public Alpha research reproducibility bundle integrity audit and verification suite.",
+      input_schema: JsonValue::Object(vec![
+        ("type".into(), JsonValue::String("object".into())),
+        ("properties".into(), JsonValue::Object(vec![])),
+      ]),
+    },
   ]
 }
 

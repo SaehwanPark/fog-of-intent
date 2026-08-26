@@ -436,6 +436,10 @@ impl McpServer {
           },
         }
       }
+      "reproducibility_bundle_run" => match crate::cli::build_reproducibility_bundle_report() {
+        Ok(report) => format_tool_success(report.markdown()),
+        Err(err) => format_tool_error(err),
+      },
       unknown => format_tool_error(&format!("Unknown tool: '{unknown}'")),
     }
   }
