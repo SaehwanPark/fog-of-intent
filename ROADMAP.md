@@ -2480,18 +2480,16 @@ This establishes the formal release readiness verification check suite, multi-do
 As identified in the independent technical audit ([`docs/AUDIT_REPORT.md`](docs/AUDIT_REPORT.md)), the codebase (~85k LOC across 12 milestone domains) is prepared for structured modularization:
 
 - [x] Author ADR-0004 (Cargo Workspace Partitioning) in [`docs/adr/0004-cargo-workspace-partitioning.md`](docs/adr/0004-cargo-workspace-partitioning.md).
+- [x] Dedicated Standalone MCP Binary Target `fog-of-intent-mcp` (`src/bin/fog-of-intent-mcp.rs`, `Cargo.toml [[bin]]`) for direct Model Context Protocol stdio serving.
 - [ ] Partition the monolithic single crate into dedicated workspace members:
-  - `crates/foi-kernel` (authoritative transition & units)
-  - `crates/foi-lane` (one-lane vertical slice)
-  - `crates/foi-map` (5v5 multi-lane spatial map topology, structures & contest mechanics)
-  - `crates/foi-agent` (behavioral policies, calibration & team communication)
-  - `crates/foi-protocol` (model-agnostic DTOs & MCP codecs)
-  - `crates/foi-study` (human usability, accessibility & alpha synthesis)
-  - `crates/foi-gui` (presentation-only HTML5/CSS/SVG generator & parity engine)
-  - `crates/foi-alpha` (release governance, compatibility & readiness checks)
-- [x] Standalone dedicated binary `fog-of-intent-mcp` (`src/bin/fog-of-intent-mcp.rs`, `Cargo.toml [[bin]]`) for direct Model Context Protocol stdio serving.
-- [ ] Partition the monolithic single crate into dedicated workspace members:
-  - `crates/foi-kernel` (authoritative transition & units)
+  - [x] `crates/foi-kernel` (authoritative transition, units, FNV-1a state hashing, snapshot/history codecs, replay verifier)
+  - [ ] `crates/foi-lane` (one-lane vertical slice)
+  - [ ] `crates/foi-map` (5v5 multi-lane spatial map topology, structures & contest mechanics)
+  - [ ] `crates/foi-agent` (behavioral policies, calibration & team communication)
+  - [ ] `crates/foi-protocol` (model-agnostic DTOs & MCP codecs)
+  - [ ] `crates/foi-study` (human usability, accessibility & alpha synthesis)
+  - [ ] `crates/foi-gui` (presentation-only HTML5/CSS/SVG generator & parity engine)
+  - [ ] `crates/foi-alpha` (release governance, compatibility & readiness checks)
 
 ## Roadmap Maintenance
 

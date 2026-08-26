@@ -77,7 +77,7 @@ impl DrawId {
 pub struct StateHash(u64);
 
 impl StateHash {
-  pub(crate) fn from_raw(value: u64) -> Self {
+  pub fn from_raw(value: u64) -> Self {
     Self(value)
   }
 
@@ -109,7 +109,7 @@ impl Units {
     self.0
   }
 
-  pub(crate) fn subtract(self, amount: Self) -> Option<Self> {
+  pub fn subtract(self, amount: Self) -> Option<Self> {
     self.0.checked_sub(amount.0).map(Self)
   }
 }
@@ -126,7 +126,7 @@ impl fmt::Display for BoundsError {
   }
 }
 
-pub(crate) fn hash_bytes(mut hash: u64, bytes: &[u8]) -> u64 {
+pub fn hash_bytes(mut hash: u64, bytes: &[u8]) -> u64 {
   for byte in bytes {
     hash ^= u64::from(*byte);
     hash = hash.wrapping_mul(FNV_PRIME);

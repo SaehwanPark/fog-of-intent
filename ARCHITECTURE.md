@@ -897,8 +897,11 @@ Proposed but not adopted:
 - Python/uv, Parquet, and DuckDB for later research;
 - Axum plus a web client for an evidence-justified optional GUI.
 
-Adopting one of these choices requires an implementation need, focused tests,
-and an architecture update or ADR when it changes a consequential boundary.
+## Multi-Crate Workspace Architecture (ADR-0004)
+
+Under ADR-0004 ([`docs/adr/0004-cargo-workspace-partitioning.md`](docs/adr/0004-cargo-workspace-partitioning.md)), the repository is structured as a Cargo workspace with dedicated member crates and thin application binaries:
+- `crates/foi-kernel`: Pure deterministic transition core, `WorldState`, bounded `Units`, `Turn`, `ActorId`, `RulesetId`, `StreamId`, `DrawId`, `StateHash`, 64-bit FNV-1a state hashing primitives, snapshot/history codecs, and replay verifier.
+- `fog-of-intent` root crate: Depends on `foi-kernel` (re-exported cleanly via `crate::kernel`) and thin binaries (`fog-of-intent` and `fog-of-intent-mcp`).
 
 ## Architectural Constraints
 

@@ -5,6 +5,13 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Support in-tree workspace member path dependencies in repository package checkers
+
+- Context: Transitioning to a multi-crate Cargo workspace introduces internal path dependencies (`foi-kernel = { path = "crates/foi-kernel" }`).
+- Symptom: `scripts/check_repository.py` fails with `dependency requires an approved advisory/license scanner or a complete defer record: foi-kernel` because `cargo metadata` reports all dependencies.
+- Resolution: Check `if dependency.get("path"): continue` in `validate_dependency_exceptions` to treat internal workspace crates as repository-native code.
+- Prevention: When partitioning workspaces or adding internal crates, ensure package auditing tools distinguish in-tree paths from external registry packages.
+
 ## Keep catalog expected summary metrics strictly aligned with underlying session fixture arithmetic
 
 - Context: Benchmark catalogs define expected metrics (such as `expected_completion_rate_bp`) against deterministic fixture session arrays.
