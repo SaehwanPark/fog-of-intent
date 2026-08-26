@@ -126,6 +126,11 @@ impl LaneScenarioHistory {
     Ok(result)
   }
 
+  #[doc(hidden)]
+  pub fn tamper_replay_id_for_test(&mut self, replay_id: &'static str) {
+    self.replay_id = replay_id;
+  }
+
   pub fn verify_replay(&self) -> Result<LaneSnapshot, ScenarioError> {
     if self.replay_id != M2_TWO_WINDOW_REPLAY_ID || self.records.len() > 2 {
       return Err(ScenarioError::ReplayMismatch);

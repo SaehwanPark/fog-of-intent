@@ -4,6 +4,16 @@ All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 not increment the package version.
 
+## [0.1.233] - 2026-08-26
+
+- ADR-0004 Cargo Workspace Partitioning & `crates/foi-lane` Member Crate Extraction (Phase 2):
+  - Extracted pure M2 one-lane decision window, multi-beat windows, lane resources, counterfactual branching, allied proposals, and lane causal debriefs into dedicated `crates/foi-lane` member crate.
+  - Declared `foi-lane` as a workspace member in root `Cargo.toml` and added path dependency `foi-kernel = { path = "../foi-kernel" }`.
+  - Added `pub use foi_lane::*;` re-export in root `src/lane/mod.rs` for 100% backward compatibility with existing adapters, host, and CLI/MCP layers.
+  - Added clean accessor and helper methods (`LaneHistory::from_records`, `LanerObservation::with_observer`, `LaneScenarioHistory::tamper_replay_id_for_test`) enforcing strict inter-crate encapsulation.
+  - Updated `scripts/check_repository.py` boundary file tracking for `crates/foi-lane/src/*.rs`.
+  - Verified all 775+ workspace unit, binary, and doc tests pass with zero warnings.
+
 ## [0.1.232] - 2026-08-26
 
 - ADR-0004 Cargo Workspace Partitioning & `crates/foi-kernel` Member Crate Extraction (Phase 2):
