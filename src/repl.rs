@@ -13,7 +13,7 @@ use reedline::{
 };
 use reedline::{Emacs, KeyCode, KeyModifiers};
 
-use crate::cli::{CLI_COMMAND_NAMES, CLI_INSPECT_TARGETS, CLI_PLAN_INTENTS};
+use crate::cli::CLI_INSPECT_TARGETS;
 use crate::command_loop::{CliApplicationScenario, parse_scenario_selection};
 use crate::presentation::PresentationStyle;
 
@@ -75,6 +75,50 @@ impl Prompt for ScenarioPrompt {
   }
 }
 
+/// Complete set of CLI commands recognized by the REPL prompt.
+pub static ALL_REPL_COMMANDS: [&str; 24] = [
+  "help",
+  "?",
+  "observe",
+  "inspect",
+  "message",
+  "plan",
+  "contingency",
+  "commit",
+  "advance",
+  "review",
+  "debrief",
+  "replay",
+  "branch",
+  "save",
+  "load",
+  "undo",
+  "quit",
+  "rotate",
+  "ward",
+  "contest",
+  "siege",
+  "evaluate",
+  "idle",
+  "status",
+];
+
+/// Complete set of plan subcommands and intents recognized by the REPL prompt.
+pub static ALL_PLAN_INTENTS: [&str; 12] = [
+  "stabilize",
+  "contest",
+  "yield",
+  "recall",
+  "withdraw",
+  "rotate",
+  "ward",
+  "siege",
+  "evaluate",
+  "idle",
+  "hold",
+  "pass",
+];
+
 /// Prefix completer for runner verbs, help topics, inspect targets, and plans.
 #[derive(Clone, Debug, Default)]
 pub struct FogCompleter;
@@ -94,11 +138,11 @@ impl FogCompleter {
       .to_ascii_lowercase();
     let token_is_first = prefix[..start].chars().all(char::is_whitespace);
     let candidates: &[&str] = if token_is_first || verb == "help" || verb == "?" {
-      &CLI_COMMAND_NAMES
+      &ALL_REPL_COMMANDS
     } else if verb == "inspect" {
       &CLI_INSPECT_TARGETS
     } else if verb == "plan" {
-      &CLI_PLAN_INTENTS
+      &ALL_PLAN_INTENTS
     } else if verb == "branch" {
       &["first", "second"]
     } else {
@@ -131,11 +175,10 @@ pub struct FogHighlighter {
 
 impl Default for FogHighlighter {
   fn default() -> Self {
-    let mut commands: Vec<String> = CLI_COMMAND_NAMES
+    let commands: Vec<String> = ALL_REPL_COMMANDS
       .iter()
       .map(|name| (*name).to_owned())
       .collect();
-    commands.push("?".to_owned());
     Self {
       inner: ExampleHighlighter::new(commands),
     }

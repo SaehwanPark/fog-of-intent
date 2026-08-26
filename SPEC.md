@@ -1947,8 +1947,14 @@ replays to an identical final hash at the library boundary.
   determinism, hash-value-free output, parsing, run-dir rejection, help
   text, writer output, and a clean-checkout binary run.
 
-MCP match replays, interactive match play, save/load of match replays, and
-human pacing evidence remain deferred.
+#### Delivered in the interactive 5v5 multi-lane tactical match runner follow-up
+
+- `--scenario m9-interactive-match-v1` provides a synchronous interactive 5v5 tactical match runner:
+  - `CliMatchHost` (`src/host/match_host.rs`) manages multi-lane interactive match state, draft staging, committing, stepping turn-by-turn through `advance`, and generating causal debriefs.
+  - Multi-lane tactical intent verbs (`rotate`, `ward`, `contest`, `siege`, `evaluate`, `idle`) accept both prefixed (`plan <verb>`) and shorthand forms.
+  - Fail-closed error handling with actionable repair hints for syntax errors, out-of-order execution, roster bounds, and post-conclusion locking.
+  - Integrated into `CLI_SCENARIO_CATALOG`, interactive menu selection (`--select`), and terminal/ANSI presentation renderers.
+  - Verified through automated unit and binary integration tests and full in-game AI playtesting.
 
 #### Delivered in the bounded human usability and accessibility study protocol follow-up
 

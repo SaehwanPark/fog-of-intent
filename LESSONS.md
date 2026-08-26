@@ -5,6 +5,13 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Keep match runner phase names and scenario catalog assertions synchronized across unit, presentation, and binary test boundaries
+
+- Context: Expanding the scenario catalog and adding an interactive match runner (`m9-interactive-match-v1`) shifts catalog indexing, help text strings, and terminal phase action strings.
+- Symptom: Integration tests fail when expected action strings diverge from core enum serialization (`as_str()`) or when help text / catalog length checks are hardcoded to previous catalog counts.
+- Resolution: Reference canonical `MatchPhaseKind::as_str()` in terminal formatters and tests, update catalog assertions across all test fixtures synchronously, and keep turn-stepping expectations grounded in the scenario's initial turn (e.g. initial turn 1 stepping to 14/15).
+- Prevention: When introducing new interactive runner modes or scenarios, check all catalog-dependent assertions and match output string contracts across unit and binary test suites.
+
 ## Keep GUI DTO projections presentation-only, actor-visible, and invariant-validated to prevent latent state leakage
 
 - Context: M11 introduces graphical presentation contracts for spatial map topologies, timelines, plans, and causal debriefs.

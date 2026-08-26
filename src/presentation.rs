@@ -173,6 +173,56 @@ pub fn render_presented_error_with_dimensions(
   }
 }
 
+/// Startup banner for an interactive 5v5 multi-lane match session.
+pub fn render_match_banner_with_dimensions(
+  style: PresentationStyle,
+  dimensions: TerminalDimensions,
+) -> String {
+  let title = style.paint_bold("Fog of Intent");
+  let scenario = style.paint_dim("5v5 multi-lane tactical match");
+  let help = style.paint_cyan("?");
+  let intro =
+    format!("Command your team across Top, Mid, and Bot. Type a command, or {help} for help.");
+  let cmd =
+    "commands: observe  rotate  ward  contest  siege  evaluate  commit  advance  help  quit";
+  if dimensions.width < 50 {
+    format!("{title}\n{scenario}\n{intro}\n{cmd}\n")
+  } else {
+    format!("{title} — {scenario}\n{intro}\n{cmd}\n")
+  }
+}
+
+/// Startup banner for an interactive match session with standard dimensions.
+pub fn render_match_banner(style: PresentationStyle) -> String {
+  render_match_banner_with_dimensions(style, TerminalDimensions::standard())
+}
+
+/// Friendlier copy plus canonical labeled match projection wrapped to given dimensions.
+pub fn render_presented_match_output_with_dimensions(
+  output: &crate::host::CliMatchOutput,
+  style: PresentationStyle,
+  dimensions: TerminalDimensions,
+) -> String {
+  colorize_labeled(
+    &crate::terminal::render_match_output_with_dimensions(output, dimensions),
+    style,
+    false,
+  )
+}
+
+/// Friendlier copy plus canonical labeled match error wrapped to given dimensions.
+pub fn render_presented_match_error_with_dimensions(
+  error: &crate::host::CliMatchError,
+  style: PresentationStyle,
+  dimensions: TerminalDimensions,
+) -> String {
+  colorize_labeled(
+    &crate::terminal::render_match_error_with_dimensions(error, dimensions),
+    style,
+    true,
+  )
+}
+
 fn wrap_story_text(
   story: &str,
   width: usize,
