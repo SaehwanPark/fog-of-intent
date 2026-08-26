@@ -32,7 +32,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs`, `src/mcp/`, `src/cli/behavioral_experiments.rs`, `src/cli/study_synthesis.rs`, `src/cli/team_scenarios.rs` | Standalone package version reporting, scenario catalog listing (`--list-scenarios`), Model Context Protocol (MCP) JSON-RPC stdio server (`fog-of-intent mcp serve` or `--mcp`), bounded fixture transcript with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, TTY prompt/completion, `--color`), 3 interactive strategy scenario playthroughs (`--scenario m2-strategy-happy-path-v1`, `--scenario m2-strategy-risk-taking-v1`, `--scenario m2-strategy-conservative-v1`), the automated behavioral experiments battery with `--scenario m6-behavioral-experiments-v1`, the team communication & shot-calling benchmark battery with `--scenario m8-team-scenarios-v1`, the interactive 5v5 tactical match runner with `--scenario m9-interactive-match-v1`, a replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1`, the human usability & accessibility alpha study synthesis report with `--scenario m10-human-study-synthesis-v1`, a verified actor-visible HTML5 presentation document with `--scenario m11-gui-presentation-v1`, and a public alpha release readiness audit report with `--scenario m12-alpha-release-checks-v1` |
-| Package | `Cargo.toml` | Version `0.1.233`, multi-crate Cargo workspace (`fog-of-intent`, `crates/foi-kernel`, `crates/foi-lane`), one deferred edge crate (`reedline`) |
+| Package | `Cargo.toml` | Version `0.1.234`, multi-crate Cargo workspace (`fog-of-intent`, `crates/foi-kernel`, `crates/foi-lane`, `crates/foi-map`), one deferred edge crate (`reedline`) |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
@@ -2483,8 +2483,8 @@ As identified in the independent technical audit ([`docs/AUDIT_REPORT.md`](docs/
 - [x] Dedicated Standalone MCP Binary Target `fog-of-intent-mcp` (`src/bin/fog-of-intent-mcp.rs`, `Cargo.toml [[bin]]`) for direct Model Context Protocol stdio serving.
 - [ ] Partition the monolithic single crate into dedicated workspace members:
   - [x] `crates/foi-kernel` (authoritative transition, units, FNV-1a state hashing, snapshot/history codecs, replay verifier)
-  - [ ] `crates/foi-lane` (one-lane vertical slice)
-  - [ ] `crates/foi-map` (5v5 multi-lane spatial map topology, structures & contest mechanics)
+  - [x] `crates/foi-lane` (one-lane vertical slice)
+  - [x] `crates/foi-map` (5v5 multi-lane spatial map topology, structures & contest mechanics)
   - [ ] `crates/foi-agent` (behavioral policies, calibration & team communication)
   - [ ] `crates/foi-protocol` (model-agnostic DTOs & MCP codecs)
   - [ ] `crates/foi-study` (human usability, accessibility & alpha synthesis)
