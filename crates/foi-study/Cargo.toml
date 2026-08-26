@@ -1,0 +1,12 @@
+[package]
+name = "foi-study"
+version = "0.1.237"
+edition = "2024"
+rust-version = "1.96"
+license = "MIT"
+description = "Human usability, accessibility alpha study protocol and synthesis framework for Fog of Intent"
+
+[lints.clippy]
+as_conversions = "deny"
+
+[dependencies]

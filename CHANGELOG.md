@@ -4,6 +4,16 @@ All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 not increment the package version.
 
+## [0.1.237] - 2026-08-26
+
+- ADR-0004 Cargo Workspace Partitioning & `crates/foi-study` Member Crate Extraction (Phase 5):
+  - Extracted pure M10 human usability and accessibility alpha study protocol definitions, participant cohort criteria, completion tracking, finding taxonomy, severity ranking, issue-linked disposition tracking, basis-point cohort evaluation, dimension-level assessments, interaction auditing, informal check protocols, remediation plan verification, participant sampling limits, untested population disclosures, alpha evidence synthesis, and readiness disposition gates into dedicated `crates/foi-study` member crate.
+  - Declared `foi-study` as a workspace member in root `Cargo.toml`.
+  - Added `pub use foi_study::*;` re-export facade in root `src/study/mod.rs` for 100% backward compatibility with existing CLI, host, and MCP adapters.
+  - Updated `scripts/check_repository.py` boundary file tracking for `crates/foi-study/src/*.rs`.
+  - Bumped workspace package versions to `0.1.237`.
+  - Verified all 775+ workspace unit, binary, and doc tests pass with zero warnings.
+
 ## [0.1.236] - 2026-08-26
 
 - ADR-0004 Cargo Workspace Partitioning & `crates/foi-protocol` Member Crate Extraction (Phase 4):
