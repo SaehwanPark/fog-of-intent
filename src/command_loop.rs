@@ -40,7 +40,7 @@ pub const CLI_APPLICATION_VERSION: &str =
   concat!("fog-of-intent ", env!("CARGO_PKG_VERSION"), "\n");
 
 /// Bounded process-level usage for the executable wrapper.
-pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m8-team-scenarios-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n";
+pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m8-team-scenarios-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m10-human-study-synthesis-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n";
 
 /// Execution mode for a scenario entry in the scenario catalog.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -53,6 +53,8 @@ pub enum ScenarioExecutionMode {
   TeamScenariosBattery,
   /// Deterministic batch replay verification transcript; prints and exits.
   BatchReplayTranscript,
+  /// Milestone M10 human usability and accessibility study synthesis battery; prints and exits.
+  HumanStudySynthesis,
   /// Actor-visible HTML5/SVG presentation document export; prints and exits.
   HtmlPresentationExport,
   /// Public Alpha release readiness check suite; prints and exits.
@@ -67,6 +69,7 @@ impl ScenarioExecutionMode {
       Self::InteractiveMatch => "interactive-match",
       Self::TeamScenariosBattery => "team-battery",
       Self::BatchReplayTranscript => "replay-transcript",
+      Self::HumanStudySynthesis => "study-synthesis",
       Self::HtmlPresentationExport => "html-presentation",
       Self::ReleaseChecksReport => "release-checks",
     }
@@ -133,6 +136,13 @@ pub const CLI_SCENARIO_CATALOG: &[CliScenarioCatalogEntry] = &[
     milestone: "M9",
     mode: ScenarioExecutionMode::BatchReplayTranscript,
     description: "Replay-verified M9 multi-lane match execution transcript with objective cycles and structure sieges.",
+  },
+  CliScenarioCatalogEntry {
+    id: crate::cli::CLI_STUDY_SYNTHESIS_SCENARIO_ID,
+    display_name: "Human Usability & Accessibility Study Synthesis",
+    milestone: "M10",
+    mode: ScenarioExecutionMode::HumanStudySynthesis,
+    description: "3-case canonical alpha synthesis battery assessing empirical cohorts, 7 dimensions, remediations, and readiness gates.",
   },
   CliScenarioCatalogEntry {
     id: crate::cli::CLI_GUI_PRESENTATION_SCENARIO_ID,
@@ -225,6 +235,8 @@ pub enum CliApplicationScenario {
   M9InteractiveMatch,
   /// The replay-verified complete-match transcript.
   M9CompleteMatchReplay,
+  /// Milestone M10 human usability and accessibility study synthesis battery.
+  M10StudySynthesis,
   /// The shared-boundary GUI HTML5 presentation document.
   M11GuiPresentation,
   /// Public Alpha release readiness checks report.
@@ -492,6 +504,8 @@ pub fn parse_application_args(
           scenario = Some(CliApplicationScenario::M9InteractiveMatch);
         } else if args[index] == crate::cli::CLI_MATCH_REPLAY_SCENARIO_ID {
           scenario = Some(CliApplicationScenario::M9CompleteMatchReplay);
+        } else if args[index] == crate::cli::CLI_STUDY_SYNTHESIS_SCENARIO_ID {
+          scenario = Some(CliApplicationScenario::M10StudySynthesis);
         } else if args[index] == crate::cli::CLI_GUI_PRESENTATION_SCENARIO_ID {
           scenario = Some(CliApplicationScenario::M11GuiPresentation);
         } else if args[index] == crate::cli::CLI_ALPHA_RELEASE_CHECKS_SCENARIO_ID {
@@ -594,6 +608,15 @@ pub fn write_match_replay_transcript<W: Write>(mut output: W) -> io::Result<()> 
     output.write_all(b"\n")?;
   }
   output.flush()
+}
+
+/// Print the Milestone M10 Human Usability & Accessibility Alpha Study Synthesis report and stop.
+/// Used by the executable edge for `--scenario m10-human-study-synthesis-v1`.
+pub fn write_study_synthesis_report<W: Write>(mut output: W) -> io::Result<bool> {
+  let report = crate::cli::build_study_synthesis_report().map_err(io::Error::other)?;
+  output.write_all(report.markdown().as_bytes())?;
+  output.flush()?;
+  Ok(report.is_baseline_ready())
 }
 
 /// Print the actor-visible M11 GUI presentation document and stop. Used by
@@ -934,7 +957,7 @@ fn apply_presented_match_with_dimensions<W: Write>(
   }
 }
 
-/// Parse a user selection input (number 1-9, scenario identifier, or short alias) into a scenario.
+/// Parse a user selection input (number 1-10, scenario identifier, or short alias) into a scenario.
 pub fn parse_scenario_selection(input: &str) -> Option<CliApplicationScenario> {
   let trimmed = input.trim();
   if trimmed.is_empty() {
@@ -949,8 +972,9 @@ pub fn parse_scenario_selection(input: &str) -> Option<CliApplicationScenario> {
       5 => Some(CliApplicationScenario::M8TeamScenarios),
       6 => Some(CliApplicationScenario::M9InteractiveMatch),
       7 => Some(CliApplicationScenario::M9CompleteMatchReplay),
-      8 => Some(CliApplicationScenario::M11GuiPresentation),
-      9 => Some(CliApplicationScenario::M12AlphaReleaseChecks),
+      8 => Some(CliApplicationScenario::M10StudySynthesis),
+      9 => Some(CliApplicationScenario::M11GuiPresentation),
+      10 => Some(CliApplicationScenario::M12AlphaReleaseChecks),
       _ => None,
     };
   }
@@ -983,6 +1007,14 @@ pub fn parse_scenario_selection(input: &str) -> Option<CliApplicationScenario> {
     crate::cli::CLI_MATCH_REPLAY_SCENARIO_ID | "match-replay" | "replay-match" | "m9" => {
       Some(CliApplicationScenario::M9CompleteMatchReplay)
     }
+    crate::cli::CLI_STUDY_SYNTHESIS_SCENARIO_ID
+    | "study-synthesis"
+    | "study"
+    | "usability"
+    | "accessibility"
+    | "synthesis"
+    | "m10"
+    | "human-study" => Some(CliApplicationScenario::M10StudySynthesis),
     crate::cli::CLI_GUI_PRESENTATION_SCENARIO_ID | "gui-presentation" | "gui" | "m11" => {
       Some(CliApplicationScenario::M11GuiPresentation)
     }
@@ -1152,7 +1184,7 @@ mod tests {
     );
     assert_eq!(
       CLI_APPLICATION_HELP,
-      "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m8-team-scenarios-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n"
+      "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m8-team-scenarios-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m10-human-study-synthesis-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n"
     );
     assert_eq!(
       parse_application_args(&[OsString::from("--version")]),
@@ -1666,7 +1698,7 @@ mod tests {
 
   #[test]
   fn scenario_catalog_format_and_metadata_are_complete() {
-    assert_eq!(CLI_SCENARIO_CATALOG.len(), 9);
+    assert_eq!(CLI_SCENARIO_CATALOG.len(), 10);
     for entry in CLI_SCENARIO_CATALOG {
       assert!(!entry.id.is_empty());
       assert!(!entry.display_name.is_empty());
@@ -1689,6 +1721,10 @@ mod tests {
     assert_eq!(
       ScenarioExecutionMode::BatchReplayTranscript.label(),
       "replay-transcript"
+    );
+    assert_eq!(
+      ScenarioExecutionMode::HumanStudySynthesis.label(),
+      "study-synthesis"
     );
     assert_eq!(
       ScenarioExecutionMode::HtmlPresentationExport.label(),
@@ -1804,10 +1840,14 @@ mod tests {
     );
     assert_eq!(
       parse_scenario_selection("8"),
-      Some(CliApplicationScenario::M11GuiPresentation)
+      Some(CliApplicationScenario::M10StudySynthesis)
     );
     assert_eq!(
       parse_scenario_selection("9"),
+      Some(CliApplicationScenario::M11GuiPresentation)
+    );
+    assert_eq!(
+      parse_scenario_selection("10"),
       Some(CliApplicationScenario::M12AlphaReleaseChecks)
     );
 
@@ -1839,6 +1879,10 @@ mod tests {
     assert_eq!(
       parse_scenario_selection(crate::cli::CLI_MATCH_REPLAY_SCENARIO_ID),
       Some(CliApplicationScenario::M9CompleteMatchReplay)
+    );
+    assert_eq!(
+      parse_scenario_selection(crate::cli::CLI_STUDY_SYNTHESIS_SCENARIO_ID),
+      Some(CliApplicationScenario::M10StudySynthesis)
     );
     assert_eq!(
       parse_scenario_selection(crate::cli::CLI_GUI_PRESENTATION_SCENARIO_ID),
@@ -1931,6 +1975,34 @@ mod tests {
       Some(CliApplicationScenario::M9CompleteMatchReplay)
     );
     assert_eq!(
+      parse_scenario_selection("study-synthesis"),
+      Some(CliApplicationScenario::M10StudySynthesis)
+    );
+    assert_eq!(
+      parse_scenario_selection("study"),
+      Some(CliApplicationScenario::M10StudySynthesis)
+    );
+    assert_eq!(
+      parse_scenario_selection("usability"),
+      Some(CliApplicationScenario::M10StudySynthesis)
+    );
+    assert_eq!(
+      parse_scenario_selection("accessibility"),
+      Some(CliApplicationScenario::M10StudySynthesis)
+    );
+    assert_eq!(
+      parse_scenario_selection("synthesis"),
+      Some(CliApplicationScenario::M10StudySynthesis)
+    );
+    assert_eq!(
+      parse_scenario_selection("m10"),
+      Some(CliApplicationScenario::M10StudySynthesis)
+    );
+    assert_eq!(
+      parse_scenario_selection("human-study"),
+      Some(CliApplicationScenario::M10StudySynthesis)
+    );
+    assert_eq!(
       parse_scenario_selection("gui-presentation"),
       Some(CliApplicationScenario::M11GuiPresentation)
     );
@@ -1977,7 +2049,7 @@ mod tests {
     assert_eq!(parse_scenario_selection(""), None);
     assert_eq!(parse_scenario_selection("   "), None);
     assert_eq!(parse_scenario_selection("0"), None);
-    assert_eq!(parse_scenario_selection("10"), None);
+    assert_eq!(parse_scenario_selection("11"), None);
     assert_eq!(parse_scenario_selection("99"), None);
     assert_eq!(parse_scenario_selection("unknown-scenario"), None);
   }
@@ -1993,8 +2065,9 @@ mod tests {
     assert!(menu.contains("[5] Team Communication & Shot-Calling Battery"));
     assert!(menu.contains("[6] Interactive 5v5 Tactical Match Playthrough"));
     assert!(menu.contains("[7] Complete Match Replay Transcript"));
-    assert!(menu.contains("[8] Shared-Boundary GUI Presentation Document"));
-    assert!(menu.contains("[9] Public Alpha Release Readiness Checks"));
+    assert!(menu.contains("[8] Human Usability & Accessibility Study Synthesis"));
+    assert!(menu.contains("[9] Shared-Boundary GUI Presentation Document"));
+    assert!(menu.contains("[10] Public Alpha Release Readiness Checks"));
     assert!(menu.contains("Press Enter for default [1]"));
   }
 

@@ -140,6 +140,20 @@ fn main() -> ExitCode {
       }
     };
   }
+  if matches!(scenario, CliApplicationScenario::M10StudySynthesis) {
+    let stdout = io::stdout();
+    return match fog_of_intent::command_loop::write_study_synthesis_report(stdout.lock()) {
+      Ok(true) => ExitCode::SUCCESS,
+      Ok(false) => {
+        eprintln!("study synthesis report detected blocked readiness gates");
+        ExitCode::FAILURE
+      }
+      Err(error) => {
+        eprintln!("study synthesis execution failed: {error}");
+        ExitCode::FAILURE
+      }
+    };
+  }
   if matches!(scenario, CliApplicationScenario::M11GuiPresentation) {
     let stdout = io::stdout();
     return match fog_of_intent::command_loop::write_gui_presentation_document(stdout.lock()) {

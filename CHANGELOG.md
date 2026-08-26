@@ -4,6 +4,19 @@ All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 not increment the package version.
 
+## [0.1.226] - 2026-08-25
+
+### Added
+
+- Human Usability & Accessibility Alpha Study Synthesis Runner (`m10-human-study-synthesis-v1`):
+  - Added `m10-human-study-synthesis-v1` to the canonical `CLI_SCENARIO_CATALOG` in `src/command_loop.rs` under `ScenarioExecutionMode::HumanStudySynthesis` (Milestone M10).
+  - Implemented `build_study_synthesis_report` and `StudySynthesisCliReport` in `src/cli/study_synthesis.rs` executing the 3 canonical alpha synthesis scenarios (`scenario-alpha-synthesis-baseline-v1`, `scenario-alpha-synthesis-accessibility-gated-v1`, `scenario-alpha-synthesis-sampling-gap-v1`).
+  - Added comprehensive Markdown synthesis reporting assessing empirical study cohorts, 7-dimension metrics, informal check remediations, interaction audit profiles, participant sampling quotas, and alpha readiness disposition gates.
+  - Added `write_study_synthesis_report` and wired CLI scenario execution in `src/main.rs`.
+  - Added interactive scenario selection aliases (`"study"`, `"usability"`, `"accessibility"`, `"synthesis"`, `"m10"`, `"human-study"`, `"study-synthesis"`) in `parse_scenario_selection`.
+  - Added `study_synthesis_run` tool to the Model Context Protocol (MCP) server catalog in `src/mcp/tools.rs` and `src/mcp/server.rs` with optional `scenario_id` filtering.
+  - Comprehensive unit and binary integration tests in `src/command_loop.rs`, `src/mcp/tests.rs`, and `tests/binary_run_dir.rs`.
+
 ## [0.1.225] - 2026-08-25
 
 ### Added

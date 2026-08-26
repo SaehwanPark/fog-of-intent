@@ -405,3 +405,46 @@ fn mcp_server_executes_m8_team_scenarios_tool() {
   assert!(single_text.contains("Strategic Disagreement Evaluation"));
   assert!(single_text.contains("LegitimateDissent"));
 }
+
+#[test]
+fn mcp_server_executes_m10_study_synthesis_tool() {
+  let mut server = McpServer::new();
+
+  // Run full synthesis battery
+  let run_all_req = r#"{"jsonrpc":"2.0","id":40,"method":"tools/call","params":{"name":"study_synthesis_run","arguments":{"scenario_id":"all"}}}"#;
+  let all_resp = parse_json(&server.handle_line(run_all_req).unwrap()).unwrap();
+  let all_text = all_resp
+    .get("result")
+    .unwrap()
+    .get("content")
+    .unwrap()
+    .as_array()
+    .unwrap()[0]
+    .get("text")
+    .unwrap()
+    .as_str()
+    .unwrap();
+  assert!(all_text.contains(
+    "# Fog of Intent — Milestone M10 Human Usability & Accessibility Alpha Synthesis Battery"
+  ));
+  assert!(all_text.contains("scenario-alpha-synthesis-baseline-v1"));
+  assert!(all_text.contains("scenario-alpha-synthesis-accessibility-gated-v1"));
+  assert!(all_text.contains("Benchmark Battery Summary"));
+
+  // Run single specific scenario
+  let run_single_req = r#"{"jsonrpc":"2.0","id":41,"method":"tools/call","params":{"name":"study_synthesis_run","arguments":{"scenario_id":"scenario-alpha-synthesis-baseline-v1"}}}"#;
+  let single_resp = parse_json(&server.handle_line(run_single_req).unwrap()).unwrap();
+  let single_text = single_resp
+    .get("result")
+    .unwrap()
+    .get("content")
+    .unwrap()
+    .as_array()
+    .unwrap()[0]
+    .get("text")
+    .unwrap()
+    .as_str()
+    .unwrap();
+  assert!(single_text.contains("# M10 Human Usability & Accessibility Alpha Evidence Synthesis"));
+  assert!(single_text.contains("alpha-ready"));
+}

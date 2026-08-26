@@ -5,6 +5,13 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Align enum string assertions across Display, Debug, and custom as_str representations in report generators
+
+- Context: Report builders and CLI presenters often mix `Debug` formatting (`"{:?}"` -> `"AlphaReady"`) in summary tables with domain `as_str()`/`Display` formatting (`"alpha-ready"`) in rendered markdown blocks.
+- Symptom: Integration and MCP tool test assertions looking for enum values fail when assuming `Debug` casing where kebab-cased `as_str()` is rendered.
+- Resolution: Check the exact render implementation of the underlying report types (`render_markdown()` uses `self.disposition.as_str()`) and verify test assertions against the actual rendered string output.
+- Prevention: When writing integration tests for complex composite reports, verify the exact string representations produced by both summary tables and nested markdown sections.
+
 ## Keep scenario catalog expansion synchronized across menu numbering, selection parsers, help strings, and CLI test fixtures
 
 - Context: Adding new executable scenarios (such as `m8-team-scenarios-v1`) shifts catalog length, 1-based numerical index assignments, menu presentation lines, and usage help strings.
