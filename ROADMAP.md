@@ -2313,6 +2313,7 @@ standalone HTML5/CSS/SVG GUI presentation document generator, loopback transport
 ### Developer Action Items (Browser Client)
 
 - [x] Wire standalone HTML presentation viewer to CLI exporter (`--scenario m11-gui-presentation-v1`) for file/stream visual inspection.
+- [x] Wire browser interaction flow and recovery evaluation battery to CLI runner (`--scenario m11-gui-browser-flow-v1`) and MCP server (`gui_browser_flow_run`, `fog-of-intent://presentation/browser-flow`).
 - [ ] Validate browser flow recovery on live browser sessions.
 
 ### Deliverables

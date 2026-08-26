@@ -196,6 +196,20 @@ fn main() -> ExitCode {
       }
     };
   }
+  if matches!(scenario, CliApplicationScenario::M11GuiBrowserFlow) {
+    let stdout = io::stdout();
+    return match fog_of_intent::command_loop::write_browser_flow_report(stdout.lock()) {
+      Ok(true) => ExitCode::SUCCESS,
+      Ok(false) => {
+        eprintln!("gui browser flow battery failed verification");
+        ExitCode::FAILURE
+      }
+      Err(error) => {
+        eprintln!("gui browser flow execution failed: {error}");
+        ExitCode::FAILURE
+      }
+    };
+  }
   if matches!(scenario, CliApplicationScenario::M12AlphaReleaseChecks) {
     let stdout = io::stdout();
     return match fog_of_intent::command_loop::write_alpha_release_checks_report(stdout.lock()) {

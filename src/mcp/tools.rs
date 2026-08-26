@@ -295,6 +295,14 @@ pub fn mcp_tools_catalog() -> Vec<McpTool> {
       ]),
     },
     McpTool {
+      name: "gui_browser_flow_run",
+      description: "Execute the Milestone M11 GUI browser interaction flow and recovery evaluation benchmark battery.",
+      input_schema: JsonValue::Object(vec![
+        ("type".into(), JsonValue::String("object".into())),
+        ("properties".into(), JsonValue::Object(vec![])),
+      ]),
+    },
+    McpTool {
       name: "alpha_release_checks_run",
       description: "Execute the complete Milestone M12 Public Alpha release readiness verification check suite across 6 domains.",
       input_schema: JsonValue::Object(vec![
@@ -380,6 +388,12 @@ pub fn mcp_resources_catalog() -> Vec<McpResource> {
       name: "Tactical Map & Debrief Presentation Document",
       description: "Standalone accessibility-compliant HTML5/SVG presentation document.",
       mime_type: "text/html",
+    },
+    McpResource {
+      uri: "fog-of-intent://presentation/browser-flow",
+      name: "GUI Browser Interaction Flow & Recovery Report",
+      description: "Evaluation report of multi-tab browser flows, state recovery, and accessibility audits.",
+      mime_type: "text/markdown",
     },
     McpResource {
       uri: "fog-of-intent://calibration/model-card",
