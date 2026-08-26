@@ -5,6 +5,13 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Keep catalog expected summary metrics strictly aligned with underlying session fixture arithmetic
+
+- Context: Benchmark catalogs define expected metrics (such as `expected_completion_rate_bp`) against deterministic fixture session arrays.
+- Symptom: Benchmark execution returns `all_expectations_met: false` when manual estimation diverges from exact integer arithmetic (e.g. 7 of 8 completed sessions is 8,750 bp, not 7,500 bp).
+- Resolution: Compute exact integer basis points (`completed * 10,000 / total`) from the fixture session list when constructing catalog scenario definitions.
+- Prevention: Double-check arithmetic totals across all participant records when authoring new benchmark scenarios.
+
 ## Account for Markdown bolding markers in structured line assertions
 
 - Context: Report generation often formats summary lines as `- **Key:** Value` (e.g. `- **Regression Gate Status:** PASS`).

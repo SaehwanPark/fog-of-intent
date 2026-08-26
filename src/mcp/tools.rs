@@ -279,6 +279,19 @@ pub fn mcp_tools_catalog() -> Vec<McpTool> {
       ]),
     },
     McpTool {
+      name: "cohort_study_run",
+      description: "Execute the Milestone M10 Empirical Multi-Cohort Study Trials benchmark battery across all 4 participant cohorts.",
+      input_schema: JsonValue::Object(vec![
+        ("type".into(), JsonValue::String("object".into())),
+        ("properties".into(), JsonValue::Object(vec![
+          ("scenario_id".into(), JsonValue::Object(vec![
+            ("type".into(), JsonValue::String("string".into())),
+            ("description".into(), JsonValue::String("Optional specific M10 cohort trial scenario id (e.g. 'scenario-cohort-trial-balanced-alpha-v1', 'scenario-cohort-trial-access-focused-v1', or 'all').".into())),
+          ])),
+        ])),
+      ]),
+    },
+    McpTool {
       name: "reproducibility_bundle_run",
       description: "Execute the Milestone M12 Public Alpha research reproducibility bundle integrity audit and verification suite.",
       input_schema: JsonValue::Object(vec![
@@ -393,6 +406,12 @@ pub fn mcp_resources_catalog() -> Vec<McpResource> {
       uri: "fog-of-intent://presentation/browser-flow",
       name: "GUI Browser Interaction Flow & Recovery Report",
       description: "Evaluation report of multi-tab browser flows, state recovery, and accessibility audits.",
+      mime_type: "text/markdown",
+    },
+    McpResource {
+      uri: "fog-of-intent://study/cohort-trials",
+      name: "Empirical Multi-Cohort Study Trials Report",
+      description: "Empirical playtest evaluation across 4 participant cohorts, friction densities, and accessibility readiness.",
       mime_type: "text/markdown",
     },
     McpResource {

@@ -182,6 +182,20 @@ fn main() -> ExitCode {
       }
     };
   }
+  if matches!(scenario, CliApplicationScenario::M10CohortStudy) {
+    let stdout = io::stdout();
+    return match fog_of_intent::command_loop::write_cohort_study_report(stdout.lock()) {
+      Ok(true) => ExitCode::SUCCESS,
+      Ok(false) => {
+        eprintln!("empirical cohort trials report detected blocked readiness gates");
+        ExitCode::FAILURE
+      }
+      Err(error) => {
+        eprintln!("empirical cohort trials execution failed: {error}");
+        ExitCode::FAILURE
+      }
+    };
+  }
   if matches!(scenario, CliApplicationScenario::M11GuiPresentation) {
     let stdout = io::stdout();
     return match fog_of_intent::command_loop::write_gui_presentation_document(stdout.lock()) {

@@ -2184,6 +2184,17 @@ behavioral research claims remain deferred until study data is collected.
 - `study_synthesis_run` tool added to the Model Context Protocol (MCP) server catalog in `src/mcp/tools.rs` and `src/mcp/server.rs` with optional `scenario_id` filtering.
 - Interactive scenario selection aliases (`"study"`, `"usability"`, `"accessibility"`, `"synthesis"`, `"m10"`, `"human-study"`, `"study-synthesis"`) enabled in `parse_scenario_selection`.
 
+### M10 — Empirical Multi-Cohort Study Trials Battery Runner & MCP Tooling — 2026-08-26
+
+**Status:** Complete
+
+#### Delivered
+
+- `m10-empirical-cohort-study-v1` (`src/study/empirical_trials.rs`, `src/study/empirical_trials_catalog.rs`, `src/cli/cohort_study.rs`, `src/command_loop.rs`, `src/main.rs`) registers and runs the 4-case canonical multi-cohort trial benchmark battery (`BalancedAlpha`, `AccessFocused`, `NoviceOnboarding`, `StrategyMobaContrast`).
+- `build_cohort_study_report` evaluates all 4 benchmark scenarios, computing exact integer basis points ($[0..=10,000]$ bp) across all 4 cohorts (`StrategyGamer`, `MobaPlayer`, `AccessNeeds`, `NoviceStrategy`), validating completion rates, decision explanation qualities, debrief causal comprehensions, cognitive friction indicators, fail-closed validation, and alpha readiness disposition gates.
+- `cohort_study_run` tool and `fog-of-intent://study/cohort-trials` resource added to the Model Context Protocol (MCP) server catalog in `src/mcp/tools.rs` and `src/mcp/server.rs`.
+- Interactive scenario selection aliases (`"cohort-study"`, `"cohorts"`, `"cohort-trials"`, `"trials"`, `"playtest"`, `"m10-trials"`, `"m10-cohorts"`) enabled in `parse_scenario_selection`.
+
 ### M12 — Public research-capable alpha governance, compatibility, data dictionary, limitations, guides, reproducibility, and release checks — 2026-08-24
 
 **Status:** Initial library baseline complete

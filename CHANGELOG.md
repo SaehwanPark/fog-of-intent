@@ -4,6 +4,16 @@ All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 not increment the package version.
 
+## [0.1.232] - 2026-08-26
+
+- Milestone M10 Empirical Multi-Cohort Study Trials Battery Runner & MCP Tooling (`m10-empirical-cohort-study-v1`):
+  - Implemented `src/study/empirical_trials.rs` formalizing deterministic integer basis-point evaluation ($[0..=10,000]$ bp) across all 4 canonical participant cohorts (`StrategyGamer`, `MobaPlayer`, `AccessNeeds`, `NoviceStrategy`), measuring completion rates, decision explanation qualities, debrief causal comprehensions, cognitive friction indicators, fail-closed validation, and structured Markdown report generation.
+  - Implemented `src/study/empirical_trials_catalog.rs` registering 4 benchmark multi-cohort scenarios (`scenario-cohort-trial-balanced-alpha-v1`, `scenario-cohort-trial-access-focused-v1`, `scenario-cohort-trial-novice-onboarding-v1`, `scenario-cohort-trial-strategy-moba-contrast-v1`).
+  - Added pure CLI report builder `build_cohort_study_report` in `src/cli/cohort_study.rs` and registered `--scenario m10-empirical-cohort-study-v1` in `CLI_SCENARIO_CATALOG` under `ScenarioExecutionMode::EmpiricalCohortStudy`.
+  - Added interactive selection aliases (`"cohort-study"`, `"cohorts"`, `"cohort-trials"`, `"trials"`, `"playtest"`, `"m10-trials"`, `"m10-cohorts"`), menu slot `[11]`, and process execution in `src/main.rs`.
+  - Added `cohort_study_run` MCP tool and `fog-of-intent://study/cohort-trials` MCP resource to Model Context Protocol server catalog in `src/mcp/`.
+  - Added comprehensive unit and binary integration tests in `src/study/tests.rs`, `src/command_loop.rs`, `src/mcp/tests.rs`, and `tests/binary_run_dir.rs`.
+
 ## [0.1.231] - 2026-08-26
 
 - Dedicated Standalone Model Context Protocol (MCP) Binary Target (`fog-of-intent-mcp`):
