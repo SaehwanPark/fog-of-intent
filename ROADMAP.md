@@ -2184,9 +2184,16 @@ project reports accessibility and usability limits honestly.
   `AlphaEvidenceSynthesis`, and `AlphaSynthesisCatalog` with 3 canonical benchmark scenarios
   `scenario-alpha-synthesis-baseline-v1`, `scenario-alpha-synthesis-accessibility-gated-v1`,
   `scenario-alpha-synthesis-sampling-gap-v1`).
+- [x] Define `m10-empirical-cohort-trials-v1` and `m10-empirical-cohort-catalog-v1`
+  formalizing deterministic multi-cohort empirical playtest trial evaluation across 4 participant cohorts
+  (`StrategyGamer`, `MobaPlayer`, `AccessNeeds`, `NoviceStrategy`), measuring completion rates, explanation qualities,
+  debrief causal comprehensions, cognitive friction indicators, fail-closed validation, and structured Markdown
+  report generation with 4 canonical benchmark scenarios in `EmpiricalTrialsCatalog` (`BalancedAlpha`, `AccessFocused`,
+  `NoviceOnboarding`, `StrategyMobaContrast`), CLI runner `--scenario m10-empirical-cohort-study-v1`, MCP tool `cohort_study_run`,
+  and MCP resource `fog-of-intent://study/cohort-trials`.
 - [x] Cover study protocols, dimension assessments, interaction audits, informal check protocols,
-  remediation plans, sampling limits, alpha synthesis, fail-closed validation, error Display formatting,
-  catalog outcomes, accessibility gate rules, and Markdown hygiene across 27 focused tests in `src/study/tests.rs`.
+  remediation plans, sampling limits, alpha synthesis, empirical cohort trials, fail-closed validation, error Display formatting,
+  catalog outcomes, accessibility gate rules, and Markdown hygiene across 30 focused tests in `src/study/tests.rs`.
 
 This establishes a bounded deterministic study protocol, dimension assessment framework, interaction
 mode auditing, informal check protocol, remediation evaluation, sampling limits auditing, and alpha

@@ -305,7 +305,7 @@ fn mcp_server_prompts_and_resources() {
     .unwrap()
     .as_array()
     .unwrap();
-  assert_eq!(resources.len(), 7);
+  assert_eq!(resources.len(), 8);
 
   // Resources read rules
   let rread = parse_json(&server.handle_line(r#"{"jsonrpc":"2.0","id":23,"method":"resources/read","params":{"uri":"fog-of-intent://scenario/rules"}}"#).unwrap()).unwrap();
@@ -737,4 +737,52 @@ fn mcp_server_executes_m11_browser_flow_tool_and_resource() {
     .unwrap();
   assert!(res_text.contains("# Milestone M11: GUI Browser Interaction Flow & Recovery Evaluation"));
   assert!(res_text.contains("m11-gui-browser-catalog-v1"));
+}
+
+#[test]
+fn mcp_server_executes_m10_cohort_study_tool_and_resource() {
+  let mut server = McpServer::new();
+
+  // Call cohort_study_run tool
+  let req = r#"{"jsonrpc":"2.0","id":101,"method":"tools/call","params":{"name":"cohort_study_run","arguments":{}}}"#;
+  let resp = parse_json(&server.handle_line(req).unwrap()).unwrap();
+  let text = resp
+    .get("result")
+    .unwrap()
+    .get("content")
+    .unwrap()
+    .as_array()
+    .unwrap()[0]
+    .get("text")
+    .unwrap()
+    .as_str()
+    .unwrap();
+  assert!(
+    text.contains("# Fog of Intent — Milestone M10 Empirical Multi-Cohort Study Trials Battery")
+  );
+  assert!(text.contains("scenario-cohort-trial-balanced-alpha-v1"));
+  assert!(text.contains("scenario-cohort-trial-access-focused-v1"));
+  assert!(text.contains("scenario-cohort-trial-novice-onboarding-v1"));
+  assert!(text.contains("scenario-cohort-trial-strategy-moba-contrast-v1"));
+  assert!(text.contains("**Regression Gate Status:** PASS"));
+
+  // Read cohort-trials resource
+  let res_req = r#"{"jsonrpc":"2.0","id":102,"method":"resources/read","params":{"uri":"fog-of-intent://study/cohort-trials"}}"#;
+  let res_resp = parse_json(&server.handle_line(res_req).unwrap()).unwrap();
+  let res_text = res_resp
+    .get("result")
+    .unwrap()
+    .get("contents")
+    .unwrap()
+    .as_array()
+    .unwrap()[0]
+    .get("text")
+    .unwrap()
+    .as_str()
+    .unwrap();
+  assert!(
+    res_text
+      .contains("# Fog of Intent — Milestone M10 Empirical Multi-Cohort Study Trials Battery")
+  );
+  assert!(res_text.contains("m10-cohort-study-cli-report-v1"));
 }

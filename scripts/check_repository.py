@@ -167,6 +167,8 @@ CORE_RUST_FILES = (
   "src/study/catalog.rs",
   "src/study/dimension.rs",
   "src/study/dimension_catalog.rs",
+  "src/study/empirical_trials.rs",
+  "src/study/empirical_trials_catalog.rs",
   "src/study/evaluation.rs",
   "src/study/finding.rs",
   "src/study/informal_check.rs",

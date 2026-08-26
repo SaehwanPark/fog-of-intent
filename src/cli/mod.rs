@@ -8,6 +8,7 @@ mod accessibility;
 mod alpha_archive;
 mod behavioral_experiments;
 mod calibration_proof;
+mod cohort_study;
 mod draft;
 mod gui_browser_flow;
 mod gui_presentation;
@@ -39,6 +40,10 @@ pub use behavioral_experiments::{
 pub use calibration_proof::{
   CALIBRATION_PROOF_REPORT_SCHEMA_V1, CLI_CALIBRATION_PROOF_SCENARIO_ID, CalibrationProofCliReport,
   build_calibration_proof_report,
+};
+pub use cohort_study::{
+  CLI_COHORT_STUDY_SCENARIO_ID, COHORT_STUDY_REPORT_SCHEMA_V1, CohortStudyCliReport,
+  build_cohort_study_report,
 };
 
 pub use draft::{CLI_DRAFT_SCHEMA, CliCommittedDraft, CliDraft, CliDraftStageError};

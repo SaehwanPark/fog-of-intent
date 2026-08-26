@@ -606,6 +606,13 @@ for M10:
 - `synthesis_catalog.rs` (`m10-synthesis-catalog-v1`): registers 3 canonical benchmark scenarios
   (`scenario-alpha-synthesis-baseline-v1`, `scenario-alpha-synthesis-accessibility-gated-v1`,
   `scenario-alpha-synthesis-sampling-gap-v1`) with reproducible execution and verified expectations.
+- `empirical_trials.rs` (`m10-empirical-cohort-trials-v1`): defines deterministic integer basis-point
+  evaluation ($[0..=10,000]$ bp) across all 4 canonical participant cohorts (`StrategyGamer`, `MobaPlayer`,
+  `AccessNeeds`, `NoviceStrategy`), measuring completion rates, explanation qualities, debrief causal comprehensions,
+  cognitive friction indicators, fail-closed validation, and structured Markdown report generation.
+- `empirical_trials_catalog.rs` (`m10-empirical-cohort-catalog-v1`): registers 4 canonical benchmark multi-cohort
+  trial scenarios (`BalancedAlpha`, `AccessFocused`, `NoviceOnboarding`, `StrategyMobaContrast`) with reproducible
+  execution and verified expectations.
 
 `src/gui/` defines the presentation need taxonomy, versioned actor-visible GUI Data Transfer Objects,
 reversible client state machine, triple projection parity verification, and canonical benchmark scenarios for M11 (governed by ADR-0003 `docs/adr/0003-shared-boundary-gui.md`):

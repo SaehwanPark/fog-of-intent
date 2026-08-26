@@ -16,6 +16,8 @@
 pub mod catalog;
 pub mod dimension;
 pub mod dimension_catalog;
+pub mod empirical_trials;
+pub mod empirical_trials_catalog;
 pub mod evaluation;
 pub mod finding;
 pub mod informal_check;
@@ -43,6 +45,14 @@ pub use dimension::{
 pub use dimension_catalog::{
   DimensionAssessmentCatalog, DimensionScenarioDefinition, DimensionScenarioExecutionResult,
   M10_DIMENSION_CATALOG_SCHEMA_V1,
+};
+pub use empirical_trials::{
+  CohortTrialSummary, EMPIRICAL_ALPHA_PROTOCOL, EmpiricalCohortError, EmpiricalCohortTrialReport,
+  EmpiricalTrialSession, M10_EMPI_COHORT_TRIALS_SCHEMA_V1, evaluate_empirical_trials,
+};
+pub use empirical_trials_catalog::{
+  EmpiricalTrialExecutionResult, EmpiricalTrialScenarioDefinition, EmpiricalTrialsCatalog,
+  M10_EMPI_COHORT_CATALOG_SCHEMA_V1,
 };
 pub use evaluation::{
   CohortMetrics, M10_STUDY_EVALUATION_SCHEMA_V1, STANDARD_EVIDENCE_BOUNDARY, StudyEvaluationError,

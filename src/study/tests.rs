@@ -1292,3 +1292,154 @@ fn sampling_and_synthesis_markdown_hygiene() {
   assert!(synth_md.contains("### Inferred Design Hypotheses"));
   assert!(synth_md.contains("## Untested Populations Disclosure"));
 }
+
+#[test]
+fn empirical_trials_evaluation_and_validation() {
+  use super::empirical_trials::{
+    EMPIRICAL_ALPHA_PROTOCOL, EmpiricalCohortError, EmpiricalTrialSession,
+    evaluate_empirical_trials,
+  };
+  use super::protocol::{EvaluationDimension, ParticipantCohort};
+  use super::session::{AccessNeedsDeclaration, CompletionStatus, ParticipantSessionRecord};
+
+  // Empty sessions error
+  let err = evaluate_empirical_trials(&EMPIRICAL_ALPHA_PROTOCOL, &[], &[]).unwrap_err();
+  assert_eq!(err, EmpiricalCohortError::EmptySessionList);
+
+  // Missing required cohort error
+  let incomplete_sessions = vec![EmpiricalTrialSession {
+    session: ParticipantSessionRecord {
+      participant_id: "P1",
+      cohort: ParticipantCohort::StrategyGamer,
+      access_needs: AccessNeedsDeclaration::none(),
+      completion_status: CompletionStatus::Completed,
+      explanation_quality_bp: 8000,
+      debrief_comprehension_bp: 8000,
+      turns_completed: 15,
+    },
+    primary_dimension_focus: EvaluationDimension::PerceivedAgency,
+    reported_frictions: vec![],
+    qualitative_notes: "ok",
+  }];
+  let err =
+    evaluate_empirical_trials(&EMPIRICAL_ALPHA_PROTOCOL, &incomplete_sessions, &[]).unwrap_err();
+  assert!(matches!(
+    err,
+    EmpiricalCohortError::MissingRequiredCohort { .. }
+  ));
+
+  // Duplicate participant ID
+  let dup_sessions = vec![
+    EmpiricalTrialSession {
+      session: ParticipantSessionRecord {
+        participant_id: "P-DUP",
+        cohort: ParticipantCohort::StrategyGamer,
+        access_needs: AccessNeedsDeclaration::none(),
+        completion_status: CompletionStatus::Completed,
+        explanation_quality_bp: 8000,
+        debrief_comprehension_bp: 8000,
+        turns_completed: 15,
+      },
+      primary_dimension_focus: EvaluationDimension::PerceivedAgency,
+      reported_frictions: vec![],
+      qualitative_notes: "ok",
+    },
+    EmpiricalTrialSession {
+      session: ParticipantSessionRecord {
+        participant_id: "P-DUP",
+        cohort: ParticipantCohort::MobaPlayer,
+        access_needs: AccessNeedsDeclaration::none(),
+        completion_status: CompletionStatus::Completed,
+        explanation_quality_bp: 8000,
+        debrief_comprehension_bp: 8000,
+        turns_completed: 15,
+      },
+      primary_dimension_focus: EvaluationDimension::DelegatedFairness,
+      reported_frictions: vec![],
+      qualitative_notes: "ok",
+    },
+  ];
+  let err = evaluate_empirical_trials(&EMPIRICAL_ALPHA_PROTOCOL, &dup_sessions, &[]).unwrap_err();
+  assert_eq!(
+    err,
+    EmpiricalCohortError::DuplicateParticipantId {
+      participant_id: "P-DUP"
+    }
+  );
+
+  // Invalid score
+  let mut invalid_proto = EMPIRICAL_ALPHA_PROTOCOL;
+  invalid_proto.target_completion_floor_bp = 12_000;
+  let err = evaluate_empirical_trials(&invalid_proto, &incomplete_sessions, &[]).unwrap_err();
+  assert_eq!(
+    err,
+    EmpiricalCohortError::InvalidCompletionFloor { floor_bp: 12_000 }
+  );
+}
+
+#[test]
+fn empirical_trials_error_display_coverage() {
+  use super::empirical_trials::EmpiricalCohortError;
+  use super::protocol::ParticipantCohort;
+
+  let errors = [
+    EmpiricalCohortError::EmptySessionList,
+    EmpiricalCohortError::InvalidCompletionFloor { floor_bp: 15_000 },
+    EmpiricalCohortError::InvalidComprehensionFloor { floor_bp: 15_000 },
+    EmpiricalCohortError::InvalidExplanationScore {
+      participant_id: "P1",
+      score_bp: 12_000,
+    },
+    EmpiricalCohortError::InvalidComprehensionScore {
+      participant_id: "P2",
+      score_bp: 12_000,
+    },
+    EmpiricalCohortError::MissingRequiredCohort {
+      cohort: ParticipantCohort::AccessNeeds,
+    },
+    EmpiricalCohortError::DuplicateParticipantId {
+      participant_id: "P-DUP",
+    },
+  ];
+
+  for err in &errors {
+    let formatted = format!("{err}");
+    assert!(!formatted.is_empty());
+    assert!(formatted.starts_with("empirical-trials:"));
+  }
+}
+
+#[test]
+fn empirical_trials_catalog_executes_all_scenarios() {
+  use super::empirical_trials_catalog::{
+    EmpiricalTrialsCatalog, M10_EMPI_COHORT_CATALOG_SCHEMA_V1,
+  };
+
+  assert_eq!(
+    M10_EMPI_COHORT_CATALOG_SCHEMA_V1,
+    "m10-empirical-cohort-catalog-v1"
+  );
+  assert_eq!(EmpiricalTrialsCatalog::ALL.len(), 4);
+
+  let results = EmpiricalTrialsCatalog::execute_all().unwrap();
+  assert_eq!(results.len(), 4);
+
+  for res in &results {
+    assert!(
+      res.all_expectations_met,
+      "Scenario {} failed: {:?}",
+      res.scenario_id, res
+    );
+
+    let md = res.report.render_markdown();
+    assert!(md.contains("### Empirical Cohort Study Trial Report"));
+    assert!(md.contains("#### Cohort Breakdown"));
+    assert!(md.contains("strategy-gamer"));
+    assert!(md.contains("moba-player"));
+    assert!(md.contains("access-needs"));
+    assert!(md.contains("novice-strategy"));
+  }
+
+  assert!(EmpiricalTrialsCatalog::find_by_id("non-existent").is_none());
+  assert!(EmpiricalTrialsCatalog::execute_by_id("non-existent").is_err());
+}

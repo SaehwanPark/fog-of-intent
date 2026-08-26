@@ -440,6 +440,22 @@ impl McpServer {
           },
         }
       }
+      "cohort_study_run" => {
+        let scenario_id = args.get("scenario_id").and_then(JsonValue::as_str);
+        match scenario_id {
+          Some(id) if id != "all" && !id.is_empty() => {
+            match crate::study::empirical_trials_catalog::EmpiricalTrialsCatalog::execute_by_id(id)
+            {
+              Ok(res) => format_tool_success(&res.report.render_markdown()),
+              Err(err) => format_tool_error(&format!("cohort trial scenario failed: {err}")),
+            }
+          }
+          _ => match crate::cli::build_cohort_study_report() {
+            Ok(report) => format_tool_success(report.markdown()),
+            Err(err) => format_tool_error(err),
+          },
+        }
+      }
       "reproducibility_bundle_run" => match crate::cli::build_reproducibility_bundle_report() {
         Ok(report) => format_tool_success(report.markdown()),
         Err(err) => format_tool_error(err),
@@ -631,6 +647,20 @@ impl McpServer {
         let text = match crate::cli::build_gui_browser_flow_report() {
           Ok(report) => report.markdown().to_string(),
           Err(_) => "# GUI Browser Flow Report\n\nReport unavailable.".to_string(),
+        };
+        return JsonValue::Object(vec![(
+          "contents".into(),
+          JsonValue::Array(vec![JsonValue::Object(vec![
+            ("uri".into(), JsonValue::String(uri.into())),
+            ("mimeType".into(), JsonValue::String("text/markdown".into())),
+            ("text".into(), JsonValue::String(text)),
+          ])]),
+        )]);
+      }
+      "fog-of-intent://study/cohort-trials" => {
+        let text = match crate::cli::build_cohort_study_report() {
+          Ok(report) => report.markdown().to_string(),
+          Err(_) => "# Empirical Cohort Trials Report\n\nReport unavailable.".to_string(),
         };
         return JsonValue::Object(vec![(
           "contents".into(),
