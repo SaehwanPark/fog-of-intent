@@ -305,7 +305,7 @@ fn mcp_server_prompts_and_resources() {
     .unwrap()
     .as_array()
     .unwrap();
-  assert_eq!(resources.len(), 5);
+  assert_eq!(resources.len(), 6);
 
   // Resources read rules
   let rread = parse_json(&server.handle_line(r#"{"jsonrpc":"2.0","id":23,"method":"resources/read","params":{"uri":"fog-of-intent://scenario/rules"}}"#).unwrap()).unwrap();
@@ -654,4 +654,46 @@ fn mcp_server_executes_m7_calibration_proof_tool_and_resource() {
     .unwrap();
   assert!(res_text.contains("# Fog of Intent M7 Semantic-to-Parametric Calibration Model Card"));
   assert!(res_text.contains("m7-calibration-model-card-v1"));
+}
+
+#[test]
+fn mcp_server_executes_m12_release_archive_tool_and_resource() {
+  let mut server = McpServer::new();
+
+  // Call alpha_release_archive_run tool
+  let req = r#"{"jsonrpc":"2.0","id":97,"method":"tools/call","params":{"name":"alpha_release_archive_run","arguments":{}}}"#;
+  let resp = parse_json(&server.handle_line(req).unwrap()).unwrap();
+  let text = resp
+    .get("result")
+    .unwrap()
+    .get("content")
+    .unwrap()
+    .as_array()
+    .unwrap()[0]
+    .get("text")
+    .unwrap()
+    .as_str()
+    .unwrap();
+  assert!(text.contains("# Fog of Intent Release Archive Manifest Audit Report"));
+  assert!(text.contains("READY FOR TAGGED RELEASE"));
+  assert!(text.contains("100.00% (10000 bp)"));
+  assert!(text.contains("source-manifest"));
+  assert!(text.contains("reproducibility-bundle"));
+
+  // Read release archive resource
+  let res_req = r#"{"jsonrpc":"2.0","id":98,"method":"resources/read","params":{"uri":"fog-of-intent://release/archive"}}"#;
+  let res_resp = parse_json(&server.handle_line(res_req).unwrap()).unwrap();
+  let res_text = res_resp
+    .get("result")
+    .unwrap()
+    .get("contents")
+    .unwrap()
+    .as_array()
+    .unwrap()[0]
+    .get("text")
+    .unwrap()
+    .as_str()
+    .unwrap();
+  assert!(res_text.contains("# Fog of Intent Release Archive Manifest Audit Report"));
+  assert!(res_text.contains("m12-alpha-archive-v1"));
 }

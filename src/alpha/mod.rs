@@ -1,5 +1,6 @@
 //! Public Research-Capable Alpha release governance, compatibility policies, data dictionary, limitations, guides, and reproducibility contracts for Fog of Intent.
 
+pub mod archive;
 pub mod catalog;
 pub mod checks;
 pub mod compatibility;
@@ -11,6 +12,13 @@ pub mod reproducibility;
 
 #[cfg(test)]
 pub mod tests;
+
+pub use archive::{
+  ALPHA_ARCHIVE_SCHEMA_VERSION, AlphaArchiveError, ArchiveCategoryKind, ArchiveItemRecord,
+  CategoryArchiveSummary, ReleaseArchiveAuditReport, ReleaseArchiveManifest,
+  audit_release_archive_manifest, canonical_alpha_release_archive_manifest,
+  render_release_archive_report_markdown,
+};
 
 pub use catalog::{
   ALPHA_CATALOG_SCHEMA_VERSION, AlphaScenarioCatalog, AlphaScenarioDefinition, AlphaScenarioKind,

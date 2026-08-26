@@ -4,6 +4,18 @@ All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 not increment the package version.
 
+## [0.1.231] - 2026-08-26
+
+### Added
+
+- Milestone M12 Tagged Research Release Archive Manifest & Hash Inventory Verification (`m12-alpha-archive-v1`):
+  - Defined `m12-alpha-archive-v1` in `src/alpha/archive.rs` implementing release archive manifest verification across 11 discrete categories (`SourceManifest`, `LockfileInventory`, `SchemaDefinitions`, `CatalogFixtures`, `ReplayEvidence`, `ModelCards`, `GovernanceManifests`, `CompatibilityMatrix`, `DataDictionary`, `DocumentationGuides`, `ReproducibilityBundle`).
+  - Added pure deterministic audit evaluation `audit_release_archive_manifest` enforcing 100% presence of mandatory archive categories, unique item IDs, valid non-escaping relative paths, 16-hex FNV-1a content digest integrity, combined signature verification, integer basis-point completeness scoring ($[0..=10,000]$ bp), and structured Markdown reporting.
+  - Added canonical tagged release archive benchmark scenario `scenario-alpha-release-archive-v1` to `AlphaScenarioCatalog`.
+  - Added `alpha_release_archive_run` tool to the Model Context Protocol (MCP) server catalog in `src/mcp/tools.rs` and `src/mcp/server.rs` (expanding server catalog to 23 tools).
+  - Added `fog-of-intent://release/archive` MCP resource delivering the formal release archive audit report (expanding server catalog to 6 resources).
+  - Added comprehensive unit and integration tests in `src/alpha/tests.rs`, `src/mcp/tests.rs`, and `scripts/verify_mcp_server.py`.
+
 ## [0.1.230] - 2026-08-26
 
 ### Added
