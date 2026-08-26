@@ -4,6 +4,16 @@ All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 not increment the package version.
 
+## [0.1.234] - 2026-08-26
+
+- ADR-0004 Cargo Workspace Partitioning & `crates/foi-map` Member Crate Extraction (Phase 2):
+  - Extracted pure M9 5v5 multi-lane spatial map topology, 15-node map graph, 26 defensive structures hierarchy, neutral objective cycles, dynamic vision control, cross-map objective contest and tradeoff resolution, team composition archetypes, role-specific observations/actions/debriefs, comeback evaluation, pivotal-decision detection, decision density classification, cost profiling, population validation, expanded properties, and complete match simulation into dedicated `crates/foi-map` member crate.
+  - Declared `foi-map` as a workspace member in root `Cargo.toml` with path dependency `foi-kernel = { path = "../foi-kernel" }`.
+  - Added `pub use foi_map::*;` re-export facade in root `src/map/mod.rs` for 100% backward compatibility with existing CLI, host, and MCP adapters.
+  - Updated `scripts/check_repository.py` boundary file tracking for `crates/foi-map/src/*.rs`.
+  - Bumped workspace package versions to `0.1.234`.
+  - Verified all 775+ workspace unit, binary, and doc tests pass with zero warnings.
+
 ## [0.1.233] - 2026-08-26
 
 - ADR-0004 Cargo Workspace Partitioning & `crates/foi-lane` Member Crate Extraction (Phase 2):
