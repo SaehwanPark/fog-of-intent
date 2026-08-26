@@ -4,6 +4,7 @@
 //! later host may map these values to authorized operations at the adapter
 //! boundary.
 
+mod accessibility;
 mod draft;
 mod gui_presentation;
 mod information;
@@ -15,6 +16,12 @@ mod top_level_grammar;
 
 #[cfg(test)]
 mod tests;
+
+pub use accessibility::{
+  CLI_ACCESSIBILITY_SCHEMA, CliAccessibilityAuditCheck, CliAccessibilityAuditReport,
+  MAX_ACCESSIBLE_LINE_WIDTH, MIN_ACCESSIBLE_LINE_WIDTH, STANDARD_LINE_WIDTH,
+  audit_cli_presentation_text,
+};
 
 pub use draft::{CLI_DRAFT_SCHEMA, CliCommittedDraft, CliDraft, CliDraftStageError};
 pub use gui_presentation::{

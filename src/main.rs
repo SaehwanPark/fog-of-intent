@@ -56,13 +56,18 @@ fn main() -> ExitCode {
   let no_color = std::env::var_os("NO_COLOR").is_some();
   let color_enabled = resolve_color(options.color(), stdout_is_terminal, no_color);
   let style = PresentationStyle::from_enabled(color_enabled);
+  let dimensions = options.dimensions();
 
   let scenario = if options.interactive_select()
     || (!options.has_explicit_scenario() && stdin_is_terminal && stdout_is_terminal)
   {
     if stdin_is_terminal && stdout_is_terminal {
       let mut editor = fog_of_intent::repl::create_editor(color_enabled);
-      match fog_of_intent::repl::select_scenario_with_editor(&mut editor, style) {
+      match fog_of_intent::repl::select_scenario_with_editor_and_dimensions(
+        &mut editor,
+        style,
+        dimensions,
+      ) {
         Ok(Some(chosen)) => chosen,
         Ok(None) => return ExitCode::SUCCESS,
         Err(error) => {
@@ -73,10 +78,11 @@ fn main() -> ExitCode {
     } else {
       let stdin = io::stdin();
       let mut stdout = io::stdout().lock();
-      match fog_of_intent::command_loop::select_scenario_interactively(
+      match fog_of_intent::command_loop::select_scenario_interactively_with_dimensions(
         stdin.lock(),
         &mut stdout,
         style,
+        dimensions,
       ) {
         Ok(Some(chosen)) => chosen,
         Ok(None) => return ExitCode::SUCCESS,
@@ -165,15 +171,15 @@ fn main() -> ExitCode {
     },
   };
   let result = if stdin_is_terminal && stdout_is_terminal {
-    command_loop.run_repl(color_enabled)
+    command_loop.run_repl_with_dimensions(color_enabled, dimensions)
   } else if options.color() == CliColorMode::Always {
     let stdin = io::stdin();
     let mut stdout = io::stdout().lock();
-    command_loop.run_presented(stdin.lock(), &mut stdout, color_enabled)
+    command_loop.run_presented_with_dimensions(stdin.lock(), &mut stdout, color_enabled, dimensions)
   } else {
     let stdin = io::stdin();
     let mut stdout = io::stdout().lock();
-    command_loop.run(stdin.lock(), &mut stdout)
+    command_loop.run_with_dimensions(stdin.lock(), &mut stdout, dimensions)
   };
   match result {
     Ok(_) => ExitCode::SUCCESS,

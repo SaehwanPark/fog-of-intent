@@ -11,11 +11,14 @@ use std::path::{Path, PathBuf};
 
 use crate::host::{CliHostOutput, CliScenarioHost};
 use crate::presentation::{
-  PresentationStyle, render_banner, render_chrome, render_presented_error, render_presented_output,
+  PresentationStyle, render_banner_with_dimensions, render_chrome_with_dimensions,
+  render_presented_error_with_dimensions, render_presented_output_with_dimensions,
 };
 use crate::repl::{ReadLine, create_editor, read_line};
 use crate::run_store::CliRunStore;
-use crate::terminal::{render_error, render_output};
+use crate::terminal::{
+  TerminalDimensions, render_error_with_dimensions, render_output_with_dimensions,
+};
 
 /// Versioned contract for the line-oriented reference loop.
 pub const CLI_COMMAND_LOOP_SCHEMA: &str = "m3-cli-command-loop-v1";
@@ -37,7 +40,7 @@ pub const CLI_APPLICATION_VERSION: &str =
   concat!("fog-of-intent ", env!("CARGO_PKG_VERSION"), "\n");
 
 /// Bounded process-level usage for the executable wrapper.
-pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--select] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --help             show this help\n  --version, -V      show package version\n";
+pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--select] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n";
 
 /// Execution mode for a scenario entry in the scenario catalog.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -129,23 +132,60 @@ pub const CLI_SCENARIO_CATALOG: &[CliScenarioCatalogEntry] = &[
 
 /// Render the scenario catalog as an aligned, readable plain-text table without ANSI styling.
 pub fn format_scenario_catalog() -> String {
-  let mut output = String::new();
-  output.push_str("Fog of Intent — Scenario Catalog\n\n");
-  output.push_str(&format!(
-    "{:<32} {:<6} {:<18} {}\n",
-    "SCENARIO ID", "MILE", "MODE", "DESCRIPTION"
-  ));
-  output.push_str(&format!("{:-<32} {:-<6} {:-<18} {:-<45}\n", "", "", "", ""));
-  for entry in CLI_SCENARIO_CATALOG {
+  format_scenario_catalog_with_dimensions(TerminalDimensions::standard())
+}
+
+/// Render the scenario catalog as an aligned, readable plain-text table wrapped to given terminal dimensions.
+pub fn format_scenario_catalog_with_dimensions(dimensions: TerminalDimensions) -> String {
+  if dimensions.width >= 100 {
+    let mut output = String::new();
+    output.push_str("Fog of Intent — Scenario Catalog\n\n");
     output.push_str(&format!(
       "{:<32} {:<6} {:<18} {}\n",
-      entry.id,
-      entry.milestone,
-      entry.mode.label(),
-      entry.description
+      "SCENARIO ID", "MILE", "MODE", "DESCRIPTION"
     ));
+    output.push_str(&format!("{:-<32} {:-<6} {:-<18} {:-<45}\n", "", "", "", ""));
+    for entry in CLI_SCENARIO_CATALOG {
+      output.push_str(&format!(
+        "{:<32} {:<6} {:<18} {}\n",
+        entry.id,
+        entry.milestone,
+        entry.mode.label(),
+        entry.description
+      ));
+    }
+    output
+  } else {
+    let mut output = String::new();
+    let wrap = dimensions.wrap_width();
+    output.push_str("Fog of Intent — Scenario Catalog\n\n");
+    for (index, entry) in CLI_SCENARIO_CATALOG.iter().enumerate() {
+      let num = index + 1;
+      let heading = format!(
+        "[{num}] {} ({}, {})",
+        entry.display_name,
+        entry.milestone,
+        entry.mode.label()
+      );
+      for line in crate::terminal::wrap_labeled_line(&heading, wrap) {
+        output.push_str(&line);
+        output.push('\n');
+      }
+      let id_line = format!("  ID: {}", entry.id);
+      for line in crate::terminal::wrap_labeled_line(&id_line, wrap) {
+        output.push_str(&line);
+        output.push('\n');
+      }
+      let wrapped_desc =
+        crate::terminal::wrap_labeled_line(&format!("  {}", entry.description), wrap);
+      for line in wrapped_desc {
+        output.push_str(&line);
+        output.push('\n');
+      }
+      output.push('\n');
+    }
+    output
   }
-  output
 }
 
 /// Closed set of executable fixture constructors.
@@ -194,6 +234,10 @@ pub enum CliApplicationArgsError {
   EmptyColor,
   DuplicateColor,
   UnsupportedColor,
+  MissingWidth,
+  EmptyWidth,
+  DuplicateWidth,
+  InvalidWidth,
   UnsupportedScenario,
   RunDirectoryRequiresFixture,
   DuplicateSelect,
@@ -215,6 +259,10 @@ impl CliApplicationArgsError {
       Self::EmptyColor => "--color mode must not be empty",
       Self::DuplicateColor => "--color may be provided only once",
       Self::UnsupportedColor => "unsupported --color mode; use auto, always, or never",
+      Self::MissingWidth => "--width needs a column number",
+      Self::EmptyWidth => "--width value must not be empty",
+      Self::DuplicateWidth => "--width may be provided only once",
+      Self::InvalidWidth => "invalid --width; must be an integer between 20 and 500",
       Self::UnsupportedScenario => "unsupported --scenario ID; use --help",
       Self::RunDirectoryRequiresFixture => {
         "--run-dir is available only for interactive lane scenarios"
@@ -272,6 +320,7 @@ pub struct CliApplicationOptions {
   interactive_select: bool,
   run_dir: Option<PathBuf>,
   color: CliColorMode,
+  width: Option<u16>,
 }
 
 impl CliApplicationOptions {
@@ -302,6 +351,22 @@ impl CliApplicationOptions {
   pub const fn color(&self) -> CliColorMode {
     self.color
   }
+
+  /// Return the explicit terminal column width override, if specified.
+  pub const fn width(&self) -> Option<u16> {
+    self.width
+  }
+
+  /// Return the resolved terminal dimensions.
+  ///
+  /// Returns `TerminalDimensions::unlimited()` (no line wrapping) when `--width` is not given,
+  /// or explicit dimensions clamped to accessible bounds when `--width <cols>` is provided.
+  pub const fn dimensions(&self) -> TerminalDimensions {
+    match self.width {
+      Some(w) => TerminalDimensions::new(w, 24),
+      None => TerminalDimensions::unlimited(),
+    }
+  }
 }
 
 /// Parse process arguments without changing the line-oriented session grammar.
@@ -312,6 +377,7 @@ pub fn parse_application_args(
   let mut interactive_select = false;
   let mut run_dir = None;
   let mut color = None;
+  let mut width = None;
   let mut index = 0;
   while index < args.len() {
     match args[index].as_os_str() {
@@ -412,6 +478,26 @@ pub fn parse_application_args(
         };
         color = Some(mode);
       }
+      value if value == "--width" || value == "-w" => {
+        if width.is_some() {
+          return Err(CliApplicationArgsError::DuplicateWidth);
+        }
+        index += 1;
+        if index == args.len() {
+          return Err(CliApplicationArgsError::MissingWidth);
+        }
+        if args[index].is_empty() {
+          return Err(CliApplicationArgsError::EmptyWidth);
+        }
+        if args[index].to_string_lossy().starts_with('-') {
+          return Err(CliApplicationArgsError::UnexpectedArgument);
+        }
+        let parsed = match args[index].to_string_lossy().parse::<u16>() {
+          Ok(val) if (20..=500).contains(&val) => val,
+          _ => return Err(CliApplicationArgsError::InvalidWidth),
+        };
+        width = Some(parsed);
+      }
       _ => return Err(CliApplicationArgsError::UnexpectedArgument),
     }
     index += 1;
@@ -429,6 +515,7 @@ pub fn parse_application_args(
     interactive_select,
     run_dir,
     color: color.unwrap_or_default(),
+    width,
   }))
 }
 
@@ -501,20 +588,34 @@ impl CliCommandLoop {
 
   /// Read newline-delimited commands, write one rendered result per command,
   /// and stop on `quit` or clean end-of-input.
-  pub fn run<R: BufRead, W: Write>(&mut self, input: R, mut output: W) -> io::Result<CliLoopExit> {
+  pub fn run<R: BufRead, W: Write>(&mut self, input: R, output: W) -> io::Result<CliLoopExit> {
+    self.run_with_dimensions(input, output, TerminalDimensions::unlimited())
+  }
+
+  /// Read newline-delimited commands and write results wrapped to given terminal dimensions.
+  pub fn run_with_dimensions<R: BufRead, W: Write>(
+    &mut self,
+    input: R,
+    mut output: W,
+    dimensions: TerminalDimensions,
+  ) -> io::Result<CliLoopExit> {
     for line in input.lines() {
       let line = line?;
       match self.host.apply_line(&line) {
         Ok(result) => {
           let should_quit = matches!(result, CliHostOutput::Quit);
-          output.write_all(render_output(&result).as_bytes())?;
+          output.write_all(render_output_with_dimensions(&result, dimensions).as_bytes())?;
           output.flush()?;
           if should_quit {
             return Ok(CliLoopExit::Quit);
           }
         }
         Err(error) => {
-          writeln!(output, "{}", render_error(&error))?;
+          writeln!(
+            output,
+            "{}",
+            render_error_with_dimensions(&error, dimensions).trim_end()
+          )?;
           output.flush()?;
         }
       }
@@ -526,15 +627,33 @@ impl CliCommandLoop {
   pub fn run_presented<R: BufRead, W: Write>(
     &mut self,
     input: R,
-    mut output: W,
+    output: W,
     color_enabled: bool,
   ) -> io::Result<CliLoopExit> {
+    self.run_presented_with_dimensions(
+      input,
+      output,
+      color_enabled,
+      TerminalDimensions::unlimited(),
+    )
+  }
+
+  /// Render friendlier presentation wrapped to explicit terminal dimensions.
+  pub fn run_presented_with_dimensions<R: BufRead, W: Write>(
+    &mut self,
+    input: R,
+    mut output: W,
+    color_enabled: bool,
+    dimensions: TerminalDimensions,
+  ) -> io::Result<CliLoopExit> {
     let style = PresentationStyle::from_enabled(color_enabled);
-    output.write_all(render_banner(style).as_bytes())?;
+    output.write_all(render_banner_with_dimensions(style, dimensions).as_bytes())?;
     for line in input.lines() {
       let line = line?;
-      output.write_all(render_chrome(&self.host.session_view(), style).as_bytes())?;
-      if apply_presented(&mut self.host, &line, &mut output, style)? {
+      output.write_all(
+        render_chrome_with_dimensions(&self.host.session_view(), style, dimensions).as_bytes(),
+      )?;
+      if apply_presented_with_dimensions(&mut self.host, &line, &mut output, style, dimensions)? {
         return Ok(CliLoopExit::Quit);
       }
     }
@@ -543,23 +662,38 @@ impl CliCommandLoop {
 
   /// Interactive TTY loop with prompt, completion, and session chrome.
   pub fn run_repl(&mut self, color_enabled: bool) -> io::Result<CliLoopExit> {
+    self.run_repl_with_dimensions(color_enabled, TerminalDimensions::unlimited())
+  }
+
+  /// Interactive TTY loop with prompt, completion, and session chrome for given terminal dimensions.
+  pub fn run_repl_with_dimensions(
+    &mut self,
+    color_enabled: bool,
+    dimensions: TerminalDimensions,
+  ) -> io::Result<CliLoopExit> {
     let style = PresentationStyle::from_enabled(color_enabled);
     let mut editor = create_editor(color_enabled);
     let mut stdout = std::io::stdout();
-    stdout.write_all(render_banner(style).as_bytes())?;
+    stdout.write_all(render_banner_with_dimensions(style, dimensions).as_bytes())?;
     stdout.flush()?;
     loop {
-      stdout.write_all(render_chrome(&self.host.session_view(), style).as_bytes())?;
+      stdout.write_all(
+        render_chrome_with_dimensions(&self.host.session_view(), style, dimensions).as_bytes(),
+      )?;
       stdout.flush()?;
       match read_line(&mut editor)? {
         ReadLine::Quit => {
           let _ = self.host.apply_line("quit");
-          stdout.write_all(render_presented_output(&CliHostOutput::Quit, style).as_bytes())?;
+          stdout.write_all(
+            render_presented_output_with_dimensions(&CliHostOutput::Quit, style, dimensions)
+              .as_bytes(),
+          )?;
           stdout.flush()?;
           return Ok(CliLoopExit::Quit);
         }
         ReadLine::Line(line) => {
-          if apply_presented(&mut self.host, &line, &mut stdout, style)? {
+          if apply_presented_with_dimensions(&mut self.host, &line, &mut stdout, style, dimensions)?
+          {
             return Ok(CliLoopExit::Quit);
           }
         }
@@ -568,21 +702,25 @@ impl CliCommandLoop {
   }
 }
 
-fn apply_presented<W: Write>(
+fn apply_presented_with_dimensions<W: Write>(
   host: &mut CliScenarioHost,
   line: &str,
   output: &mut W,
   style: PresentationStyle,
+  dimensions: TerminalDimensions,
 ) -> io::Result<bool> {
   match host.apply_line(line) {
     Ok(result) => {
       let should_quit = matches!(result, CliHostOutput::Quit);
-      output.write_all(render_presented_output(&result, style).as_bytes())?;
+      output.write_all(
+        render_presented_output_with_dimensions(&result, style, dimensions).as_bytes(),
+      )?;
       output.flush()?;
       Ok(should_quit)
     }
     Err(error) => {
-      output.write_all(render_presented_error(&error, style).as_bytes())?;
+      output
+        .write_all(render_presented_error_with_dimensions(&error, style, dimensions).as_bytes())?;
       output.flush()?;
       Ok(false)
     }
@@ -639,6 +777,14 @@ pub fn parse_scenario_selection(input: &str) -> Option<CliApplicationScenario> {
 
 /// Format an interactive scenario selection menu for terminal presentation.
 pub fn format_scenario_menu(style: PresentationStyle) -> String {
+  format_scenario_menu_with_dimensions(style, TerminalDimensions::standard())
+}
+
+/// Format an interactive scenario selection menu for terminal presentation with given dimensions.
+pub fn format_scenario_menu_with_dimensions(
+  style: PresentationStyle,
+  dimensions: TerminalDimensions,
+) -> String {
   let mut output = String::new();
   output.push_str(&format!(
     "{}\n\n",
@@ -649,22 +795,65 @@ pub fn format_scenario_menu(style: PresentationStyle) -> String {
     let title = style.paint_bold(entry.display_name);
     let meta = style.paint_dim(&format!("({}, {})", entry.milestone, entry.mode.label()));
     let id_tag = style.paint_dim(&format!("id: {}", entry.id));
-    output.push_str(&format!("  [{num}] {title} {meta}\n"));
-    output.push_str(&format!("      {}\n", entry.description));
-    output.push_str(&format!("      {id_tag}\n\n"));
+    let heading = format!("  [{num}] {title} {meta}");
+    for line in crate::terminal::wrap_labeled_line(&heading, dimensions.wrap_width()) {
+      output.push_str(&line);
+      output.push('\n');
+    }
+    let wrapped_desc = crate::terminal::wrap_labeled_line(
+      &format!("      {}", entry.description),
+      dimensions.wrap_width(),
+    );
+    for line in wrapped_desc {
+      output.push_str(&line);
+      output.push('\n');
+    }
+    let id_line = format!("      {id_tag}");
+    for line in crate::terminal::wrap_labeled_line(&id_line, dimensions.wrap_width()) {
+      output.push_str(&line);
+      output.push('\n');
+    }
+    output.push('\n');
   }
-  output.push_str("Select scenario by number [1-7], scenario ID, or short alias.\n");
-  output.push_str("Press Enter for default [1], or type 'q' to cancel.\n");
+  let wrap = dimensions.wrap_width();
+  for line in crate::terminal::wrap_labeled_line(
+    "Select scenario by number [1-7], scenario ID, or short alias.",
+    wrap,
+  ) {
+    output.push_str(&line);
+    output.push('\n');
+  }
+  for line in
+    crate::terminal::wrap_labeled_line("Press Enter for default [1], or type 'q' to cancel.", wrap)
+  {
+    output.push_str(&line);
+    output.push('\n');
+  }
   output
 }
 
 /// Read interactive scenario selection from any BufRead/Write stream.
 pub fn select_scenario_interactively<R: BufRead, W: Write>(
+  input: R,
+  output: W,
+  style: PresentationStyle,
+) -> io::Result<Option<CliApplicationScenario>> {
+  select_scenario_interactively_with_dimensions(
+    input,
+    output,
+    style,
+    TerminalDimensions::standard(),
+  )
+}
+
+/// Read interactive scenario selection from any BufRead/Write stream with explicit dimensions.
+pub fn select_scenario_interactively_with_dimensions<R: BufRead, W: Write>(
   mut input: R,
   mut output: W,
   style: PresentationStyle,
+  dimensions: TerminalDimensions,
 ) -> io::Result<Option<CliApplicationScenario>> {
-  output.write_all(format_scenario_menu(style).as_bytes())?;
+  output.write_all(format_scenario_menu_with_dimensions(style, dimensions).as_bytes())?;
   output.flush()?;
   let prompt = style.paint_cyan("scenario [1-7]> ");
   let mut line = String::new();
@@ -711,6 +900,7 @@ mod tests {
         interactive_select: false,
         run_dir: None,
         color: CliColorMode::Auto,
+        width: None,
       }))
     );
 
@@ -740,7 +930,7 @@ mod tests {
     );
     assert_eq!(
       CLI_APPLICATION_HELP,
-      "usage: fog-of-intent [--scenario <id>] [--select] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --help             show this help\n  --version, -V      show package version\n"
+      "usage: fog-of-intent [--scenario <id>] [--select] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n"
     );
     assert_eq!(
       parse_application_args(&[OsString::from("--version")]),
@@ -1567,5 +1757,110 @@ mod tests {
     assert_eq!(result, Some(CliApplicationScenario::M2StrategyRiskTaking));
     let out_str = String::from_utf8(output).expect("UTF-8 output");
     assert!(out_str.contains("unknown scenario selection: 'invalid'"));
+  }
+
+  #[test]
+  fn parse_application_args_handles_width_options() {
+    let args = [OsString::from("--width"), OsString::from("60")];
+    let command = parse_application_args(&args).expect("width option");
+    let CliApplicationCommand::Run(options) = command else {
+      panic!("expected Run");
+    };
+    assert_eq!(options.width(), Some(60));
+    assert_eq!(options.dimensions().width, 60);
+
+    let short_args = [OsString::from("-w"), OsString::from("100")];
+    let command = parse_application_args(&short_args).expect("short width option");
+    let CliApplicationCommand::Run(options) = command else {
+      panic!("expected Run");
+    };
+    assert_eq!(options.width(), Some(100));
+
+    // Duplicate width
+    let dup_args = [
+      OsString::from("--width"),
+      OsString::from("80"),
+      OsString::from("--width"),
+      OsString::from("100"),
+    ];
+    assert_eq!(
+      parse_application_args(&dup_args),
+      Err(CliApplicationArgsError::DuplicateWidth)
+    );
+
+    // Missing width
+    let missing_args = [OsString::from("--width")];
+    assert_eq!(
+      parse_application_args(&missing_args),
+      Err(CliApplicationArgsError::MissingWidth)
+    );
+
+    // Empty width
+    let empty_args = [OsString::from("--width"), OsString::from("")];
+    assert_eq!(
+      parse_application_args(&empty_args),
+      Err(CliApplicationArgsError::EmptyWidth)
+    );
+
+    // Invalid width (out of range)
+    let invalid_small = [OsString::from("--width"), OsString::from("10")];
+    assert_eq!(
+      parse_application_args(&invalid_small),
+      Err(CliApplicationArgsError::InvalidWidth)
+    );
+    let invalid_large = [OsString::from("--width"), OsString::from("9999")];
+    assert_eq!(
+      parse_application_args(&invalid_large),
+      Err(CliApplicationArgsError::InvalidWidth)
+    );
+  }
+
+  #[test]
+  fn format_scenario_catalog_and_menu_with_dimensions() {
+    let wide_catalog = format_scenario_catalog_with_dimensions(TerminalDimensions::wide());
+    assert!(wide_catalog.contains("SCENARIO ID"));
+
+    let narrow_catalog = format_scenario_catalog_with_dimensions(TerminalDimensions::compact());
+    assert!(narrow_catalog.contains("[1] Two-Window Lane Reference Fixture"));
+    for line in narrow_catalog.lines() {
+      assert!(
+        line.chars().count() <= 40,
+        "line length {} > 40: '{}'",
+        line.chars().count(),
+        line
+      );
+    }
+
+    let narrow_menu =
+      format_scenario_menu_with_dimensions(PresentationStyle::Plain, TerminalDimensions::compact());
+    assert!(narrow_menu.contains("Fog of Intent — Scenario Selection"));
+    for line in narrow_menu.lines() {
+      assert!(
+        line.chars().count() <= 40,
+        "menu line length {} > 40: '{}'",
+        line.chars().count(),
+        line
+      );
+    }
+  }
+
+  #[test]
+  fn command_loop_run_with_dimensions_wraps_output() {
+    let mut command_loop = CliCommandLoop::fixture();
+    let mut output = Vec::new();
+    let input = Cursor::new("observe\nquit\n");
+    let exit = command_loop
+      .run_with_dimensions(input, &mut output, TerminalDimensions::compact())
+      .expect("run with compact dimensions");
+    assert_eq!(exit, CliLoopExit::Quit);
+    let out_str = String::from_utf8(output).expect("UTF-8 output");
+    for line in out_str.lines() {
+      assert!(
+        line.chars().count() <= 40,
+        "line length {} > 40: '{}'",
+        line.chars().count(),
+        line
+      );
+    }
   }
 }

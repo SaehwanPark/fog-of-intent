@@ -18,6 +18,183 @@ use crate::lane::{
 /// Versioned contract for deterministic, dependency-free terminal text.
 pub const CLI_TERMINAL_TEXT_SCHEMA: &str = "m3-cli-terminal-text-v1";
 
+/// Standard terminal dimensions and layout boundaries for responsive CLI text presentation.
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct TerminalDimensions {
+  pub width: u16,
+  pub height: u16,
+}
+
+impl TerminalDimensions {
+  /// Standard 80x24 terminal dimensions.
+  pub const fn standard() -> Self {
+    Self {
+      width: 80,
+      height: 24,
+    }
+  }
+
+  /// Compact 40x24 terminal dimensions (e.g. Braille displays or compact mobile terminals).
+  pub const fn compact() -> Self {
+    Self {
+      width: 40,
+      height: 24,
+    }
+  }
+
+  /// Wide 120x30 terminal dimensions.
+  pub const fn wide() -> Self {
+    Self {
+      width: 120,
+      height: 30,
+    }
+  }
+
+  /// Explicit constructor for custom terminal dimensions.
+  pub const fn new(width: u16, height: u16) -> Self {
+    Self { width, height }
+  }
+
+  /// Unlimited width — disables line wrapping (used when no explicit `--width` is given).
+  pub const fn unlimited() -> Self {
+    Self {
+      width: u16::MAX,
+      height: 24,
+    }
+  }
+
+  /// Whether the dimensions satisfy minimum accessibility requirements (width >= 40).
+  pub const fn is_accessible(self) -> bool {
+    self.width >= 40
+  }
+
+  /// The effective line wrap width.
+  ///
+  /// Returns `usize::MAX` when width is `u16::MAX` (i.e. unlimited — no wrapping).
+  /// Otherwise clamps to [40, 120].
+  pub fn wrap_width(self) -> usize {
+    if self.width == u16::MAX {
+      return usize::MAX;
+    }
+    let w = usize::from(self.width);
+    w.clamp(40, 120)
+  }
+}
+
+impl Default for TerminalDimensions {
+  fn default() -> Self {
+    Self::standard()
+  }
+}
+
+impl std::fmt::Display for TerminalDimensions {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}x{}", self.width, self.height)
+  }
+}
+
+/// Wrap a single labeled line to fit within `width` characters.
+/// Continuation lines are indented by 2 spaces to preserve label readability and screen-reader hierarchy.
+pub fn wrap_labeled_line(line: &str, width: usize) -> Vec<String> {
+  // usize::MAX signals unlimited width — no wrapping.
+  if width == usize::MAX || line.chars().count() <= width {
+    return vec![line.to_owned()];
+  }
+
+  let words: Vec<&str> = line.split_whitespace().collect();
+  if words.is_empty() {
+    return vec![String::new()];
+  }
+
+  let mut lines: Vec<String> = Vec::new();
+  let mut current_line = String::new();
+  let continuation_indent = "  ";
+  // Effective width for continuation lines (prefix is 2 spaces).
+  let cont_width = width.saturating_sub(continuation_indent.chars().count());
+
+  /// Drain `current_line`, push to `lines`, and reset with prefix.
+  fn flush(current_line: &mut String, lines: &mut Vec<String>, prefix: &str) {
+    let done = std::mem::take(current_line);
+    lines.push(done);
+    current_line.push_str(prefix);
+  }
+
+  for word in &words {
+    // Determine effective max width for the line being built.
+    let is_first_piece = lines.is_empty();
+    let line_limit = if is_first_piece && current_line.is_empty() {
+      width
+    } else if current_line.starts_with(continuation_indent) {
+      // Continuation lines: allowed up to `width` total.
+      width
+    } else {
+      width
+    };
+
+    let word_chars: Vec<char> = word.chars().collect();
+    let word_len = word_chars.len();
+
+    // Try fitting word on current line.
+    let sep_len = if current_line.is_empty() { 0 } else { 1 };
+    if current_line.chars().count() + sep_len + word_len <= line_limit {
+      if sep_len > 0 {
+        current_line.push(' ');
+      }
+      current_line.push_str(word);
+    } else {
+      // Word doesn't fit. Flush current line first (unless empty).
+      if !current_line.is_empty() {
+        flush(&mut current_line, &mut lines, continuation_indent);
+      }
+
+      // Now place word characters on continuation lines, hard-breaking as needed.
+      let mut remaining = &word_chars[..];
+      while !remaining.is_empty() {
+        // Space available in current continuation line.
+        let used = current_line.chars().count();
+        let available = width.saturating_sub(used);
+        if available == 0 {
+          flush(&mut current_line, &mut lines, continuation_indent);
+          continue;
+        }
+        let take = remaining.len().min(available);
+        for &ch in &remaining[..take] {
+          current_line.push(ch);
+        }
+        remaining = &remaining[take..];
+        if !remaining.is_empty() {
+          // More characters: flush and indent.
+          flush(&mut current_line, &mut lines, continuation_indent);
+        }
+      }
+    }
+    let _ = cont_width; // suppress unused warning; kept for documentation
+  }
+
+  if !current_line.is_empty() {
+    lines.push(current_line);
+  }
+
+  if lines.is_empty() {
+    lines.push(String::new());
+  }
+  lines
+}
+
+/// Wrap multi-line text so no line exceeds `dimensions.wrap_width()`.
+pub fn wrap_text_with_dimensions(text: &str, dimensions: TerminalDimensions) -> String {
+  let width = dimensions.wrap_width();
+  let mut out = String::with_capacity(text.len());
+  for line in text.lines() {
+    let wrapped = wrap_labeled_line(line, width);
+    for subline in wrapped {
+      out.push_str(&subline);
+      out.push('\n');
+    }
+  }
+  out
+}
+
 /// Render an actor-valid host result as stable, labeled plain text.
 pub fn render_output(output: &CliHostOutput) -> String {
   let mut text = String::new();
@@ -294,6 +471,26 @@ pub fn render_error(error: &CliHostError<'_>) -> String {
     }
   };
   format!("error: {message}")
+}
+
+/// Render an actor-valid host result as stable plain text wrapped to given terminal dimensions.
+pub fn render_output_with_dimensions(
+  output: &CliHostOutput,
+  dimensions: TerminalDimensions,
+) -> String {
+  let raw = render_output(output);
+  wrap_text_with_dimensions(&raw, dimensions)
+}
+
+/// Render a host error as actionable plain text wrapped to given terminal dimensions.
+pub fn render_error_with_dimensions(
+  error: &CliHostError<'_>,
+  dimensions: TerminalDimensions,
+) -> String {
+  let raw = render_error(error);
+  let mut wrapped = wrap_labeled_line(&raw, dimensions.wrap_width()).join("\n");
+  wrapped.push('\n');
+  wrapped
 }
 
 fn render_parse_error(error: &CliParseError<'_>) -> String {
@@ -586,6 +783,74 @@ mod tests {
       .apply_line("advance")
       .expect_err("malformed input");
     assert!(render_error(&advance).contains("load a saved run"));
+  }
+
+  #[test]
+  fn terminal_dimensions_and_wrapping_support_responsive_resizing() {
+    let standard = TerminalDimensions::standard();
+    assert_eq!(standard.width, 80);
+    assert_eq!(standard.height, 24);
+    assert!(standard.is_accessible());
+    assert_eq!(standard.wrap_width(), 80);
+    assert_eq!(standard.to_string(), "80x24");
+
+    let compact = TerminalDimensions::compact();
+    assert_eq!(compact.width, 40);
+    assert_eq!(compact.height, 24);
+    assert!(compact.is_accessible());
+    assert_eq!(compact.wrap_width(), 40);
+
+    let wide = TerminalDimensions::wide();
+    assert_eq!(wide.width, 120);
+    assert_eq!(wide.height, 30);
+    assert_eq!(wide.wrap_width(), 120);
+
+    let narrow = TerminalDimensions::new(30, 20);
+    assert!(!narrow.is_accessible());
+    assert_eq!(narrow.wrap_width(), 40); // clamped minimum 40
+
+    let giant = TerminalDimensions::new(200, 60);
+    assert_eq!(giant.wrap_width(), 120); // clamped maximum 120
+
+    let long_line = "available_intents: stabilize,contest,yield,recall,withdraw,extra_intent_one,extra_intent_two";
+    let wrapped_40 = wrap_labeled_line(long_line, 40);
+    assert!(wrapped_40.len() > 1);
+    for line in &wrapped_40 {
+      assert!(line.chars().count() <= 40);
+    }
+    assert!(wrapped_40[1].starts_with("  "));
+
+    let short_line = "quit: status=closed";
+    let wrapped_short = wrap_labeled_line(short_line, 80);
+    assert_eq!(wrapped_short.len(), 1);
+    assert_eq!(wrapped_short[0], short_line);
+  }
+
+  #[test]
+  fn render_output_and_error_with_dimensions_wrap_correctly() {
+    let mut host = CliScenarioHost::fixture();
+    let observation = host.apply_line("observe").expect("observation");
+    let compact_out = render_output_with_dimensions(&observation, TerminalDimensions::compact());
+    for line in compact_out.lines() {
+      assert!(
+        line.chars().count() <= 40,
+        "line length {} exceeds 40: '{}'",
+        line.chars().count(),
+        line
+      );
+    }
+    assert!(compact_out.contains("observation:"));
+    assert!(compact_out.contains("available_intents:"));
+
+    let error = CliHostError::InvalidPlan {
+      text:
+        "this_is_an_extremely_long_unsupported_plan_input_that_should_wrap_across_lines_cleanly"
+          .to_string(),
+    };
+    let compact_err = render_error_with_dimensions(&error, TerminalDimensions::compact());
+    for line in compact_err.lines() {
+      assert!(line.chars().count() <= 40);
+    }
   }
 
   fn malformed_inputs() -> LaneResolvedInputs {

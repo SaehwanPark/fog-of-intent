@@ -5,7 +5,10 @@
 
 use crate::host::{CliHostError, CliHostOutput, CliSessionView, CliSessionWindow};
 use crate::lane::LaneIntent;
-use crate::terminal::{render_error, render_output};
+use crate::terminal::{
+  TerminalDimensions, render_error_with_dimensions, render_output_with_dimensions,
+  wrap_labeled_line,
+};
 
 const RESET: &str = "\u{1b}[0m";
 const BOLD: &str = "\u{1b}[1m";
@@ -61,16 +64,37 @@ impl PresentationStyle {
 
 /// Startup banner for an interactive fixture session.
 pub fn render_banner(style: PresentationStyle) -> String {
+  render_banner_with_dimensions(style, TerminalDimensions::standard())
+}
+
+/// Startup banner for an interactive fixture session with explicit terminal dimensions.
+pub fn render_banner_with_dimensions(
+  style: PresentationStyle,
+  dimensions: TerminalDimensions,
+) -> String {
   let title = style.paint_bold("Fog of Intent");
   let fixture = style.paint_dim("two-window lane fixture");
-  format!(
-    "{title} — {fixture}\nYou are the laner. Type a command, or {help} for help.\ncommands: observe  plan  commit  advance  help  quit\n",
-    help = style.paint_cyan("?")
-  )
+  let help = style.paint_cyan("?");
+  let intro = format!("You are the laner. Type a command, or {help} for help.");
+  let cmd = "commands: observe  plan  commit  advance  help  quit";
+  if dimensions.width < 50 {
+    format!("{title}\n{fixture}\n{intro}\n{cmd}\n")
+  } else {
+    format!("{title} — {fixture}\n{intro}\n{cmd}\n")
+  }
 }
 
 /// One-line chrome describing the actor-visible session.
 pub fn render_chrome(view: &CliSessionView, style: PresentationStyle) -> String {
+  render_chrome_with_dimensions(view, style, TerminalDimensions::standard())
+}
+
+/// One-line chrome describing the actor-visible session with explicit terminal dimensions.
+pub fn render_chrome_with_dimensions(
+  view: &CliSessionView,
+  style: PresentationStyle,
+  dimensions: TerminalDimensions,
+) -> String {
   let window = match view.window() {
     CliSessionWindow::First => "window 1 of 2",
     CliSessionWindow::Second => "window 2 of 2",
@@ -85,29 +109,85 @@ pub fn render_chrome(view: &CliSessionView, style: PresentationStyle) -> String 
   };
   let next = view.suggested_next().join(", ");
   let line = format!("{window} · {draft} · next: {next}");
-  format!("{}\n", style.paint(DIM, &line))
+  if line.chars().count() > dimensions.wrap_width() {
+    let wrapped = wrap_labeled_line(&line, dimensions.wrap_width());
+    let mut out = String::new();
+    for subline in wrapped {
+      out.push_str(&style.paint(DIM, &subline));
+      out.push('\n');
+    }
+    out
+  } else {
+    format!("{}\n", style.paint(DIM, &line))
+  }
 }
 
 /// Friendlier copy plus the canonical labeled projection.
 pub fn render_presented_output(output: &CliHostOutput, style: PresentationStyle) -> String {
-  let story = output_story(output, style);
-  let labeled = colorize_labeled(&render_output(output), style, false);
+  render_presented_output_with_dimensions(output, style, TerminalDimensions::standard())
+}
+
+/// Friendlier copy plus the canonical labeled projection wrapped to given dimensions.
+pub fn render_presented_output_with_dimensions(
+  output: &CliHostOutput,
+  style: PresentationStyle,
+  dimensions: TerminalDimensions,
+) -> String {
+  let story = output_story(output);
+  let labeled = colorize_labeled(
+    &render_output_with_dimensions(output, dimensions),
+    style,
+    false,
+  );
   match story {
-    Some(story) => format!("{story}\n{labeled}"),
+    Some(story) => {
+      let wrapped_story = wrap_story_text(&story, dimensions.wrap_width(), style, BOLD);
+      format!("{wrapped_story}\n{labeled}")
+    }
     None => labeled,
   }
 }
 
 /// Friendlier copy plus the canonical labeled error.
 pub fn render_presented_error(error: &CliHostError<'_>, style: PresentationStyle) -> String {
-  let labeled = colorize_labeled(&render_error(error), style, true);
-  match error_story(error, style) {
-    Some(story) => format!("{story}\n{labeled}"),
+  render_presented_error_with_dimensions(error, style, TerminalDimensions::standard())
+}
+
+/// Friendlier copy plus the canonical labeled error wrapped to given dimensions.
+pub fn render_presented_error_with_dimensions(
+  error: &CliHostError<'_>,
+  style: PresentationStyle,
+  dimensions: TerminalDimensions,
+) -> String {
+  let labeled = colorize_labeled(
+    &render_error_with_dimensions(error, dimensions),
+    style,
+    true,
+  );
+  match error_story(error) {
+    Some(story) => {
+      let wrapped_story = wrap_story_text(story, dimensions.wrap_width(), style, YELLOW);
+      format!("{wrapped_story}\n{labeled}")
+    }
     None => labeled,
   }
 }
 
-fn output_story(output: &CliHostOutput, style: PresentationStyle) -> Option<String> {
+fn wrap_story_text(
+  story: &str,
+  width: usize,
+  style: PresentationStyle,
+  color_code: &str,
+) -> String {
+  let wrapped_lines = wrap_labeled_line(story, width);
+  wrapped_lines
+    .iter()
+    .map(|line| style.paint(color_code, line))
+    .collect::<Vec<_>>()
+    .join("\n")
+}
+
+fn output_story(output: &CliHostOutput) -> Option<String> {
   let text = match output {
     CliHostOutput::Help { topic: None } => {
       "Available commands, grouped by job. Type `help plan` or `? plan` for one command.".to_owned()
@@ -196,11 +276,11 @@ fn output_story(output: &CliHostOutput, style: PresentationStyle) -> Option<Stri
     CliHostOutput::Undone => "Cleared uncommitted drafts. History is unchanged.".to_owned(),
     CliHostOutput::Quit => "Session closed.".to_owned(),
   };
-  Some(style.paint(BOLD, &text))
+  Some(text)
 }
 
-fn error_story(error: &CliHostError<'_>, style: PresentationStyle) -> Option<String> {
-  let hint = match error {
+fn error_story(error: &CliHostError<'_>) -> Option<&'static str> {
+  match error {
     CliHostError::UnknownHelpTopic { .. } => {
       Some("That help topic is not in this runner. Try `help` or `?`.")
     }
@@ -210,8 +290,7 @@ fn error_story(error: &CliHostError<'_>, style: PresentationStyle) -> Option<Str
     CliHostError::MissingPlan => Some("Stage a plan first, then commit."),
     CliHostError::MissingCommittedIntent => Some("Commit a plan before you advance."),
     _ => None,
-  }?;
-  Some(style.paint(YELLOW, hint))
+  }
 }
 
 fn colorize_labeled(text: &str, style: PresentationStyle, is_error: bool) -> String {
@@ -311,5 +390,32 @@ mod tests {
     let committed = render_chrome(&host.session_view(), PresentationStyle::Plain);
     assert!(committed.contains("committed contest"));
     assert!(!committed.contains("hash"));
+  }
+
+  #[test]
+  fn presentation_with_dimensions_wraps_lines() {
+    let mut host = CliScenarioHost::fixture();
+    let observation = host.apply_line("observe").expect("observe");
+    let compact_out = render_presented_output_with_dimensions(
+      &observation,
+      PresentationStyle::Color,
+      TerminalDimensions::compact(),
+    );
+    assert!(compact_out.contains("observation:"));
+    assert!(compact_out.contains("available_intents:"));
+    assert!(compact_out.contains('\u{1b}'));
+
+    let error = CliHostError::MissingPlan;
+    let err_out = render_presented_error_with_dimensions(
+      &error,
+      PresentationStyle::Plain,
+      TerminalDimensions::compact(),
+    );
+    assert!(err_out.contains("error:"));
+    assert!(err_out.contains("commit needs a plan"));
+
+    let banner_compact =
+      render_banner_with_dimensions(PresentationStyle::Plain, TerminalDimensions::compact());
+    assert!(banner_compact.contains("Fog of Intent"));
   }
 }
