@@ -2160,6 +2160,17 @@ behavioral research claims remain deferred until study data is collected.
 - `team_scenarios_run` tool added to the Model Context Protocol (MCP) server catalog in `src/mcp/tools.rs` and `src/mcp/server.rs` with optional `scenario_id` filtering.
 - Interactive scenario selection aliases (`"team"`, `"comms"`, `"m8"`, `"shotcalling"`, `"team-scenarios"`) enabled in `parse_scenario_selection`.
 
+### M10 — Human Usability & Accessibility Alpha Study Synthesis Runner — 2026-08-25
+
+**Status:** Complete
+
+#### Delivered
+
+- `m10-human-study-synthesis-v1` (`src/cli/study_synthesis.rs`, `src/command_loop.rs`, `src/main.rs`) registers and runs the 3-case canonical alpha synthesis benchmark battery (`scenario-alpha-synthesis-baseline-v1`, `scenario-alpha-synthesis-accessibility-gated-v1`, `scenario-alpha-synthesis-sampling-gap-v1`).
+- `build_study_synthesis_report` evaluates all 3 synthesis scenarios, assessing empirical study cohorts, 7-dimension metrics, informal check remediations, interaction audit profiles, participant sampling quotas, and alpha readiness disposition gates (`AlphaReady` vs `BlockedByReadinessGates`).
+- `study_synthesis_run` tool added to the Model Context Protocol (MCP) server catalog in `src/mcp/tools.rs` and `src/mcp/server.rs` with optional `scenario_id` filtering.
+- Interactive scenario selection aliases (`"study"`, `"usability"`, `"accessibility"`, `"synthesis"`, `"m10"`, `"human-study"`, `"study-synthesis"`) enabled in `parse_scenario_selection`.
+
 ### M12 — Public research-capable alpha governance, compatibility, data dictionary, limitations, guides, reproducibility, and release checks — 2026-08-24
 
 **Status:** Initial library baseline complete

@@ -417,6 +417,21 @@ impl McpServer {
           },
         }
       }
+      "study_synthesis_run" => {
+        let scenario_id = args.get("scenario_id").and_then(JsonValue::as_str);
+        match scenario_id {
+          Some(id) if id != "all" && !id.is_empty() => {
+            match crate::study::synthesis_catalog::AlphaSynthesisCatalog::execute_scenario(id) {
+              Ok(res) => format_tool_success(&res.synthesis.render_markdown()),
+              Err(err) => format_tool_error(&format!("synthesis scenario failed: {err}")),
+            }
+          }
+          _ => match crate::cli::build_study_synthesis_report() {
+            Ok(report) => format_tool_success(report.markdown()),
+            Err(err) => format_tool_error(err),
+          },
+        }
+      }
       unknown => format_tool_error(&format!("Unknown tool: '{unknown}'")),
     }
   }

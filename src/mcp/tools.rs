@@ -249,6 +249,19 @@ pub fn mcp_tools_catalog() -> Vec<McpTool> {
         ])),
       ]),
     },
+    McpTool {
+      name: "study_synthesis_run",
+      description: "Execute the Milestone M10 Human Usability & Accessibility Alpha Study Synthesis benchmark battery.",
+      input_schema: JsonValue::Object(vec![
+        ("type".into(), JsonValue::String("object".into())),
+        ("properties".into(), JsonValue::Object(vec![
+          ("scenario_id".into(), JsonValue::Object(vec![
+            ("type".into(), JsonValue::String("string".into())),
+            ("description".into(), JsonValue::String("Optional specific M10 synthesis scenario id (e.g. 'scenario-alpha-synthesis-baseline-v1', 'scenario-alpha-synthesis-accessibility-gated-v1', or 'all').".into())),
+          ])),
+        ])),
+      ]),
+    },
   ]
 }
 
