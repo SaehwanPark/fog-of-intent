@@ -2149,6 +2149,17 @@ behavioral research claims remain deferred until study data is collected.
 
 - Live browser-to-host interaction parity tests.
 
+### M8 — Team Communication, Leadership & Strategic Dissent Runner — 2026-08-25
+
+**Status:** Complete
+
+#### Delivered
+
+- `m8-team-scenarios-v1` (`src/cli/team_scenarios.rs`, `src/command_loop.rs`, `src/main.rs`) registers and runs the 5-case canonical team communication benchmark battery (`scenario-high-trust-gank-v1`, `scenario-low-trust-dissent-v1`, `scenario-conflicting-calls-arbitration-v1`, `scenario-missing-message-fallback-v1`, `scenario-strategic-dissent-survival-v1`).
+- `build_team_scenarios_report` evaluates all 5 benchmark scenarios, capturing simultaneous resolution outcomes, communication statistics (messages sent/delivered/delayed/dropped, dissent reasons, channel reliability), leadership summaries, strategic disagreement evaluations, counterfactual value deltas ($[-10,000..=10,000]$ bp), and summary matrix tables.
+- `team_scenarios_run` tool added to the Model Context Protocol (MCP) server catalog in `src/mcp/tools.rs` and `src/mcp/server.rs` with optional `scenario_id` filtering.
+- Interactive scenario selection aliases (`"team"`, `"comms"`, `"m8"`, `"shotcalling"`, `"team-scenarios"`) enabled in `parse_scenario_selection`.
+
 ### M12 — Public research-capable alpha governance, compatibility, data dictionary, limitations, guides, reproducibility, and release checks — 2026-08-24
 
 **Status:** Initial library baseline complete

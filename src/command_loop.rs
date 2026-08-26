@@ -40,7 +40,7 @@ pub const CLI_APPLICATION_VERSION: &str =
   concat!("fog-of-intent ", env!("CARGO_PKG_VERSION"), "\n");
 
 /// Bounded process-level usage for the executable wrapper.
-pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n";
+pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m8-team-scenarios-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n";
 
 /// Execution mode for a scenario entry in the scenario catalog.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -49,6 +49,8 @@ pub enum ScenarioExecutionMode {
   InteractiveLane,
   /// Interactive 5v5 multi-lane tactical match session supporting rotations, wards, contests, sieges, and debriefs.
   InteractiveMatch,
+  /// Milestone M8 team communication and shot-calling benchmark battery; prints and exits.
+  TeamScenariosBattery,
   /// Deterministic batch replay verification transcript; prints and exits.
   BatchReplayTranscript,
   /// Actor-visible HTML5/SVG presentation document export; prints and exits.
@@ -63,6 +65,7 @@ impl ScenarioExecutionMode {
     match self {
       Self::InteractiveLane => "interactive-lane",
       Self::InteractiveMatch => "interactive-match",
+      Self::TeamScenariosBattery => "team-battery",
       Self::BatchReplayTranscript => "replay-transcript",
       Self::HtmlPresentationExport => "html-presentation",
       Self::ReleaseChecksReport => "release-checks",
@@ -109,6 +112,13 @@ pub const CLI_SCENARIO_CATALOG: &[CliScenarioCatalogEntry] = &[
     milestone: "M2",
     mode: ScenarioExecutionMode::InteractiveLane,
     description: "Interactive lane playthrough executing the Conservative strategy (stabilization and defensive positioning).",
+  },
+  CliScenarioCatalogEntry {
+    id: crate::cli::CLI_TEAM_SCENARIOS_SCENARIO_ID,
+    display_name: "Team Communication & Shot-Calling Battery",
+    milestone: "M8",
+    mode: ScenarioExecutionMode::TeamScenariosBattery,
+    description: "5-case canonical battery verifying team communication physics, leadership structures, and strategic dissent.",
   },
   CliScenarioCatalogEntry {
     id: crate::host::CLI_INTERACTIVE_MATCH_SCENARIO_ID,
@@ -209,6 +219,8 @@ pub enum CliApplicationScenario {
   M2StrategyRiskTaking,
   /// The Conservative strategy playthrough fixture.
   M2StrategyConservative,
+  /// Milestone M8 team communication and shot-calling benchmark battery.
+  M8TeamScenarios,
   /// The interactive 5v5 multi-lane tactical match playthrough.
   M9InteractiveMatch,
   /// The replay-verified complete-match transcript.
@@ -474,6 +486,8 @@ pub fn parse_application_args(
           scenario = Some(CliApplicationScenario::M2StrategyRiskTaking);
         } else if args[index] == CLI_STRATEGY_CONSERVATIVE_SCENARIO_ID {
           scenario = Some(CliApplicationScenario::M2StrategyConservative);
+        } else if args[index] == crate::cli::CLI_TEAM_SCENARIOS_SCENARIO_ID {
+          scenario = Some(CliApplicationScenario::M8TeamScenarios);
         } else if args[index] == crate::host::CLI_INTERACTIVE_MATCH_SCENARIO_ID {
           scenario = Some(CliApplicationScenario::M9InteractiveMatch);
         } else if args[index] == crate::cli::CLI_MATCH_REPLAY_SCENARIO_ID {
@@ -560,6 +574,15 @@ pub fn parse_application_args(
     color: color.unwrap_or_default(),
     width,
   }))
+}
+
+/// Print the Milestone M8 Team Communication & Shot-Calling Benchmark Battery report and stop.
+/// Used by the executable edge for `--scenario m8-team-scenarios-v1`.
+pub fn write_team_scenarios_report<W: Write>(mut output: W) -> io::Result<bool> {
+  let report = crate::cli::build_team_scenarios_report().map_err(io::Error::other)?;
+  output.write_all(report.markdown().as_bytes())?;
+  output.flush()?;
+  Ok(report.is_all_successful())
 }
 
 /// Print the replay-verified M9 complete-match transcript and stop. Used by
@@ -911,7 +934,7 @@ fn apply_presented_match_with_dimensions<W: Write>(
   }
 }
 
-/// Parse a user selection input (number 1-8, scenario identifier, or short alias) into a scenario.
+/// Parse a user selection input (number 1-9, scenario identifier, or short alias) into a scenario.
 pub fn parse_scenario_selection(input: &str) -> Option<CliApplicationScenario> {
   let trimmed = input.trim();
   if trimmed.is_empty() {
@@ -923,10 +946,11 @@ pub fn parse_scenario_selection(input: &str) -> Option<CliApplicationScenario> {
       2 => Some(CliApplicationScenario::M2StrategyHappyPath),
       3 => Some(CliApplicationScenario::M2StrategyRiskTaking),
       4 => Some(CliApplicationScenario::M2StrategyConservative),
-      5 => Some(CliApplicationScenario::M9InteractiveMatch),
-      6 => Some(CliApplicationScenario::M9CompleteMatchReplay),
-      7 => Some(CliApplicationScenario::M11GuiPresentation),
-      8 => Some(CliApplicationScenario::M12AlphaReleaseChecks),
+      5 => Some(CliApplicationScenario::M8TeamScenarios),
+      6 => Some(CliApplicationScenario::M9InteractiveMatch),
+      7 => Some(CliApplicationScenario::M9CompleteMatchReplay),
+      8 => Some(CliApplicationScenario::M11GuiPresentation),
+      9 => Some(CliApplicationScenario::M12AlphaReleaseChecks),
       _ => None,
     };
   }
@@ -944,6 +968,12 @@ pub fn parse_scenario_selection(input: &str) -> Option<CliApplicationScenario> {
     CLI_STRATEGY_CONSERVATIVE_SCENARIO_ID | "conservative" => {
       Some(CliApplicationScenario::M2StrategyConservative)
     }
+    crate::cli::CLI_TEAM_SCENARIOS_SCENARIO_ID
+    | "team-scenarios"
+    | "team"
+    | "comms"
+    | "m8"
+    | "shotcalling" => Some(CliApplicationScenario::M8TeamScenarios),
     crate::host::CLI_INTERACTIVE_MATCH_SCENARIO_ID
     | "interactive-match"
     | "match-interactive"
@@ -1122,7 +1152,7 @@ mod tests {
     );
     assert_eq!(
       CLI_APPLICATION_HELP,
-      "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n"
+      "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m8-team-scenarios-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n"
     );
     assert_eq!(
       parse_application_args(&[OsString::from("--version")]),
@@ -1636,7 +1666,7 @@ mod tests {
 
   #[test]
   fn scenario_catalog_format_and_metadata_are_complete() {
-    assert_eq!(CLI_SCENARIO_CATALOG.len(), 8);
+    assert_eq!(CLI_SCENARIO_CATALOG.len(), 9);
     for entry in CLI_SCENARIO_CATALOG {
       assert!(!entry.id.is_empty());
       assert!(!entry.display_name.is_empty());
@@ -1651,6 +1681,10 @@ mod tests {
     assert_eq!(
       ScenarioExecutionMode::InteractiveMatch.label(),
       "interactive-match"
+    );
+    assert_eq!(
+      ScenarioExecutionMode::TeamScenariosBattery.label(),
+      "team-battery"
     );
     assert_eq!(
       ScenarioExecutionMode::BatchReplayTranscript.label(),
@@ -1758,18 +1792,22 @@ mod tests {
     );
     assert_eq!(
       parse_scenario_selection("5"),
-      Some(CliApplicationScenario::M9InteractiveMatch)
+      Some(CliApplicationScenario::M8TeamScenarios)
     );
     assert_eq!(
       parse_scenario_selection("6"),
-      Some(CliApplicationScenario::M9CompleteMatchReplay)
+      Some(CliApplicationScenario::M9InteractiveMatch)
     );
     assert_eq!(
       parse_scenario_selection("7"),
-      Some(CliApplicationScenario::M11GuiPresentation)
+      Some(CliApplicationScenario::M9CompleteMatchReplay)
     );
     assert_eq!(
       parse_scenario_selection("8"),
+      Some(CliApplicationScenario::M11GuiPresentation)
+    );
+    assert_eq!(
+      parse_scenario_selection("9"),
       Some(CliApplicationScenario::M12AlphaReleaseChecks)
     );
 
@@ -1789,6 +1827,10 @@ mod tests {
     assert_eq!(
       parse_scenario_selection(CLI_STRATEGY_CONSERVATIVE_SCENARIO_ID),
       Some(CliApplicationScenario::M2StrategyConservative)
+    );
+    assert_eq!(
+      parse_scenario_selection(crate::cli::CLI_TEAM_SCENARIOS_SCENARIO_ID),
+      Some(CliApplicationScenario::M8TeamScenarios)
     );
     assert_eq!(
       parse_scenario_selection(crate::host::CLI_INTERACTIVE_MATCH_SCENARIO_ID),
@@ -1839,6 +1881,26 @@ mod tests {
     assert_eq!(
       parse_scenario_selection("conservative"),
       Some(CliApplicationScenario::M2StrategyConservative)
+    );
+    assert_eq!(
+      parse_scenario_selection("team-scenarios"),
+      Some(CliApplicationScenario::M8TeamScenarios)
+    );
+    assert_eq!(
+      parse_scenario_selection("team"),
+      Some(CliApplicationScenario::M8TeamScenarios)
+    );
+    assert_eq!(
+      parse_scenario_selection("comms"),
+      Some(CliApplicationScenario::M8TeamScenarios)
+    );
+    assert_eq!(
+      parse_scenario_selection("m8"),
+      Some(CliApplicationScenario::M8TeamScenarios)
+    );
+    assert_eq!(
+      parse_scenario_selection("shotcalling"),
+      Some(CliApplicationScenario::M8TeamScenarios)
     );
     assert_eq!(
       parse_scenario_selection("interactive-match"),
@@ -1903,7 +1965,7 @@ mod tests {
       Some(CliApplicationScenario::M2StrategyHappyPath)
     );
     assert_eq!(
-      parse_scenario_selection("  6\n"),
+      parse_scenario_selection("  7\n"),
       Some(CliApplicationScenario::M9CompleteMatchReplay)
     );
     assert_eq!(
@@ -1915,7 +1977,7 @@ mod tests {
     assert_eq!(parse_scenario_selection(""), None);
     assert_eq!(parse_scenario_selection("   "), None);
     assert_eq!(parse_scenario_selection("0"), None);
-    assert_eq!(parse_scenario_selection("9"), None);
+    assert_eq!(parse_scenario_selection("10"), None);
     assert_eq!(parse_scenario_selection("99"), None);
     assert_eq!(parse_scenario_selection("unknown-scenario"), None);
   }
@@ -1928,10 +1990,11 @@ mod tests {
     assert!(menu.contains("[2] HappyPath Strategy Playthrough"));
     assert!(menu.contains("[3] RiskTaking Strategy Playthrough"));
     assert!(menu.contains("[4] Conservative Strategy Playthrough"));
-    assert!(menu.contains("[5] Interactive 5v5 Tactical Match Playthrough"));
-    assert!(menu.contains("[6] Complete Match Replay Transcript"));
-    assert!(menu.contains("[7] Shared-Boundary GUI Presentation Document"));
-    assert!(menu.contains("[8] Public Alpha Release Readiness Checks"));
+    assert!(menu.contains("[5] Team Communication & Shot-Calling Battery"));
+    assert!(menu.contains("[6] Interactive 5v5 Tactical Match Playthrough"));
+    assert!(menu.contains("[7] Complete Match Replay Transcript"));
+    assert!(menu.contains("[8] Shared-Boundary GUI Presentation Document"));
+    assert!(menu.contains("[9] Public Alpha Release Readiness Checks"));
     assert!(menu.contains("Press Enter for default [1]"));
   }
 

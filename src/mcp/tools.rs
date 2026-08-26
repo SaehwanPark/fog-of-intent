@@ -236,6 +236,19 @@ pub fn mcp_tools_catalog() -> Vec<McpTool> {
         ])),
       ]),
     },
+    McpTool {
+      name: "team_scenarios_run",
+      description: "Execute the Milestone M8 canonical team communication, shot-calling, and strategic dissent benchmark battery.",
+      input_schema: JsonValue::Object(vec![
+        ("type".into(), JsonValue::String("object".into())),
+        ("properties".into(), JsonValue::Object(vec![
+          ("scenario_id".into(), JsonValue::Object(vec![
+            ("type".into(), JsonValue::String("string".into())),
+            ("description".into(), JsonValue::String("Optional specific M8 scenario id (e.g. 'scenario-high-trust-gank-v1', 'scenario-strategic-dissent-survival-v1', or 'all').".into())),
+          ])),
+        ])),
+      ]),
+    },
   ]
 }
 

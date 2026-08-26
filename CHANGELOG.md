@@ -4,6 +4,19 @@ All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 not increment the package version.
 
+## [0.1.225] - 2026-08-25
+
+### Added
+
+- Team Communication, Leadership & Strategic Dissent Benchmark Runner (`m8-team-scenarios-v1`):
+  - Added `m8-team-scenarios-v1` to the canonical `CLI_SCENARIO_CATALOG` in `src/command_loop.rs` under `ScenarioExecutionMode::TeamScenariosBattery` (Milestone M8).
+  - Implemented `build_team_scenarios_report` and `TeamScenariosCliReport` in `src/cli/team_scenarios.rs` executing the full 5-scenario canonical benchmark battery (`scenario-high-trust-gank-v1`, `scenario-low-trust-dissent-v1`, `scenario-conflicting-calls-arbitration-v1`, `scenario-missing-message-fallback-v1`, `scenario-strategic-dissent-survival-v1`).
+  - Added formatted CLI and Markdown debrief reporting capturing simultaneous resolution outcomes, communication metrics (messages sent/delivered/delayed/dropped, dissent reasons, channel reliability), leadership summaries, strategic disagreement legitimacy evaluations, counterfactual value deltas ($[-10,000..=10,000]$ bp), and summary matrix tables.
+  - Added `write_team_scenarios_report` and wired CLI scenario execution in `src/main.rs`.
+  - Added interactive scenario selection aliases (`"team"`, `"comms"`, `"m8"`, `"shotcalling"`, `"team-scenarios"`) in `parse_scenario_selection`.
+  - Added `team_scenarios_run` tool to the Model Context Protocol (MCP) server catalog in `src/mcp/tools.rs` and `src/mcp/server.rs` with optional `scenario_id` filtering.
+  - Comprehensive unit and binary integration tests in `src/command_loop.rs`, `src/mcp/tests.rs`, and `tests/binary_run_dir.rs`.
+
 ## [0.1.224] - 2026-08-25
 
 ### Added

@@ -5,6 +5,13 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Keep scenario catalog expansion synchronized across menu numbering, selection parsers, help strings, and CLI test fixtures
+
+- Context: Adding new executable scenarios (such as `m8-team-scenarios-v1`) shifts catalog length, 1-based numerical index assignments, menu presentation lines, and usage help strings.
+- Symptom: Hardcoded catalog length checks (`len() == 8`), menu assertions (`[5] Interactive 5v5`), and selection bounds (`parse("9") == None`) fail in unit and binary tests when a new scenario is inserted mid-catalog.
+- Resolution: Insert new scenarios with explicit mode classifications, update all numeric index bounds in `parse_scenario_selection` (`1..=N`), update all expected usage strings and menu test assertions synchronously, and test both numeric and slug alias resolution in binary test suites.
+- Prevention: When adding or reordering scenario catalog entries, audit all references to catalog length, index-to-scenario mapping, and help usage strings in `command_loop.rs` and `tests/binary_run_dir.rs`.
+
 ## Keep MCP JSON-RPC stdio servers dependency-free, fail-closed on malformed inputs, and free of floating-point integer casts
 
 - Context: M5 implements the Model Context Protocol (MCP) JSON-RPC 2.0 stdio server adapter (`src/mcp/`) communicating with external LLM agents.
