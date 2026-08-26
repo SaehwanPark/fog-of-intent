@@ -245,6 +245,14 @@ pub fn mcp_tools_catalog() -> Vec<McpTool> {
       ]),
     },
     McpTool {
+      name: "calibration_proof_run",
+      description: "Execute the Milestone M7 semantic-to-parametric calibration proof and multi-model benchmark battery.",
+      input_schema: JsonValue::Object(vec![
+        ("type".into(), JsonValue::String("object".into())),
+        ("properties".into(), JsonValue::Object(vec![])),
+      ]),
+    },
+    McpTool {
       name: "team_scenarios_run",
       description: "Execute the Milestone M8 canonical team communication, shot-calling, and strategic dissent benchmark battery.",
       input_schema: JsonValue::Object(vec![
@@ -364,6 +372,12 @@ pub fn mcp_resources_catalog() -> Vec<McpResource> {
       name: "Tactical Map & Debrief Presentation Document",
       description: "Standalone accessibility-compliant HTML5/SVG presentation document.",
       mime_type: "text/html",
+    },
+    McpResource {
+      uri: "fog-of-intent://calibration/model-card",
+      name: "M7 Semantic-to-Parametric Calibration Model Card",
+      description: "Formal model card certifying empirical calibration benchmarks and held-out generalization gates.",
+      mime_type: "text/markdown",
     },
   ]
 }

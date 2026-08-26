@@ -1582,12 +1582,13 @@ distribution estimation, and parametric fitting remain open.
 - `RecalibrationTriggerReason` and `RecalibrationTriggerCondition` define `m7-recalibration-trigger-v1` across 9 discrete reasons (`ModelVersionChanged`, `PromptProtocolChanged`, `TotalVariationDistanceBreach`, `ModalChoiceDisagreement`, `UnidentifiableParameterDetected`, `UnstableSemanticLabel`, `HeldOutLossBreach`, `CounterfactualCoherenceFailure`, `ChainOfThoughtLeakage`) and 3 urgency levels (`Immediate`, `Scheduled`, `None`).
 - `RecalibrationPolicy` and `RecalibrationEvaluationReport` define `m7-recalibration-evaluation-v1`, evaluating multi-model comparisons, uncertainty reports, held-out losses, and CoT-free preservation reports against configurable integer basis-point thresholds with canonical baseline reports for `cautious_v1`, `risk_taking_v1`, and `yielding_v1`.
 - `CalibrationModelCardReport` defines `m7-calibration-model-card-v1`, formalizing the canonical M7 calibration proof deliverable with intended use, evidence limits, evaluated profiles, generalization status, uncertainty findings, recalibration policy summary, and chain-of-thought free observability rules.
+- `CalibrationProofCliReport` and `build_calibration_proof_report` define `m7-calibration-proof-cli-report-v1`, executing the pure composite benchmark runner `--scenario m7-calibration-proof-v1` and MCP tool `calibration_proof_run`, exposing resource `fog-of-intent://calibration/model-card`.
 - This contract establishes typed strategic choice dilemmas, empirical sampling protocols,
   empirical distribution estimation, discrete behavioral measures, regularized parametric policy
   fitting, held-out scenario evaluation, counterfactual perturbation sensitivity, multi-model
   family comparison, parameter identifiability / semantic label stability uncertainty reporting,
   observable reference output preservation without private chain-of-thought, deterministic
-  recalibration triggers, and the calibration proof model card;
+  recalibration triggers, the calibration proof model card, and the standalone benchmark runner;
   it does not claim full match scenario execution or human behavioral completeness.
 
 ## Team Communication and Shot-Calling (Phase 8)

@@ -50,7 +50,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | M4 | Interpretable bounded-agent population | Planned | M2; preferably M3 |
 | M5 | Model-agnostic MCP play | Planned | M3 and stable actor contracts |
 | M6 | Automated behavioral validation | Complete | M4 and M5 |
-| M7 | Semantic-to-parametric calibration proof | Planned | M6 |
+| M7 | Semantic-to-parametric calibration proof | Complete | M6 |
 | M8 | Coordinated team decision play | Complete | M4 and M5 |
 | M9 | Bounded multi-lane match prototype | Planned | M8 |
 | M10 | Human-usable and accessibility-tested alpha | Complete | Stable M9 candidate; informal checks start earlier |
@@ -1548,7 +1548,7 @@ representative replays, and an evidence-limited report.
 ## Phase 7 — Semantic-to-Parametric Calibration Proof
 
 **Milestone:** M7
-**Status:** Planned
+**Status:** Complete
 **Depends on:** M6
 
 ### Outcome

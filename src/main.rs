@@ -130,6 +130,20 @@ fn main() -> ExitCode {
       }
     };
   }
+  if matches!(scenario, CliApplicationScenario::M7CalibrationProof) {
+    let stdout = io::stdout();
+    return match fog_of_intent::command_loop::write_calibration_proof_report(stdout.lock()) {
+      Ok(true) => ExitCode::SUCCESS,
+      Ok(false) => {
+        eprintln!("calibration proof battery failed verification");
+        ExitCode::FAILURE
+      }
+      Err(error) => {
+        eprintln!("calibration proof execution failed: {error}");
+        ExitCode::FAILURE
+      }
+    };
+  }
   if matches!(scenario, CliApplicationScenario::M8TeamScenarios) {
     let stdout = io::stdout();
     return match fog_of_intent::command_loop::write_team_scenarios_report(stdout.lock()) {
