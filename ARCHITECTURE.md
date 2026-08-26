@@ -111,6 +111,9 @@ crates/
   foi-study/
     Cargo.toml
     src/
+  foi-gui/
+    Cargo.toml
+    src/
 src/main.rs
 src/lib.rs
 src/agent/
@@ -145,9 +148,9 @@ _workspace/
 
 `src/lib.rs`, `src/cli.rs`, `src/agent_batch_store.rs`, `src/agent_operational_store.rs`, `src/gui/`, `src/host.rs`, `src/host_artifact.rs`, `src/run_store.rs`, `src/terminal.rs`, `src/presentation.rs`, `src/repl.rs`, `src/protocol/`, `src/session.rs`, `src/study/`, `src/kernel/`,
 `src/lane/`, `src/map/`, `src/agent/`, and `src/serialization.rs` are the current root crate
-adapter/fixture surface; pure deterministic transition and domain logic lives in `crates/foi-kernel`, `crates/foi-lane`, `crates/foi-map`, `crates/foi-agent`, `crates/foi-protocol`, and `crates/foi-study`;
+adapter/fixture surface; pure deterministic transition and domain logic lives in `crates/foi-kernel`, `crates/foi-lane`, `crates/foi-map`, `crates/foi-agent`, `crates/foi-protocol`, `crates/foi-study`, and `crates/foi-gui`;
 `src/main.rs` parses bounded process options and runs the fixture loop, using
-reedline only when stdin and stdout are terminals. The lane surface is housed in `crates/foi-lane`, the 5v5 map simulation surface in `crates/foi-map`, the behavioral agent / team communication surface in `crates/foi-agent`, the wire DTO / codec protocol surface in `crates/foi-protocol`, and the human usability/accessibility evaluation framework in `crates/foi-study`, cleanly re-exported via root crate facades (`crate::lane::*`, `crate::map::*`, `crate::agent::*`, `crate::protocol::*`, and `crate::study::*`). The other paths are
+reedline only when stdin and stdout are terminals. The lane surface is housed in `crates/foi-lane`, the 5v5 map simulation surface in `crates/foi-map`, the behavioral agent / team communication surface in `crates/foi-agent`, the wire DTO / codec protocol surface in `crates/foi-protocol`, the human usability/accessibility evaluation framework in `crates/foi-study`, and the presentation HTML5/SVG parity engine in `crates/foi-gui`, cleanly re-exported via root crate facades (`crate::lane::*`, `crate::map::*`, `crate::agent::*`, `crate::protocol::*`, `crate::study::*`, and `crate::gui::*`). The other paths are
 project-state, design-source, and agent-workflow artifacts.
 
 `src/agent.rs` is a pure, versioned policy boundary. Its

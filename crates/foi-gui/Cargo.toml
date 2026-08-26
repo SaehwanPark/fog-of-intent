@@ -1,10 +1,10 @@
 [package]
-name = "foi-agent"
+name = "foi-gui"
 version = "0.1.238"
 edition = "2024"
 rust-version = "1.96"
 license = "MIT"
-description = "Behavioral policies, empirical calibration, team dialogue, trust, and 4-quadrant debriefs for Fog of Intent"
+description = "Presentation-only HTML5/CSS/SVG generator, client state machine, and parity engine for Fog of Intent"
 
 [lints.clippy]
 as_conversions = "deny"
@@ -12,3 +12,4 @@ as_conversions = "deny"
 [dependencies]
 foi-kernel = { path = "../foi-kernel" }
 foi-lane = { path = "../foi-lane" }
+foi-protocol = { path = "../foi-protocol" }
