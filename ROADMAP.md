@@ -1011,7 +1011,7 @@ the complete M3 reference client or human accessibility evidence.
 
 - [x] Dynamic interactive scenario selection in the CLI runner (allowing players to choose between M2 lane scenarios and M9 match scenarios without hardcoded flags).
 - [x] Interactive branch exploration directly within the command loop.
-- [ ] Terminal resize handling and accessibility auditing for pure text presentation.
+- [x] Terminal resize handling and accessibility auditing for pure text presentation.
 
 ### Deliverables
 

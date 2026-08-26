@@ -900,6 +900,20 @@ remain open.
   handoff. Broader scenario catalogs, regenerated/graph branching,
   and human keyboard/screen-reader evidence remain unimplemented. Store locking
   and fsync/crash recovery remain open.
+- Terminal resize handling and pure text accessibility auditing delivered as
+  `m3-cli-accessibility-v1` (`src/cli/accessibility.rs`). `TerminalDimensions`
+  (`src/terminal.rs`) models explicit terminal width/height and provides a
+  `--width <cols>` override (valid range 20–500). When `--width` is set, all
+  labeled plain text output is wrapped at that width using `wrap_labeled_line`
+  with a 2-space hanging indent for continuation lines; overlong tokens are
+  hard-broken at the character boundary. Without `--width`, no wrapping is
+  applied (unlimited). `audit_cli_presentation_text` checks six deterministic
+  accessibility invariants (ANSI purity, line-width bounds, non-color semantics,
+  linear screen-reader flow, control-character sanitization, and well-formed
+  structure) and produces a `CliAccessibilityAuditReport` with per-check
+  results and an exact `compliance_rate_bp` integer (0–10 000 basis points).
+  This is text-shape and width-contract evidence only; human screen-reader or
+  braille terminal evidence remains open.
 
 ### M4 — First scripted-agent policy boundary — 2026-08-08
 

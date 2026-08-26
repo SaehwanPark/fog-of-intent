@@ -14,7 +14,7 @@ use reedline::{
 use reedline::{Emacs, KeyCode, KeyModifiers};
 
 use crate::cli::{CLI_COMMAND_NAMES, CLI_INSPECT_TARGETS, CLI_PLAN_INTENTS};
-use crate::command_loop::{CliApplicationScenario, format_scenario_menu, parse_scenario_selection};
+use crate::command_loop::{CliApplicationScenario, parse_scenario_selection};
 use crate::presentation::PresentationStyle;
 
 const COMPLETION_MENU: &str = "completion_menu";
@@ -191,8 +191,23 @@ pub fn select_scenario_with_editor(
   editor: &mut Reedline,
   style: PresentationStyle,
 ) -> std::io::Result<Option<CliApplicationScenario>> {
+  select_scenario_with_editor_and_dimensions(
+    editor,
+    style,
+    crate::terminal::TerminalDimensions::standard(),
+  )
+}
+
+/// Prompt and read scenario selection with explicit terminal dimensions.
+pub fn select_scenario_with_editor_and_dimensions(
+  editor: &mut Reedline,
+  style: PresentationStyle,
+  dimensions: crate::terminal::TerminalDimensions,
+) -> std::io::Result<Option<CliApplicationScenario>> {
   let mut stdout = io::stdout();
-  stdout.write_all(format_scenario_menu(style).as_bytes())?;
+  stdout.write_all(
+    crate::command_loop::format_scenario_menu_with_dimensions(style, dimensions).as_bytes(),
+  )?;
   stdout.flush()?;
   loop {
     match read_scenario_line(editor)? {

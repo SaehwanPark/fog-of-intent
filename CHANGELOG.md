@@ -22,6 +22,21 @@ not increment the package version.
   - `--select` / `-s` process-level CLI flag and interactive TTY fallback when launching without explicit `--scenario` flags, with fail-closed argument conflict detection (`ConflictingScenarioSelection`, `DuplicateSelect`).
 - 8 new unit and binary integration tests across `src/command_loop.rs` and `tests/binary_run_dir.rs` covering interactive scenario selection, alias resolution, index parsing, cancellation, input retry, and scenario dispatching.
 
+## [0.1.222] - 2026-08-25
+
+### Added
+
+- Terminal resize handling and pure text accessibility auditing (`m3-cli-accessibility-v1`):
+  - `TerminalDimensions` struct in `src/terminal.rs` modeling explicit terminal width/height with named presets: `standard()` (80×24), `compact()` (40×24), `wide()` (120×30), and `unlimited()` (no wrapping). Exposes `wrap_width()`, `is_accessible()`, and `new()`.
+  - `wrap_labeled_line(line, width)` in `src/terminal.rs`: word-wraps labeled output lines with a 2-space hanging indent for continuation; hard-breaks overlong single tokens at the character boundary; no-ops on `width == usize::MAX` (unlimited).
+  - `wrap_text_with_dimensions()`, `render_output_with_dimensions()`, and `render_error_with_dimensions()` dimension-aware renderers in `src/terminal.rs`.
+  - `render_banner_with_dimensions()`, `render_chrome_with_dimensions()`, `render_presented_output_with_dimensions()`, and `render_presented_error_with_dimensions()` in `src/presentation.rs`; story copy is pre-wrapped before ANSI styling to avoid broken escape sequence splits.
+  - `--width <cols>` / `-w <cols>` process option in `src/command_loop.rs` and `src/main.rs`; valid range 20–500; validated with `MissingWidthValue`, `EmptyWidthValue`, `DuplicateWidth`, `InvalidWidthValue`, and `OutOfRangeWidth` errors; no wrapping is applied when `--width` is absent.
+  - `format_scenario_catalog_with_dimensions()` and `format_scenario_menu_with_dimensions()` in `src/command_loop.rs`; narrow layouts (<100 cols) wrap all heading, ID, description, and footer lines.
+  - `run_with_dimensions()`, `run_presented_with_dimensions()`, `run_repl_with_dimensions()` in `src/command_loop.rs`; default wrappers (`run()`, `run_presented()`, `run_repl()`) use unlimited dimensions to preserve backward-compatible no-wrap behavior.
+  - `CliAccessibilityAuditCheck` and `CliAccessibilityAuditReport` in `src/cli/accessibility.rs`; `audit_cli_presentation_text(text, dimensions, allow_ansi)` checks six deterministic invariants: ANSI purity (`check-ansi-purity`), line-width bounds (`check-line-width-bounds`), non-color semantics (`check-non-color-semantics`), linear screen-reader flow (`check-linear-screen-reader-flow`), control-character sanitization (`check-control-character-sanitization`), and well-formed structure (`check-well-formed-structure`). Reports `compliance_rate_bp` (0–10 000 integer basis points), per-check results, and a Markdown audit table.
+  - 6 new unit tests across `src/terminal.rs` and `src/command_loop.rs` and 2 new binary integration tests in `tests/binary_run_dir.rs` covering width flag parsing, line wrapping, and accessibility audit pass.
+
 ## [0.1.221] - 2026-08-25
 
 ### Added

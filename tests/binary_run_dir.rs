@@ -178,7 +178,7 @@ fn binary_help_is_successful_and_bounded() {
   assert!(output.status.success());
   assert_eq!(
     String::from_utf8(output.stdout).expect("help UTF-8 output"),
-    "usage: fog-of-intent [--scenario <id>] [--select] [--run-dir <path>] [--color auto|always|never]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --help             show this help\n  --version, -V      show package version\n"
+    "usage: fog-of-intent [--scenario <id>] [--select] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n"
   );
   assert!(output.stderr.is_empty());
 }
@@ -498,4 +498,72 @@ fn binary_supports_interactive_branch_exploration_across_windows() {
     "branch: status=verified point=second parent_intent=stabilize branch_intent=contest"
   ));
   assert!(stdout.ends_with("quit: status=closed\n"));
+}
+
+#[test]
+fn binary_supports_width_flag_and_wraps_lines() {
+  let binary = binary_path();
+  let mut child = Command::new(binary)
+    .args(["--scenario", "m3-two-window-fixture-v1", "--width", "40"])
+    .stdin(Stdio::piped())
+    .stdout(Stdio::piped())
+    .stderr(Stdio::piped())
+    .spawn()
+    .expect("spawn width fixture binary");
+
+  child
+    .stdin
+    .as_mut()
+    .expect("fixture stdin")
+    .write_all(b"observe\nquit\n")
+    .expect("write fixture input");
+
+  let output = child.wait_with_output().expect("wait for binary");
+  assert!(output.status.success(), "stderr: {:?}", output.stderr);
+  let stdout = String::from_utf8(output.stdout).expect("UTF-8 transcript");
+  for line in stdout.lines() {
+    assert!(
+      line.chars().count() <= 40,
+      "line length {} > 40: '{}'",
+      line.chars().count(),
+      line
+    );
+  }
+}
+
+#[test]
+fn binary_runs_accessible_two_window_transcript_and_passes_audit() {
+  // Run with explicit --width 80 so that output is wrapped and auditable against standard bounds.
+  let binary = binary_path();
+  let mut child = Command::new(&binary)
+    .args(["--scenario", "m3-two-window-fixture-v1", "--width", "80"])
+    .stdin(Stdio::piped())
+    .stdout(Stdio::piped())
+    .stderr(Stdio::piped())
+    .spawn()
+    .expect("spawn accessibility fixture binary");
+  child
+    .stdin
+    .as_mut()
+    .expect("fixture stdin")
+    .write_all(
+      b"observe\nplan contest\ncommit\nadvance\nplan stabilize\ncommit\nadvance\ndebrief\nquit\n",
+    )
+    .expect("write fixture input");
+  let output = child
+    .wait_with_output()
+    .expect("wait for accessibility fixture binary");
+  assert!(output.status.success(), "stderr: {:?}", output.stderr);
+  let stdout = String::from_utf8(output.stdout).expect("transcript UTF-8");
+  let report = fog_of_intent::cli::audit_cli_presentation_text(
+    &stdout,
+    fog_of_intent::terminal::TerminalDimensions::standard(),
+    false,
+  );
+  assert!(
+    report.all_passed,
+    "accessibility audit report failed: {:?}",
+    report
+  );
+  assert_eq!(report.compliance_rate_bp, 10_000);
 }
