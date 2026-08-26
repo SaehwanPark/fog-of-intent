@@ -47,9 +47,21 @@ fn main() -> ExitCode {
       }
     };
   }
+  if matches!(&application_command, CliApplicationCommand::McpServe) {
+    let mut server = fog_of_intent::mcp::McpServer::new();
+    let stdin = io::stdin().lock();
+    let stdout = io::stdout().lock();
+    return match server.run_stdio(stdin, stdout) {
+      Ok(()) => ExitCode::SUCCESS,
+      Err(error) => {
+        eprintln!("mcp server error: {error}");
+        ExitCode::FAILURE
+      }
+    };
+  }
 
   let CliApplicationCommand::Run(options) = application_command else {
-    unreachable!("help, version, and list-scenarios are handled above");
+    unreachable!("help, version, list-scenarios, and mcp are handled above");
   };
   let stdin_is_terminal = io::stdin().is_terminal();
   let stdout_is_terminal = io::stdout().is_terminal();

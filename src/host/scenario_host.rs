@@ -787,6 +787,15 @@ impl CliScenarioHost {
     )
   }
 
+  /// Return current staged draft field values (message, plan, contingency).
+  pub fn staged_draft(&self) -> (Option<&str>, Option<&str>, Option<&str>) {
+    (
+      self.draft.message.as_deref(),
+      self.draft.plan.as_deref(),
+      self.draft.contingency.as_deref(),
+    )
+  }
+
   /// Apply one parsed-and-mapped CLI line at the host boundary.
   pub fn apply_line<'a>(&mut self, line: &'a str) -> Result<CliHostOutput, CliHostError<'a>> {
     if self.closed {

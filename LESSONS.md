@@ -5,6 +5,13 @@ the context, cause, successful resolution, and prevention step are supported by
 repository evidence and likely to recur. Keep entries concise and link to the
 canonical policy instead of duplicating it.
 
+## Keep MCP JSON-RPC stdio servers dependency-free, fail-closed on malformed inputs, and free of floating-point integer casts
+
+- Context: M5 implements the Model Context Protocol (MCP) JSON-RPC 2.0 stdio server adapter (`src/mcp/`) communicating with external LLM agents.
+- Symptom: Heavy third-party JSON/RPC dependencies increase build times and attack surface; float conversions in custom parsers trigger `clippy::as_conversions` denials; malformed lines or missing arguments cause server panics.
+- Resolution: Build a compact, deterministic recursive-descent JSON parser and JSON-RPC 2.0 dispatcher with zero third-party dependencies, map invalid requests directly to standard JSON-RPC error codes (`-32700`, `-32600`, `-32601`, `-32602`), and parse numeric values strictly as `i64` without floating-point fallback casts.
+- Prevention: In protocol and transport adapter layers, use deterministic string and integer parsing; avoid `as` conversions and third-party crate additions.
+
 ## Keep match runner phase names and scenario catalog assertions synchronized across unit, presentation, and binary test boundaries
 
 - Context: Expanding the scenario catalog and adding an interactive match runner (`m9-interactive-match-v1`) shifts catalog indexing, help text strings, and terminal phase action strings.

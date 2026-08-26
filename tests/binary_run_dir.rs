@@ -178,7 +178,7 @@ fn binary_help_is_successful_and_bounded() {
   assert!(output.status.success());
   assert_eq!(
     String::from_utf8(output.stdout).expect("help UTF-8 output"),
-    "usage: fog-of-intent [--scenario <id>] [--select] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n"
+    "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m11-gui-presentation-v1, or m12-alpha-release-checks-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n"
   );
   assert!(output.stderr.is_empty());
 }
@@ -657,4 +657,90 @@ fn binary_runs_interactive_m9_match_and_reaches_victory() {
   ));
   assert!(stdout.contains("match_debrief: scenario=scenario-complete-allied-snowball-v1 winner=allied condition=nexus-demolished final_turn=14"));
   assert!(stdout.contains("quit: session=closed"));
+}
+
+#[test]
+fn binary_runs_mcp_serve_and_responds_to_json_rpc() {
+  let binary = binary_path();
+  let input = [
+    r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}"#,
+    r#"{"jsonrpc":"2.0","method":"notifications/initialized"}"#,
+    r#"{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"observe","arguments":{}}}"#,
+    r#"{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"match_observe","arguments":{}}}"#,
+  ]
+  .join("\n")
+    + "\n";
+
+  let mut child = Command::new(&binary)
+    .args(["mcp", "serve"])
+    .stdin(Stdio::piped())
+    .stdout(Stdio::piped())
+    .stderr(Stdio::piped())
+    .spawn()
+    .expect("spawn mcp serve binary");
+
+  child
+    .stdin
+    .as_mut()
+    .expect("stdin")
+    .write_all(input.as_bytes())
+    .expect("write stdin");
+
+  let output = child.wait_with_output().expect("wait for mcp binary");
+  assert!(output.status.success(), "stderr: {:?}", output.stderr);
+  let stdout = String::from_utf8(output.stdout).expect("UTF-8 output");
+
+  assert!(stdout.contains(r#""name":"fog-of-intent""#));
+  assert!(stdout.contains("observation:"));
+  assert!(stdout.contains("match_observation:"));
+}
+
+#[test]
+fn binary_runs_mcp_flag_and_subcommand_variants() {
+  let binary = binary_path();
+  let input = r#"{"jsonrpc":"2.0","id":1,"method":"ping"}"#.to_string() + "\n";
+
+  // Test --mcp flag
+  let mut child = Command::new(&binary)
+    .arg("--mcp")
+    .stdin(Stdio::piped())
+    .stdout(Stdio::piped())
+    .stderr(Stdio::piped())
+    .spawn()
+    .expect("spawn --mcp");
+  child
+    .stdin
+    .as_mut()
+    .unwrap()
+    .write_all(input.as_bytes())
+    .unwrap();
+  let output = child.wait_with_output().unwrap();
+  assert!(output.status.success());
+  assert!(
+    String::from_utf8(output.stdout)
+      .unwrap()
+      .contains(r#""id":1"#)
+  );
+
+  // Test mcp serve --transport stdio
+  let mut child2 = Command::new(&binary)
+    .args(["mcp", "serve", "--transport", "stdio"])
+    .stdin(Stdio::piped())
+    .stdout(Stdio::piped())
+    .stderr(Stdio::piped())
+    .spawn()
+    .expect("spawn mcp serve --transport stdio");
+  child2
+    .stdin
+    .as_mut()
+    .unwrap()
+    .write_all(input.as_bytes())
+    .unwrap();
+  let output2 = child2.wait_with_output().unwrap();
+  assert!(output2.status.success());
+  assert!(
+    String::from_utf8(output2.stdout)
+      .unwrap()
+      .contains(r#""id":1"#)
+  );
 }

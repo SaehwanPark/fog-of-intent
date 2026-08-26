@@ -12,6 +12,7 @@ pub mod host_artifact;
 pub mod kernel;
 pub mod lane;
 pub mod map;
+pub mod mcp;
 pub mod presentation;
 pub mod protocol;
 pub mod repl;

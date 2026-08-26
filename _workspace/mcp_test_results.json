@@ -1,0 +1,1269 @@
+[
+  {
+    "target": "Subcommand: cargo +1.96.0 run -- mcp serve",
+    "command": [
+      "cargo",
+      "+1.96.0",
+      "run",
+      "--quiet",
+      "--",
+      "mcp",
+      "serve"
+    ],
+    "passed": 33,
+    "failed": 0,
+    "tests": [
+      {
+        "name": "initialize (protocolVersion, capabilities, serverInfo)",
+        "passed": true,
+        "details": {
+          "request": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+              "protocolVersion": "2024-11-05"
+            }
+          },
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "protocolVersion": "2024-11-05",
+              "capabilities": {
+                "tools": {},
+                "prompts": {},
+                "resources": {}
+              },
+              "serverInfo": {
+                "name": "fog-of-intent",
+                "version": "0.1.224"
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "notifications/initialized (silent ack) & ping",
+        "passed": true,
+        "details": {
+          "ping_response": {
+            "jsonrpc": "2.0",
+            "id": 2,
+            "result": {}
+          }
+        }
+      },
+      {
+        "name": "tools/list (count=14 >= 10, valid inputSchema)",
+        "passed": true,
+        "details": {
+          "tool_count": 14,
+          "tool_names": [
+            "observe",
+            "stage_draft",
+            "read_draft",
+            "clear_draft",
+            "commit_plan",
+            "advance_window",
+            "inspect_history",
+            "get_debrief",
+            "branch_scenario",
+            "match_observe",
+            "match_plan_action",
+            "match_advance",
+            "match_debrief",
+            "replay_scenario"
+          ]
+        }
+      },
+      {
+        "name": "tools/call -> observe",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 4,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "observation: schema=m2-lane-observation-v3 turn=0 observation_id=1\nself: health=8 position=center mana=6 gold=0 experience=0 cooldown=0\nopponent: label=unknown position=unknown\njungle_threat: label=unknown region=unknown\navailable_intents: stabilize,contest,yield,recall\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "tools/call -> stage_draft",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 5,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "draft: status=staged field=plan\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "tools/call -> read_draft",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 6,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "draft_status: message=none plan=contest contingency=none"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "tools/call -> commit_plan",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 7,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "commit: status=committed intent=contest\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "tools/call -> advance_window",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 8,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "advanced: window=first outcome=held_space\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "tools/call -> inspect_history",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 9,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "history: records=1 status=open\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "tools/call -> get_debrief",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 12,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "debrief: schema=m2-two-window-final-debrief-v3 final_objective=goal_achieved\nwindow: name=first intent=contest outcome=held_space position=center health=8 wave=advanced objective=goal_achieved\nwindow: name=second intent=contest outcome=held_space position=center health=8 wave=held objective=goal_achieved\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "tools/call -> clear_draft",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 14,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "undo: status=cleared-uncommitted-draft\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "tools/call -> branch_scenario",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 15,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "branch: status=verified point=first parent_intent=contest branch_intent=stabilize parent_outcome=held_space branch_outcome=yielded_space execution=matched\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "tools/call -> replay_scenario",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 16,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "match-replay: begin\nmatch: scenario=scenario-complete-allied-snowball-v1 winner=allied condition=nexus-demolished final-turn=14 objectives-allied=1 objectives-opposing=0 phases=15 events=15 effects=10\nreplay: scenario=scenario-complete-allied-snowball-v1 initial-hash-match=yes final-hash-match=yes\nmatch: scenario=scenario-complete-comeback-concession-v1 winner=allied condition=match-conceded final-turn=29 objectives-allied=3 objectives-opposing=1 phases=29 events=26 effects=21\nreplay: scenario=scenario-complete-comeback-concession-v1 initial-hash-match=yes final-hash-match=yes\nmatch-replay: complete"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "5v5 match tools/call -> match_observe",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 13,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "match_observation: turn=1 status=in_progress winner=none condition=none\nobjectives_secured: allied=0 opposing=0\nriver_objectives: top=unspawned bot=unspawned active_wards=0\nactor_locations:\n  actor: id=1 team=allied location=base:allied\n  actor: id=2 team=allied location=lane:mid:center\n  actor: id=3 team=allied location=lane:bot:near-tower\n  actor: id=4 team=opposing location=lane:mid:far-side\nstructures_summary:\n  structure: Allied OuterTurret on Top health=3500/3500 status=standing\n  structure: Allied InnerTurret on Top health=4000/4000 status=standing\n  structure: Allied InhibitorTurret on Top health=4500/4500 status=standing\n  structure: Allied Inhibitor on Top health=3000/3000 status=standing\n  structure: Allied OuterTurret on Mid health=3500/3500 status=standing\n  structure: Allied InnerTurret on Mid health=4000/4000 status=standing\n  structure: Allied InhibitorTurret on Mid health=4500/4500 status=standing\n  structure: Allied Inhibitor on Mid health=3000/3000 status=standing\n  structure: Allied OuterTurret on Bot health=3500/3500 status=standing\n  structure: Allied InnerTurret on Bot health=4000/4000 status=standing\n  structure: Allied InhibitorTurret on Bot health=4500/4500 status=standing\n  structure: Allied Inhibitor on Bot health=3000/3000 status=standing\n  structure: Allied Nexus health=6000/6000 status=standing\n  structure: Opposing OuterTurret on Top health=3500/3500 status=standing\n  structure: Opposing InnerTurret on Top health=4000/4000 status=standing\n  structure: Opposing InhibitorTurret on Top health=4500/4500 status=standing\n  structure: Opposing Inhibitor on Top health=3000/3000 status=standing\n  structure: Opposing OuterTurret on Mid health=3500/3500 status=standing\n  structure: Opposing InnerTurret on Mid health=4000/4000 status=standing\n  structure: Opposing InhibitorTurret on Mid health=4500/4500 status=standing\n  structure: Opposing Inhibitor on Mid health=3000/3000 status=standing\n  structure: Opposing OuterTurret on Bot health=3500/3500 status=standing\n  structure: Opposing InnerTurret on Bot health=4000/4000 status=standing\n  structure: Opposing InhibitorTurret on Bot health=4500/4500 status=standing\n  structure: Opposing Inhibitor on Bot health=3000/3000 status=standing\n  structure: Opposing Nexus health=6000/6000 status=standing\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "5v5 match tools/call -> match_plan_action (rotate)",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 14,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "draft: status=staged action=rotate actor 1 to lane:mid:center\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "5v5 match tools/call -> match_plan_action (ward)",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 15,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "draft: status=staged action=place ward at river:bot by actor 3 (Allied, 3 turns)\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "5v5 match tools/call -> match_plan_action (contest)",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 16,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "draft: status=staged action=contest bot_river_objective (damage=3500, burst=false)\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "5v5 match tools/call -> match_plan_action (siege)",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 17,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "draft: status=staged action=siege Allied OuterTurret on Mid for 2000 damage\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "5v5 match tools/call -> match_plan_action (evaluate)",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 18,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "draft: status=staged action=evaluate terminal victory conditions\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "5v5 match tools/call -> match_plan_action (idle)",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 19,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "draft: status=staged action=idle (no tactical contest action)\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "5v5 match tools/call -> match_advance",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 20,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "advanced: turn=1 action=objective-contest events=0 effects=0 match_status=in_progress\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "5v5 match tools/call -> match_debrief",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 21,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "match_debrief: scenario=scenario-complete-allied-snowball-v1 winner=allied condition=nexus-demolished final_turn=2\nobjectives: allied=0 opposing=0\ntotals: events=0 effects=0 phases=1\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "prompts/list (contains lane_decision_window, match_macro_turn)",
+        "passed": true,
+        "details": {
+          "prompts": [
+            "lane_decision_window",
+            "match_macro_turn"
+          ]
+        }
+      },
+      {
+        "name": "prompts/get (lane_decision_window)",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 23,
+            "result": {
+              "description": "Strategic decision prompt for lane window",
+              "messages": [
+                {
+                  "role": "user",
+                  "content": {
+                    "type": "text",
+                    "text": "You are commanding a laner in Fog of Intent.\n\nCurrent Observation:\nobservation: schema=m2-lane-observation-v3 turn=2 observation_id=3\nself: health=8 position=center mana=6 gold=0 experience=0 cooldown=0\nopponent: label=unknown position=unknown\njungle_threat: label=unknown region=unknown\navailable_intents: stabilize,contest,yield,recall\n\n\nFormulate your strategic intent (Stabilize, Contest, Yield, Recall, or Withdraw), communicate intentions to your team, set contingencies, and commit."
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "prompts/get (match_macro_turn)",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 24,
+            "result": {
+              "description": "Macro shot-caller decision prompt",
+              "messages": [
+                {
+                  "role": "user",
+                  "content": {
+                    "type": "text",
+                    "text": "You are the Macro Shot-Caller in a 5v5 multi-lane Fog of Intent match.\n\nCurrent Match State:\nmatch_observation: turn=2 status=in_progress winner=none condition=none\nobjectives_secured: allied=0 opposing=0\nriver_objectives: top=unspawned bot=unspawned active_wards=0\nactor_locations:\n  actor: id=1 team=allied location=base:allied\n  actor: id=2 team=allied location=lane:mid:center\n  actor: id=3 team=allied location=lane:bot:near-tower\n  actor: id=4 team=opposing location=lane:mid:far-side\nstructures_summary:\n  structure: Allied OuterTurret on Top health=3500/3500 status=standing\n  structure: Allied InnerTurret on Top health=4000/4000 status=standing\n  structure: Allied InhibitorTurret on Top health=4500/4500 status=standing\n  structure: Allied Inhibitor on Top health=3000/3000 status=standing\n  structure: Allied OuterTurret on Mid health=3500/3500 status=standing\n  structure: Allied InnerTurret on Mid health=4000/4000 status=standing\n  structure: Allied InhibitorTurret on Mid health=4500/4500 status=standing\n  structure: Allied Inhibitor on Mid health=3000/3000 status=standing\n  structure: Allied OuterTurret on Bot health=3500/3500 status=standing\n  structure: Allied InnerTurret on Bot health=4000/4000 status=standing\n  structure: Allied InhibitorTurret on Bot health=4500/4500 status=standing\n  structure: Allied Inhibitor on Bot health=3000/3000 status=standing\n  structure: Allied Nexus health=6000/6000 status=standing\n  structure: Opposing OuterTurret on Top health=3500/3500 status=standing\n  structure: Opposing InnerTurret on Top health=4000/4000 status=standing\n  structure: Opposing InhibitorTurret on Top health=4500/4500 status=standing\n  structure: Opposing Inhibitor on Top health=3000/3000 status=standing\n  structure: Opposing OuterTurret on Mid health=3500/3500 status=standing\n  structure: Opposing InnerTurret on Mid health=4000/4000 status=standing\n  structure: Opposing InhibitorTurret on Mid health=4500/4500 status=standing\n  structure: Opposing Inhibitor on Mid health=3000/3000 status=standing\n  structure: Opposing OuterTurret on Bot health=3500/3500 status=standing\n  structure: Opposing InnerTurret on Bot health=4000/4000 status=standing\n  structure: Opposing InhibitorTurret on Bot health=4500/4500 status=standing\n  structure: Opposing Inhibitor on Bot health=3000/3000 status=standing\n  structure: Opposing Nexus health=6000/6000 status=standing\n\n\nChoose team macro priorities: plan rotations, vision control (wards), river objective contests (Dragon/Baron), or structure sieges."
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "resources/list (rules, state)",
+        "passed": true,
+        "details": {
+          "resource_uris": [
+            "fog-of-intent://scenario/rules",
+            "fog-of-intent://session/state"
+          ]
+        }
+      },
+      {
+        "name": "resources/read (fog-of-intent://scenario/rules)",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 26,
+            "result": {
+              "contents": [
+                {
+                  "uri": "fog-of-intent://scenario/rules",
+                  "mimeType": "text/markdown",
+                  "text": "# Fog of Intent Simulation Rules\n\n- Intent is decoupled from execution.\n- Fog of war hides opponent state.\n- Deterministic integer basis-point resolution.\n- Structural defense hierarchy: Outer -> Inner -> Inhibitor Turret -> Inhibitor -> Nexus."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "resources/read (fog-of-intent://session/state)",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 27,
+            "result": {
+              "contents": [
+                {
+                  "uri": "fog-of-intent://session/state",
+                  "mimeType": "application/json",
+                  "text": "{\"records\":2}"
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "Negative Case: Invalid JSON (-32700 Parse Error)",
+        "passed": true,
+        "details": {
+          "raw_input": "{malformed_json_without_quotes}",
+          "response": {
+            "jsonrpc": "2.0",
+            "id": null,
+            "error": {
+              "code": -32700,
+              "message": "Parse error: JSON parse error at 1: expected string key in object"
+            }
+          }
+        }
+      },
+      {
+        "name": "Negative Case: Unknown Method (-32601 Method Not Found)",
+        "passed": true,
+        "details": {
+          "request": {
+            "jsonrpc": "2.0",
+            "id": 28,
+            "method": "invalid/unknown_method"
+          },
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 28,
+            "error": {
+              "code": -32601,
+              "message": "Method not found: 'invalid/unknown_method'"
+            }
+          }
+        }
+      },
+      {
+        "name": "Negative Case: Invalid Params (-32602 Invalid Params for missing name)",
+        "passed": true,
+        "details": {
+          "request": {
+            "jsonrpc": "2.0",
+            "id": 29,
+            "method": "tools/call",
+            "params": {}
+          },
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 29,
+            "error": {
+              "code": -32602,
+              "message": "missing 'name' string in params"
+            }
+          }
+        }
+      },
+      {
+        "name": "Negative Case: Unsupported Tool (isError=true with informative error)",
+        "passed": true,
+        "details": {
+          "request": {
+            "jsonrpc": "2.0",
+            "id": 30,
+            "method": "tools/call",
+            "params": {
+              "name": "unsupported_tool_xyz",
+              "arguments": {}
+            }
+          },
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 30,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Unknown tool: 'unsupported_tool_xyz'"
+                }
+              ],
+              "isError": true
+            }
+          }
+        }
+      },
+      {
+        "name": "Information Boundary Audit: Zero Latent Truth / State Hash Leaks",
+        "passed": true,
+        "details": {
+          "findings": [],
+          "blobs_checked": 20
+        }
+      }
+    ],
+    "leak_checks": []
+  },
+  {
+    "target": "CLI Flag: cargo +1.96.0 run -- --mcp",
+    "command": [
+      "cargo",
+      "+1.96.0",
+      "run",
+      "--quiet",
+      "--",
+      "--mcp"
+    ],
+    "passed": 33,
+    "failed": 0,
+    "tests": [
+      {
+        "name": "initialize (protocolVersion, capabilities, serverInfo)",
+        "passed": true,
+        "details": {
+          "request": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+              "protocolVersion": "2024-11-05"
+            }
+          },
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "protocolVersion": "2024-11-05",
+              "capabilities": {
+                "tools": {},
+                "prompts": {},
+                "resources": {}
+              },
+              "serverInfo": {
+                "name": "fog-of-intent",
+                "version": "0.1.224"
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "notifications/initialized (silent ack) & ping",
+        "passed": true,
+        "details": {
+          "ping_response": {
+            "jsonrpc": "2.0",
+            "id": 2,
+            "result": {}
+          }
+        }
+      },
+      {
+        "name": "tools/list (count=14 >= 10, valid inputSchema)",
+        "passed": true,
+        "details": {
+          "tool_count": 14,
+          "tool_names": [
+            "observe",
+            "stage_draft",
+            "read_draft",
+            "clear_draft",
+            "commit_plan",
+            "advance_window",
+            "inspect_history",
+            "get_debrief",
+            "branch_scenario",
+            "match_observe",
+            "match_plan_action",
+            "match_advance",
+            "match_debrief",
+            "replay_scenario"
+          ]
+        }
+      },
+      {
+        "name": "tools/call -> observe",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 4,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "observation: schema=m2-lane-observation-v3 turn=0 observation_id=1\nself: health=8 position=center mana=6 gold=0 experience=0 cooldown=0\nopponent: label=unknown position=unknown\njungle_threat: label=unknown region=unknown\navailable_intents: stabilize,contest,yield,recall\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "tools/call -> stage_draft",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 5,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "draft: status=staged field=plan\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "tools/call -> read_draft",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 6,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "draft_status: message=none plan=contest contingency=none"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "tools/call -> commit_plan",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 7,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "commit: status=committed intent=contest\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "tools/call -> advance_window",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 8,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "advanced: window=first outcome=held_space\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "tools/call -> inspect_history",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 9,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "history: records=1 status=open\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "tools/call -> get_debrief",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 12,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "debrief: schema=m2-two-window-final-debrief-v3 final_objective=goal_achieved\nwindow: name=first intent=contest outcome=held_space position=center health=8 wave=advanced objective=goal_achieved\nwindow: name=second intent=contest outcome=held_space position=center health=8 wave=held objective=goal_achieved\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "tools/call -> clear_draft",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 14,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "undo: status=cleared-uncommitted-draft\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "tools/call -> branch_scenario",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 15,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "branch: status=verified point=first parent_intent=contest branch_intent=stabilize parent_outcome=held_space branch_outcome=yielded_space execution=matched\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "tools/call -> replay_scenario",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 16,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "match-replay: begin\nmatch: scenario=scenario-complete-allied-snowball-v1 winner=allied condition=nexus-demolished final-turn=14 objectives-allied=1 objectives-opposing=0 phases=15 events=15 effects=10\nreplay: scenario=scenario-complete-allied-snowball-v1 initial-hash-match=yes final-hash-match=yes\nmatch: scenario=scenario-complete-comeback-concession-v1 winner=allied condition=match-conceded final-turn=29 objectives-allied=3 objectives-opposing=1 phases=29 events=26 effects=21\nreplay: scenario=scenario-complete-comeback-concession-v1 initial-hash-match=yes final-hash-match=yes\nmatch-replay: complete"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "5v5 match tools/call -> match_observe",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 13,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "match_observation: turn=1 status=in_progress winner=none condition=none\nobjectives_secured: allied=0 opposing=0\nriver_objectives: top=unspawned bot=unspawned active_wards=0\nactor_locations:\n  actor: id=1 team=allied location=base:allied\n  actor: id=2 team=allied location=lane:mid:center\n  actor: id=3 team=allied location=lane:bot:near-tower\n  actor: id=4 team=opposing location=lane:mid:far-side\nstructures_summary:\n  structure: Allied OuterTurret on Top health=3500/3500 status=standing\n  structure: Allied InnerTurret on Top health=4000/4000 status=standing\n  structure: Allied InhibitorTurret on Top health=4500/4500 status=standing\n  structure: Allied Inhibitor on Top health=3000/3000 status=standing\n  structure: Allied OuterTurret on Mid health=3500/3500 status=standing\n  structure: Allied InnerTurret on Mid health=4000/4000 status=standing\n  structure: Allied InhibitorTurret on Mid health=4500/4500 status=standing\n  structure: Allied Inhibitor on Mid health=3000/3000 status=standing\n  structure: Allied OuterTurret on Bot health=3500/3500 status=standing\n  structure: Allied InnerTurret on Bot health=4000/4000 status=standing\n  structure: Allied InhibitorTurret on Bot health=4500/4500 status=standing\n  structure: Allied Inhibitor on Bot health=3000/3000 status=standing\n  structure: Allied Nexus health=6000/6000 status=standing\n  structure: Opposing OuterTurret on Top health=3500/3500 status=standing\n  structure: Opposing InnerTurret on Top health=4000/4000 status=standing\n  structure: Opposing InhibitorTurret on Top health=4500/4500 status=standing\n  structure: Opposing Inhibitor on Top health=3000/3000 status=standing\n  structure: Opposing OuterTurret on Mid health=3500/3500 status=standing\n  structure: Opposing InnerTurret on Mid health=4000/4000 status=standing\n  structure: Opposing InhibitorTurret on Mid health=4500/4500 status=standing\n  structure: Opposing Inhibitor on Mid health=3000/3000 status=standing\n  structure: Opposing OuterTurret on Bot health=3500/3500 status=standing\n  structure: Opposing InnerTurret on Bot health=4000/4000 status=standing\n  structure: Opposing InhibitorTurret on Bot health=4500/4500 status=standing\n  structure: Opposing Inhibitor on Bot health=3000/3000 status=standing\n  structure: Opposing Nexus health=6000/6000 status=standing\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "5v5 match tools/call -> match_plan_action (rotate)",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 14,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "draft: status=staged action=rotate actor 1 to lane:mid:center\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "5v5 match tools/call -> match_plan_action (ward)",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 15,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "draft: status=staged action=place ward at river:bot by actor 3 (Allied, 3 turns)\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "5v5 match tools/call -> match_plan_action (contest)",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 16,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "draft: status=staged action=contest bot_river_objective (damage=3500, burst=false)\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "5v5 match tools/call -> match_plan_action (siege)",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 17,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "draft: status=staged action=siege Allied OuterTurret on Mid for 2000 damage\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "5v5 match tools/call -> match_plan_action (evaluate)",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 18,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "draft: status=staged action=evaluate terminal victory conditions\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "5v5 match tools/call -> match_plan_action (idle)",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 19,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "draft: status=staged action=idle (no tactical contest action)\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "5v5 match tools/call -> match_advance",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 20,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "advanced: turn=1 action=objective-contest events=0 effects=0 match_status=in_progress\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "5v5 match tools/call -> match_debrief",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 21,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "match_debrief: scenario=scenario-complete-allied-snowball-v1 winner=allied condition=nexus-demolished final_turn=2\nobjectives: allied=0 opposing=0\ntotals: events=0 effects=0 phases=1\n"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      },
+      {
+        "name": "prompts/list (contains lane_decision_window, match_macro_turn)",
+        "passed": true,
+        "details": {
+          "prompts": [
+            "lane_decision_window",
+            "match_macro_turn"
+          ]
+        }
+      },
+      {
+        "name": "prompts/get (lane_decision_window)",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 23,
+            "result": {
+              "description": "Strategic decision prompt for lane window",
+              "messages": [
+                {
+                  "role": "user",
+                  "content": {
+                    "type": "text",
+                    "text": "You are commanding a laner in Fog of Intent.\n\nCurrent Observation:\nobservation: schema=m2-lane-observation-v3 turn=2 observation_id=3\nself: health=8 position=center mana=6 gold=0 experience=0 cooldown=0\nopponent: label=unknown position=unknown\njungle_threat: label=unknown region=unknown\navailable_intents: stabilize,contest,yield,recall\n\n\nFormulate your strategic intent (Stabilize, Contest, Yield, Recall, or Withdraw), communicate intentions to your team, set contingencies, and commit."
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "prompts/get (match_macro_turn)",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 24,
+            "result": {
+              "description": "Macro shot-caller decision prompt",
+              "messages": [
+                {
+                  "role": "user",
+                  "content": {
+                    "type": "text",
+                    "text": "You are the Macro Shot-Caller in a 5v5 multi-lane Fog of Intent match.\n\nCurrent Match State:\nmatch_observation: turn=2 status=in_progress winner=none condition=none\nobjectives_secured: allied=0 opposing=0\nriver_objectives: top=unspawned bot=unspawned active_wards=0\nactor_locations:\n  actor: id=1 team=allied location=base:allied\n  actor: id=2 team=allied location=lane:mid:center\n  actor: id=3 team=allied location=lane:bot:near-tower\n  actor: id=4 team=opposing location=lane:mid:far-side\nstructures_summary:\n  structure: Allied OuterTurret on Top health=3500/3500 status=standing\n  structure: Allied InnerTurret on Top health=4000/4000 status=standing\n  structure: Allied InhibitorTurret on Top health=4500/4500 status=standing\n  structure: Allied Inhibitor on Top health=3000/3000 status=standing\n  structure: Allied OuterTurret on Mid health=3500/3500 status=standing\n  structure: Allied InnerTurret on Mid health=4000/4000 status=standing\n  structure: Allied InhibitorTurret on Mid health=4500/4500 status=standing\n  structure: Allied Inhibitor on Mid health=3000/3000 status=standing\n  structure: Allied OuterTurret on Bot health=3500/3500 status=standing\n  structure: Allied InnerTurret on Bot health=4000/4000 status=standing\n  structure: Allied InhibitorTurret on Bot health=4500/4500 status=standing\n  structure: Allied Inhibitor on Bot health=3000/3000 status=standing\n  structure: Allied Nexus health=6000/6000 status=standing\n  structure: Opposing OuterTurret on Top health=3500/3500 status=standing\n  structure: Opposing InnerTurret on Top health=4000/4000 status=standing\n  structure: Opposing InhibitorTurret on Top health=4500/4500 status=standing\n  structure: Opposing Inhibitor on Top health=3000/3000 status=standing\n  structure: Opposing OuterTurret on Mid health=3500/3500 status=standing\n  structure: Opposing InnerTurret on Mid health=4000/4000 status=standing\n  structure: Opposing InhibitorTurret on Mid health=4500/4500 status=standing\n  structure: Opposing Inhibitor on Mid health=3000/3000 status=standing\n  structure: Opposing OuterTurret on Bot health=3500/3500 status=standing\n  structure: Opposing InnerTurret on Bot health=4000/4000 status=standing\n  structure: Opposing InhibitorTurret on Bot health=4500/4500 status=standing\n  structure: Opposing Inhibitor on Bot health=3000/3000 status=standing\n  structure: Opposing Nexus health=6000/6000 status=standing\n\n\nChoose team macro priorities: plan rotations, vision control (wards), river objective contests (Dragon/Baron), or structure sieges."
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "resources/list (rules, state)",
+        "passed": true,
+        "details": {
+          "resource_uris": [
+            "fog-of-intent://scenario/rules",
+            "fog-of-intent://session/state"
+          ]
+        }
+      },
+      {
+        "name": "resources/read (fog-of-intent://scenario/rules)",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 26,
+            "result": {
+              "contents": [
+                {
+                  "uri": "fog-of-intent://scenario/rules",
+                  "mimeType": "text/markdown",
+                  "text": "# Fog of Intent Simulation Rules\n\n- Intent is decoupled from execution.\n- Fog of war hides opponent state.\n- Deterministic integer basis-point resolution.\n- Structural defense hierarchy: Outer -> Inner -> Inhibitor Turret -> Inhibitor -> Nexus."
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "resources/read (fog-of-intent://session/state)",
+        "passed": true,
+        "details": {
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 27,
+            "result": {
+              "contents": [
+                {
+                  "uri": "fog-of-intent://session/state",
+                  "mimeType": "application/json",
+                  "text": "{\"records\":2}"
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "Negative Case: Invalid JSON (-32700 Parse Error)",
+        "passed": true,
+        "details": {
+          "raw_input": "{malformed_json_without_quotes}",
+          "response": {
+            "jsonrpc": "2.0",
+            "id": null,
+            "error": {
+              "code": -32700,
+              "message": "Parse error: JSON parse error at 1: expected string key in object"
+            }
+          }
+        }
+      },
+      {
+        "name": "Negative Case: Unknown Method (-32601 Method Not Found)",
+        "passed": true,
+        "details": {
+          "request": {
+            "jsonrpc": "2.0",
+            "id": 28,
+            "method": "invalid/unknown_method"
+          },
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 28,
+            "error": {
+              "code": -32601,
+              "message": "Method not found: 'invalid/unknown_method'"
+            }
+          }
+        }
+      },
+      {
+        "name": "Negative Case: Invalid Params (-32602 Invalid Params for missing name)",
+        "passed": true,
+        "details": {
+          "request": {
+            "jsonrpc": "2.0",
+            "id": 29,
+            "method": "tools/call",
+            "params": {}
+          },
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 29,
+            "error": {
+              "code": -32602,
+              "message": "missing 'name' string in params"
+            }
+          }
+        }
+      },
+      {
+        "name": "Negative Case: Unsupported Tool (isError=true with informative error)",
+        "passed": true,
+        "details": {
+          "request": {
+            "jsonrpc": "2.0",
+            "id": 30,
+            "method": "tools/call",
+            "params": {
+              "name": "unsupported_tool_xyz",
+              "arguments": {}
+            }
+          },
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 30,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Unknown tool: 'unsupported_tool_xyz'"
+                }
+              ],
+              "isError": true
+            }
+          }
+        }
+      },
+      {
+        "name": "Information Boundary Audit: Zero Latent Truth / State Hash Leaks",
+        "passed": true,
+        "details": {
+          "findings": [],
+          "blobs_checked": 20
+        }
+      }
+    ],
+    "leak_checks": []
+  }
+]
