@@ -535,10 +535,11 @@ def validate_dependency_exceptions(
     "source",
   }
   for dependency in dependencies:
-    if dependency.get("path"):
-      continue
     dependency_name = dependency["name"]
     exception = exceptions.get(dependency_name, {})
+    if dependency.get("path") and not required.issubset(exception):
+      # Internal workspace path deps with no exception record are exempt.
+      continue
     if not required.issubset(exception):
       errors.append(
         "dependency requires an approved advisory/license scanner or a "
