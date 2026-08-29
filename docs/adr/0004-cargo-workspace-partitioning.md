@@ -8,7 +8,7 @@
 
 Fog of Intent began under [ADR-0002](0002-single-package-m1.md) as a monolithic single Cargo package to minimize boilerplate and prove authoritative simulation boundaries through M1. Over subsequent milestone deliveries (M1 through M12), the codebase has expanded into a rich system (~85,000 lines of code across 12 milestone domains, over 660 verified automated tests).
 
-As established in the independent technical audit ([`docs/AUDIT_REPORT.md`](../AUDIT_REPORT.md)), the monolithic single-crate structure now creates several architectural tensions:
+As established in the independent technical audits ([`docs/audit_report_20260825.md`](../audit_report_20260825.md) and [`docs/audit_report_20260828.md`](../audit_report_20260828.md)), the monolithic single-crate structure now creates several architectural tensions:
 1. **Compilation and Incremental Build Times:** Modifying presentation or study logic triggers rebuilds of core simulation targets.
 2. **Boundary Enforcement via Visibility:** In a single crate, `pub(crate)` exposes internal helpers across unrelated domains unless guarded by convention.
 3. **Independent Release and Tooling Packaging:** Downstream consumers (e.g., external research harnesses, MCP agents, headless experiment batchers) need lightweight client/protocol libraries without pulling in CLI presentation dependencies (`reedline`) or complete 5v5 map topologies.

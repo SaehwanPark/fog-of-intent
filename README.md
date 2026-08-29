@@ -3,10 +3,11 @@
 A turn-based, AI-native team-strategy simulation about making plans under
 uncertainty and living with how teammates interpret and execute them.
 
-> **Project status:** Bounded two-window fixture command loop. The repository
-> also contains a deterministic kernel, lane fixtures, canonical planning
-> documents, and a domain-oriented agent harness. No complete playable match,
-> MCP server, persistence service, or GUI exists yet.
+> **Project status:** Modular Rust workspace (`0.1.239`) featuring a deterministic
+> simulation kernel, one-lane and 5v5 multi-lane scenario runners, an MCP JSON-RPC
+> stdio server, behavioral validation benchmarks, and presentation/study toolkits.
+> The active focus is M3 CLI reference gameplay validation. Live empirical human
+> trials, live browser client, and published release tags remain pending.
 
 ## The Idea
 
@@ -17,11 +18,12 @@ commitment, messages, contingencies, and fallback behavior. Simulated actors
 perform the execution. The debrief explains what happened without treating a
 lucky outcome as proof of a good decision.
 
-The first playable target is one short lane scenario: a human laner, an
-opposing laner, an allied autonomous actor, and an abstract jungle threat,
-with two decision windows, replay, one bounded branch, and a causal debrief.
-That complete scenario is still the active M2 goal; the current binary is a
-fixture that exercises part of it.
+The reference gameplay experience centers on short tactical scenarios and
+complete multi-lane matches: human or agent laners express intent, commitment,
+and pings under fog-of-war uncertainty, autonomous teammates resolve coordinated
+actions, and causal debriefs inspect why reality diverged from intent. M2 one-lane
+strategy playthroughs, M9 5v5 tactical matches, and MCP tooling are fully playable;
+the active M3 goal is validating decision feel, playability, and user agency.
 
 The initial design is inspired by the strategic structure of *League of
 Legends*, but the project is not affiliated with or endorsed by Riot Games. It
@@ -245,8 +247,8 @@ printf 'observe\nplan contest\ncommit\nadvance\nplan stabilize\ncommit\nadvance\
   license review obligations.
 - [Project notice](NOTICE.md) — unofficial, noncommercial, and distribution
   boundaries.
-- [Independent audit report](docs/AUDIT_REPORT.md) — independent technical and
-  architectural audit report.
+- [Independent audit report (2026-08-28)](docs/audit_report_20260828.md) — latest
+  technical and architectural audit report ([2026-08-25 audit](docs/audit_report_20260825.md)).
 - [Project proposal](docs/project-proposal.md) — detailed product, simulation,
   research, risk, and validation vision.
 - [Technology considerations](docs/tech-stack-consideration.md) — proposed stack;
