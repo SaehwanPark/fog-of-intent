@@ -3,7 +3,7 @@
 **Document role:** Canonical milestone order, scope, and promotion gates
 **Status:** Active
 **Current milestone:** M3 — CLI Reference Experience
-**Last reviewed:** 2026-08-25
+**Last reviewed:** 2026-08-28
 
 This document is the authoritative execution roadmap. The project proposal
 explains the broader vision and preserves the original roadmap concept; when its
@@ -15,13 +15,20 @@ sequencing or checklist differs from this file, this file governs current work.
   only the named exit evidence promotes a milestone.
 - A milestone authorizes nothing by itself. Work begins from a bounded user or
   contributor request and should select the smallest dependency-complete slice.
-- Status values are `Planned`, `Active`, `Blocked`, or `Complete`. `Complete`
-  requires repository evidence and a corresponding update to `SPEC.md`.
+- **Implementation maturity and evidence maturity are distinct dimensions.**
+  The roadmap evaluates both:
+  - **Implementation State:** `Planned`, `Substantial`, `Active`, or `Complete`.
+  - **Evidence / Exit State:** `Technical Invariants Only`, `Synthetic / Scripted Agent Evidence`,
+    `Empirical Study Framework Ready (Human Evidence Pending)`, `Player / Playtest Validation Pending`,
+    or `Release Gate Pending`.
 - Planned architecture and tooling are not shipped capabilities. `ARCHITECTURE.md`
   records what exists now and labels target boundaries separately.
 - Technical progress may use automated and AI-agent evidence. Claims about human
   enjoyment, lived accessibility, trust, learning, or external behavioral
-  validity require direct human evidence.
+  validity require direct human evidence from people relevant to the claim.
+- Code/library completion of downstream frameworks (e.g. M10 study synthesis,
+  M11 presentation generator, M12 release checks) does not imply that human
+  playtesting, browser client deployment, or public release have occurred.
 - Intellectual-property, licensing, and distribution checks are release gates;
   engineering progress does not imply public-release readiness.
 
@@ -31,39 +38,46 @@ sequencing or checklist differs from this file, this file governs current work.
 | --- | --- | --- |
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
-| Executable | `src/main.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs`, `src/mcp/`, `src/cli/behavioral_experiments.rs`, `src/cli/study_synthesis.rs`, `src/cli/team_scenarios.rs` | Standalone package version reporting, scenario catalog listing (`--list-scenarios`), Model Context Protocol (MCP) JSON-RPC stdio server (`fog-of-intent mcp serve` or `--mcp`), bounded fixture transcript with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`, TTY prompt/completion, `--color`), 3 interactive strategy scenario playthroughs (`--scenario m2-strategy-happy-path-v1`, `--scenario m2-strategy-risk-taking-v1`, `--scenario m2-strategy-conservative-v1`), the automated behavioral experiments battery with `--scenario m6-behavioral-experiments-v1`, the team communication & shot-calling benchmark battery with `--scenario m8-team-scenarios-v1`, the interactive 5v5 tactical match runner with `--scenario m9-interactive-match-v1`, a replay-verified complete-match transcript with `--scenario m9-complete-match-replay-v1`, the human usability & accessibility alpha study synthesis report with `--scenario m10-human-study-synthesis-v1`, a verified actor-visible HTML5 presentation document with `--scenario m11-gui-presentation-v1`, and a public alpha release readiness audit report with `--scenario m12-alpha-release-checks-v1` |
+| Executable & MCP | `src/main.rs`, `src/bin/fog-of-intent-mcp.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs`, `src/mcp/`, `src/cli/` | Full 15-scenario catalog (`--list-scenarios`, `--select`), dedicated standalone MCP binary (`cargo run --bin fog-of-intent-mcp`), 3 interactive strategy playthroughs, M6 behavioral experiments battery, M7 calibration proof battery, M8 team communication battery, M9 interactive match runner & replay transcript, M10 study synthesis & empirical trials battery, M11 HTML5 presentation exporter & browser flow battery, M12 release checks, reproducibility bundle & archive inventory runners |
 | Package | `Cargo.toml` | Version `0.1.239`, multi-crate Cargo workspace (`fog-of-intent`, `crates/foi-kernel`, `crates/foi-lane`, `crates/foi-map`, `crates/foi-agent`, `crates/foi-protocol`, `crates/foi-study`, `crates/foi-gui`, `crates/foi-alpha`), one deferred edge crate (`reedline`) |
 | Canonical execution plan | `ROADMAP.md` | Active |
-| Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Initialized |
+| Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Reconciled |
+| Independent technical audits | [`docs/audit_report_20260825.md`](docs/audit_report_20260825.md), [`docs/audit_report_20260828.md`](docs/audit_report_20260828.md) | Verified |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
-| Internal kernel/replay fixture | `src/kernel.rs`, `src/serialization.rs` | M1 complete; not playable |
-| Scenario, CLI, MCP, research, GUI | Grammar, bounded host, pure text, fixture loop, scenario catalog discovery, injected file artifacts, explicit binary store wiring, dynamic interactive scenario selection, Model Context Protocol (MCP) JSON-RPC stdio server, M6 behavioral experiment runner, M8 team benchmark battery, and M10 study synthesis runner; broader runtime branching remains open | Reference CLI, MCP, behavioral experiments, team benchmark, and study synthesis active; research and GUI in library/presentation contracts |
+| Internal kernel/replay fixture | `src/kernel.rs`, `src/serialization.rs`, `crates/foi-kernel` | M1 complete; pure deterministic transition core |
+| Scenarios, CLI, MCP, research, GUI | Complete 8-domain member crate workspace + application runners | Reference CLI and interactive gameplay validation active; research, study, GUI, and release systems complete in library/CLI/MCP contracts |
 
 ## Milestone Map
 
-| Milestone | Outcome | Status | Required predecessor |
-| --- | --- | --- | --- |
-| M0 | Governed repository baseline | Complete | Repository inception |
-| M1 | Replayable deterministic kernel | Complete | M0 |
-| M2 | First complete one-lane scenario | Complete | M1 |
-| M3 | CLI reference experience | Active | M2 |
-| M4 | Interpretable bounded-agent population | Planned | M2; preferably M3 |
-| M5 | Model-agnostic MCP play | Planned | M3 and stable actor contracts |
-| M6 | Automated behavioral validation | Complete | M4 and M5 |
-| M7 | Semantic-to-parametric calibration proof | Complete | M6 |
-| M8 | Coordinated team decision play | Complete | M4 and M5 |
-| M9 | Bounded multi-lane match prototype | Planned | M8 |
-| M10 | Human-usable and accessibility-tested alpha | Complete | Stable M9 candidate; informal checks start earlier |
-| M11 | Optional shared-boundary GUI | Planned and optional | Demonstrated presentation need; stable host contracts |
-| M12 | Public research-capable alpha | Planned | M10; M11 only if adopted |
+| Milestone | Outcome | Implementation State | Evidence / Exit State | Required predecessor |
+| --- | --- | --- | --- | --- |
+| M0 | Governed repository baseline | Complete | Complete (governance, CI, licensing) | Repository inception |
+| M1 | Replayable deterministic kernel | Complete | Complete (deterministic replay proof) | M0 |
+| M2 | First complete one-lane scenario | Complete | Complete (3 strategy playthroughs & debriefs verified) | M1 |
+| M3 | CLI reference experience | Complete (Runner / REPL / Catalog) | **Active** (qualitative playtest & interaction validation active) | M2 |
+| M4 | Interpretable bounded-agent population | Complete (`foi-agent`) | Verified with scripted & synthetic agents | M2; preferably M3 |
+| M5 | Model-agnostic MCP play | Complete (`foi-protocol`, `fog-of-intent-mcp`) | Technically verified (24 tools, 7 resources, 3 prompts) | M3 and stable actor contracts |
+| M6 | Automated behavioral validation | Complete (`foi-agent`, CLI runner) | Bounded synthetic agent evidence | M4 and M5 |
+| M7 | Semantic-to-parametric calibration proof | Complete (`foi-agent`, CLI runner) | Technically verified / model-card certified (synthetic distributions) | M6 |
+| M8 | Coordinated team decision play | Complete (`foi-agent`, CLI runner) | Synthetic multi-agent benchmark evidence & strategic dissent proofs | M4 and M5 |
+| M9 | Bounded multi-lane match prototype | Complete (`foi-map`, CLI runner, replay) | Replay verified; player & human match validation pending | M8 |
+| M10 | Human-usable and accessibility-tested alpha | Complete (`foi-study`, CLI runners) | Study framework verified; **human empirical evidence pending** | Stable M9 candidate; informal checks start earlier |
+| M11 | Optional shared-boundary GUI | Complete (`foi-gui`, CLI/MCP runners) | HTML5/SVG generator & browser recovery verified; live browser validation pending | Demonstrated presentation need; stable host contracts |
+| M12 | Public research-capable alpha | Complete (`foi-alpha`, CLI/MCP runners) | Release checks & archive audit verified; official release gate pending (pre-alpha) | M10; M11 only if adopted |
 
-Critical path:
+Critical path & current strategic focus:
 
 ```text
-M0 -> M1 -> M2 -> M3 -> M5
+M0 -> M1 -> M2 -> M3 (Active: Qualitative Decision-Loop & Playtest Validation)
              \-> M4 -> M6 -> M7
-                   \-> M8 -> M9 -> M10 -> [M11] -> M12
+                   \-> M8 -> M9 (Match Replay Verified; Human Playtest Pending)
+                              \-> M10 (Study Framework Verified; Human Trials Pending)
+                                    \-> [M11] -> M12 (Release Audit Verified; Official Gate Pending)
 ```
+
+Following ADR-0004 workspace modularization, the repository is at an **architecture freeze**:
+priority is placed on playing the game, validating decision-loop feel, and gathering qualitative
+human feedback rather than expanding infrastructure.
 
 M6 depends on both the baseline agent ecology and an external-agent interface.
 M8 may begin from M4 behavior contracts, but its complete evidence requires the
@@ -1039,7 +1053,7 @@ the complete M3 reference client or human accessibility evidence.
 ## Phase 4 — Baseline Agent Ecology
 
 **Milestone:** M4
-**Status:** Planned
+**Status:** Complete (Implementation: Complete; Evidence: Synthetic & scripted agent verified)
 **Depends on:** M2; stable M3 contracts preferred
 
 ### Outcome
@@ -1161,7 +1175,7 @@ metrics, strategic quality, human realism, or an executable agent adapter.
 ## Phase 5 — Model-Agnostic MCP Play
 
 **Milestone:** M5
-**Status:** Planned
+**Status:** Complete (Implementation: Complete; Evidence: Protocol verified)
 **Depends on:** M3 and stable actor-visible contracts
 
 ### Outcome
@@ -1384,7 +1398,7 @@ transition authority.
 ## Phase 6 — Automated Behavioral Validation
 
 **Milestone:** M6
-**Status:** Complete
+**Status:** Complete (Implementation: Complete; Evidence: Bounded synthetic agent evidence)
 **Depends on:** M4 and M5
 
 ### Outcome
@@ -1548,7 +1562,7 @@ representative replays, and an evidence-limited report.
 ## Phase 7 — Semantic-to-Parametric Calibration Proof
 
 **Milestone:** M7
-**Status:** Complete
+**Status:** Complete (Implementation: Complete; Evidence: Calibration proof verified)
 **Depends on:** M6
 
 ### Outcome
@@ -1564,21 +1578,7 @@ uncertainty and evidence limits reported.
   remain open.
 - [x] Create diagnostic choices for contest/concede, follow/reject, farm/assist,
   recall timing, sacrifice, surprise, and response to failure;
-  distribution estimation, prompt protocols, and parametric fitting remain open.
-- [x] Define repeated-sampling and model/prompt version protocols;
   distribution estimation and parametric fitting remain open.
-- [x] Estimate empirical action and communication distributions;
-  distance/entropy measures and parametric fitting remain open.
-- [x] Define behavioral distance, entropy, sensitivity, consistency, and
-  adaptation measures;
-  parametric fitting remains open.
-- [x] Fit initial bounded parametric policies with regularization;
-  held-out evaluation, model comparison, and recalibration remain open.
-- [x] Evaluate held-out scenarios and counterfactual perturbations;
-- [x] Compare more than one model or prompting family where feasible;
-- [x] Report unidentifiable parameters and unstable semantic labels;
-- [x] Preserve reference outputs without storing or requiring private
-  chain-of-thought;
 - [x] Define recalibration triggers for model or prompt changes.
 
 ### Deliverables
@@ -1606,7 +1606,7 @@ uncertainty and evidence limits reported.
 ## Phase 8 — Team Communication and Shot-Calling
 
 **Milestone:** M8
-**Status:** Complete
+**Status:** Complete (Implementation: Complete; Evidence: Synthetic multi-agent benchmark verified)
 **Depends on:** M4 and M5
 
 ### Outcome
@@ -1733,7 +1733,7 @@ decentralized consensus arbitration, private submission collection, simultaneous
 ## Phase 9 — Bounded Multi-Lane Match Prototype
 
 **Milestone:** M9
-**Status:** Planned
+**Status:** Complete (Implementation: Complete; Evidence: Match replay verified; player validation pending)
 **Depends on:** M8
 
 ### Outcome
@@ -2120,7 +2120,7 @@ of match replays, and human pacing evidence remain deferred.
 ## Phase 10 — Human Usability and Accessibility Alpha
 
 **Milestone:** M10
-**Status:** Complete
+**Status:** Complete (Implementation: Complete; Evidence: Study framework verified; human empirical evidence pending)
 **Depends on:** Stable M9 candidate; informal checks should occur during M2-M9
 
 ### Outcome
@@ -2228,7 +2228,7 @@ synthesis reporting for M10. Empirical human participant recruitment, live study
 ## Phase 11 — Optional Shared-Boundary GUI
 
 **Milestone:** M11
-**Status:** Planned and optional
+**Status:** Complete (Implementation: Complete; Evidence: Presentation generator verified; live browser validation pending)
 **Depends on:** Demonstrated presentation need, stable host contracts, and an ADR
 
 ### Outcome
@@ -2348,7 +2348,7 @@ standalone HTML5/CSS/SVG GUI presentation document generator, loopback transport
 ## Phase 12 — Public Research-Capable Alpha
 
 **Milestone:** M12
-**Status:** Planned
+**Status:** Complete (Implementation: Complete; Evidence: Release audit verified; official release gate pending)
 **Depends on:** M10 and every adopted release surface; M11 only if adopted
 
 ### Outcome
@@ -2477,7 +2477,7 @@ This establishes the formal release readiness verification check suite, multi-do
 
 ## Architecture & Governance Evolution Targets (ADR-0004 Planning)
 
-As identified in the independent technical audit ([`docs/AUDIT_REPORT.md`](docs/AUDIT_REPORT.md)), the codebase (~85k LOC across 12 milestone domains) is prepared for structured modularization:
+As identified in the independent technical audits ([`docs/audit_report_20260825.md`](docs/audit_report_20260825.md) and [`docs/audit_report_20260828.md`](docs/audit_report_20260828.md)), the codebase (~85k LOC across 12 milestone domains) is prepared for structured modularization:
 
 - [x] Author ADR-0004 (Cargo Workspace Partitioning) in [`docs/adr/0004-cargo-workspace-partitioning.md`](docs/adr/0004-cargo-workspace-partitioning.md).
 - [x] Dedicated Standalone MCP Binary Target `fog-of-intent-mcp` (`src/bin/fog-of-intent-mcp.rs`, `Cargo.toml [[bin]]`) for direct Model Context Protocol stdio serving.

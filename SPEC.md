@@ -1,7 +1,7 @@
 # Project Specification
 
 **Status:** Active project-state index
-**Last reviewed:** 2026-08-16
+**Last reviewed:** 2026-08-28
 
 This file records verified past, the small active slice, and intentionally
 deferred future work. It is not the product proposal, roadmap, issue tracker, or
@@ -13,7 +13,7 @@ Canonical direction and state live in:
 - `ROADMAP.md` — authoritative milestone order and promotion gates;
 - `ARCHITECTURE.md` — verified current structure and target boundaries;
 - `CHANGELOG.md` — meaningful contributor- and user-visible history;
-- `docs/AUDIT_REPORT.md` — independent technical and architectural audit report;
+- `docs/audit_report_20260828.md` — latest technical and architectural audit report (`docs/audit_report_20260825.md`);
 - `docs/project-proposal.md` — detailed product and research vision;
 - `docs/tech-stack-consideration.md` — proposed technology choices.
 
@@ -139,10 +139,11 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 
 #### Target slice
 
-- Define stable top-level and in-session CLI commands, scenario catalog metadata, and discovery (`--list-scenarios`).
-- Provide interactive reference experience and strategy scenario execution loops with actor-safe text/TTY presentation, command autocompletion, contextual help, and durable run artifact save/load.
-- Support uncommitted choice edit/undo, deterministic branch exploration, replay verification, and causal debrief projections.
-- Maintain pure synchronous simulation authority in the host and keep presentation and terminal I/O at the application edge.
+- Prioritize qualitative human decision-loop validation, playability, and user agency during the architecture freeze.
+- Run interactive gameplay validation across all canonical playable scenarios (M2 one-lane strategy playthroughs, M9 5v5 tactical match runner).
+- Evaluate how players form intents, communicate via pings, interpret uncertainty, and understand causal debriefs when execution diverges from plan.
+- Conduct small informal qualitative playtesting sessions to discover cognitive friction, terminology ambiguity, and decision pacing issues before considering further framework expansion.
+- Maintain pure synchronous simulation authority in the host and keep presentation, REPL editing, and terminal I/O at the application edge.
 
 #### Delivered in the interactive branch exploration slice — 2026-08-25
 
@@ -173,9 +174,9 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 
 #### Deferred
 
-- Dynamic runtime graph branching directly in the interactive command loop.
-- Full-screen TUI and browser GUI.
-- Human accessibility trial verification.
+- Broad framework expansion and new infrastructure milestones during the product-validation freeze.
+- Full-screen TUI and live browser GUI deployment.
+- Formal empirical human study battery completion (deferred to M10 study execution with recruited participants).
 
 #### Historical M2 contracts and deliverable inventory
 
@@ -2237,21 +2238,14 @@ behavioral research claims remain deferred until study data is collected.
 
 ## Future
 
-The detailed and canonical order is in `ROADMAP.md`.
+The canonical milestone sequencing and promotion gates are governed by `ROADMAP.md`.
+Following the ADR-0004 workspace modularization, future work centers on empirical product validation:
 
-- **M2:** complete the one-lane scenario from the active decision-window slice,
-  including actor-specific uncertainty, intent, delegated execution, branching,
-  and causal debrief.
-- **M3:** keyboard-first CLI reference experience.
-- **M4:** interpretable non-LLM agent ecology.
-- **M5:** thin, versioned, model-agnostic MCP adapter.
-- **M6:** automated behavioral experiments and regression evidence.
-- **M7:** evidence-limited semantic-to-parametric calibration proof.
-- **M8:** trust-sensitive team communication and shot-calling.
-- **M9:** bounded multi-lane match prototype.
-- **M10:** human usability and accessibility alpha evidence.
-- **M11:** optional host-bound GUI if demonstrated needs justify it.
-- **M12:** public research-capable alpha with release and claim governance.
+- **M3 (Qualitative Gameplay Validation):** Conduct informal qualitative playtest sessions; evaluate decision feel, cognitive friction, agency, and debrief utility.
+- **M9 (Human Match Playtesting):** Conduct human playtesting of complete 5v5 multi-lane matches; validate strategic depth, role agency, and comeback mechanics.
+- **M10 (Human Empirical Studies):** Execute live empirical human trials with recruited participants across all 4 cohorts (`StrategyGamer`, `MobaPlayer`, `AccessNeeds`, `NoviceStrategy`); collect empirical data and evaluate alpha readiness disposition gates.
+- **M11 (Live Graphical Interface):** Implement a live browser presentation client only if empirical study evidence demonstrates a user need that text/SVG exports cannot satisfy.
+- **M12 (Public Research Alpha Release):** Tag and publish the official public research alpha distribution with verified reproducibility bundles once human evidence gates are satisfied.
 
 ## Persistent Product Non-Goals
 

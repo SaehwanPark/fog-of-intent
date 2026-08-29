@@ -2,7 +2,13 @@
 
 All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
-not increment the package version.
+## [0.1.239] - 2026-08-28 (Docs update)
+
+- Reconciled `ROADMAP.md` and `SPEC.md` project-state semantics per the 2026-08-28 Independent Technical Audit (`docs/audit_report_20260828.md`):
+  - Adopted a two-dimensional milestone model separating Implementation Maturity (`Planned`, `Substantial`, `Active`, `Complete`) from Evidence & Exit Maturity (`Technical Invariants Only`, `Synthetic / Scripted Agent Evidence`, `Empirical Study Framework Ready (Human Evidence Pending)`, `Player / Playtest Validation Pending`, `Release Gate Pending`).
+  - Reconciled milestone status contradictions across M4–M12, explicitly clarifying that M10 study synthesis and empirical trial frameworks are implemented while empirical human participant evidence remains pending.
+  - Aligned project focus with the architecture freeze to prioritize M3 CLI reference experience and qualitative human decision-loop validation.
+  - Updated documentation references across `README.md`, `SPEC.md`, `ROADMAP.md`, `CHANGELOG.md`, and `docs/adr/0004-cargo-workspace-partitioning.md` to link `docs/audit_report_20260828.md` and historical `docs/audit_report_20260825.md`.
 
 ## [0.1.239] - 2026-08-26
 
@@ -294,7 +300,7 @@ not increment the package version.
 
 ### Added
 
-- `docs/AUDIT_REPORT.md` recording the comprehensive independent technical and architectural audit report covering simulation determinism, domain authority, information-leak prevention, security, code quality, verification rigor, and milestone steering.
+- `docs/audit_report_20260825.md` recording the comprehensive independent technical and architectural audit report covering simulation determinism, domain authority, information-leak prevention, security, code quality, verification rigor, and milestone steering.
 - Developer action items with explicit tracking checkboxes across active and planned milestones (M2, M3, M5, M9, M10, M11, M12) in `ROADMAP.md` to steer future development.
 - Target architecture and governance evolution planning for Cargo workspace modularization (ADR-0004 planning) in `ROADMAP.md`.
 
