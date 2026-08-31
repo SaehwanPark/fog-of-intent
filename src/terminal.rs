@@ -109,9 +109,10 @@ pub fn wrap_labeled_line(line: &str, width: usize) -> Vec<String> {
     return vec![String::new()];
   }
 
-  // A narrower width cannot preserve an existing indentation prefix; return
-  // the source line rather than repeatedly flushing an unfillable prefix.
-  if width == 0 || width <= prefix.chars().count() {
+  // A narrower width cannot preserve the source or continuation indentation;
+  // return the source line rather than repeatedly flushing an unfillable prefix.
+  let continuation_prefix_width = prefix.chars().count().saturating_add(2);
+  if width <= continuation_prefix_width {
     return vec![line.to_owned()];
   }
 
@@ -1211,7 +1212,9 @@ mod tests {
 
     assert_eq!(wrap_labeled_line("    ", 2), vec![String::new()]);
     assert_eq!(wrap_labeled_line("word", 0), vec!["word".to_owned()]);
+    assert_eq!(wrap_labeled_line("word", 2), vec!["word".to_owned()]);
     assert_eq!(wrap_labeled_line("  word", 1), vec!["  word".to_owned()]);
+    assert_eq!(wrap_labeled_line("  word", 4), vec!["  word".to_owned()]);
   }
 
   #[test]
