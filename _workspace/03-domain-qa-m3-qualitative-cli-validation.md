@@ -48,6 +48,8 @@ and observed distinct strategy outcomes where the fixtures provide them. M9
 focused help now provides bounded usage, summary, and example lines. The
 four-actor M9 roster remains a known product-scope finding, not silently treated
 as solved by this slice.
+- Compact-width wrapping preserves nested indentation and remains a pure text
+  projection.
 
 ## Gameplay and Debrief Findings
 
@@ -78,7 +80,8 @@ separate M9 human-playtest gate.
 - `m9-interactive-match-v1` still exposes a four-actor fixture under a 5v5
   label; expanding the roster may change gameplay scope and should be planned
   as its own M9 slice.
-- Compact-width nested indentation needs further interaction polish.
+- Human inspection is still needed to validate the compact hierarchy with real
+  keyboard and screen-reader users.
 - MCP match replay persistence, M10 recruited cohorts, M11 live browser
   recovery, and M12 release-candidate human testing remain unverified.
 

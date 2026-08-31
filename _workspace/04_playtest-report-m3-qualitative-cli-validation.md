@@ -82,6 +82,14 @@ example: plan rotate 1 bot_river
 The siege topic also explains that an optional `side` identifies the attacker,
 with Allied as the default, matching the target-oriented staged description.
 
+### Compact-width hierarchy
+
+The compact terminal regression now preserves source indentation while wrapping
+nested entries. An actor line beginning with two spaces keeps those two spaces
+on its first line and receives two additional continuation spaces, so wrapped
+actor and structure details remain scan-friendly without exceeding the width
+bound.
+
 ## Verification evidence
 
 Focused host and terminal regressions cover redaction, target descriptions,
@@ -96,8 +104,6 @@ documentation test.
 - The M9 fixture still carries a four-actor roster (three Allied and one
   Opposing) despite its 5v5 label. Expanding or renaming that fixture is a
   separate M9 scope decision, not a safe M3 presentation-only change.
-- M9 focused help topics are terse, and compact-width nested indentation can
-  be improved. These are follow-up interaction-polish candidates.
 - Human keyboard-only, focus, screen-reader, enjoyment, trust, M10 cohort,
   M11 live-browser, and M12 release-candidate evidence remain open roadmap
   gates.
