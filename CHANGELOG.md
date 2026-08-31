@@ -19,6 +19,8 @@ project uses the versioning policy in `README.md`; documentation-only changes do
   name their target team and attacker, and staged actions cannot be silently
   replaced. Focused host, terminal, and executable regressions cover these
   actor-safety and lifecycle contracts.
+- M9 contextual help topics now include actionable usage, summaries, examples,
+  and the siege attacker-side clarification.
 ## [0.1.239] - 2026-08-28 (Docs update)
 
 - Reconciled `ROADMAP.md` and `SPEC.md` project-state semantics per the 2026-08-28 Independent Technical Audit (`docs/audit_report_20260828.md`):

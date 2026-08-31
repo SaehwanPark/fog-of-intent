@@ -517,7 +517,7 @@ pub fn render_match_output(output: &crate::host::CliMatchOutput) -> String {
       );
       line(
         &mut text,
-        "command: name=siege usage=plan siege [side] <tier> [lane] <damage> summary=attack enemy structure along defense hierarchy",
+        "command: name=siege usage=plan siege [side] <tier> [lane] <damage> summary=attack enemy structure along defense hierarchy (side names the attacker; allied is the default)",
       );
       line(
         &mut text,
@@ -549,7 +549,7 @@ pub fn render_match_output(output: &crate::host::CliMatchOutput) -> String {
       );
     }
     crate::host::CliMatchOutput::Help { topic: Some(name) } => {
-      line(&mut text, format_args!("help: topic={name}"));
+      render_match_help_topic(&mut text, name);
     }
     crate::host::CliMatchOutput::Observation(obs) => {
       line(
@@ -703,6 +703,75 @@ pub fn render_match_output(output: &crate::host::CliMatchOutput) -> String {
     }
   }
   text
+}
+
+fn render_match_help_topic(text: &mut String, topic: &str) {
+  let (usage, summary, example) = match topic {
+    "observe" => (
+      "observe",
+      "inspect actor-visible map state, objectives, wards, and structures",
+      "observe",
+    ),
+    "rotate" => (
+      "plan rotate <actor_id> <destination>",
+      "stage one actor rotation to a map location",
+      "plan rotate 1 bot_river",
+    ),
+    "ward" => (
+      "plan ward [team] <actor_id> <location> [duration]",
+      "stage a vision ward placement",
+      "plan ward allied 3 bot_river 3",
+    ),
+    "contest" => (
+      "plan contest <top|bot> [damage] [burst]",
+      "stage a river objective engagement or burst",
+      "plan contest bot 4000 burst",
+    ),
+    "siege" => (
+      "plan siege [side] <tier> [lane] <damage>",
+      "stage an attack against the enemy structure hierarchy; side names the attacker (allied by default)",
+      "plan siege outer mid 4000",
+    ),
+    "evaluate" => (
+      "plan evaluate",
+      "stage terminal victory-condition evaluation",
+      "plan evaluate",
+    ),
+    "idle" => (
+      "plan idle",
+      "stage a turn with no tactical contest action",
+      "plan idle",
+    ),
+    "commit" => (
+      "commit",
+      "lock the staged tactical plan into the next turn",
+      "commit",
+    ),
+    "advance" => (
+      "advance",
+      "execute one committed action and advance the match turn",
+      "advance",
+    ),
+    "debrief" => (
+      "debrief",
+      "view the terminal match report after evaluation",
+      "debrief",
+    ),
+    "undo" => (
+      "undo",
+      "clear an uncommitted staged or committed action",
+      "undo",
+    ),
+    "quit" => ("quit", "close the match session", "quit"),
+    _ => {
+      line(&mut *text, format_args!("help: topic={topic}"));
+      return;
+    }
+  };
+  line(&mut *text, format_args!("help: topic={topic}"));
+  line(&mut *text, format_args!("usage: {usage}"));
+  line(&mut *text, format_args!("summary: {summary}"));
+  line(&mut *text, format_args!("example: {example}"));
 }
 
 /// Render an actor-valid match host result as stable plain text wrapped to given terminal dimensions.
@@ -995,6 +1064,20 @@ mod tests {
       render_match_error(&error),
       "error: match debrief is unavailable until terminal evaluation"
     );
+  }
+
+  #[test]
+  fn match_contextual_help_explains_usage_and_recovery() {
+    let mut host = CliMatchHost::default_session();
+    let output = host.apply_line("help rotate").expect("match help");
+    let rendered = render_match_output(&output);
+    assert!(rendered.contains("help: topic=rotate"));
+    assert!(rendered.contains("usage: plan rotate <actor_id> <destination>"));
+    assert!(rendered.contains("summary: stage one actor rotation to a map location"));
+    assert!(rendered.contains("example: plan rotate 1 bot_river"));
+
+    let siege_help = host.apply_line("help siege").expect("siege help");
+    assert!(render_match_output(&siege_help).contains("side names the attacker"));
   }
 
   #[test]

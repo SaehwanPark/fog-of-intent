@@ -67,12 +67,27 @@ draft: status=staged action=siege Opposing OuterTurret on Mid for 4000 damage (a
 Attempting to stage a second action before commit or undo now returns a bounded
 repair error instead of silently replacing the first action.
 
+### Contextual help
+
+The follow-up polish loop expanded `help <command>` for every advertised M9
+command. For example, `help rotate` now renders:
+
+```text
+help: topic=rotate
+usage: plan rotate <actor_id> <destination>
+summary: stage one actor rotation to a map location
+example: plan rotate 1 bot_river
+```
+
+The siege topic also explains that an optional `side` identifies the attacker,
+with Allied as the default, matching the target-oriented staged description.
+
 ## Verification evidence
 
 Focused host and terminal regressions cover redaction, target descriptions,
 staged replacement, and premature debriefs. The executable M9 transcript adds
 assertions for the redacted opponent and completion-gated lifecycle. The full
-locked test suite passed after the fixes: 186 library tests, 2 MCP-binary
+locked test suite passed after the fixes: 187 library tests, 2 MCP-binary
 tests, 48 integration tests (46 binary-runner and 2 agent-batch), and 1
 documentation test.
 

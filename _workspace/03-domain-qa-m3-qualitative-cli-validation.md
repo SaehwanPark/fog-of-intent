@@ -44,9 +44,10 @@ terminal turn and debrief. Existing replay/hash contracts remain untouched.
 
 Pass for bounded protocol behavior. Anchor, Duelist, Novice, and runner agents
 completed the declared M2/M9 traces, recovered from malformed lifecycle inputs,
-and observed distinct strategy outcomes where the fixtures provide them. The
-four-actor M9 roster and terse focused help remain known product-scope findings,
-not silently treated as solved by this slice.
+and observed distinct strategy outcomes where the fixtures provide them. M9
+focused help now provides bounded usage, summary, and example lines. The
+four-actor M9 roster remains a known product-scope finding, not silently treated
+as solved by this slice.
 
 ## Gameplay and Debrief Findings
 
@@ -77,14 +78,14 @@ separate M9 human-playtest gate.
 - `m9-interactive-match-v1` still exposes a four-actor fixture under a 5v5
   label; expanding the roster may change gameplay scope and should be planned
   as its own M9 slice.
-- Focused M9 help and compact-width nested indentation need interaction polish.
+- Compact-width nested indentation needs further interaction polish.
 - MCP match replay persistence, M10 recruited cohorts, M11 live browser
   recovery, and M12 release-candidate human testing remain unverified.
 
 ## Verification Evidence
 
 - `cargo +1.96.0 fmt --all` completed successfully.
-- `cargo +1.96.0 test --locked` passed 186 library tests, 2 MCP-binary tests,
+- `cargo +1.96.0 test --locked` passed 187 library tests, 2 MCP-binary tests,
   48 integration tests (46 binary-runner and 2 agent-batch), and 1
   documentation test after the fixes.
 - The post-fix M9 executable transcript showed an unknown opposing location,
