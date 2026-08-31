@@ -3,7 +3,7 @@
 **Document role:** Canonical milestone order, scope, and promotion gates
 **Status:** Active
 **Current milestone:** M3 — CLI Reference Experience
-**Last reviewed:** 2026-08-28
+**Last reviewed:** 2026-08-30
 
 This document is the authoritative execution roadmap. The project proposal
 explains the broader vision and preserves the original roadmap concept; when its
@@ -38,7 +38,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | --- | --- | --- |
 | Product direction | `docs/project-proposal.md` | Defined at proposal level |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
-| Executable & MCP | `src/main.rs`, `src/bin/fog-of-intent-mcp.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs`, `src/mcp/`, `src/cli/` | Full 15-scenario catalog (`--list-scenarios`, `--select`), dedicated standalone MCP binary (`cargo run --bin fog-of-intent-mcp`), 3 interactive strategy playthroughs, M6 behavioral experiments battery, M7 calibration proof battery, M8 team communication battery, M9 interactive match runner & replay transcript, M10 study synthesis & empirical trials battery, M11 HTML5 presentation exporter & browser flow battery, M12 release checks, reproducibility bundle & archive inventory runners |
+| Executable & MCP | `src/main.rs`, `src/bin/fog-of-intent-mcp.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs`, `src/mcp/`, `src/cli/` | Full 16-scenario catalog (`--list-scenarios`, `--select`), dedicated standalone MCP binary (`cargo run --bin fog-of-intent-mcp`), 3 interactive strategy playthroughs, M6 behavioral experiments battery, M7 calibration proof battery, M8 team communication battery, M9 interactive match runner & replay transcript, M10 study synthesis & empirical trials battery, M11 HTML5 presentation exporter & browser flow battery, M12 release checks, reproducibility bundle & archive inventory runners |
 | Package | `Cargo.toml` | Version `0.1.239`, multi-crate Cargo workspace (`fog-of-intent`, `crates/foi-kernel`, `crates/foi-lane`, `crates/foi-map`, `crates/foi-agent`, `crates/foi-protocol`, `crates/foi-study`, `crates/foi-gui`, `crates/foi-alpha`), one deferred edge crate (`reedline`) |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Reconciled |
@@ -56,7 +56,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | M2 | First complete one-lane scenario | Complete | Complete (3 strategy playthroughs & debriefs verified) | M1 |
 | M3 | CLI reference experience | Complete (Runner / REPL / Catalog) | **Active** (qualitative playtest & interaction validation active) | M2 |
 | M4 | Interpretable bounded-agent population | Complete (`foi-agent`) | Verified with scripted & synthetic agents | M2; preferably M3 |
-| M5 | Model-agnostic MCP play | Complete (`foi-protocol`, `fog-of-intent-mcp`) | Technically verified (24 tools, 7 resources, 3 prompts) | M3 and stable actor contracts |
+| M5 | Model-agnostic MCP play | Complete (`foi-protocol`, `fog-of-intent-mcp`) | Technically verified (25 tools, 8 resources, 3 prompts) | M3 and stable actor contracts |
 | M6 | Automated behavioral validation | Complete (`foi-agent`, CLI runner) | Bounded synthetic agent evidence | M4 and M5 |
 | M7 | Semantic-to-parametric calibration proof | Complete (`foi-agent`, CLI runner) | Technically verified / model-card certified (synthetic distributions) | M6 |
 | M8 | Coordinated team decision play | Complete (`foi-agent`, CLI runner) | Synthetic multi-agent benchmark evidence & strategic dissent proofs | M4 and M5 |
@@ -1005,6 +1005,25 @@ still does not satisfy the M3 complete-run exit evidence.
 This is host-backed scenario, injected file-store, text-projection, and
 bounded two-process executable evidence with a matched-parent branch, but not
 the complete M3 reference client or human accessibility evidence.
+
+### Current qualitative CLI validation evidence
+
+- [x] Run bounded Anchor, Duelist, Novice, and runner playtests across the
+  three M2 strategy fixtures and the M9 interactive match. These results
+  establish reproducible protocol behavior and software defects only; human
+  enjoyment, accessibility, trust, and research claims remain open.
+- [x] Project M9 opponent locations through `MatchMapState::observe`, retaining
+  `Observed`, `LastKnown`, and payload-free `Unknown` certainty in the host
+  report instead of exposing authoritative coordinates.
+- [x] Gate M9 debriefs on terminal evaluation, describe siege actions by target
+  team and attacker, and reject silent replacement of a staged action without
+  an explicit undo. Focused host, terminal, and executable regressions cover
+  these lifecycle and presentation contracts.
+- [x] Preserve the synchronous transition and replay boundaries; this slice
+  adds no simulation mechanics or persistence authority.
+
+The qualitative evidence is agent-playtest and software evidence. Human
+keyboard/screen-reader inspection and human experience evidence remain open.
 
 ### Current bounded terminal-text evidence
 
@@ -2088,8 +2107,9 @@ terminates and replays to an identical final hash, at the library boundary.
   tests.
 
 This delivers the bounded CLI portion of the "Complete CLI and MCP match
-replays" deliverable. MCP match replays, interactive match play, save/load
-of match replays, and human pacing evidence remain deferred.
+replays" deliverable. The interactive match runner is implemented and now has
+actor-safe observation and completion-gated debrief coverage; MCP match
+replays, save/load of match replays, and human pacing evidence remain deferred.
 
 ### Developer Action Items
 
@@ -2450,7 +2470,7 @@ This establishes the formal release readiness verification check suite, multi-do
 
 - [x] Package official research reproducibility bundles with verified 16-hex FNV-1a checksums via `--scenario m12-reproducibility-bundle-v1` and MCP tool `reproducibility_bundle_run`.
 - [x] Execute release candidate verification check suite (`audit_release_checks`) via `--scenario m12-alpha-release-checks-v1` and MCP tool `alpha_release_checks_run`.
-- [x] Complete MCP JSON-RPC protocol surface parity across all 12 milestones with 23 tools, 3 prompts, and 6 resources (including `gui_presentation_render`, `alpha_governance_audit`, `alpha_release_archive_run`, prompt `alpha_release_audit`, and resources `fog-of-intent://release/readiness`, `fog-of-intent://presentation/html`, `fog-of-intent://calibration/model-card`, `fog-of-intent://release/archive`).
+- [x] Complete MCP JSON-RPC protocol surface parity across all 12 milestones with 25 tools, 3 prompts, and 8 resources (including `gui_presentation_render`, `alpha_governance_audit`, `alpha_release_archive_run`, `cohort_study_run`, prompt `alpha_release_audit`, and resources `fog-of-intent://release/readiness`, `fog-of-intent://presentation/html`, `fog-of-intent://presentation/browser-flow`, `fog-of-intent://study/cohort-trials`, `fog-of-intent://calibration/model-card`, `fog-of-intent://release/archive`).
 - [x] Create official tagged research release bundle with governance documentation and 16-hex FNV-1a digests (`m12-alpha-archive-v1`).
 
 ### Deliverables
@@ -2504,4 +2524,3 @@ When a milestone changes:
 
 Roadmap revisions should explain why ordering, scope, or gates changed. They
 should not rewrite completed history to make the current plan appear inevitable.
-

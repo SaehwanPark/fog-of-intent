@@ -14,7 +14,7 @@ mod tests;
 
 pub use match_host::{
   CLI_INTERACTIVE_MATCH_SCENARIO_ID, CLI_MATCH_HOST_SCHEMA, CliMatchError, CliMatchHost,
-  CliMatchOutput, MatchObservationReport, MatchStructureSummary,
+  CliMatchOutput, MatchActorLocation, MatchObservationReport, MatchStructureSummary,
 };
 pub use scenario_host::CliScenarioHost;
 pub use types::{

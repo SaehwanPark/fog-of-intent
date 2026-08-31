@@ -1,8 +1,10 @@
 # Architecture
 
-**Last reviewed:** 2026-08-13
-**Status:** Partially verified — M1 kernel and fixture codec are implemented;
-M2 remains an internal bounded target under construction. The current M2 v3
+**Last reviewed:** 2026-08-30
+**Status:** Partially verified — the deterministic M1-M12 implementation
+contracts and eight-domain-crate workspace are present, while M3 qualitative
+playtest evidence and later human/browser/release gates remain pending. The
+current M2 v3
 contract includes the lane decision window, retained-resource aggregate,
 typed lifecycle status, delayed effects, branch, one-window allied
 proposal/coordination overlay, terminal-objective projection, matched-input
@@ -14,24 +16,20 @@ surface.
 
 ## Overview
 
-Fog of Intent is organized as a multi-crate Rust 2024 Cargo workspace (`fog-of-intent` root crate, `crates/foi-kernel`, `crates/foi-lane`, `crates/foi-map`). The binary reports
-package metadata through standalone `--version`/`-V` and runs the bounded
-fixture loop with `--scenario m3-two-window-fixture-v1` (optional `--run-dir`,
-and `--color auto|always|never`), the replay-verified complete-match transcript
-with `--scenario m9-complete-match-replay-v1`, the verified actor-visible HTML5 presentation document
-with `--scenario m11-gui-presentation-v1`, or the public alpha release
-readiness audit report with `--scenario m12-alpha-release-checks-v1`. One deferred
-edge crate, `reedline`, is used only for TTY line editing. Member crates (`crates/foi-kernel`, `crates/foi-lane`, `crates/foi-map`), host,
-CLI grammar, and labeled terminal-text modules remain free of that crate. The pure
-`foi-kernel`, `foi-lane`, and `foi-map` crates provide bounded deterministic transitions, in-memory
-history, replay, branching, coordination, objective, and debrief fixtures. No
-playable complete match, MCP, research, or GUI component exists yet; an injected
-persistent file store now exists as a library boundary, and the binary injects
-it only when that option is supplied. M1 is complete as an internal fixture; M2
-remains a bounded lane contract, and M3 now adds a bounded two-window host
-fixture, replay-validated artifacts, injected file storage, pure terminal text,
-and an optionally persistent fixture command loop rather than a complete
-reference client.
+Fog of Intent is organized as a multi-crate Rust 2024 Cargo workspace (`fog-of-intent`
+root crate plus `foi-kernel`, `foi-lane`, `foi-map`, `foi-agent`, `foi-protocol`,
+`foi-study`, `foi-gui`, and `foi-alpha`). The binaries report package metadata,
+run the lane and 5v5 interactive fixtures, print replay and study/presentation/
+release reports, and expose the standalone MCP JSON-RPC server. The lane strategy
+playthroughs and the bounded interactive match fixture can be exercised through
+the CLI; the study,
+presentation, browser-flow, and alpha surfaces are deterministic library/CLI/MCP
+contracts. One deferred edge dependency, `reedline`, is used only for TTY line
+editing. Domain member crates remain free of that dependency and provide the
+authoritative deterministic transitions, observations, replay, branching,
+coordination, objective, match, study, GUI, and release contracts. Human
+accessibility/experience evidence, a live browser client, and a published
+release remain open gates.
 
 The M3 CLI grammar is now a pure adapter module: it parses stable verbs and
 borrows payload text, maps observe/inspect/help to typed read requests, maps
@@ -481,7 +479,7 @@ registering and executing 5 canonical benchmark scenarios (`scenario-high-trust-
 - `graph.rs`: Adjacency matrix, deterministic BFS shortest-path calculation, integer beat durations ($1\text{ beat} = 1\text{ step}$), and validated `TravelRoute`.
 - `travel.rs`: `ActorLocation` (`Stationary` vs `InTransit`), `TransitState` machine, `TravelCommand` (`InitiateRotation`, `ContinueTransit`, `AbortRotation`), and fail-closed validation.
 - `transition.rs`: Pure deterministic `transition_travel` function advancing transit progress by integer beats, handling arrivals and aborts, and emitting structured `TravelEvent`s and `TravelEffect`s.
-- `state.rs`: `MatchMapState` with turn counter, multi-actor locations, deterministic FNV-1a state hashing, and `MatchMapObservation` projection with strict fog-of-war redaction (unseen rotating opponents are reported as `Unknown`).
+- `state.rs`: `MatchMapState` with turn counter, multi-actor locations, deterministic FNV-1a state hashing, and `MatchMapObservation` projection with strict fog-of-war redaction (unseen rotating opponents are reported as `Unknown`). The interactive match host consumes this projection and preserves `Observed`/`LastKnown`/`Unknown` certainty in its actor-visible report.
 - `catalog.rs`: `MapScenarioDefinition` and `MapTravelCatalog` (`m9-map-scenario-catalog-v1`) with 4 canonical benchmark scenarios (`top_to_mid_gank`, `bot_to_river_contest`, `mid_to_base_reset`, `aborted_rotation_threat`).
 - `objective.rs`: `ObjectiveKind` (`TopRiverObjective`, `BotRiverObjective`), `ObjectiveStatus` (`Unspawned`, `Active`, `Secured`), and `MatchObjectiveState` (`m9-objective-cycles-v1`) with spawn/respawn turn countdowns and health pools.
 - `vision.rs`: `VisionWard`, `VisionCoverage` (`FullVision`, `LastKnown`, `ConcealedInFog`), `MapVisionState`, `VisionCommand` (`PlaceWard`, `ClearWard`), and `MapVisionGrid` (`m9-vision-control-v1`) with fog-of-war resolution and ward expiration.
@@ -876,11 +874,13 @@ runs/<run-id>/
 └── debrief.md
 ```
 
-This layout is not implemented. Before it becomes authoritative, M1/M2 must
-version the manifest, state, history, ruleset, and scenario schemas and define
-fixture compatibility. SQLite may later index runs, and Parquet may store
-derived analytical tables, but neither should become the sole authoritative
-history format.
+The bounded fixture currently persists replay-validated artifacts through the
+injected `CliRunStore` and `--run-dir` edge. The broader manifest/snapshot/
+history/debrief layout above remains a target for portable external bundles.
+Before it becomes authoritative, its schemas and fixture compatibility policy
+must be versioned. SQLite may later index runs, and Parquet may store derived
+analytical tables, but neither should become the sole authoritative history
+format.
 
 ## Dependency Direction
 
@@ -903,16 +903,17 @@ Verified today:
 
 - Rust toolchain `1.96.0`, pinned in `rust-toolchain.toml`;
 - Rust edition 2024;
-- Cargo binary package;
+- Cargo workspace with a root application package and eight member crates;
 - package license metadata set to MIT;
-- no third-party dependencies.
+- one deferred TTY-edge dependency (`reedline`); deterministic domain crates
+  remain dependency-free.
 - `scripts/check_repository.py` scans the deterministic core modules for async
   syntax/runtime imports, wall-clock imports, and network transport types; its
   focused tests keep those concerns at the adapter edge.
 
 Proposed but not adopted:
 
-- additional Cargo workspace boundaries; ADR-0002 kept M1 in one package; ADR-0004 ([`docs/adr/0004-cargo-workspace-partitioning.md`](docs/adr/0004-cargo-workspace-partitioning.md)) establishes post-alpha multi-crate workspace partitioning;
+- additional runtime/service dependencies beyond the current workspace; ADR-0004 ([`docs/adr/0004-cargo-workspace-partitioning.md`](docs/adr/0004-cargo-workspace-partitioning.md)) records the adopted multi-crate workspace partitioning;
 - Serde/JSON and explicit seeded RNG at edges;
 - Clap or a small interactive shell;
 - Tokio and the official Rust MCP SDK at adapter boundaries;
@@ -923,8 +924,15 @@ Proposed but not adopted:
 ## Multi-Crate Workspace Architecture (ADR-0004)
 
 Under ADR-0004 ([`docs/adr/0004-cargo-workspace-partitioning.md`](docs/adr/0004-cargo-workspace-partitioning.md)), the repository is structured as a Cargo workspace with dedicated member crates and thin application binaries:
-- `crates/foi-kernel`: Pure deterministic transition core, `WorldState`, bounded `Units`, `Turn`, `ActorId`, `RulesetId`, `StreamId`, `DrawId`, `StateHash`, 64-bit FNV-1a state hashing primitives, snapshot/history codecs, and replay verifier.
-- `fog-of-intent` root crate: Depends on `foi-kernel` (re-exported cleanly via `crate::kernel`) and thin binaries (`fog-of-intent` and `fog-of-intent-mcp`).
+- `crates/foi-kernel`: Pure deterministic transition core, bounded identifiers/units, hashing, snapshot/history codecs, and replay verifier.
+- `crates/foi-lane`: One-lane decision windows, resources, branching, coordination, and causal debriefs.
+- `crates/foi-map`: Spatial map, objectives, vision, structures, complete matches, role projections, and match validation.
+- `crates/foi-agent`: Bounded agent policies, communication, leadership, calibration, and synthetic experiment contracts.
+- `crates/foi-protocol`: Actor-visible DTOs and MCP wire codecs.
+- `crates/foi-study`: Human-study protocol and evidence-bound evaluation contracts.
+- `crates/foi-gui`: Presentation-only DTOs, HTML/SVG rendering, parity, transport, and browser-flow contracts.
+- `crates/foi-alpha`: Release governance, compatibility, limitations, guides, reproducibility, and archive audits.
+- `fog-of-intent` root crate: Thin application host/adapters and re-export facades, with binaries `fog-of-intent` and `fog-of-intent-mcp`.
 
 ## Architectural Constraints
 
@@ -945,17 +953,18 @@ Under ADR-0004 ([`docs/adr/0004-cargo-workspace-partitioning.md`](docs/adr/0004-
 
 - The M1 kernel/codec and M2 v3 lane decision-window, branch, coordination,
   objective, strategy-fixture, two-window, final-debrief, retained-resource,
-  intent, and
-  observation contracts are implemented internally, but they are not a
-  playable scenario, external API, migration framework, or persistence service.
-- M3 has typed command contracts, a bounded host fixture, replay-validated
+  intent, and observation contracts are implemented and exercised by the
+  runnable lane fixtures; broader external compatibility and migration remain
+  open.
+- M3 has typed command contracts, bounded lane and match host fixtures, replay-validated
   artifacts, an injected file store, a pure terminal-text projection, and a
   thin line-oriented fixture loop with explicit versioned fixture selection,
   scenario catalog discovery (`--list-scenarios`), dynamic interactive scenario selection (`--select`),
   `--run-dir` wiring, a matched-parent host branch projection,
   machine-checked labeled plain text, process-edge package version reporting,
   and executable complete-transcript regressions;
-  regenerated/graph branching and human accessibility evidence remain open.
+  regenerated/graph branching, human keyboard/screen-reader evidence, and
+  qualitative human experience evidence remain open.
 - M2 still lacks a communication system, full vision geometry, memory decay,
   automatic threat damage, no-choice host scheduling, adaptive pacing, a complete item/resource economy,
   external scenario serialization, a branch tree, and a broader debrief
@@ -971,7 +980,7 @@ Under ADR-0004 ([`docs/adr/0004-cargo-workspace-partitioning.md`](docs/adr/0004-
   dependency graph; the current guard blocks dependency additions until the
   approved scanner and its policy are added or a complete machine-readable defer
   record is bound to the exact dependency identity.
-- Implementation-backed schema, accessibility, and research governance remain
-  incomplete and are tracked in M1 and later roadmap gates. Repository policy
-  and the initial authority ADR now exist, but they do not establish legal
-  clearance or shipped simulation capability.
+- Implementation-backed schema, accessibility, and research governance are
+  present in the M10-M12 contracts, but human/browser/release gates remain
+  incomplete. Repository policy and the authority ADR do not establish legal
+  clearance or published-release readiness.

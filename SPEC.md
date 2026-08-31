@@ -1,7 +1,7 @@
 # Project Specification
 
 **Status:** Active project-state index
-**Last reviewed:** 2026-08-28
+**Last reviewed:** 2026-08-30
 
 This file records verified past, the small active slice, and intentionally
 deferred future work. It is not the product proposal, roadmap, issue tracker, or
@@ -155,14 +155,14 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 
 #### Delivered in the dynamic interactive scenario selection slice — 2026-08-25
 
-- Added pure scenario selection parsing (`parse_scenario_selection`) supporting catalog indices (`1`..=`7`), exact scenario IDs, and short aliases (`m3`, `happy`, `risk`, `conservative`, `m9`, `gui`, `alpha`) case-insensitively with whitespace trimming.
+- Added pure scenario selection parsing (`parse_scenario_selection`) supporting catalog indices (`1`..=`16`), exact scenario IDs, and short aliases (`m3`, `happy`, `risk`, `conservative`, `m9`, `gui`, `alpha`) case-insensitively with whitespace trimming.
 - Added formatted interactive scenario menu (`format_scenario_menu`) and prompt engines (`select_scenario_interactively` and `select_scenario_with_editor` with reedline `ScenarioPrompt`).
 - Added `--select` (`-s`) process CLI option and interactive TTY fallback when launching without explicit `--scenario` flags, with fail-closed argument conflict detection (`ConflictingScenarioSelection`, `DuplicateSelect`).
 - Added comprehensive unit and binary tests across `src/command_loop.rs` and `tests/binary_run_dir.rs`.
 
 #### Delivered in the scenario catalog discovery follow-up — 2026-08-25
 
-- Added `CliScenarioCatalogEntry`, `ScenarioExecutionMode`, and `CLI_SCENARIO_CATALOG` in `src/command_loop.rs` registering all 7 canonical scenarios across M2 strategy playthroughs, M3 reference fixtures, M9 complete matches, M11 GUI presentations, and M12 alpha release checks.
+- Added `CliScenarioCatalogEntry`, `ScenarioExecutionMode`, and `CLI_SCENARIO_CATALOG` in `src/command_loop.rs` registering all 16 canonical scenarios across M2 strategy playthroughs, M3 reference fixtures, M6-M8 benchmark batteries, M9 match runners, M10 study runners, M11 presentation/browser runners, and M12 alpha audits.
 - Added `--list-scenarios` (`-l`) process-level CLI flag and `format_scenario_catalog()` generating aligned, deterministic plain-text table output without ANSI escapes.
 - Added comprehensive unit and binary tests in `src/command_loop.rs` and `tests/binary_run_dir.rs`.
 
@@ -915,6 +915,21 @@ remain open.
   results and an exact `compliance_rate_bp` integer (0–10 000 basis points).
   This is text-shape and width-contract evidence only; human screen-reader or
   braille terminal evidence remains open.
+
+#### Delivered in the qualitative CLI validation slice — 2026-08-30
+
+- Bounded Anchor, Duelist, Novice, and runner playtests exercised the three M2
+  strategy fixtures and the M9 interactive match. The resulting evidence is
+  limited to reproducible protocol behavior and software defects; it does not
+  establish human enjoyment, accessibility, trust, or research validity.
+- M9 match observations now consume `MatchMapState::observe` and preserve
+  `Observed`, `LastKnown`, or payload-free `Unknown` opponent-location
+  certainty. In-progress debriefs fail closed, siege descriptions identify
+  their target team and attacker, and staged actions require an explicit undo
+  before replacement.
+- Focused host, terminal, and executable regressions cover the actor-safety,
+  lifecycle, and presentation contracts while leaving the synchronous
+  transition and replay boundaries unchanged.
 
 ### M4 — First scripted-agent policy boundary — 2026-08-08
 
@@ -2212,7 +2227,7 @@ behavioral research claims remain deferred until study data is collected.
 - [x] `m12-alpha-release-checks-v1` CLI scenario runner (`src/cli/release_checks.rs`, `src/command_loop.rs`, `src/main.rs`) connects the canonical compliant release verification suite to the executable runner, executing multi-domain checks and printing the full Markdown audit report.
 - [x] `m12-reproducibility-bundle-v1` CLI scenario runner (`src/cli/reproducibility.rs`, `src/command_loop.rs`, `src/main.rs`) and MCP tool `reproducibility_bundle_run` (`src/mcp/tools.rs`, `src/mcp/server.rs`) connects the canonical sample reproducibility bundle verification suite to the executable runner and MCP JSON-RPC protocol, auditing 5 artifact packages across 53 sample artifacts with verified 16-hex FNV-1a checksums.
 - [x] `m12-alpha-archive-v1` CLI scenario runner (`src/cli/alpha_archive.rs`, `src/command_loop.rs`, `src/main.rs`) connects the tagged release archive inventory audit suite to the executable runner.
-- [x] MCP JSON-RPC protocol surface parity across all 12 roadmap milestones in `src/mcp/tools.rs` and `src/mcp/server.rs` with 24 tools, 3 prompts, and 7 resources (`fog-of-intent://scenario/rules`, `fog-of-intent://session/state`, `fog-of-intent://release/readiness`, `fog-of-intent://presentation/html`, `fog-of-intent://presentation/browser-flow`, `fog-of-intent://calibration/model-card`, `fog-of-intent://release/archive`), and dedicated standalone binary `fog-of-intent-mcp` (`src/bin/fog-of-intent-mcp.rs`, `Cargo.toml [[bin]]`).
+- [x] MCP JSON-RPC protocol surface parity across all 12 roadmap milestones in `src/mcp/tools.rs` and `src/mcp/server.rs` with 25 tools, 3 prompts, and 8 resources (`fog-of-intent://scenario/rules`, `fog-of-intent://session/state`, `fog-of-intent://release/readiness`, `fog-of-intent://presentation/html`, `fog-of-intent://presentation/browser-flow`, `fog-of-intent://study/cohort-trials`, `fog-of-intent://calibration/model-card`, `fog-of-intent://release/archive`), and dedicated standalone binary `fog-of-intent-mcp` (`src/bin/fog-of-intent-mcp.rs`, `Cargo.toml [[bin]]`).
 - [x] `docs/adr/0004-cargo-workspace-partitioning.md` establishes ADR-0004 formalizing the post-alpha Cargo workspace partitioning architecture across 8 member crates (`foi-kernel`, `foi-lane`, `foi-map`, `foi-agent`, `foi-protocol`, `foi-study`, `foi-gui`, `foi-alpha`) and thin application binaries.
 - [x] Extracted `crates/foi-kernel` member crate under Cargo workspace containing pure deterministic simulation transition kernel (`WorldState`, `Turn`, `ActorId`, `Units`, `RulesetId`, `StreamId`, `DrawId`, `StateHash`, `FNV_OFFSET_BASIS`, `FNV_PRIME`, `hash_bytes`, `Command`, `ValidatedCommand`, `ValidationError`, `History`, `HistoryError`, `ReplayError`, `TransitionRecord`, `ResolvedInputs`, `InputTrace`, `transition`, `TransitionResult`, `TransitionError`), re-exported cleanly via `crate::kernel` in root crate for 100% backward compatibility.
 - [x] Extracted `crates/foi-lane` member crate under Cargo workspace containing pure M2 one-lane decision window, multi-beat windows, lane resources, counterfactual branching, allied proposals, and lane causal debriefs (`LaneSnapshot`, `LaneWindow`, `LaneHistory`, `LaneTransitionRecord`, `LanerObservation`, `LaneIntent`, `LaneOutcome`, `WaveState`, `LaneResources`, `branch_from_window`, `transition_lane`, `observe_player`, `validate_lane_request`, `validate_lane_command`), re-exported cleanly via `crate::lane` in root crate for 100% backward compatibility.
@@ -2226,9 +2241,9 @@ behavioral research claims remain deferred until study data is collected.
 
 #### Verification
 
-- `cargo test --locked` passes 727 unit tests (13 kernel + 79 lane + 633 root lib + 2 MCP binary), 45 integration tests, and 3 doc tests (775 total tests across workspace).
+- `cargo test --locked` passes the current workspace test suite; exact counts are reported by the pinned command and are not hardcoded here.
 - All 15 benchmark catalog scenarios execute deterministically and verify governance compliance, fallback activation, compatibility soundness, data dictionary fog-of-war redactions, compliant claim safety, overclaim rejection, guide prerequisite DAG resolution, reproducibility bundle hash integrity, release archive inventory digests, release readiness checks, critical blocker rejection, and required disclaimer enforcement.
-- Integration tests in `tests/binary_run_dir.rs` and `scripts/verify_mcp_server.py` verify that all scenario runners, dedicated MCP executable, 24 MCP tools, 3 prompts, and 7 resources execute, render structured reports, maintain information boundaries, and exit cleanly with all assertions passing.
+- Integration tests in `tests/binary_run_dir.rs` and `scripts/verify_mcp_server.py` verify that all scenario runners, dedicated MCP executable, 25 MCP tools, 3 prompts, and 8 resources execute, render structured reports, maintain information boundaries, and exit cleanly with all assertions passing.
 - Repository checker confirms zero async, network, or wall-clock primitives in core modules.
 
 #### Deferred

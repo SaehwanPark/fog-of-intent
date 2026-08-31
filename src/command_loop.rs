@@ -1095,7 +1095,12 @@ fn apply_presented_match_with_dimensions<W: Write>(
   }
 }
 
-/// Parse a user selection input (number 1-11, scenario identifier, or short alias) into a scenario.
+/// Return the current 1-based scenario index range used by interactive prompts.
+pub(crate) fn scenario_selection_range() -> String {
+  format!("1-{}", CLI_SCENARIO_CATALOG.len())
+}
+
+/// Parse a user selection input (number 1-16, scenario identifier, or short alias) into a scenario.
 pub fn parse_scenario_selection(input: &str) -> Option<CliApplicationScenario> {
   let trimmed = input.trim();
   if trimmed.is_empty() {
@@ -1292,7 +1297,8 @@ pub fn select_scenario_interactively_with_dimensions<R: BufRead, W: Write>(
 ) -> io::Result<Option<CliApplicationScenario>> {
   output.write_all(format_scenario_menu_with_dimensions(style, dimensions).as_bytes())?;
   output.flush()?;
-  let prompt = style.paint_cyan("scenario [1-13]> ");
+  let selection_range = scenario_selection_range();
+  let prompt = style.paint_cyan(&format!("scenario [{selection_range}]> "));
   let mut line = String::new();
   loop {
     output.write_all(prompt.as_bytes())?;
@@ -1315,7 +1321,7 @@ pub fn select_scenario_interactively_with_dimensions<R: BufRead, W: Write>(
       return Ok(Some(scenario));
     }
     let err_msg = style.paint_red(&format!(
-      "unknown scenario selection: '{trimmed}'. Please enter 1-13, scenario ID, alias, or 'q' to cancel.\n"
+      "unknown scenario selection: '{trimmed}'. Please enter {selection_range}, scenario ID, alias, or 'q' to cancel.\n"
     ));
     output.write_all(err_msg.as_bytes())?;
     output.flush()?;
@@ -2497,6 +2503,7 @@ mod tests {
     assert!(menu.contains("[14] Public Alpha Release Readiness Checks"));
     assert!(menu.contains("[15] Public Alpha Research Reproducibility Bundle"));
     assert!(menu.contains("[16] Public Alpha Tagged Release Archive Inventory"));
+    assert!(menu.contains("Select scenario by number [1-16]"));
     assert!(menu.contains("Press Enter for default [1]"));
   }
 
@@ -2545,6 +2552,12 @@ mod tests {
     assert_eq!(result, Some(CliApplicationScenario::M2StrategyRiskTaking));
     let out_str = String::from_utf8(output).expect("UTF-8 output");
     assert!(out_str.contains("unknown scenario selection: 'invalid'"));
+    assert!(out_str.contains("Please enter 1-16, scenario ID, alias, or 'q' to cancel."));
+  }
+
+  #[test]
+  fn scenario_selection_range_tracks_catalog_size() {
+    assert_eq!(scenario_selection_range(), "1-16");
   }
 
   #[test]
