@@ -1021,6 +1021,9 @@ the complete M3 reference client or human accessibility evidence.
   these lifecycle and presentation contracts.
 - [x] Preserve the synchronous transition and replay boundaries; this slice
   adds no simulation mechanics or persistence authority.
+- [x] Expand M9 contextual `help <command>` topics with usage, summary, and a
+  bounded example for every advertised match command, including the explicit
+  attacker-side meaning of siege syntax.
 
 The qualitative evidence is agent-playtest and software evidence. Human
 keyboard/screen-reader inspection and human experience evidence remain open.

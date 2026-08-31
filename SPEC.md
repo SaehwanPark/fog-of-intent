@@ -930,6 +930,8 @@ remain open.
 - Focused host, terminal, and executable regressions cover the actor-safety,
   lifecycle, and presentation contracts while leaving the synchronous
   transition and replay boundaries unchanged.
+- M9 contextual help now gives each advertised command a stable usage,
+  summary, and example line while keeping the global help catalog unchanged.
 
 ### M4 — First scripted-agent policy boundary — 2026-08-08
 
