@@ -705,6 +705,8 @@ fn binary_runs_interactive_m9_match_and_reaches_victory() {
   let stdout = String::from_utf8(output.stdout).expect("UTF-8 transcript");
 
   assert!(stdout.contains("match_observation: turn=1 status=in_progress"));
+  assert!(stdout.contains("actor: id=4 team=opposing location=unknown"));
+  assert!(!stdout.contains("actor: id=4 team=opposing location=lane:mid:far-side"));
   assert!(stdout.contains("advanced: turn=1 action=rotation"));
   assert!(stdout.contains("advanced: turn=2 action=warding"));
   assert!(stdout.contains("advanced: turn=6 action=objective-contest"));
@@ -714,6 +716,31 @@ fn binary_runs_interactive_m9_match_and_reaches_victory() {
   ));
   assert!(stdout.contains("match_debrief: scenario=scenario-complete-allied-snowball-v1 winner=allied condition=nexus-demolished final_turn=14"));
   assert!(stdout.contains("quit: session=closed"));
+}
+
+#[test]
+fn binary_rejects_in_progress_m9_debrief() {
+  let binary = binary_path();
+  let mut child = Command::new(&binary)
+    .args(["--scenario", "m9-interactive-match-v1", "--color", "never"])
+    .stdin(Stdio::piped())
+    .stdout(Stdio::piped())
+    .stderr(Stdio::piped())
+    .spawn()
+    .expect("spawn m9 interactive match binary");
+
+  child
+    .stdin
+    .as_mut()
+    .expect("stdin")
+    .write_all(b"debrief\nquit\n")
+    .expect("write stdin");
+
+  let output = child.wait_with_output().expect("wait for match binary");
+  assert!(output.status.success(), "stderr: {:?}", output.stderr);
+  let stdout = String::from_utf8(output.stdout).expect("UTF-8 transcript");
+  assert!(stdout.contains("error: match debrief is unavailable until terminal evaluation"));
+  assert!(!stdout.contains("match_debrief:"));
 }
 
 #[test]

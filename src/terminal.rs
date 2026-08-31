@@ -585,13 +585,20 @@ pub fn render_match_output(output: &crate::host::CliMatchOutput) -> String {
       );
       line(&mut text, "actor_locations:");
       for (actor, is_allied, loc) in &obs.actor_locations {
+        let location = match loc {
+          crate::host::MatchActorLocation::Observed(location) => location.as_str().to_owned(),
+          crate::host::MatchActorLocation::LastKnown(location) => {
+            format!("last_known:{}", location.as_str())
+          }
+          crate::host::MatchActorLocation::Unknown => "unknown".to_owned(),
+        };
         line(
           &mut text,
           format_args!(
             "  actor: id={} team={} location={}",
             actor.value(),
             if *is_allied { "allied" } else { "opposing" },
-            loc.as_str()
+            location
           ),
         );
       }
@@ -742,7 +749,7 @@ pub fn render_match_error(error: &crate::host::CliMatchError) -> String {
       format!("tactical execution failed: {err}")
     }
     crate::host::CliMatchError::DebriefUnavailable => {
-      "match debrief is unavailable".to_owned()
+      "match debrief is unavailable until terminal evaluation".to_owned()
     }
     crate::host::CliMatchError::UnknownHelpTopic { topic } => {
       format!("unknown help topic {}; use help for command list", safe_text(topic))
@@ -913,7 +920,7 @@ fn window_name(window: ScenarioWindow) -> &'static str {
 mod tests {
   use super::*;
   use crate::command_loop::CliCommandLoop;
-  use crate::host::CliScenarioHost;
+  use crate::host::{CliMatchHost, CliScenarioHost};
   use crate::kernel::{DrawId, InputTrace, StreamId};
   use crate::lane::{LaneDamage, LaneExecutionInputs, LaneResolvedInputs, LaneWaveResult};
   use std::io::Cursor;
@@ -971,6 +978,23 @@ mod tests {
     assert!(rendered.contains("window: name=first"));
     assert!(rendered.contains("window: name=second"));
     assert!(!rendered.contains("source_terminal_state_hash"));
+  }
+
+  #[test]
+  fn match_observation_redacts_hidden_locations_and_debrief_fails_closed() {
+    let mut host = CliMatchHost::default_session();
+    let observation = host.apply_line("observe").expect("match observation");
+    let rendered = render_match_output(&observation);
+    assert!(rendered.contains("actor: id=4 team=opposing location=unknown"));
+    assert!(!rendered.contains("lane:mid:far-side"));
+
+    let error = host
+      .apply_line("debrief")
+      .expect_err("match is still in progress");
+    assert_eq!(
+      render_match_error(&error),
+      "error: match debrief is unavailable until terminal evaluation"
+    );
   }
 
   #[test]

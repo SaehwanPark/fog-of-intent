@@ -2,6 +2,23 @@
 
 All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
+
+## Unreleased — 2026-08-30
+
+### Changed
+
+- M3 CLI scenario-selection prompts and recovery errors now derive their
+  numeric range from the 16-entry scenario catalog, preventing stale guidance
+  after catalog expansion.
+- Reconciled current README, roadmap, specification, and architecture claims
+  with the verified 16-scenario CLI catalog, 25-tool/8-resource MCP surface,
+  eight-crate workspace, playable lane/match fixtures, and still-pending human,
+  browser, and release evidence gates.
+- M3 match observations now redact unseen opponent locations through the
+  fog-of-war projection, M9 debriefs reject in-progress matches, siege drafts
+  name their target team and attacker, and staged actions cannot be silently
+  replaced. Focused host, terminal, and executable regressions cover these
+  actor-safety and lifecycle contracts.
 ## [0.1.239] - 2026-08-28 (Docs update)
 
 - Reconciled `ROADMAP.md` and `SPEC.md` project-state semantics per the 2026-08-28 Independent Technical Audit (`docs/audit_report_20260828.md`):

@@ -14,6 +14,7 @@ use crate::map::complete_match::{
 use crate::map::complete_match_catalog::CompleteMatchCatalog;
 use crate::map::contest::ObjectiveIntent;
 use crate::map::objective::ObjectiveKind;
+use crate::map::state::OpponentSighting;
 use crate::map::structures::StructureTier;
 use crate::map::topology::{LaneId, MapLocation, TeamSide};
 use crate::map::victory::{MatchStatus, MatchTerminalEvaluation, MatchVictoryCondition};
@@ -25,6 +26,18 @@ pub const CLI_MATCH_HOST_SCHEMA: &str = "m9-interactive-match-host-v1";
 /// Default interactive match scenario ID.
 pub const CLI_INTERACTIVE_MATCH_SCENARIO_ID: &str = "m9-interactive-match-v1";
 
+/// Actor-visible location certainty in a match observation.
+///
+/// Allied actors are always reported as currently observed. Opponents use the
+/// map's fog-of-war projection, so an unseen opponent is represented without a
+/// location rather than exposing authoritative state.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum MatchActorLocation {
+  Observed(MapLocation),
+  LastKnown(MapLocation),
+  Unknown,
+}
+
 /// Actor-visible observation report for the multi-lane match.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MatchObservationReport {
@@ -34,7 +47,7 @@ pub struct MatchObservationReport {
   pub condition: Option<MatchVictoryCondition>,
   pub allied_objectives_secured: u32,
   pub opposing_objectives_secured: u32,
-  pub actor_locations: Vec<(ActorId, bool, MapLocation)>,
+  pub actor_locations: Vec<(ActorId, bool, MatchActorLocation)>,
   pub active_ward_count: usize,
   pub structures_summary: Vec<MatchStructureSummary>,
   pub top_objective_status: &'static str,
@@ -157,10 +170,40 @@ impl CliMatchHost {
   /// Build an actor-visible observation report of the current state.
   pub fn observation_report(&self) -> MatchObservationReport {
     let mut actor_locs = Vec::new();
+    let observer = self
+      .state
+      .map()
+      .actor_locations()
+      .iter()
+      .find_map(|(actor, _)| self.state.map().is_allied(*actor).then_some(*actor));
+    let map_observation = observer.and_then(|actor| self.state.map().observe(actor));
     for (actor, loc) in self.state.map().actor_locations() {
       let is_allied = self.state.map().is_allied(*actor);
-      let target_loc = loc.current_location();
-      actor_locs.push((*actor, is_allied, target_loc));
+      let location = if is_allied {
+        MatchActorLocation::Observed(loc.current_location())
+      } else {
+        map_observation
+          .as_ref()
+          .and_then(|observation| {
+            observation
+              .opposing_sightings
+              .iter()
+              .find(|(id, _)| *id == *actor)
+          })
+          .map_or(
+            MatchActorLocation::Unknown,
+            |(_, sighting)| match sighting {
+              OpponentSighting::Observed { location, .. } => {
+                MatchActorLocation::Observed(*location)
+              }
+              OpponentSighting::LastKnown { location, .. } => {
+                MatchActorLocation::LastKnown(*location)
+              }
+              OpponentSighting::Unknown => MatchActorLocation::Unknown,
+            },
+          )
+      };
+      actor_locs.push((*actor, is_allied, location));
     }
     // Sort actor locations by actor ID for deterministic display
     actor_locs.sort_by_key(|(a, _, _)| a.value());
@@ -317,6 +360,11 @@ impl CliMatchHost {
       return Err(CliMatchError::InvalidSyntax {
         message: "an action is already committed; advance or undo before staging another plan"
           .into(),
+      });
+    }
+    if self.staged_action.is_some() {
+      return Err(CliMatchError::InvalidSyntax {
+        message: "an action is already staged; commit or undo before staging another plan".into(),
       });
     }
     let action_verb = tokens[0].to_ascii_lowercase();
@@ -477,12 +525,17 @@ impl CliMatchHost {
           4_000
         };
 
+        let target_side = match side {
+          TeamSide::Allied => TeamSide::Opposing,
+          TeamSide::Opposing => TeamSide::Allied,
+        };
         let desc = format!(
-          "siege {:?} {:?}{} for {} damage",
-          side,
+          "siege {:?} {:?}{} for {} damage (attacker={:?})",
+          target_side,
           tier,
           lane.map_or("".into(), |l| format!(" on {:?}", l)),
-          raw_damage
+          raw_damage,
+          side
         );
         let action = CompleteMatchAction::SiegeStructure {
           side,
@@ -606,22 +659,7 @@ impl CliMatchHost {
         opposing_objectives_secured: self.state.opposing_objectives_secured(),
       }))
     } else {
-      // In-progress partial review
-      let current_hash = self.state.combined_hash();
-      Ok(CliMatchOutput::Debrief(CompleteMatchResult {
-        scenario_id: self.scenario_id,
-        schema: M9_COMPLETE_MATCH_SCHEMA_V1,
-        initial_hash: self.initial_hash,
-        final_hash: current_hash,
-        final_turn: self.state.turn(),
-        winner: TeamSide::Allied,
-        condition: MatchVictoryCondition::NexusDemolished,
-        phases: self.phases.clone(),
-        total_events: self.total_events,
-        total_effects: self.total_effects,
-        allied_objectives_secured: self.state.allied_objectives_secured(),
-        opposing_objectives_secured: self.state.opposing_objectives_secured(),
-      }))
+      Err(CliMatchError::DebriefUnavailable)
     }
   }
 
@@ -752,6 +790,21 @@ mod tests {
   }
 
   #[test]
+  fn match_observation_redacts_unseen_opponents() {
+    let host = CliMatchHost::default_session();
+    let report = host.observation_report();
+
+    assert_eq!(
+      report
+        .actor_locations
+        .iter()
+        .find(|(actor, _, _)| actor.value() == 4)
+        .map(|(_, _, location)| *location),
+      Some(MatchActorLocation::Unknown)
+    );
+  }
+
+  #[test]
   fn match_host_plans_commits_and_advances_rotation() {
     let mut host = CliMatchHost::default_session();
 
@@ -810,6 +863,35 @@ mod tests {
 
     let obs = host.observation_report();
     assert_eq!(obs.allied_objectives_secured, 1);
+  }
+
+  #[test]
+  fn match_host_describes_siege_target_and_rejects_staged_replacement() {
+    let mut host = CliMatchHost::default_session();
+
+    let staged = host.apply_line("siege outer mid 4000").unwrap();
+    let CliMatchOutput::DraftStaged { description } = staged else {
+      panic!("expected staged siege output");
+    };
+    assert!(description.contains("Opposing OuterTurret"));
+    assert!(description.contains("attacker=Allied"));
+
+    let replacement = host.apply_line("idle").unwrap_err();
+    assert_eq!(
+      replacement,
+      CliMatchError::InvalidSyntax {
+        message: "an action is already staged; commit or undo before staging another plan".into(),
+      }
+    );
+  }
+
+  #[test]
+  fn match_host_requires_terminal_state_before_debrief() {
+    let mut host = CliMatchHost::default_session();
+    assert_eq!(
+      host.apply_line("debrief").unwrap_err(),
+      CliMatchError::DebriefUnavailable
+    );
   }
 
   #[test]

@@ -269,8 +269,9 @@ pub fn select_scenario_with_editor_and_dimensions(
         if let Some(scenario) = parse_scenario_selection(trimmed) {
           return Ok(Some(scenario));
         }
+        let selection_range = crate::command_loop::scenario_selection_range();
         let err_msg = style.paint_red(&format!(
-          "unknown scenario selection: '{trimmed}'. Please enter 1-7, scenario ID, alias, or 'q' to cancel.\n"
+          "unknown scenario selection: '{trimmed}'. Please enter {selection_range}, scenario ID, alias, or 'q' to cancel.\n"
         ));
         stdout.write_all(err_msg.as_bytes())?;
         stdout.flush()?;
