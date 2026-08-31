@@ -1024,6 +1024,8 @@ the complete M3 reference client or human accessibility evidence.
 - [x] Expand M9 contextual `help <command>` topics with usage, summary, and a
   bounded example for every advertised match command, including the explicit
   attacker-side meaning of siege syntax.
+- [x] Preserve existing leading indentation when wrapping nested actor and
+  structure lines at compact terminal widths.
 
 The qualitative evidence is agent-playtest and software evidence. Human
 keyboard/screen-reader inspection and human experience evidence remain open.

@@ -21,6 +21,8 @@ project uses the versioning policy in `README.md`; documentation-only changes do
   actor-safety and lifecycle contracts.
 - M9 contextual help topics now include actionable usage, summaries, examples,
   and the siege attacker-side clarification.
+- Compact-width terminal wrapping now preserves leading indentation for nested
+  actor and structure entries.
 ## [0.1.239] - 2026-08-28 (Docs update)
 
 - Reconciled `ROADMAP.md` and `SPEC.md` project-state semantics per the 2026-08-28 Independent Technical Audit (`docs/audit_report_20260828.md`):

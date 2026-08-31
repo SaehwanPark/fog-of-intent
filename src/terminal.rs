@@ -94,23 +94,31 @@ impl std::fmt::Display for TerminalDimensions {
 }
 
 /// Wrap a single labeled line to fit within `width` characters.
-/// Continuation lines are indented by 2 spaces to preserve label readability and screen-reader hierarchy.
+/// Continuation lines retain existing indentation and add 2 spaces to preserve label readability and screen-reader hierarchy.
 pub fn wrap_labeled_line(line: &str, width: usize) -> Vec<String> {
   // usize::MAX signals unlimited width — no wrapping.
   if width == usize::MAX || line.chars().count() <= width {
     return vec![line.to_owned()];
   }
 
-  let words: Vec<&str> = line.split_whitespace().collect();
+  let content = line.trim_start();
+  let prefix_len = line.len() - content.len();
+  let prefix = &line[..prefix_len];
+  let words: Vec<&str> = content.split_whitespace().collect();
   if words.is_empty() {
     return vec![String::new()];
   }
 
+  // A narrower width cannot preserve the source or continuation indentation;
+  // return the source line rather than repeatedly flushing an unfillable prefix.
+  let continuation_prefix_width = prefix.chars().count().saturating_add(2);
+  if width <= continuation_prefix_width {
+    return vec![line.to_owned()];
+  }
+
   let mut lines: Vec<String> = Vec::new();
-  let mut current_line = String::new();
-  let continuation_indent = "  ";
-  // Effective width for continuation lines (prefix is 2 spaces).
-  let cont_width = width.saturating_sub(continuation_indent.chars().count());
+  let mut current_line = prefix.to_owned();
+  let continuation_indent = format!("{prefix}  ");
 
   /// Drain `current_line`, push to `lines`, and reset with prefix.
   fn flush(current_line: &mut String, lines: &mut Vec<String>, prefix: &str) {
@@ -120,58 +128,47 @@ pub fn wrap_labeled_line(line: &str, width: usize) -> Vec<String> {
   }
 
   for word in &words {
-    // Determine effective max width for the line being built.
-    let is_first_piece = lines.is_empty();
-    let line_limit = if is_first_piece && current_line.is_empty() {
-      width
-    } else if current_line.starts_with(continuation_indent) {
-      // Continuation lines: allowed up to `width` total.
-      width
-    } else {
-      width
-    };
-
     let word_chars: Vec<char> = word.chars().collect();
     let word_len = word_chars.len();
 
     // Try fitting word on current line.
-    let sep_len = if current_line.is_empty() { 0 } else { 1 };
-    if current_line.chars().count() + sep_len + word_len <= line_limit {
+    let has_word = current_line.chars().count() > prefix.chars().count();
+    let sep_len = usize::from(has_word);
+    if current_line.chars().count() + sep_len + word_len <= width {
       if sep_len > 0 {
         current_line.push(' ');
       }
       current_line.push_str(word);
     } else {
       // Word doesn't fit. Flush current line first (unless empty).
-      if !current_line.is_empty() {
-        flush(&mut current_line, &mut lines, continuation_indent);
+      if has_word {
+        flush(&mut current_line, &mut lines, &continuation_indent);
       }
 
       // Now place word characters on continuation lines, hard-breaking as needed.
-      let mut remaining = &word_chars[..];
-      while !remaining.is_empty() {
+      let mut offset = 0;
+      while offset < word_chars.len() {
         // Space available in current continuation line.
         let used = current_line.chars().count();
         let available = width.saturating_sub(used);
         if available == 0 {
-          flush(&mut current_line, &mut lines, continuation_indent);
+          flush(&mut current_line, &mut lines, &continuation_indent);
           continue;
         }
-        let take = remaining.len().min(available);
-        for &ch in &remaining[..take] {
+        let take = (word_chars.len() - offset).min(available);
+        for &ch in &word_chars[offset..offset + take] {
           current_line.push(ch);
         }
-        remaining = &remaining[take..];
-        if !remaining.is_empty() {
+        offset += take;
+        if offset < word_chars.len() {
           // More characters: flush and indent.
-          flush(&mut current_line, &mut lines, continuation_indent);
+          flush(&mut current_line, &mut lines, &continuation_indent);
         }
       }
     }
-    let _ = cont_width; // suppress unused warning; kept for documentation
   }
 
-  if !current_line.is_empty() {
+  if current_line.chars().count() > prefix.chars().count() || lines.is_empty() {
     lines.push(current_line);
   }
 
@@ -1196,10 +1193,28 @@ mod tests {
     }
     assert!(wrapped_40[1].starts_with("  "));
 
+    let nested_line = "  actor: id=4 team=opposing location=lane:mid:far-side";
+    let nested = wrap_labeled_line(nested_line, 40);
+    assert!(nested.len() > 1);
+    assert!(nested[0].starts_with("  actor:"));
+    assert!(
+      nested
+        .iter()
+        .skip(1)
+        .all(|wrapped| wrapped.starts_with("    "))
+    );
+    assert!(nested.iter().all(|wrapped| wrapped.chars().count() <= 40));
+
     let short_line = "quit: status=closed";
     let wrapped_short = wrap_labeled_line(short_line, 80);
     assert_eq!(wrapped_short.len(), 1);
     assert_eq!(wrapped_short[0], short_line);
+
+    assert_eq!(wrap_labeled_line("    ", 2), vec![String::new()]);
+    assert_eq!(wrap_labeled_line("word", 0), vec!["word".to_owned()]);
+    assert_eq!(wrap_labeled_line("word", 2), vec!["word".to_owned()]);
+    assert_eq!(wrap_labeled_line("  word", 1), vec!["  word".to_owned()]);
+    assert_eq!(wrap_labeled_line("  word", 4), vec!["  word".to_owned()]);
   }
 
   #[test]

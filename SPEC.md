@@ -906,9 +906,10 @@ remain open.
   (`src/terminal.rs`) models explicit terminal width/height and provides a
   `--width <cols>` override (valid range 20–500). When `--width` is set, all
   labeled plain text output is wrapped at that width using `wrap_labeled_line`
-  with a 2-space hanging indent for continuation lines; overlong tokens are
-  hard-broken at the character boundary. Without `--width`, no wrapping is
-  applied (unlimited). `audit_cli_presentation_text` checks six deterministic
+  while retaining existing leading indentation and adding two spaces on
+  continuation lines; overlong tokens are hard-broken at the character
+  boundary. Without `--width`, no wrapping is applied (unlimited).
+  `audit_cli_presentation_text` checks six deterministic
   accessibility invariants (ANSI purity, line-width bounds, non-color semantics,
   linear screen-reader flow, control-character sanitization, and well-formed
   structure) and produces a `CliAccessibilityAuditReport` with per-check
@@ -932,6 +933,8 @@ remain open.
   transition and replay boundaries unchanged.
 - M9 contextual help now gives each advertised command a stable usage,
   summary, and example line while keeping the global help catalog unchanged.
+- Compact-width wrapping now retains nested line indentation and adds no
+  terminal-specific state or rendering dependency.
 
 ### M4 — First scripted-agent policy boundary — 2026-08-08
 
