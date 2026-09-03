@@ -50,12 +50,15 @@ sequencing or checklist differs from this file, this file governs current work.
 ## Open Decisions
 
 Decisions that govern future tie-breaks and are therefore tracked separately from
-milestone scope. A milestone does not resolve them by completing.
+milestone scope. A milestone does not resolve them by completing. Options, costs, and
+recommendations for the open rows are in
+[`docs/decision_brief_20260830.md`](docs/decision_brief_20260830.md).
 
 | Decision | Status | Where recorded | What it gates |
 | --- | --- | --- | --- |
-| Is Fog of Intent primarily a game, a research platform, or an explicit hybrid? | **Open** — ADR-0005 proposes the hybrid with an audience/promotion rule; owner ratification pending | [`docs/adr/0005-product-identity-hybrid.md`](docs/adr/0005-product-identity-hybrid.md) | Whether the next slice goes to gameplay quality or research instrumentation; how releases describe readiness |
-| Should actor presence resolve engagements, and does a five-a-side roster earn its cost? | **Open** — deferred until human match-play evidence exists | `ROADMAP.md` Phase 9, "Roster and resolution limit" | Any claim that the match is a full team-fidelity simulation; new combat-resolution mechanics |
+| Is Fog of Intent primarily a game, a research platform, or an explicit hybrid? | **Decided 2026-08-30** — game-first hybrid: primarily a game, research instrument retained, gameplay quality wins tie-breaks and the audience/promotion rule binds | [`docs/adr/0005-product-identity-hybrid.md`](docs/adr/0005-product-identity-hybrid.md) | Every future tie-break between gameplay quality and research instrumentation; how releases describe readiness; priority of human player evidence |
+| Should actor presence resolve engagements, and does a five-a-side roster earn its cost? | **Open** — recommended to resolve as presence-gated resolution before further roster work | `ROADMAP.md` Phase 9, "Roster and resolution limit"; decision brief D2 | Any claim that the match is a full team-fidelity simulation; new combat-resolution mechanics |
+| When does the first human playtest run? | **Open** — recommended informal pass now, full M10 protocol as the validation gate | decision brief D6; audit Priority 3 stop gate | The `human validated` evidence rung; M10 completion; any usability, accessibility, or enjoyment claim |
 
 ## Milestone Map
 

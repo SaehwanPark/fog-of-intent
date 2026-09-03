@@ -1,6 +1,7 @@
 # ADR-0005: Product Identity — Game, Research Platform, or Explicit Hybrid
 
-- **Status:** Proposed — recommendation recorded, owner ratification required
+- **Status:** Accepted — game-first hybrid (owner ratified 2026-08-30, with a priority
+  amendment recorded in *Ratification* below)
 - **Date:** 2026-08-30
 - **Scope:** What Fog of Intent is trying to become, and therefore which audience
   wins a tie-break when gameplay quality and research instrumentation disagree
@@ -80,6 +81,40 @@ Concretely, that means:
 - **C** is already the empirical reality. The proposal is to make it a decision with
   rules, because an accidental hybrid has no tie-breaker and drifts.
 
+## Ratification
+
+The owner ratified this ADR on 2026-08-30 with one amendment that replaces parity with a
+priority rule:
+
+> Fog of Intent is **primarily a game**. It does not give up the research instrument.
+> Entertainment and engagement quality carry the higher weight, and when gameplay
+> quality and research instrumentation disagree, **gameplay wins** — with the losing
+> research obligation recorded rather than silently dropped.
+
+What that means for the proposal above:
+
+- The **audience/promotion rule is adopted unchanged**. Every subsystem still names one
+  primary audience and one promotion path, and a subsystem that can name neither is not
+  built. It is now the guard that keeps "we kept the research instrument" from meaning
+  "instrumentation keeps growing on its own".
+- Rule 3, the player-facing counterpart requirement, is **binding** rather than proposed:
+  a new measurement subsystem needs a player-visible expression or an explicit reason it
+  should not have one.
+- Rules 1, 2, and 4 stand. Evidence levels stay separate and stated; research capability
+  stays at the edges and outside the authoritative transition; identity stays written
+  down instead of implied.
+- The consequence set that applies is **"If C is ratified"**, read with game primacy.
+  The A and B branches below are kept as the decision record and are no longer live.
+- One consequence deserves emphasis: under a game-first identity, **human player evidence
+  is the critical path**. The audit's Priority 3 stop gate is no longer a later phase — it
+  is the gate on the project's central claim. See decision **D6** in
+  `docs/decision_brief_20260830.md` for the proposed two-step (informal pass first, then
+  the M10 protocol as the real validation gate).
+
+The *Decision (proposed)* section is preserved as written so the reasoning behind the
+choice stays readable. Options, costs, and recommendations for the questions this ADR
+leaves open are collected in `docs/decision_brief_20260830.md`.
+
 ## Consequences
 
 ### If C is ratified
@@ -108,9 +143,10 @@ Either is coherent. What is not coherent is the current mixture with no stated r
 
 ## Validation of this decision
 
-Ratification is an owner decision; it needs no new code. It is *testable* in the
-sense that the rule is checkable per subsystem, and `ROADMAP.md` records it as an
-open decision until the owner accepts, rejects, or revises this ADR. Two concrete
+Ratification was an owner decision and needed no new code; it is recorded above and
+mirrored in `README.md` and the `ROADMAP.md` `Open Decisions` table. The rule remains
+*testable* per subsystem, and the revision triggers below are what would reopen it. Two
+concrete
 signals would falsify the hybrid choice over time:
 
 - Player-facing slices stall for several milestones while instrumentation slices

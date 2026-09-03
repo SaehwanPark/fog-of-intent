@@ -9,10 +9,12 @@ uncertainty and living with how teammates interpret and execute them.
 > The active focus is M3 CLI reference gameplay validation. Live empirical human
 > trials, live browser client, and published release tags remain pending.
 
-**Product identity:** this repository is currently *both* a playable simulation and
-a research instrument, and which of those is primary is an **open decision** —
-see [ADR-0005](docs/adr/0005-product-identity-hybrid.md), which proposes keeping
-both first-class under explicit rules and awaits owner ratification. Read the two
+**Product identity:** Fog of Intent is **primarily a game**, and it keeps its research
+instrument. Engagement quality carries the higher weight, and when gameplay quality and
+research instrumentation disagree, gameplay wins — with the losing obligation written
+down rather than dropped. See
+[ADR-0005](docs/adr/0005-product-identity-hybrid.md) (Accepted, 2026-08-30) and the open
+questions in [the decision brief](docs/decision_brief_20260830.md). Read the two
 audiences separately: a runnable scenario is evidence about the game, a verified
 battery is evidence about the instrumentation, and neither proves the other.
 

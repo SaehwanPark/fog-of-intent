@@ -71,6 +71,22 @@ project uses the versioning policy in `README.md`; documentation-only changes do
 
 ### Documentation
 
+- **Product identity ratified as a game-first hybrid.** The owner decided that Fog of
+  Intent is primarily a game and keeps its research instrument, so gameplay quality now
+  wins tie-breaks with research instrumentation while the audience/promotion rule and the
+  binding player-facing counterpart requirement stay in force. `docs/adr/0005-...` moves
+  from Proposed to Accepted with a *Ratification* section recording the amendment, and
+  the README identity statement and `ROADMAP.md` `Open Decisions` row were updated to
+  match. Consequence recorded plainly: human player evidence is now the critical path.
+- Added `docs/decision_brief_20260830.md`, a decision brief for contributors joining the
+  product discussion: a short orientation to what is real versus unvalidated, an index of
+  nine decisions, and for each one the problem, the question to answer, the viable options
+  with costs, and a recommendation — D1 identity (ratified), D2 presence-gated resolution,
+  D3 structures under fog with banded health, D4 reason lines for silent no-effect turns,
+  D5 cost-profile force vocabulary with integer aliases, D6 two-step human playtest plan
+  against the Priority 3 stop gate, D7 publish the reject-on-mismatch contract instead of
+  speculative migrations, D8 breadth freeze with an onboarding exception, D9 claim-promotion
+  notes, plus a 90-minute agenda and an appendix of verified shipped-surface counts.
 - Added `docs/adr/0005-product-identity-hybrid.md` (audit Priority 4) recording the
   game / research-platform / hybrid question as an explicit, currently **open**
   decision. It drafts the case for an explicit hybrid plus an audience-and-promotion
