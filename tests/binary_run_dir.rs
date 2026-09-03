@@ -639,7 +639,7 @@ fn binary_lists_m9_interactive_match_in_scenario_catalog() {
     "catalog missing m9-interactive-match-v1: {stdout}"
   );
   assert!(
-    stdout.contains("Interactive 5v5 Tactical Match Playthrough"),
+    stdout.contains("Interactive Multi-Lane Tactical Match Playthrough"),
     "catalog missing scenario display name: {stdout}"
   );
 }

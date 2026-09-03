@@ -6,6 +6,17 @@
 **Reviewer Role:** Independent, Unbiased External Auditor  
 **Audit Scope:** Full codebase review covering architectural authority, simulation determinism, information-leak prevention, code safety, testing rigor, spec-to-implementation alignment, and future milestone steering.
 
+> **Historical record — superseded.** This audit describes the monolithic pre-workspace
+codebase at `0.1.218`. Several items it lists as *future* actions have since shipped: the
+ADR-0004 eight-crate workspace, the standalone `fog-of-intent-mcp` binary, and the M10-M12
+runners. Read it as dated evidence about determinism, authority, and information boundaries —
+not as the current milestone inventory. Its "Library Complete" phrasing compressed
+implementation maturity and evidence maturity into one axis, which the follow-up audit
+identifies as the root cause of the project-state contradictions.
+> For current project state use [`audit_report_20260828.md`](audit_report_20260828.md),
+> `ROADMAP.md`, and `SPEC.md`. The two-dimensional Implementation State / Evidence State model
+> in `ROADMAP.md` replaces the single-axis status used below.
+
 ---
 
 ## Executive Summary & Scorecard

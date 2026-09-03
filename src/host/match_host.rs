@@ -1,8 +1,8 @@
-//! Interactive 5v5 multi-lane tactical match host.
+//! Interactive multi-lane tactical match host.
 //!
 //! Milestone: M9 — Bounded Multi-Lane Match Prototype
 //!
-//! This host manages interactive 5v5 multi-lane match execution, supporting
+//! This host manages interactive multi-lane match execution, supporting
 //! tactical intent planning (`rotate`, `ward`, `contest`, `siege`, `evaluate`, `idle`),
 //! commitment, step-by-step turn advancement, event/effect tracking, and match debriefs.
 
@@ -113,7 +113,7 @@ impl From<CompleteMatchError> for CliMatchError {
   }
 }
 
-/// Synchronous host managing an interactive 5v5 multi-lane tactical match.
+/// Synchronous host managing an interactive multi-lane tactical match.
 pub struct CliMatchHost {
   pub(crate) scenario_id: &'static str,
   pub(crate) initial_hash: StateHash,

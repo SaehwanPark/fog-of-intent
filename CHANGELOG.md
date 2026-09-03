@@ -32,6 +32,44 @@ project uses the versioning policy in `README.md`; documentation-only changes do
   and the siege attacker-side clarification.
 - Compact-width terminal wrapping now preserves leading indentation for nested
   actor and structure entries.
+- Stopped claiming a five-versus-five match. The interactive match catalog entry is
+  now "Interactive Multi-Lane Tactical Match Playthrough" and its description names
+  the actual roster (3 allied actors vs 1 opposing actor on 3 lanes and 15 nodes);
+  MCP `match_*` tool descriptions, the `match_macro_turn` prompt, the match startup
+  banner, match help text, and the `foi-map` crate description say multi-lane. The
+  `5v5` scenario-selection alias still resolves to the match scenario and is
+  documented as an input alias rather than a roster claim.
+- Corrected the ADR-0004 crate inventory and dependency DAG to the declared
+  manifests: `foi-map` depends only on `foi-kernel`, `foi-agent` on
+  `foi-kernel`+`foi-lane`, `foi-gui` on `foi-kernel`+`foi-lane`+`foi-protocol`, and
+  `foi-study` and `foi-alpha` on no other workspace crate. The recorded sets were
+  planned upper bounds that overstated five of eight crates.
+- Marked `docs/audit_report_20260825.md` as a historical, superseded record of the
+  pre-workspace `0.1.218` tree, and split the roadmap baseline row so the current
+  2026-08-28 audit and the historical audit are no longer listed identically.
+- Renamed M10 in the milestone map to the human usability and accessibility **study
+  framework** and added a "Name and claim limit" note to Phase 10, so the milestone
+  name can no longer be read as completed human or accessibility testing.
+- AGENTS.md no longer calls the project pre-implementation or forbids describing
+  the shipped interactive match, MCP server, run persistence, and 16-scenario
+  catalog as playable; it now lists what is shipped, what remains unevidenced, and
+  the rule that implementation status never implies evidence status.
+
+### Documentation
+
+- Rewrote `HOW_TO_PLAY.md` against the shipped binary. It previously stated that the
+  executable accepts only `--scenario m3-two-window-fixture-v1`, that no second
+  scenario or GUI exists, and that an MCP server is out of scope; it now documents
+  all 16 scenario ids, the real flag set (including `--mcp`, `-l`, `-w`, and the
+  standalone `fog-of-intent-mcp` binary), the separate lane and match verb sets, a
+  verified winning match sequence, `--run-dir` persistence and resume, MCP tool
+  families with verified counts, and an explicit claim-limits section.
+- ROADMAP Phase 9 gains a "Roster and resolution limit" section recording why the
+  match is not five-a-side in substance: canonical rosters are 3v1 and 2v1,
+  `transition_objective_contest` and `transition_structure_siege` consume a team
+  side, declared intent, and damage magnitude without reading actors or positions,
+  actor locations affect shared vision only, and role-specific observations live in
+  the `foi-map` library rather than the interactive match loop.
 ## [0.1.239] - 2026-08-28 (Docs update)
 
 - Reconciled `ROADMAP.md` and `SPEC.md` project-state semantics per the 2026-08-28 Independent Technical Audit (`docs/audit_report_20260828.md`):

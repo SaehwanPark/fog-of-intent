@@ -19,7 +19,7 @@ surface.
 Fog of Intent is organized as a multi-crate Rust 2024 Cargo workspace (`fog-of-intent`
 root crate plus `foi-kernel`, `foi-lane`, `foi-map`, `foi-agent`, `foi-protocol`,
 `foi-study`, `foi-gui`, and `foi-alpha`). The binaries report package metadata,
-run the lane and 5v5 interactive fixtures, print replay and study/presentation/
+run the lane and multi-lane interactive fixtures, print replay and study/presentation/
 release reports, and expose the standalone MCP JSON-RPC server. The lane strategy
 playthroughs and the bounded interactive match fixture can be exercised through
 the CLI; the study,
@@ -152,7 +152,7 @@ _workspace/
 `src/lane/`, `src/map/`, `src/agent/`, `src/alpha/`, and `src/serialization.rs` are the current root crate
 adapter/fixture surface; pure deterministic transition and domain logic lives in `crates/foi-kernel`, `crates/foi-lane`, `crates/foi-map`, `crates/foi-agent`, `crates/foi-protocol`, `crates/foi-study`, `crates/foi-gui`, and `crates/foi-alpha`;
 `src/main.rs` parses bounded process options and runs the fixture loop, using
-reedline only when stdin and stdout are terminals. The lane surface is housed in `crates/foi-lane`, the 5v5 map simulation surface in `crates/foi-map`, the behavioral agent / team communication surface in `crates/foi-agent`, the wire DTO / codec protocol surface in `crates/foi-protocol`, the human usability/accessibility evaluation framework in `crates/foi-study`, the presentation HTML5/SVG parity engine in `crates/foi-gui`, and the release governance / audit gates in `crates/foi-alpha`, cleanly re-exported via root crate facades (`crate::lane::*`, `crate::map::*`, `crate::agent::*`, `crate::protocol::*`, `crate::study::*`, `crate::gui::*`, and `crate::alpha::*`). The other paths are
+reedline only when stdin and stdout are terminals. The lane surface is housed in `crates/foi-lane`, the multi-lane map simulation surface in `crates/foi-map`, the behavioral agent / team communication surface in `crates/foi-agent`, the wire DTO / codec protocol surface in `crates/foi-protocol`, the human usability/accessibility evaluation framework in `crates/foi-study`, the presentation HTML5/SVG parity engine in `crates/foi-gui`, and the release governance / audit gates in `crates/foi-alpha`, cleanly re-exported via root crate facades (`crate::lane::*`, `crate::map::*`, `crate::agent::*`, `crate::protocol::*`, `crate::study::*`, `crate::gui::*`, and `crate::alpha::*`). The other paths are
 project-state, design-source, and agent-workflow artifacts.
 
 `src/agent.rs` is a pure, versioned policy boundary. Its

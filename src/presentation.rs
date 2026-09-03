@@ -173,13 +173,13 @@ pub fn render_presented_error_with_dimensions(
   }
 }
 
-/// Startup banner for an interactive 5v5 multi-lane match session.
+/// Startup banner for an interactive multi-lane match session.
 pub fn render_match_banner_with_dimensions(
   style: PresentationStyle,
   dimensions: TerminalDimensions,
 ) -> String {
   let title = style.paint_bold("Fog of Intent");
-  let scenario = style.paint_dim("5v5 multi-lane tactical match");
+  let scenario = style.paint_dim("multi-lane tactical match");
   let help = style.paint_cyan("?");
   let intro =
     format!("Command your team across Top, Mid, and Bot. Type a command, or {help} for help.");
