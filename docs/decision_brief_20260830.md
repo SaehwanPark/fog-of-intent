@@ -1,7 +1,10 @@
 # Decision Brief: What Must Be Decided to Move Fog of Intent Forward
 
 **Date:** 2026-08-30
-**Status:** For product discussion — one decision ratified (D1), seven open, one standing rule proposed
+**Status:** Ratified 2026-09-03 — the owner accepted every recommendation (D1 ratified
+2026-08-30; D2–D9 accepted 2026-09-03). Implementation now proceeds D4 → D3 → D2 → D5 →
+onboarding scenario → governance docs, one PR per slice, with D6 (human playtest) as the
+standing stop gate: nothing here may be described as human validated until it runs
 **Audience:** new contributors, new hires, and anyone joining a product discussion without project history
 **Related:** `docs/audit_report_20260828.md` (strategy audit), `docs/adr/0005-product-identity-hybrid.md` (identity),
 `ROADMAP.md`, `SPEC.md`, `HOW_TO_PLAY.md`
@@ -170,6 +173,14 @@ facts.
 **Recommendation: (i) now**, phrased from actor-visible state and clearly marked as an
 explanation, revisited only if research consumers need causal no-op attribution. Cheap,
 and it improves the loop this week.
+
+**Status (2026-09-03): ratified and landed** in the `0.1.240` package. `advance` prints
+`turn_note: code=<slug> detail=<sentence>` for every turn that records nothing, covering
+unspawned and already-secured objectives, zero declared force, explicit idle, ward
+placement, and plain terminal evaluation. The note is host-derived from observer-visible
+facts; transitions, events, and hashes are untouched. See `CHANGELOG.md`, `ROADMAP.md`
+Phase 9 "Current M9 interactive match turn-legibility evidence", and `HOW_TO_PLAY.md`. The
+legibility claim is technically verified, **not** human validated (D6 still open).
 
 ## D5 — What vocabulary does the player use for force?
 

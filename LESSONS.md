@@ -1627,3 +1627,26 @@ canonical policy instead of duplicating it.
 - Cause: Backslash handling differs between a replacement tool's match text and its replacement text, so `\n` matched a literal backslash-n but wrote a doubled or real newline; shell `perl`/`sed` one-liners add their own second escaping layer.
 - Resolution: Rebuild from the exact source bytes with a script that constructs the escape explicitly (`chr(92) + "n"`) and splice the corrected line back in, then verify with `od -c` rather than a terminal echo.
 - Prevention: After any edit that touches a line containing backslash escapes, confirm the bytes (`od -c`/`git diff`) and compile before moving on; prefer rewriting the whole literal over partial in-place substitutions.
+
+## Attribute a committed match turn to the state its transition ended with
+
+- Context: Decision D4 (`docs/decision_brief_20260830.md`) added observer-visible reason
+  lines for interactive match turns that record no events and no effects, derived from
+  objective status plus the committed intent (`MatchTurnNote` in `src/host/match_host.rs`).
+- Symptom: A note derived from the objective status captured *before*
+  `CompleteMatchState::apply_action` called a contest "objective-unspawned, spawns in 1
+  turn(s)" on the very turn the objective spawned, and called the player's own successful
+  secure "already secured by allied on turn 4".
+- Cause: `transition_objective_contest` ticks spawn, respawn, and ward-expiry timers before
+  resolving engagement inside a single transition, so a pre-action snapshot is not the
+  condition the declared force resolved against; and a secure recorded on the action's own
+  turn is indistinguishable from a pre-existing secure unless the recorded turn number is
+  compared against the action's turn.
+- Resolution: Derive the note from post-transition status plus `action_turn`, suppress the
+  secured note when `secured_turn == action_turn`, and still report `zero-declared-force`
+  when the same turn recorded a spawn or ward-expiry event, because the declared force
+  itself did nothing.
+- Prevention: When explaining, attributing, or debriefing a committed turn, read the state
+  the transition ended with and use recorded turn numbers to separate "this turn caused
+  it" from "it was already true". Never treat a pre-action snapshot as the condition an
+  action resolved against; one transition can contain several ordered sub-phases.

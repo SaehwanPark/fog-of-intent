@@ -2129,6 +2129,32 @@ replays" deliverable. The interactive match runner is implemented and now has
 actor-safe observation and completion-gated debrief coverage; MCP match
 replays, save/load of match replays, and human pacing evidence remain deferred.
 
+### Current M9 interactive match turn-legibility evidence
+
+- [x] Explain every interactive match turn that records nothing. `CliMatchOutput::Advanced`
+  carries `Option<MatchTurnNote>` (`src/host/match_host.rs`) and the shared match renderer
+  prints `turn_note: code=<slug> detail=<sentence>` (`src/terminal.rs`), so the CLI, the
+  terminal presentation layer, and MCP `match_advance` render identical text. Codes:
+  `objective-unspawned`, `objective-secured`, `zero-declared-force`, `idle-without-action`,
+  `ward-placement-recorded-as-phase`, `terminal-evaluation-only`, `unattributed`.
+- [x] Keep the explanation derived rather than authoritative (decision brief D4 option (i)):
+  the host reads the committed intent, the post-turn objective status, and the recorded
+  counters; no transition, event, phase record, or state hash changed, and no fact appears
+  that the `observe` projection does not already show. Spawn timers tick before engagement
+  inside one transition, so status is read after the turn and a secure recorded on the
+  action's own turn is never reported as a missed target.
+- [x] Cover the four quiet-turn shapes (unspawned objective, previously secured objective,
+  zero declared force, explicit idle), the always-annotated ward and terminal-evaluation
+  turns, the no-note case for a turn that delivers force, and the rendered `turn_note:` line
+  in 4 focused host and terminal tests.
+
+**Audience and promotion evidence** (`src/host/match_host.rs`, `src/terminal.rs`): the
+audience is the human player of `--scenario m9-interactive-match-v1` and the agent driving
+`match_advance`. The promoted claim is "a match turn that changes nothing says why" —
+**technically verified** by the tests above. It is not human validated: no playtest has yet
+established that these notes are understood, believed, or useful, and no enjoyment or
+learnability claim is attached to them.
+
 ### Developer Action Items
 
 - [x] Implement interactive multi-lane CLI session runner (`--scenario m9-interactive-match-v1`), verified at the shipped 3v1 roster; five-a-side is not fielded by any shipped scenario.

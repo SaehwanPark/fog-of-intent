@@ -353,6 +353,8 @@ fn colorize_labeled(text: &str, style: PresentationStyle, is_error: bool) -> Str
       style.paint(RED, line)
     } else if line.starts_with("commit:") || line.starts_with("advanced:") {
       style.paint(GREEN, line)
+    } else if line.starts_with("turn_note:") {
+      style.paint(YELLOW, line)
     } else {
       style.paint(DIM, line)
     };

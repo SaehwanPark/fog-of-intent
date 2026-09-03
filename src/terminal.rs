@@ -647,6 +647,7 @@ pub fn render_match_output(output: &crate::host::CliMatchOutput) -> String {
       events,
       effects,
       concluded,
+      note,
     } => {
       line(
         &mut text,
@@ -660,6 +661,12 @@ pub fn render_match_output(output: &crate::host::CliMatchOutput) -> String {
           }
         ),
       );
+      if let Some(note) = note {
+        line(
+          &mut text,
+          format_args!("turn_note: code={} detail={}", note.code(), note.detail()),
+        );
+      }
     }
     crate::host::CliMatchOutput::Debrief(result) => {
       line(
@@ -746,7 +753,7 @@ fn render_match_help_topic(text: &mut String, topic: &str) {
     ),
     "advance" => (
       "advance",
-      "execute one committed action and advance the match turn",
+      "execute one committed action and advance the match turn; a turn that changes nothing prints a turn_note reason",
       "advance",
     ),
     "debrief" => (
@@ -1061,6 +1068,22 @@ mod tests {
       render_match_error(&error),
       "error: match debrief is unavailable until terminal evaluation"
     );
+  }
+
+  #[test]
+  fn match_advance_prints_the_reason_a_turn_changed_nothing() {
+    let mut host = CliMatchHost::default_session();
+    host.apply_line("contest bot 4000").expect("stage contest");
+    host.apply_line("commit").expect("commit");
+    let advanced = host.apply_line("advance").expect("advance");
+    let rendered = render_match_output(&advanced);
+    assert!(rendered.contains("advanced: turn=1 action=objective-contest events=0 effects=0"));
+    assert!(rendered.contains(
+      "turn_note: code=objective-unspawned detail=bot-river-drake is not on the map yet (spawns in 3 turn(s))"
+    ));
+
+    let help = host.apply_line("help advance").expect("advance help");
+    assert!(render_match_output(&help).contains("prints a turn_note reason"));
   }
 
   #[test]

@@ -13,7 +13,7 @@ use crate::map::complete_match::{
 };
 use crate::map::complete_match_catalog::CompleteMatchCatalog;
 use crate::map::contest::ObjectiveIntent;
-use crate::map::objective::ObjectiveKind;
+use crate::map::objective::{ObjectiveKind, ObjectiveStatus};
 use crate::map::state::OpponentSighting;
 use crate::map::structures::StructureTier;
 use crate::map::topology::{LaneId, MapLocation, TeamSide};
@@ -36,6 +36,96 @@ pub enum MatchActorLocation {
   Observed(MapLocation),
   LastKnown(MapLocation),
   Unknown,
+}
+
+/// Host-side explanation printed alongside an advance that recorded nothing.
+///
+/// The authoritative transitions stay silent about turns that change nothing
+/// (`docs/decision_brief_20260830.md` decision D4): the reason is a property of
+/// the composed session, so the host derives it after the turn from facts the
+/// observer can already read back through `observe` (objective status, ward
+/// state, the committed intent). A note therefore adds no hidden information
+/// and never claims authority over what happened.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum MatchTurnNote {
+  /// The turn committed an explicit idle intent.
+  IdleWithoutAction,
+  /// A ward was placed; warding is recorded as a phase, not as an event.
+  WardPlacement,
+  /// Termination was evaluated without any other change this turn.
+  TerminalEvaluation,
+  /// The declared force targeted an objective that is not on the map yet.
+  ObjectiveUnspawned {
+    objective: ObjectiveKind,
+    turns_until_spawn: u32,
+  },
+  /// The declared force targeted an objective that is already secured.
+  ObjectiveSecured {
+    objective: ObjectiveKind,
+    secured_by: TeamSide,
+    secured_turn: u32,
+    turns_until_respawn: u32,
+  },
+  /// The target objective was active, but the declared force resolved to zero.
+  ZeroDeclaredForce { objective: ObjectiveKind },
+  /// Nothing else explained the empty turn; the counters are still accurate.
+  Unattributed,
+}
+
+impl MatchTurnNote {
+  /// Stable machine-readable label for scripts, MCP clients, and tests.
+  pub const fn code(self) -> &'static str {
+    match self {
+      Self::IdleWithoutAction => "idle-without-action",
+      Self::WardPlacement => "ward-placement-recorded-as-phase",
+      Self::TerminalEvaluation => "terminal-evaluation-only",
+      Self::ObjectiveUnspawned { .. } => "objective-unspawned",
+      Self::ObjectiveSecured { .. } => "objective-secured",
+      Self::ZeroDeclaredForce { .. } => "zero-declared-force",
+      Self::Unattributed => "unattributed",
+    }
+  }
+
+  /// Human-readable explanation in the observer's own vocabulary.
+  pub fn detail(&self) -> String {
+    match self {
+      Self::IdleWithoutAction => "no action was committed this turn, so nothing changed".to_owned(),
+      Self::WardPlacement => {
+        "the ward is placed and counting down; warding is recorded as a phase, not an event"
+          .to_owned()
+      }
+      Self::TerminalEvaluation => {
+        "termination was evaluated; the match is still in progress".to_owned()
+      }
+      Self::ObjectiveUnspawned {
+        objective,
+        turns_until_spawn,
+      } => format!(
+        "{} is not on the map yet (spawns in {} turn(s)), so the declared force had nothing to hit",
+        objective.as_str(),
+        turns_until_spawn
+      ),
+      Self::ObjectiveSecured {
+        objective,
+        secured_by,
+        secured_turn,
+        turns_until_respawn,
+      } => format!(
+        "{} was secured by {} on turn {} and respawns in {} turn(s), so the declared force had nothing to hit",
+        objective.as_str(),
+        secured_by.as_str(),
+        secured_turn,
+        turns_until_respawn
+      ),
+      Self::ZeroDeclaredForce { objective } => format!(
+        "{} is active, but the declared force was zero, so nothing landed",
+        objective.as_str()
+      ),
+      Self::Unattributed => {
+        "the committed action resolved without recording an event or effect".to_owned()
+      }
+    }
+  }
 }
 
 /// Actor-visible observation report for the multi-lane match.
@@ -84,6 +174,8 @@ pub enum CliMatchOutput {
     events: usize,
     effects: usize,
     concluded: bool,
+    /// Explains an advance that recorded nothing; `None` when the turn did work.
+    note: Option<MatchTurnNote>,
   },
   Debrief(CompleteMatchResult),
   Undone,
@@ -641,12 +733,24 @@ impl CliMatchHost {
       }
     }
 
+    // Derived after the terminal evaluation so the note reflects whether this
+    // very turn concluded the match.
+    let note = explain_quiet_turn(
+      &action,
+      &self.state,
+      action_turn,
+      events,
+      effects,
+      self.is_concluded(),
+    );
+
     Ok(CliMatchOutput::Advanced {
       turn: action_turn,
       kind,
       events,
       effects,
       concluded: self.is_concluded(),
+      note,
     })
   }
 
@@ -680,6 +784,101 @@ impl CliMatchHost {
     } else {
       Err(CliMatchError::NothingToUndo)
     }
+  }
+}
+
+/// Explain a turn that recorded nothing, using only observer-visible facts.
+///
+/// Ward placement and terminal evaluation always record zero events and effects
+/// by design, so they are always annotated. Any other quiet turn is annotated
+/// with the reason derived from the committed intent and post-turn state.
+fn explain_quiet_turn(
+  action: &CompleteMatchAction,
+  state: &CompleteMatchState,
+  action_turn: u32,
+  events: usize,
+  effects: usize,
+  concluded: bool,
+) -> Option<MatchTurnNote> {
+  let quiet = events == 0 && effects == 0;
+  match action {
+    CompleteMatchAction::PlaceWard { .. } => Some(MatchTurnNote::WardPlacement),
+    CompleteMatchAction::EvaluateTerminal if !concluded => Some(MatchTurnNote::TerminalEvaluation),
+    // The host stages an explicit idle as a contest turn with no declared intent.
+    CompleteMatchAction::ContestObjectives {
+      allied_intent: None,
+      opposing_intent: None,
+    } if quiet => Some(MatchTurnNote::IdleWithoutAction),
+    CompleteMatchAction::ContestObjectives {
+      allied_intent: Some(intent),
+      ..
+    } => contest_note(intent, state, action_turn, quiet),
+    _ => quiet.then_some(MatchTurnNote::Unattributed),
+  }
+}
+
+/// Explain an objective-contest turn whose declared intent did no work.
+///
+/// The target objective's status outranks a zero declaration: "that objective
+/// is not on the map" explains more than "you declared zero". A zero declaration
+/// is reported even when the turn recorded a spawn or ward-expiry event, because
+/// the declared force itself still did nothing. Statuses are read after the turn
+/// because the transition ticks spawn timers first, so a force that landed on an
+/// objective spawning this very turn must not be reported as missing a target.
+fn contest_note(
+  intent: &ObjectiveIntent,
+  state: &CompleteMatchState,
+  action_turn: u32,
+  quiet: bool,
+) -> Option<MatchTurnNote> {
+  if matches!(intent, ObjectiveIntent::ConcedeAndTrade { .. }) {
+    // A trade records its concession and execution events, so a quiet trade
+    // turn has no observer-visible explanation to give.
+    return quiet.then_some(MatchTurnNote::Unattributed);
+  }
+  let objective = intent_objective(intent);
+  match state.objectives().get(objective).status {
+    // Still unspawned after this turn's spawn tick: nothing was there to hit.
+    ObjectiveStatus::Unspawned { turns_until_spawn } => Some(MatchTurnNote::ObjectiveUnspawned {
+      objective,
+      turns_until_spawn,
+    }),
+    ObjectiveStatus::Secured {
+      secured_by,
+      secured_turn,
+      turns_until_respawn,
+    } if secured_turn != action_turn => Some(MatchTurnNote::ObjectiveSecured {
+      objective,
+      secured_by,
+      secured_turn,
+      turns_until_respawn,
+    }),
+    // Secured during this very turn: the declared force is what secured it.
+    ObjectiveStatus::Secured { .. } => None,
+    ObjectiveStatus::Active { .. } => match declared_force(intent) {
+      Some(0) => Some(MatchTurnNote::ZeroDeclaredForce { objective }),
+      Some(_) => None,
+      None => quiet.then_some(MatchTurnNote::Unattributed),
+    },
+  }
+}
+
+/// Force a direct engagement intent declares, when it declares a magnitude.
+fn declared_force(intent: &ObjectiveIntent) -> Option<u32> {
+  match intent {
+    ObjectiveIntent::Engage { damage, .. } => Some(*damage),
+    ObjectiveIntent::SecureBurst { burst_damage, .. } => Some(*burst_damage),
+    ObjectiveIntent::ZoneOpponents { .. } | ObjectiveIntent::ConcedeAndTrade { .. } => None,
+  }
+}
+
+/// Objective a declared contest intent is aimed at, including trade intents.
+fn intent_objective(intent: &ObjectiveIntent) -> ObjectiveKind {
+  match intent {
+    ObjectiveIntent::Engage { objective, .. }
+    | ObjectiveIntent::SecureBurst { objective, .. }
+    | ObjectiveIntent::ZoneOpponents { objective, .. } => *objective,
+    ObjectiveIntent::ConcedeAndTrade { conceded, .. } => *conceded,
   }
 }
 
@@ -1017,5 +1216,73 @@ mod tests {
 
     let unknown_err = host.apply_line("invalid_verb").unwrap_err();
     assert!(matches!(unknown_err, CliMatchError::UnknownCommand { .. }));
+  }
+
+  /// Stage, commit, and advance one command, returning the turn's note.
+  fn note_for(host: &mut CliMatchHost, command: &str) -> Option<MatchTurnNote> {
+    host
+      .apply_line(command)
+      .unwrap_or_else(|error| panic!("'{command}' should stage: {error:?}"));
+    host.apply_line("commit").expect("commit should succeed");
+    let output = host
+      .apply_line("advance")
+      .unwrap_or_else(|error| panic!("'{command}' should advance: {error:?}"));
+    let CliMatchOutput::Advanced { note, .. } = output else {
+      panic!("expected an advance output for '{command}'");
+    };
+    note
+  }
+
+  #[test]
+  fn quiet_turns_explain_why_nothing_happened() {
+    let mut host = CliMatchHost::default_session();
+    assert_eq!(
+      note_for(&mut host, "contest bot 4000"),
+      Some(MatchTurnNote::ObjectiveUnspawned {
+        objective: ObjectiveKind::BotRiverObjective,
+        turns_until_spawn: 3,
+      })
+    );
+    assert_eq!(
+      note_for(&mut host, "ward bot_river"),
+      Some(MatchTurnNote::WardPlacement)
+    );
+    assert_eq!(
+      note_for(&mut host, "idle"),
+      Some(MatchTurnNote::IdleWithoutAction)
+    );
+    assert_eq!(
+      note_for(&mut host, "evaluate"),
+      Some(MatchTurnNote::TerminalEvaluation)
+    );
+  }
+
+  #[test]
+  fn a_turn_that_delivers_force_prints_no_note() {
+    let mut host = CliMatchHost::default_session();
+    for _ in 0..3 {
+      assert_eq!(
+        note_for(&mut host, "idle"),
+        Some(MatchTurnNote::IdleWithoutAction)
+      );
+    }
+    // The drake is on the map by turn 4, so the declared force lands and there
+    // is nothing to explain; the siege lands too.
+    assert_eq!(note_for(&mut host, "contest bot 4000"), None);
+    assert_eq!(note_for(&mut host, "siege outer mid 4000"), None);
+  }
+
+  #[test]
+  fn zero_declared_force_is_explained_against_an_active_objective() {
+    let mut host = CliMatchHost::default_session();
+    for _ in 0..3 {
+      note_for(&mut host, "idle");
+    }
+    assert_eq!(
+      note_for(&mut host, "contest bot 0"),
+      Some(MatchTurnNote::ZeroDeclaredForce {
+        objective: ObjectiveKind::BotRiverObjective
+      })
+    );
   }
 }

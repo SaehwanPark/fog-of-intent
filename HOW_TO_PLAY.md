@@ -228,8 +228,14 @@ Two things to know before you judge the design:
 - `siege` and `contest` ask you for a raw damage integer. That is mechanics, not
   intent, and it is an open design problem rather than an intended expression of
   the project thesis.
-- An action that changes nothing prints `events=0 effects=0` with no reason. Read
-  the objective status line before concluding the action failed.
+- An action that changes nothing says why. The `advanced:` line is followed by a
+  `turn_note:` line, for example
+  `turn_note: code=objective-unspawned detail=bot-river-drake is not on the map yet (spawns in 3 turn(s)), so the declared force had nothing to hit`.
+  Wards (`ward-placement-recorded-as-phase`), explicit `idle`
+  (`idle-without-action`), a zero damage declaration (`zero-declared-force`), and a
+  plain `evaluate` (`terminal-evaluation-only`) are each named the same way. The
+  note is a host explanation built from facts `observe` already shows you, not an
+  authoritative event: `events` and `effects` stay the authoritative counters.
 
 ### Roster honesty
 
