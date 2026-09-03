@@ -2155,6 +2155,43 @@ audience is the human player of `--scenario m9-interactive-match-v1` and the age
 established that these notes are understood, believed, or useful, and no enjoyment or
 learnability claim is attached to them.
 
+### Current M9 interactive match structure-fog evidence
+
+- [x] Project defensive structures through the player's own sight. `MatchMapState::sector_sight`
+  (`crates/foi-map/src/state.rs`) is now the single visibility rule — own actor sectors plus
+  own-team wards, never the opponent's wards — and `MatchStructureState::observe_for`
+  (`crates/foi-map/src/structures.rs`) consumes it. The interactive host reports
+  `MatchObservationReport::structures` as `Vec<ObservedStructure>` and the shared match
+  renderer prints `structure: side=… tier=… lane=… sector=… state=…`, so CLI, terminal
+  presentation, and MCP `match_observe` render identical text. Exact structure health no
+  longer reaches any player projection; the library still exposes it through
+  `MatchStructureState::structures` for host and research consumers.
+- [x] State the coarse mapping and the bands rather than hiding them (decision brief D3).
+  `StructureTier::observed_sector` maps outer turrets to the lane centre for **both** teams,
+  inner turrets to their own team's side of the lane, and inhibitor turrets, inhibitors, and
+  nexus to the team base sector. `StructureHealthBand` classifies health in exact integer
+  basis points: `failing` at or below 3333 bp, `chipped` at or below 6666 bp, else
+  `pristine`; `destroyed` covers any non-standing structure, and the projection reports no
+  respawn countdown. Sight of a `NotVisible` structure reports no state at all, while the
+  tier, lane, and sector are still carried because which structures exist and where they
+  stand is static map knowledge, not a sighting.
+- [x] Keep the slice projection-only. Authoritative transitions, event counts, phase
+  records, and state hashes are unchanged; `CLI_MATCH_HOST_SCHEMA` moves to
+  `m9-interactive-match-host-v2` because the observation contract changed. 8 `foi-map` tests
+  pin the sight rule, bands, and mapping, 2 host tests pin fog-gated reveal and banding
+  across a siege, and terminal and MCP tests pin the rendered text and the absence of exact
+  health.
+
+**Audience and promotion evidence** (`crates/foi-map/src/state.rs`,
+`crates/foi-map/src/structures.rs`, `src/host/match_host.rs`, `src/terminal.rs`): the
+audience is the human player of `--scenario m9-interactive-match-v1` and the agent driving
+`match_observe`. The promoted claim is "defensive structure state obeys fog of war and is
+reported in coarse bands, never as exact health" — **technically verified** by the tests
+above. It is not human validated: no playtest has established that three bands are enough
+for a player to decide whether to commit a siege, that `not-visible` is understood rather
+than read as "no structure", or that the shared lane-centre sector is not experienced as a
+fog leak. No fun, learnability, or fairness claim is attached.
+
 ### Developer Action Items
 
 - [x] Implement interactive multi-lane CLI session runner (`--scenario m9-interactive-match-v1`), verified at the shipped 3v1 roster; five-a-side is not fielded by any shipped scenario.
@@ -2193,10 +2230,13 @@ surface, and the differences are structural rather than cosmetic:
   it from match vision state, so warding a sector reveals an opposing actor standing
   there (`src/host/match_host.rs`, `crates/foi-map/src/tests/observation.rs`). Before
   this wiring, ward state reached the player only as the `active_wards` count and no
-  ward could ever reveal anything. Structures are still outside that projection: the
-  observation prints every structure's exact health regardless of sight, because no
-  `(lane, tier)` to `MapLocation` mapping exists yet, and inventing one is new model
-  work this roadmap deliberately defers.
+  ward could ever reveal anything. Defensive structures now share that one sight rule:
+  `MatchMapState::sector_sight` is the single visibility decision, and
+  `MatchStructureState::observe_for` projects structures through it as coarse health
+  bands (`docs/decision_brief_20260830.md` decision D3). The `(lane, tier)` to
+  `MapLocation` mapping that was deferred as new model work now exists and is stated
+  explicitly, including the fact that the coarse map places both teams' outer tier in
+  the same lane-centre sector.
 - **Actor presence does not resolve combat.** `transition_objective_contest` and
   `transition_structure_siege` consume a `TeamSide`, a declared intent, and a
   damage magnitude; neither reads actors or positions. Actor locations feed

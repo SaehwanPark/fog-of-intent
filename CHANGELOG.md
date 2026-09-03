@@ -3,7 +3,48 @@
 All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 
-## Unreleased — 2026-09-03
+## Unreleased — 2026-09-03 (structure fog, `0.1.241`)
+
+### Changed
+
+- **Interactive match structures obey fog of war** (`docs/decision_brief_20260830.md` D3).
+  `MatchMapState::sector_sight` (`crates/foi-map/src/state.rs`) is now the single visibility
+  rule — own actor sectors plus own-team wards, and opposing ward coverage is never spent as
+  allied sight — and `observe_with_wards` consumes it instead of re-deriving sight inline.
+  `MatchStructureState::observe_for` projects every structure through that sight, and
+  `MatchObservationReport::structures_summary` becomes `structures: Vec<ObservedStructure>`
+  (`src/host/match_host.rs`).
+- Exact structure health no longer reaches a player surface. The match renderer prints
+  `structure: side=… tier=… lane=… sector=… state=…` where state is one of `pristine`,
+  `chipped`, `failing`, `destroyed`, or `not-visible` (`src/terminal.rs`, MCP
+  `match_observe`); `StructureHealthBand::from_hp` classifies in exact integer basis points
+  (3333 bp and 6666 bp bounds) and any non-standing structure projects as `destroyed`
+  without a respawn countdown. Exact health stays latent host-authoritative state in
+  `MatchStructureState`.
+- `StructureTier::observed_sector` states the coarse `(lane, tier)` to sector mapping: outer
+  turrets of both teams share the lane-centre sector, inner turrets stand on their own
+  team's side of the lane, and inhibitor turrets, inhibitors, and the nexus share the team
+  base sector. Sight of a `NotVisible` structure carries no state, while tier, lane, and
+  sector are still recorded as static map knowledge.
+- Authoritative transitions, events, phase records, and state hashes are unchanged. The
+  observation contract changed shape, so `CLI_MATCH_HOST_SCHEMA` moves to
+  `m9-interactive-match-host-v2`. Ten `foi-map` tests, two host tests, and terminal and MCP
+  render tests cover the sight rule, bands, mapping, fog-gated reveal, and the absence of
+  exact health.
+
+### Documentation
+
+- `HOW_TO_PLAY.md` replaces the "`observe` prints every structure with exact health"
+  inconsistency note with the fog and band contract, including the shared lane-centre sight
+  line and where exact health remains reachable.
+- `ROADMAP.md` Phase 9 records the structure-fog evidence with its audience and promotion
+  claim, and its "warded sight reaches the player" limit no longer defers the structure
+  mapping. `SPEC.md` records the delivered slice and `docs/decision_brief_20260830.md`
+  marks D3 landed.
+- `docs/TERMINOLOGY.md` defines **structure band** and classifies exact structure health as
+  latent host-authoritative against observed structure state as team-visible shared.
+
+## Unreleased — 2026-09-03 (turn legibility, `0.1.240`)
 
 ### Added
 

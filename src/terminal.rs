@@ -14,6 +14,7 @@ use crate::lane::{
   JungleThreatRegion, LaneExecutionRelation, LaneIntent, LaneOutcome, LanePosition, LaneWaveResult,
   ObjectiveDisposition, ScenarioWindow, ThreatReport,
 };
+use crate::map::structures::ObservedStructureStatus;
 
 /// Versioned contract for deterministic, dependency-free terminal text.
 pub const CLI_TERMINAL_TEXT_SCHEMA: &str = "m3-cli-terminal-text-v1";
@@ -599,34 +600,29 @@ pub fn render_match_output(output: &crate::host::CliMatchOutput) -> String {
           ),
         );
       }
-      line(&mut text, "structures_summary:");
-      for s in &obs.structures_summary {
-        if s.tier == crate::map::structures::StructureTier::Nexus {
-          line(
-            &mut text,
-            format_args!(
-              "  structure: {:?} {:?} health={}/{} status={}",
-              s.side,
-              s.tier,
-              s.current_health,
-              s.max_health,
-              if s.standing { "standing" } else { "destroyed" }
-            ),
-          );
-        } else if let Some(lane) = s.lane {
-          line(
-            &mut text,
-            format_args!(
-              "  structure: {:?} {:?} on {:?} health={}/{} status={}",
-              s.side,
-              s.tier,
-              lane,
-              s.current_health,
-              s.max_health,
-              if s.standing { "standing" } else { "destroyed" }
-            ),
-          );
-        }
+      line(&mut text, "structures:");
+      for s in &obs.structures {
+        // The tier and lane of every structure are static map knowledge, so they print
+        // either way. Sector and health band appear only when the team can actually see
+        // the structure: naming the sector of something you cannot see reads like a
+        // sighting, and the projection must not look like one.
+        let lane_part = s
+          .lane
+          .map_or(String::new(), |lane| format!(" lane={}", lane.as_str()));
+        let sector_part = if s.status == ObservedStructureStatus::NotVisible {
+          String::new()
+        } else {
+          format!(" sector={}", s.sector.as_str())
+        };
+        line(
+          &mut text,
+          format_args!(
+            "  structure: side={} tier={}{lane_part}{sector_part} state={}",
+            s.side.as_str(),
+            s.tier.as_str(),
+            s.status.as_str()
+          ),
+        );
       }
     }
     crate::host::CliMatchOutput::DraftStaged { description } => {
@@ -713,7 +709,7 @@ fn render_match_help_topic(text: &mut String, topic: &str) {
   let (usage, summary, example) = match topic {
     "observe" => (
       "observe",
-      "inspect actor-visible map state, objectives, wards, and structures",
+      "inspect actor-visible map state, objectives, wards, and the structures your team can see (bands, not exact health)",
       "observe",
     ),
     "rotate" => (
@@ -1060,6 +1056,18 @@ mod tests {
     let rendered = render_match_output(&observation);
     assert!(rendered.contains("actor: id=4 team=opposing location=unknown"));
     assert!(!rendered.contains("lane:mid:far-side"));
+
+    // Structures obey the same fog, and no exact health reaches the screen: the
+    // opposing base is not projected at all, while the shared mid-lane centre does
+    // show both teams' outer tier as a coarse band.
+    assert!(rendered.contains("structure: side=opposing tier=nexus state=not-visible"));
+    assert!(rendered.contains(
+      "structure: side=opposing tier=outer-turret lane=mid sector=lane:mid:center state=pristine"
+    ));
+    assert!(
+      rendered.contains("structure: side=allied tier=nexus sector=base:allied state=pristine")
+    );
+    assert!(!rendered.contains("health="));
 
     let error = host
       .apply_line("debrief")

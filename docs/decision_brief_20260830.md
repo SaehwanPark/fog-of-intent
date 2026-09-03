@@ -151,6 +151,30 @@ the projection rather than iterating structures directly. This is both a correct
 and a readability fix for the played game, which is what the game-first identity should
 be buying.
 
+**Status (2026-09-03): ratified and landed** in the `0.1.241` package, with one part
+deferred. `MatchMapState::sector_sight` is the single visibility rule and
+`MatchStructureState::observe_for` projects structures through it; the match host, terminal
+renderer, and MCP `match_observe` all consume that projection, so exact structure health no
+longer reaches any player surface. Option (ii) shipped as three integer-basis-point bands
+(`pristine` / `chipped` / `failing`) plus `destroyed` and `not-visible`, and the
+`(lane, tier)` → sector mapping is a pure `StructureTier::observed_sector` in `foi-map`.
+Exact health stays reachable to research consumers through `MatchStructureState`, outside
+the player projection, as recommended. The classification (latent-host-authoritative versus
+team-visible-shared) is recorded in `docs/TERMINOLOGY.md`; the M12 audit-fixture dictionary
+is untouched, since that catalog is an audit input with pinned counts rather than the
+canonical vocabulary.
+
+**Deferred (D3b).** Decision point (d) — whether a structure that has left sight should
+report a labelled stale band from `OpponentSighting::LastKnown` — is not implemented. The
+projection says `not-visible` and never invents a stale observation, so no new vocabulary is
+shipped for it. Adding last-known structure memory is a separate slice with its own
+playtest question: does a player read a stale band as current truth?
+
+See `CHANGELOG.md`, `ROADMAP.md` Phase 9 "Current M9 interactive match structure-fog
+evidence", `SPEC.md`, and `HOW_TO_PLAY.md`. The fog contract is technically verified,
+**not** human validated (D6 still open): no evidence yet that three bands are decision-use,
+nor that `not-visible` is read correctly rather than as "nothing there".
+
 ## D4 — Why did nothing happen?
 
 **Problem.** A committed turn can legitimately change nothing visible. Before the ward
