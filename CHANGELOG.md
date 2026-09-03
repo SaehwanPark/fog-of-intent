@@ -3,6 +3,40 @@
 All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 
+## Unreleased — 2026-09-03
+
+### Added
+
+- Interactive match turns now explain themselves. `CliMatchOutput::Advanced` carries an
+  optional `MatchTurnNote` (`src/host/match_host.rs`) and the shared match renderer prints
+  it as `turn_note: code=<slug> detail=<sentence>` beneath the `advanced:` line
+  (`src/terminal.rs`), so the CLI, the terminal presentation layer, and MCP `match_advance`
+  show identical text. Codes: `objective-unspawned`, `objective-secured`,
+  `zero-declared-force`, `idle-without-action`, `ward-placement-recorded-as-phase`,
+  `terminal-evaluation-only`, `unattributed`.
+- The note is derived, not authoritative — option (i) of `docs/decision_brief_20260830.md`
+  D4. It reads the committed intent, the post-turn objective status, and the recorded
+  counters, so no transition, event, phase record, or state hash changed and no fact appears
+  that `observe` does not already show. Objective status is read after the turn because the
+  contest transition ticks spawn timers first; a secure recorded on the action's own turn is
+  never reported as a missed target.
+- Four focused tests cover the quiet-turn shapes, the no-note case for a turn that does
+  deliver force, and the rendered `turn_note:` line.
+
+### Documentation
+
+- `HOW_TO_PLAY.md` replaces the "changes nothing prints `events=0 effects=0` with no reason"
+  caveat with the `turn_note` contract and its codes.
+- `help advance` names the note so the explanation is discoverable in-game.
+- `ROADMAP.md` Phase 9 records the turn-legibility evidence with its audience and promotion
+  claim; `SPEC.md` records the delivered slice; `docs/decision_brief_20260830.md` marks D4
+  ratified and landed.
+- `docs/TERMINOLOGY.md` defines **turn note** as a derived explanation that is never an
+  event, effect, or authoritative cause.
+- `LESSONS.md` records that a committed turn must be attributed to the state its transition
+  ended with, because one transition ticks spawn, respawn, and ward-expiry timers before it
+  resolves engagement.
+
 ## Unreleased — 2026-08-30
 
 ### Changed

@@ -1989,6 +1989,19 @@ replays to an identical final hash at the library boundary.
   `CompleteMatchState::vision()`, so `ward` purchases information a player can see
   rather than only advancing the `active_wards` counter.
 
+#### Delivered in the interactive match turn-explanation slice — 2026-09-03
+
+- `advance` prints a `turn_note: code=<slug> detail=<sentence>` line under `advanced:`
+  whenever the committed turn recorded nothing the player could attribute, naming
+  `objective-unspawned`, `objective-secured`, `zero-declared-force`, `idle-without-action`,
+  `ward-placement-recorded-as-phase`, `terminal-evaluation-only`, or `unattributed`. A turn
+  that delivers force, or that secures its objective, prints no note.
+- The note is an observer-visible **explanation**, not an authoritative reason:
+  `MatchTurnNote` is derived in `CliMatchHost::apply_advance` from the committed intent,
+  the post-turn objective status, and the recorded event/effect counters, so events, effects,
+  phase records, state hashes, and replay identities are unchanged
+  (`docs/decision_brief_20260830.md` D4 option (i)).
+
 #### Delivered in the bounded human usability and accessibility study protocol follow-up
 
 - `m10-study-protocol-v1`, `m10-finding-taxonomy-v1`, `m10-participant-session-v1`,

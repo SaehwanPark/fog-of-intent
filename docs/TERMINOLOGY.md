@@ -59,6 +59,10 @@ below.
 - **Debrief:** A derived explanation of decisions and outcomes that evaluates
   intent, coordination, execution, and luck using the information available at
   the relevant decision time.
+- **Turn note:** A host-derived explanation attached to a composed match turn that recorded
+  nothing, phrased only from facts the actor-visible observation already reports. It is not
+  an event, effect, or authoritative cause: event counts, history, replay, and state hashes
+  are unaffected, and a turn that did work carries no note.
 
 ## Authority rules
 
