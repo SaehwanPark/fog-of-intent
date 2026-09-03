@@ -134,7 +134,7 @@ pub fn mcp_tools_catalog() -> Vec<McpTool> {
     // Multi-Lane Tactical Match Tools
     McpTool {
       name: "match_observe",
-      description: "Inspect the multi-lane tactical match state (actor positions, active wards, neutral river objectives, structures summary).",
+      description: "Inspect the multi-lane tactical match state (actor positions, active wards, neutral river objectives, and the defensive structures your team can see, reported as coarse bands rather than exact health).",
       input_schema: JsonValue::Object(vec![
         ("type".into(), JsonValue::String("object".into())),
         ("properties".into(), JsonValue::Object(vec![])),

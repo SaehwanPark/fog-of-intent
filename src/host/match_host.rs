@@ -15,13 +15,17 @@ use crate::map::complete_match_catalog::CompleteMatchCatalog;
 use crate::map::contest::ObjectiveIntent;
 use crate::map::objective::{ObjectiveKind, ObjectiveStatus};
 use crate::map::state::OpponentSighting;
-use crate::map::structures::StructureTier;
+use crate::map::structures::{ObservedStructure, StructureTier};
 use crate::map::topology::{LaneId, MapLocation, TeamSide};
 use crate::map::victory::{MatchStatus, MatchTerminalEvaluation, MatchVictoryCondition};
 use crate::map::vision::DEFAULT_WARD_DURATION_TURNS;
 
 /// Schema identifier for the interactive match host.
-pub const CLI_MATCH_HOST_SCHEMA: &str = "m9-interactive-match-host-v1";
+/// Identity of the interactive match host contract, including its observation
+/// projection. `v2` reports defensive structures through the team's sight as coarse
+/// health bands instead of exact global health (`docs/decision_brief_20260830.md`
+/// decision D3); the authoritative transitions, events, and state hashes did not change.
+pub const CLI_MATCH_HOST_SCHEMA: &str = "m9-interactive-match-host-v2";
 
 /// Default interactive match scenario ID.
 pub const CLI_INTERACTIVE_MATCH_SCENARIO_ID: &str = "m9-interactive-match-v1";
@@ -139,20 +143,11 @@ pub struct MatchObservationReport {
   pub opposing_objectives_secured: u32,
   pub actor_locations: Vec<(ActorId, bool, MatchActorLocation)>,
   pub active_ward_count: usize,
-  pub structures_summary: Vec<MatchStructureSummary>,
+  /// Defensive structures as this team can see them: coarse bands under sight, own
+  /// structures always, and no exact health anywhere.
+  pub structures: Vec<ObservedStructure>,
   pub top_objective_status: &'static str,
   pub bot_objective_status: &'static str,
-}
-
-/// Bounded summary of a structure status for display.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct MatchStructureSummary {
-  pub side: TeamSide,
-  pub tier: StructureTier,
-  pub lane: Option<LaneId>,
-  pub current_health: u32,
-  pub max_health: u32,
-  pub standing: bool,
 }
 
 /// Actor-valid results returned by [`CliMatchHost::apply_line`].
@@ -309,17 +304,15 @@ impl CliMatchHost {
     // Sort actor locations by actor ID for deterministic display
     actor_locs.sort_by_key(|(a, _, _)| a.value());
 
-    let mut structures = Vec::new();
-    for entry in self.state.structures().structures() {
-      structures.push(MatchStructureSummary {
-        side: entry.team,
-        tier: entry.tier,
-        lane: entry.lane,
-        current_health: entry.status.current_hp(),
-        max_health: entry.tier.default_max_hp(),
-        standing: entry.status.is_standing(),
-      });
-    }
+    // Structures are projected through the same sight rule that redacts opponent
+    // locations, so the host never decides visibility for itself.
+    let structures = self.state.structures().observe_for(
+      TeamSide::Allied,
+      &self
+        .state
+        .map()
+        .sector_sight(TeamSide::Allied, &ward_coverage),
+    );
 
     let top_entry = self
       .state
@@ -374,7 +367,7 @@ impl CliMatchHost {
       opposing_objectives_secured: self.state.opposing_objectives_secured(),
       actor_locations: actor_locs,
       active_ward_count: self.state.vision().active_wards().len(),
-      structures_summary: structures,
+      structures,
       top_objective_status: top_status,
       bot_objective_status: bot_status,
     }
@@ -981,6 +974,7 @@ fn parse_lane_id(token: &str) -> Result<LaneId, CliMatchError> {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::map::structures::{ObservedStructureStatus, StructureHealthBand};
 
   #[test]
   fn match_host_initializes_and_observes() {
@@ -1283,6 +1277,110 @@ mod tests {
       Some(MatchTurnNote::ZeroDeclaredForce {
         objective: ObjectiveKind::BotRiverObjective
       })
+    );
+  }
+
+  // --- Fog-projected structure observations ---------------------------------
+
+  /// Project the current observation and pick one structure out of it.
+  fn projected_structure(
+    host: &mut CliMatchHost,
+    side: TeamSide,
+    tier: StructureTier,
+    lane: Option<LaneId>,
+  ) -> ObservedStructureStatus {
+    let CliMatchOutput::Observation(report) = host.apply_line("observe").expect("observe") else {
+      panic!("expected observation output");
+    };
+    report
+      .structures
+      .iter()
+      .find(|structure| structure.side == side && structure.tier == tier && structure.lane == lane)
+      .expect("every structure is projected, seen or not")
+      .status
+  }
+
+  #[test]
+  fn structure_observations_obey_team_sight() {
+    let mut host = CliMatchHost::default_session();
+    // Own structures are always projected, and the allied deployment also sees the mid
+    // lane centre, where both teams' outer tier stands.
+    let pristine = ObservedStructureStatus::Standing {
+      band: StructureHealthBand::Pristine,
+    };
+    assert_eq!(
+      projected_structure(&mut host, TeamSide::Allied, StructureTier::Nexus, None),
+      pristine
+    );
+    assert_eq!(
+      projected_structure(
+        &mut host,
+        TeamSide::Opposing,
+        StructureTier::OuterTurret,
+        Some(LaneId::Mid),
+      ),
+      pristine
+    );
+    // The opposing base is fogged: the projection does not even report whether the
+    // nexus still stands.
+    assert_eq!(
+      projected_structure(&mut host, TeamSide::Opposing, StructureTier::Nexus, None),
+      ObservedStructureStatus::NotVisible
+    );
+
+    // A ward buys sight of a sector, and with it the coarse state of what stands there.
+    host.apply_line("ward mid_far_side").expect("stage ward");
+    host.apply_line("commit").expect("commit");
+    host.apply_line("advance").expect("advance");
+    assert_eq!(
+      projected_structure(
+        &mut host,
+        TeamSide::Opposing,
+        StructureTier::InnerTurret,
+        Some(LaneId::Mid),
+      ),
+      pristine
+    );
+  }
+
+  #[test]
+  fn sieged_structures_are_reported_as_bands_not_exact_health() {
+    let mut host = CliMatchHost::default_session();
+    // The outer tier stands in the lane centre the allied team already sees, so each
+    // siege lands as a band change: 1500/3500, then 300/3500 of maximum health.
+    for (damage, band) in [
+      (2_000, StructureHealthBand::Chipped),
+      (1_200, StructureHealthBand::Failing),
+    ] {
+      host
+        .apply_line(&format!("siege outer mid {damage}"))
+        .expect("stage siege");
+      host.apply_line("commit").expect("commit");
+      host.apply_line("advance").expect("advance");
+      assert_eq!(
+        projected_structure(
+          &mut host,
+          TeamSide::Opposing,
+          StructureTier::OuterTurret,
+          Some(LaneId::Mid),
+        ),
+        ObservedStructureStatus::Standing { band }
+      );
+    }
+
+    host
+      .apply_line("siege outer mid 400")
+      .expect("stage the finishing siege");
+    host.apply_line("commit").expect("commit");
+    host.apply_line("advance").expect("advance");
+    assert_eq!(
+      projected_structure(
+        &mut host,
+        TeamSide::Opposing,
+        StructureTier::OuterTurret,
+        Some(LaneId::Mid),
+      ),
+      ObservedStructureStatus::Destroyed
     );
   }
 }

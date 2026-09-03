@@ -1650,3 +1650,31 @@ canonical policy instead of duplicating it.
   the transition ended with and use recorded turn numbers to separate "this turn caused
   it" from "it was already true". Never treat a pre-action snapshot as the condition an
   action resolved against; one transition can contain several ordered sub-phases.
+
+## Do not re-derive visibility, and do not print where a fogged thing stands
+
+- Context: Decision D3 (`docs/decision_brief_20260830.md`) had to put defensive structures
+  behind the match's fog of war. `MatchMapState::observe_with_wards` computed a
+  `team_visible_locations` array inline for actors, while the host projected structures by
+  iterating `MatchStructureState::structures()` directly and printing exact health.
+- Symptom: The first structure projection printed all 26 lines with correct `not-visible`
+  statuses and still broke the existing redaction assertion
+  `assert!(!rendered.contains("lane:mid:far-side"))` in `src/terminal.rs`, because the line
+  for a fogged opposing inner turret named the sector it occupies. Separately, a per-team
+  fog test written naively fails on the shipped map: sight of a lane centre reveals **both**
+  teams' outer-tier turret, because the coarse 15-sector map has no separate outer-tier
+  sector per team.
+- Cause: Two independent visibility rules drift apart, and a projection that re-derives
+  sight outside the actor projection decides for itself what the player may know. Printing
+  any field of a redacted entity can leak: here the sector is static map knowledge, but it
+  reads like a sighting to a whole-text assertion and to a player.
+- Resolution: Extract `MatchMapState::sector_sight(team, ward_coverage) -> SectorSight` as
+  the one rule, consume it from both `observe_with_wards` and
+  `MatchStructureState::observe_for`, and omit sector and band whenever the status is
+  `NotVisible`. State the shared-sector consequence on `StructureTier::observed_sector` and
+  pin it in `one_sight_line_covers_both_teams_in_a_shared_sector`.
+- Prevention: When adding an observation field, first name the single rule that decides it
+  and consume that rule instead of recomputing it; never print identifying detail of an
+  entity the rule has redacted. On a coarse sector map, write fog tests from the sector
+  outward, and re-run whole-text redaction assertions after any renderer change, since they
+  scan every line the projection produces.

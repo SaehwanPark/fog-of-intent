@@ -6,8 +6,8 @@ use core::fmt;
 
 use crate::kernel::{StateHash, hash_bytes};
 
-use super::state::FNV_OFFSET_BASIS;
-use super::topology::{LaneId, TeamSide};
+use super::state::{FNV_OFFSET_BASIS, SectorSight};
+use super::topology::{LaneId, LaneSector, MapLocation, TeamSide};
 
 /// Structural tier in lane and base defense hierarchy.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -50,6 +50,45 @@ impl StructureTier {
       self,
       Self::OuterTurret | Self::InnerTurret | Self::InhibitorTurret
     )
+  }
+
+  /// Sector a structure of this tier occupies on the coarse three-lane map.
+  ///
+  /// The map models nine lane sectors and two bases, while each team fields three
+  /// lane tiers plus base structures, so tiers necessarily share sectors:
+  ///
+  /// - outer turrets of **both** teams stand in the same lane-centre sector, so one
+  ///   sight line sees both teams' outer tier;
+  /// - inner turrets stand on their own team's side of the lane (`NearTower` for the
+  ///   allied team, `FarSide` for the opposing team);
+  /// - inhibitor turrets, inhibitors, and the nexus all share their team's base sector.
+  ///
+  /// A lane tier that carries no lane falls back to its team's base sector rather than
+  /// inventing a lane; `MatchStructureState::new_standard_map` always assigns one.
+  pub const fn observed_sector(self, team: TeamSide, lane: Option<LaneId>) -> MapLocation {
+    match self {
+      Self::OuterTurret => match lane {
+        Some(LaneId::Top) => MapLocation::TOP_CENTER,
+        Some(LaneId::Mid) => MapLocation::MID_CENTER,
+        Some(LaneId::Bot) => MapLocation::BOT_CENTER,
+        None => MapLocation::Base(team),
+      },
+      Self::InnerTurret => match lane {
+        Some(LaneId::Top) => Self::inner_turret_sector(LaneId::Top, team),
+        Some(LaneId::Mid) => Self::inner_turret_sector(LaneId::Mid, team),
+        Some(LaneId::Bot) => Self::inner_turret_sector(LaneId::Bot, team),
+        None => MapLocation::Base(team),
+      },
+      Self::InhibitorTurret | Self::Inhibitor | Self::Nexus => MapLocation::Base(team),
+    }
+  }
+
+  const fn inner_turret_sector(lane: LaneId, team: TeamSide) -> MapLocation {
+    let sector = match team {
+      TeamSide::Allied => LaneSector::NearTower,
+      TeamSide::Opposing => LaneSector::FarSide,
+    };
+    MapLocation::Lane(lane, sector)
   }
 }
 
@@ -115,6 +154,98 @@ impl StructureEntry {
         max_hp,
       },
     }
+  }
+}
+
+/// Coarse health band of a standing structure that a team can see.
+///
+/// Fog costs precision, not just facts (`docs/decision_brief_20260830.md` decision D3):
+/// a seen structure is reported as one of three bands, never as exact hit points. Exact
+/// health stays latent host state, reachable through [`MatchStructureState`] by the host
+/// and by research consumers, never through an observation.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum StructureHealthBand {
+  /// More than two thirds of maximum health remains.
+  Pristine,
+  /// More than one third, and at most two thirds, of maximum health remains.
+  Chipped,
+  /// One third of maximum health or less remains.
+  Failing,
+}
+
+/// Inclusive upper bounds, in exact integer basis points of maximum health, for the
+/// lower two bands. Fixed integers keep classification independent of tier-specific
+/// arithmetic and of floating point entirely.
+const FAILING_HEALTH_BP_MAX: u32 = 3_333;
+const CHIPPED_HEALTH_BP_MAX: u32 = 6_666;
+
+impl StructureHealthBand {
+  pub const fn as_str(self) -> &'static str {
+    match self {
+      Self::Pristine => "pristine",
+      Self::Chipped => "chipped",
+      Self::Failing => "failing",
+    }
+  }
+
+  /// Classify `current_hp` against `max_hp` in exact integer basis points.
+  ///
+  /// A structure with no recorded maximum is treated as undamaged: no standard tier
+  /// behaves that way, and the fallback keeps the function total.
+  pub fn from_hp(current_hp: u32, max_hp: u32) -> Self {
+    let health_bp = if max_hp == 0 {
+      10_000
+    } else {
+      u32::try_from(u64::from(current_hp) * 10_000 / u64::from(max_hp)).unwrap_or(10_000)
+    };
+    if health_bp <= FAILING_HEALTH_BP_MAX {
+      Self::Failing
+    } else if health_bp <= CHIPPED_HEALTH_BP_MAX {
+      Self::Chipped
+    } else {
+      Self::Pristine
+    }
+  }
+}
+
+/// What one team can observe about one defensive structure.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ObservedStructureStatus {
+  /// Standing, and inside the team's sight. Health is a band, not a number.
+  Standing { band: StructureHealthBand },
+  /// Inside the team's sight and not standing. Covers destroyed and respawning
+  /// structures alike: the coarse projection reports no respawn countdown.
+  Destroyed,
+  /// Outside the team's sight. No structure state is projected at all, not even
+  /// whether the structure still stands.
+  NotVisible,
+}
+
+impl ObservedStructureStatus {
+  pub const fn as_str(self) -> &'static str {
+    match self {
+      Self::Standing { band } => band.as_str(),
+      Self::Destroyed => "destroyed",
+      Self::NotVisible => "not-visible",
+    }
+  }
+}
+
+/// One entry of a team-scoped defensive-structure observation.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ObservedStructure {
+  pub side: TeamSide,
+  pub tier: StructureTier,
+  pub lane: Option<LaneId>,
+  /// Sector the structure occupies under [`StructureTier::observed_sector`], so the
+  /// player can tell where to look in order to confirm the projection.
+  pub sector: MapLocation,
+  pub status: ObservedStructureStatus,
+}
+
+impl ObservedStructure {
+  pub const fn observed_sector(&self) -> MapLocation {
+    self.sector
   }
 }
 
@@ -193,6 +324,45 @@ impl MatchStructureState {
 
   pub fn structures(&self) -> &[StructureEntry] {
     &self.structures
+  }
+
+  /// Project structure state for `team` through the sectors that team can see.
+  ///
+  /// `sight` must come from the single visibility rule,
+  /// [`MatchMapState::sector_sight`](super::state::MatchMapState::sector_sight); this
+  /// projection never decides on its own whether a sector is seen.
+  ///
+  /// A team always observes its **own** structures: a team never needs sight to know
+  /// the state of its own defenses, and fog is what the opponent must buy. Own
+  /// structures are still reported as coarse bands, so exact health never reaches a
+  /// player projection either way. Entries keep the canonical structure order.
+  pub fn observe_for(&self, team: TeamSide, sight: &SectorSight) -> Vec<ObservedStructure> {
+    self
+      .structures
+      .iter()
+      .map(|entry| {
+        let sector = entry.tier.observed_sector(entry.team, entry.lane);
+        let status = if entry.team == team || sight[sector.index()] {
+          match entry.status {
+            StructureStatus::Standing { current_hp, max_hp } => ObservedStructureStatus::Standing {
+              band: StructureHealthBand::from_hp(current_hp, max_hp),
+            },
+            StructureStatus::Destroyed { .. } | StructureStatus::Respawning { .. } => {
+              ObservedStructureStatus::Destroyed
+            }
+          }
+        } else {
+          ObservedStructureStatus::NotVisible
+        };
+        ObservedStructure {
+          side: entry.team,
+          tier: entry.tier,
+          lane: entry.lane,
+          sector,
+          status,
+        }
+      })
+      .collect()
   }
 
   pub fn get_structure(

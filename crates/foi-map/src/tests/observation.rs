@@ -80,3 +80,48 @@ fn observe_without_wards_matches_empty_coverage() {
     "observe() must stay a faithful no-ward wrapper"
   );
 }
+
+// --- The single sight rule that every projection consumes -------------------
+
+#[test]
+fn sector_sight_uses_own_actors_and_own_wards() {
+  let state = single_vs_single();
+  let sight = state.sector_sight(
+    TeamSide::Allied,
+    &[(TeamSide::Allied, MapLocation::MID_FAR_SIDE)],
+  );
+  assert!(
+    sight[MapLocation::MID_CENTER.index()],
+    "an actor's own sector is seen"
+  );
+  assert!(
+    sight[MapLocation::MID_FAR_SIDE.index()],
+    "an allied ward reveals its sector"
+  );
+  assert!(
+    !sight[MapLocation::BOT_RIVER.index()],
+    "sectors nobody occupies or wards stay dark"
+  );
+}
+
+#[test]
+fn sector_sight_never_spends_enemy_wards_or_enemy_actors() {
+  let state = single_vs_single();
+  // A caller may hold latent opposing ward positions; they are not allied sight.
+  let allied = state.sector_sight(
+    TeamSide::Allied,
+    &[(TeamSide::Opposing, MapLocation::MID_FAR_SIDE)],
+  );
+  assert!(
+    !allied[MapLocation::MID_FAR_SIDE.index()],
+    "the opposing actor's sector and the opposing ward are both denied to the allied team"
+  );
+
+  // Symmetrically: that sector is the opposing team's own, without any ward at all.
+  let opposing = state.sector_sight(
+    TeamSide::Opposing,
+    &[(TeamSide::Opposing, MapLocation::MID_FAR_SIDE)],
+  );
+  assert!(opposing[MapLocation::MID_FAR_SIDE.index()]);
+  assert!(!opposing[MapLocation::MID_CENTER.index()]);
+}

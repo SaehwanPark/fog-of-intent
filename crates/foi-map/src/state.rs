@@ -6,6 +6,15 @@ pub(crate) const FNV_OFFSET_BASIS: u64 = 0xcbf29ce484222325;
 use super::topology::{MapLocation, TeamSide};
 use super::travel::ActorLocation;
 
+/// Number of discrete sectors on the three-lane map.
+pub const MAP_LOCATION_COUNT: usize = MapLocation::ALL_LOCATIONS.len();
+
+/// Which sectors one team can see, as flags indexed by [`MapLocation::index`].
+///
+/// Produced only by [`MatchMapState::sector_sight`]; consumers index it with a sector
+/// they already hold rather than testing membership some other way.
+pub type SectorSight = [bool; MAP_LOCATION_COUNT];
+
 /// Vision status of an opponent actor in an observation.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum OpponentSighting {
@@ -130,10 +139,10 @@ impl MatchMapState {
 
     let self_location = self.get_actor_location(observer)?.clone();
 
-    // Determine team-visible locations (all locations occupied by allies)
-    let mut team_visible_locations = [false; 15];
-    let mut allied_locations = Vec::new();
+    // Sight is resolved once, here, so no downstream projection re-derives it.
+    let team_visible_locations = self.sector_sight(observer_team, ward_coverage);
 
+    let mut allied_locations = Vec::new();
     for (id, loc) in &self.actor_locations {
       let is_ally = if observer_team == TeamSide::Allied {
         self.is_allied(*id)
@@ -141,19 +150,8 @@ impl MatchMapState {
         self.is_opposing(*id)
       };
 
-      if is_ally {
-        if *id != observer {
-          allied_locations.push((*id, loc.clone()));
-        }
-        team_visible_locations[loc.current_location().index()] = true;
-      }
-    }
-    team_visible_locations[self_location.current_location().index()] = true;
-
-    // Warded sectors see through fog for the warding team only.
-    for &(ward_team, location) in ward_coverage {
-      if ward_team == observer_team {
-        team_visible_locations[location.index()] = true;
+      if is_ally && *id != observer {
+        allied_locations.push((*id, loc.clone()));
       }
     }
 
@@ -190,6 +188,40 @@ impl MatchMapState {
       allied_locations,
       opposing_sightings,
     })
+  }
+
+  /// Sectors `team` can see right now, as flags indexed by [`MapLocation::index`].
+  ///
+  /// This is the **single visibility rule** for the match: a sector is seen when one
+  /// of the team's own actors stands in it, or when that same team has warded it.
+  /// Coverage entries owned by the other team are ignored, so a caller holding latent
+  /// enemy ward positions cannot spend them as allied sight.
+  ///
+  /// Every projection that depends on sight — opposing actor sightings through
+  /// [`Self::observe_with_wards`] and defensive structure state through
+  /// [`super::structures::MatchStructureState::observe_for`] — consumes this array. Hosts
+  /// and renderers must not re-derive visibility downstream of it.
+  pub fn sector_sight(
+    &self,
+    team: TeamSide,
+    ward_coverage: &[(TeamSide, MapLocation)],
+  ) -> SectorSight {
+    let mut sight = [false; MAP_LOCATION_COUNT];
+    for (id, loc) in &self.actor_locations {
+      let is_team_member = match team {
+        TeamSide::Allied => self.is_allied(*id),
+        TeamSide::Opposing => self.is_opposing(*id),
+      };
+      if is_team_member {
+        sight[loc.current_location().index()] = true;
+      }
+    }
+    for &(ward_team, location) in ward_coverage {
+      if ward_team == team {
+        sight[location.index()] = true;
+      }
+    }
+    sight
   }
 
   /// Compute deterministic FNV-1a state hash over authoritative map state.

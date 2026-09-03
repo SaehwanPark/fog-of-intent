@@ -208,6 +208,9 @@ fn mcp_server_handles_multi_lane_tactical_match_tools() {
     .as_str()
     .unwrap();
   assert!(obs_text.contains("match_observation: turn=1 status=in_progress"));
+  // Structures cross the MCP surface through the same fog projection, with no exact health.
+  assert!(obs_text.contains("structure: side=opposing tier=nexus state=not-visible"));
+  assert!(!obs_text.contains("health="));
 
   // Plan rotation
   let rotate_req = r#"{"jsonrpc":"2.0","id":11,"method":"tools/call","params":{"name":"match_plan_action","arguments":{"action":"rotate","actor_id":1,"location":"bot_river"}}}"#;

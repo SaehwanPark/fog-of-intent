@@ -196,10 +196,27 @@ printf '%s\n' 'ward allied 3 mid_far_side 3' commit advance observe quit \
 # actor: id=4 team=opposing location=lane:mid:far-side   (was: location=unknown)
 ```
 
-One inconsistency to expect while you play: `observe` prints every structure on the map
-with exact health, including opposing structures you have no sight of, because the
-observation does not yet project structures through vision. `ROADMAP.md` Phase 9 records
-that as an open limit rather than intended design.
+Structures obey the same fog, and they never print exact health. Each line names the
+sector that carries the structure and one coarse state:
+
+```text
+  structure: side=opposing tier=outer-turret lane=mid sector=lane:mid:center state=pristine
+  structure: side=opposing tier=inner-turret lane=mid state=not-visible
+```
+
+`pristine`, `chipped`, and `failing` are health bands — above two thirds, above one
+third, and one third or less of maximum health — and `destroyed` covers any structure
+that is not standing. A team always sees its own structures, because a team never needs
+vision to know its own defenses. Opposing structures appear only in sectors you can see,
+and `not-visible` withholds everything, including whether the structure still stands;
+the tier and lane still print because which structures exist and which sector holds them
+is static map knowledge, not a sighting. The coarse map places both teams' outer tier in
+the same lane-centre sector, so one sight line there shows both teams; the deep tiers
+share their team's base sector.
+
+Exact health is latent host state. The research API
+(`MatchStructureState::structures`, and `host.state()` in the library) still reports it;
+no player projection — `observe` in the terminal or `match_observe` over MCP — ever does.
 
 A verified winning line, printed turn by turn:
 
@@ -249,7 +266,8 @@ design:
 - Objective contests and structure sieges resolve from **team side, declared intent,
   and damage magnitude**. Neither reads which actors are present or where they stand.
 - Actor locations feed **vision** only: each ally's current location becomes
-  team-visible, wards add coverage, and unseen opponents are projected as `unknown`.
+  team-visible, wards add coverage, unseen opponents are projected as `unknown`, and
+  unseen opposing structures are projected as `not-visible` rather than as exact health.
 
 So a bigger roster would widen what you can see, not change what wins a fight. That
 is why the runners say "multi-lane" rather than "5v5": the map model and roster type

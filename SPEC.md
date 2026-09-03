@@ -1989,6 +1989,28 @@ replays to an identical final hash at the library boundary.
   `CompleteMatchState::vision()`, so `ward` purchases information a player can see
   rather than only advancing the `active_wards` counter.
 
+#### Delivered in the interactive match structure-fog slice — 2026-09-03
+
+- Defensive structures obey fog of war on the player surface. `MatchMapState::sector_sight`
+  is the single visibility rule (own actor sectors plus own-team wards; opposing ward
+  coverage is never spent as allied sight), and `MatchStructureState::observe_for(team,
+  &SectorSight)` projects every structure through it. A team always observes its own
+  structures; an opposing structure outside sight is `NotVisible` and carries no state,
+  not even whether it still stands.
+- Observed structure health is a band, never a number (`docs/decision_brief_20260830.md`
+  D3). `StructureHealthBand::from_hp` classifies in exact integer basis points — `failing`
+  at or below 3333 bp, `chipped` at or below 6666 bp, else `pristine` — and any
+  non-standing structure projects as `Destroyed`, without a respawn countdown. Exact health
+  stays latent host-authoritative state reachable through `MatchStructureState`.
+- `StructureTier::observed_sector` states the coarse `(lane, tier)` to sector mapping as
+  model knowledge: outer turrets of both teams share the lane-centre sector, inner turrets
+  stand on their own team's side of the lane, and inhibitor turrets, inhibitors, and nexus
+  share the team base sector. `SectorSight` is produced only by `sector_sight`; no host,
+  renderer, or adapter re-derives visibility downstream of the projection.
+- The slice is projection-only: authoritative transitions, events, phase records, and state
+  hashes are unchanged. `CLI_MATCH_HOST_SCHEMA` is `m9-interactive-match-host-v2` because
+  the observation contract changed shape.
+
 #### Delivered in the interactive match turn-explanation slice — 2026-09-03
 
 - `advance` prints a `turn_note: code=<slug> detail=<sentence>` line under `advanced:`

@@ -19,6 +19,14 @@ below.
 - **Research inspection:** A separately authorized view for experiment control
   or analysis. It may expose true state, but must never be silently supplied to
   an ordinary actor policy or player-facing interface.
+- **Observed structure state:** What one team can tell about one defensive
+  structure: a coarse health band, `destroyed`, or `not-visible`. Sight of a
+  structure that the team cannot see reports nothing, not even whether it still
+  stands. Observed structure state is team-visible shared information.
+- **Structure band:** The coarse health state an observation reports for a
+  standing structure — `pristine`, `chipped`, or `failing` — classified in exact
+  integer basis points of maximum health. Fog trades precision for secrecy here:
+  a band is a projection, never the latent health value.
 
 ## Decisions and actions
 
@@ -71,6 +79,9 @@ below.
 - An **adapter** translates between the host contract and a presentation or
   external protocol. It must not reimplement legality, transition rules, hidden
   state inference, or persistence authority.
+- Exact structure health is latent host-authoritative data. A player projection
+  reports only the observed structure state above, so an adapter or renderer must
+  not print, summarize, or re-derive an exact health value.
 - An **ordinary actor** can submit only commands and messages permitted by its
   actor authority and actor-visible observation.
 - A **privileged controller** may inspect or generate experiment inputs only in

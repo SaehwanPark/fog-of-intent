@@ -144,10 +144,13 @@ pub use role_observation::{
   BotCarryContext, JunglerContext, MidLanerContext, RoleMatchObservation, RoleSpecificContext,
   SupportContext, TopLanerContext, WaveStateSummary,
 };
-pub use state::{MatchMapObservation, MatchMapState, OpponentSighting};
+pub use state::{
+  MAP_LOCATION_COUNT, MatchMapObservation, MatchMapState, OpponentSighting, SectorSight,
+};
 pub use structures::{
-  INHIBITOR_RESPAWN_TURNS, MatchStructureState, SiegeIntent, StructureEffect, StructureEntry,
-  StructureError, StructureEvent, StructureSiegeResult, StructureStatus, StructureTier,
+  INHIBITOR_RESPAWN_TURNS, MatchStructureState, ObservedStructure, ObservedStructureStatus,
+  SiegeIntent, StructureEffect, StructureEntry, StructureError, StructureEvent,
+  StructureHealthBand, StructureSiegeResult, StructureStatus, StructureTier,
   transition_structure_siege,
 };
 pub use topology::{JungleSide, LaneId, LaneSector, MapLocation, RiverSide, TeamSide};

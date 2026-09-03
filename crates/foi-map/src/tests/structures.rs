@@ -252,3 +252,224 @@ fn state_hash_determinism_and_distinctness() {
 
   assert_ne!(state1.compute_hash(1), state2.compute_hash(1));
 }
+
+// --- Fog-projected structure observation ------------------------------------
+
+use crate::map::state::{MAP_LOCATION_COUNT, SectorSight};
+use crate::map::structures::{ObservedStructure, ObservedStructureStatus, StructureHealthBand};
+use crate::map::topology::MapLocation;
+
+fn sight_at(locations: &[MapLocation]) -> SectorSight {
+  let mut sight = [false; MAP_LOCATION_COUNT];
+  for location in locations {
+    sight[location.index()] = true;
+  }
+  sight
+}
+
+fn projected(
+  observation: &[ObservedStructure],
+  side: TeamSide,
+  tier: StructureTier,
+  lane: Option<LaneId>,
+) -> &ObservedStructure {
+  observation
+    .iter()
+    .find(|structure| structure.side == side && structure.tier == tier && structure.lane == lane)
+    .expect("every structure is projected, seen or not")
+}
+
+#[test]
+fn health_bands_are_integer_basis_points() {
+  assert_eq!(
+    StructureHealthBand::from_hp(3500, 3500),
+    StructureHealthBand::Pristine
+  );
+  // 6668 bp and 6665 bp straddle the two-thirds bound.
+  assert_eq!(
+    StructureHealthBand::from_hp(2334, 3500),
+    StructureHealthBand::Pristine
+  );
+  assert_eq!(
+    StructureHealthBand::from_hp(2333, 3500),
+    StructureHealthBand::Chipped
+  );
+  // 3334 bp and 3331 bp straddle the one-third bound.
+  assert_eq!(
+    StructureHealthBand::from_hp(1167, 3500),
+    StructureHealthBand::Chipped
+  );
+  assert_eq!(
+    StructureHealthBand::from_hp(1166, 3500),
+    StructureHealthBand::Failing
+  );
+  // Exact bounds belong to the lower band.
+  assert_eq!(
+    StructureHealthBand::from_hp(6666, 10000),
+    StructureHealthBand::Chipped
+  );
+  assert_eq!(
+    StructureHealthBand::from_hp(3333, 10000),
+    StructureHealthBand::Failing
+  );
+}
+
+#[test]
+fn tiers_map_to_coarse_map_sectors() {
+  // The coarse map has one centre sector per lane, so both teams' outer tier shares it.
+  assert_eq!(
+    StructureTier::observed_sector(
+      StructureTier::OuterTurret,
+      TeamSide::Allied,
+      Some(LaneId::Mid)
+    ),
+    MapLocation::MID_CENTER
+  );
+  assert_eq!(
+    StructureTier::observed_sector(
+      StructureTier::OuterTurret,
+      TeamSide::Opposing,
+      Some(LaneId::Mid)
+    ),
+    MapLocation::MID_CENTER
+  );
+  // Inner turrets stand on their own team's side of the lane.
+  assert_eq!(
+    StructureTier::observed_sector(
+      StructureTier::InnerTurret,
+      TeamSide::Allied,
+      Some(LaneId::Top)
+    ),
+    MapLocation::TOP_NEAR_TOWER
+  );
+  assert_eq!(
+    StructureTier::observed_sector(
+      StructureTier::InnerTurret,
+      TeamSide::Opposing,
+      Some(LaneId::Top)
+    ),
+    MapLocation::TOP_FAR_SIDE
+  );
+  // The deep tiers share their team's base sector.
+  assert_eq!(
+    StructureTier::observed_sector(
+      StructureTier::Inhibitor,
+      TeamSide::Opposing,
+      Some(LaneId::Bot)
+    ),
+    MapLocation::OPPOSING_BASE
+  );
+  assert_eq!(
+    StructureTier::observed_sector(StructureTier::Nexus, TeamSide::Allied, None),
+    MapLocation::ALLIED_BASE
+  );
+}
+
+#[test]
+fn own_structures_are_always_projected_and_opposing_ones_need_sight() {
+  let state = MatchStructureState::new_standard_map();
+  let observation = state.observe_for(TeamSide::Allied, &sight_at(&[]));
+  assert_eq!(observation.len(), 26);
+
+  for structure in observation.iter().filter(|s| s.side == TeamSide::Allied) {
+    assert_eq!(
+      structure.status,
+      ObservedStructureStatus::Standing {
+        band: StructureHealthBand::Pristine
+      },
+      "a team always sees its own structures, as a band"
+    );
+  }
+  for structure in observation.iter().filter(|s| s.side == TeamSide::Opposing) {
+    assert_eq!(
+      structure.status,
+      ObservedStructureStatus::NotVisible,
+      "{} {:?} must stay fogged without sight of its sector",
+      structure.side.as_str(),
+      structure.tier
+    );
+  }
+}
+
+#[test]
+fn one_sight_line_covers_both_teams_in_a_shared_sector() {
+  let state = MatchStructureState::new_standard_map();
+  let observation = state.observe_for(TeamSide::Allied, &sight_at(&[MapLocation::MID_CENTER]));
+
+  for side in [TeamSide::Allied, TeamSide::Opposing] {
+    assert_eq!(
+      projected(
+        &observation,
+        side,
+        StructureTier::OuterTurret,
+        Some(LaneId::Mid)
+      )
+      .status,
+      ObservedStructureStatus::Standing {
+        band: StructureHealthBand::Pristine
+      },
+      "the shared lane-centre sector shows {side}'s outer tier"
+    );
+  }
+  // The inner tier sits in another sector, and the deep tiers sit in the base.
+  assert_eq!(
+    projected(
+      &observation,
+      TeamSide::Opposing,
+      StructureTier::InnerTurret,
+      Some(LaneId::Mid)
+    )
+    .status,
+    ObservedStructureStatus::NotVisible
+  );
+  assert_eq!(
+    projected(&observation, TeamSide::Opposing, StructureTier::Nexus, None).status,
+    ObservedStructureStatus::NotVisible
+  );
+}
+
+#[test]
+fn destroyed_structures_project_without_respawn_detail() {
+  let mut state = MatchStructureState::new_standard_map();
+  transition_structure_siege(
+    1,
+    &mut state,
+    TeamSide::Allied,
+    SiegeIntent::AttackStructure {
+      tier: StructureTier::OuterTurret,
+      lane: Some(LaneId::Mid),
+      raw_damage: 4000,
+    },
+    None,
+  )
+  .expect("the outer tier is vulnerable from the start");
+
+  // The attacking team sees its own loss without sight; the victim needs sight of the
+  // shared lane-centre sector, and gets the same coarse answer either way.
+  for observation in [
+    state.observe_for(TeamSide::Opposing, &sight_at(&[])),
+    state.observe_for(TeamSide::Allied, &sight_at(&[MapLocation::MID_CENTER])),
+  ] {
+    assert_eq!(
+      projected(
+        &observation,
+        TeamSide::Opposing,
+        StructureTier::OuterTurret,
+        Some(LaneId::Mid)
+      )
+      .status,
+      ObservedStructureStatus::Destroyed
+    );
+  }
+}
+
+#[test]
+fn projection_reports_the_sector_behind_each_observation() {
+  let state = MatchStructureState::new_standard_map();
+  let observation = state.observe_for(TeamSide::Allied, &sight_at(&[]));
+  // The mapping is recorded even where sight denied the status, so a caller can explain
+  // *where* looking would confirm a band without re-deriving the mapping itself.
+  let nexus = projected(&observation, TeamSide::Opposing, StructureTier::Nexus, None);
+  assert_eq!(nexus.status, ObservedStructureStatus::NotVisible);
+  assert_eq!(nexus.sector, MapLocation::OPPOSING_BASE);
+}
