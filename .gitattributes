@@ -1,0 +1,5 @@
+# Simulation fixtures, replay transcripts, and hash chains are byte-exact, so
+# checked-out text must match the stored blobs on every platform. Without this
+# rule a `core.autocrlf=true` checkout rewrites text files to CRLF and breaks
+# `include_str!` fixture round-trip tests.
+* text=auto eol=lf

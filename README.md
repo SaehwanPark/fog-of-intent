@@ -193,6 +193,10 @@ python3 scripts/check_repository.py
 python3 -m unittest discover -s scripts -p 'test_*.py'
 ```
 
+On Windows, `python` replaces `python3`; the contributor scripts read and write
+UTF-8 explicitly and report paths with `/`, so no console codepage change is
+needed.
+
 ## What a run looks like
 
 On a TTY the runner prints a short banner and `> `. Piped captures stay labeled

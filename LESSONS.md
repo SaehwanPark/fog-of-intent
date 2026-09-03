@@ -1603,3 +1603,11 @@ canonical policy instead of duplicating it.
 - Prevention: Run dual MCP entry point tests (`fog-of-intent mcp serve` and `fog-of-intent --mcp`) checking both success responses and boundary sanitization whenever adding domain tools.
 
 
+
+## Keep checked-out fixtures and contributor scripts independent of platform line endings and locale encoding
+
+- Context: Contributors work across Linux, macOS, and Windows, where Git may be installed with `core.autocrlf=true` and Python defaults to a console codepage such as cp1252.
+- Symptom: `serialization::tests::history_fixture_round_trips_and_replays` fails with a CRLF-versus-LF string diff on `include_str!` fixtures, `scripts/check_repository.py` aborts with `UnicodeDecodeError: 'charmap' codec`, and `scripts/test_check_repository.py` fails a hard-tab assertion because the message contains `tests\fixtures\legacy.txt`.
+- Cause: `core.autocrlf=true` rewrites checked-out text to CRLF while the stored blobs and replay-hash fixtures are LF, and implicit-encoding file I/O plus `Path` formatting leak the platform locale and separator into byte-exact comparisons and checker messages.
+- Resolution: Commit `.gitattributes` with `* text=auto eol=lf`, pass `encoding="utf-8"` to every `read_text`/`write_text`/`Popen` pipe in the contributor scripts, and format reported paths with `Path.as_posix()`.
+- Prevention: Never rely on the ambient line ending or locale for fixtures, hashes, or machine-readable messages; verify with `python -X encoding=cp1252 scripts/check_repository.py` and a `git -c core.autocrlf=true clone` probe before claiming cross-platform health.

@@ -18,9 +18,9 @@ class LinkCheckerTests(unittest.TestCase):
       for file in files:
         path = root / file
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text("")
+        path.write_text("", encoding="utf-8")
       markdown_path = root / "README.md"
-      markdown_path.write_text(markdown)
+      markdown_path.write_text(markdown, encoding="utf-8")
       errors: list[str] = []
       check_repository.check_local_links(root, errors)
       return errors
@@ -47,16 +47,19 @@ class CurrentnessCheckerTests(unittest.TestCase):
       (root / "ROADMAP.md").write_text(
         "**Current milestone:** M1 — Kernel\n"
         "## Phase 0\n**Milestone:** M0\n**Status:** Active\n"
-        "## Phase 1\n**Milestone:** M1\n**Status:** Active\n"
+        "## Phase 1\n**Milestone:** M1\n**Status:** Active\n",
+        encoding="utf-8",
       )
       (root / "SPEC.md").write_text(
         "## Present\n"
         "### M0 — Baseline\n\n**Status:** Active\n"
         "### M1 — Kernel\n\n**Status:** Active\n"
-        "## Future\n"
+        "## Future\n",
+        encoding="utf-8",
       )
       (root / "README.md").write_text(
-        "| Current roadmap milestone | M0 — Baseline | Active |\n"
+        "| Current roadmap milestone | M0 — Baseline | Active |\n",
+        encoding="utf-8",
       )
       errors: list[str] = []
       check_repository.check_currentness(root, errors)
@@ -69,13 +72,16 @@ class CurrentnessCheckerTests(unittest.TestCase):
       root = Path(directory)
       (root / "ROADMAP.md").write_text(
         "**Current milestone:** M1 — Kernel\n"
-        "## Phase 10\n**Milestone:** M10\n**Status:** Active\n"
+        "## Phase 10\n**Milestone:** M10\n**Status:** Active\n",
+        encoding="utf-8",
       )
       (root / "SPEC.md").write_text(
-        "## Present\n### M1 — Kernel\n\n**Status:** Active\n## Future\n"
+        "## Present\n### M1 — Kernel\n\n**Status:** Active\n## Future\n",
+        encoding="utf-8",
       )
       (root / "README.md").write_text(
-        "| Current roadmap milestone | M1 — Kernel (Active) |\n"
+        "| Current roadmap milestone | M1 — Kernel (Active) |\n",
+        encoding="utf-8",
       )
       errors: list[str] = []
       check_repository.check_currentness(root, errors)
@@ -86,7 +92,8 @@ class CurrentnessCheckerTests(unittest.TestCase):
       root = Path(directory)
       (root / "README.md").write_text(
         "| Rust package | `0.1.48`, edition 2024, Rust `1.96`, "
-        "no dependencies, single package |\n"
+        "no dependencies, single package |\n",
+        encoding="utf-8",
       )
       errors: list[str] = []
       check_repository.check_documented_package_version(root, "0.1.49", errors)
@@ -97,7 +104,8 @@ class CurrentnessCheckerTests(unittest.TestCase):
       root = Path(directory)
       (root / "README.md").write_text(
         "| Rust package | `0.1.49`, edition 2024, Rust `1.96`, "
-        "no dependencies, single package |\n"
+        "no dependencies, single package |\n",
+        encoding="utf-8",
       )
       errors: list[str] = []
       check_repository.check_documented_package_version(root, "0.1.49", errors)
@@ -108,18 +116,19 @@ class FormatPolicyTests(unittest.TestCase):
   def write_policy_files(self, root: Path) -> None:
     (root / ".editorconfig").write_text(
       "root = true\n\n[*]\nindent_style = space\nindent_size = 2\n"
-      "tab_width = 2\n"
+      "tab_width = 2\n",
+      encoding="utf-8",
     )
-    (root / "rustfmt.toml").write_text("hard_tabs = false\ntab_spaces = 2\n")
+    (root / "rustfmt.toml").write_text("hard_tabs = false\ntab_spaces = 2\n", encoding="utf-8")
 
   def test_accepts_two_space_policy_and_excludes_fixtures(self) -> None:
     with tempfile.TemporaryDirectory() as directory:
       root = Path(directory)
       self.write_policy_files(root)
-      (root / "valid.py").write_text("if True:\n  value = 1\n")
+      (root / "valid.py").write_text("if True:\n  value = 1\n", encoding="utf-8")
       fixture = root / "tests" / "fixtures" / "legacy.py"
       fixture.parent.mkdir(parents=True)
-      fixture.write_text("if True:\n    value = 1\n")
+      fixture.write_text("if True:\n    value = 1\n", encoding="utf-8")
       errors: list[str] = []
 
       check_repository.check_format_policy(root, errors)
@@ -132,7 +141,7 @@ class FormatPolicyTests(unittest.TestCase):
       self.write_policy_files(root)
       fixture = root / "tests" / "fixtures" / "legacy.txt"
       fixture.parent.mkdir(parents=True)
-      fixture.write_text("legacy\tvalue\n")
+      fixture.write_text("legacy\tvalue\n", encoding="utf-8")
       errors: list[str] = []
 
       check_repository.check_format_policy(root, errors)
@@ -152,9 +161,10 @@ class FormatPolicyTests(unittest.TestCase):
     with tempfile.TemporaryDirectory() as directory:
       root = Path(directory)
       (root / ".editorconfig").write_text(
-        "root = true\n\n[*]\nindent_style = space\nindent_size = 2\n"
+        "root = true\n\n[*]\nindent_style = space\nindent_size = 2\n",
+        encoding="utf-8",
       )
-      (root / "rustfmt.toml").write_text("hard_tabs = false\n")
+      (root / "rustfmt.toml").write_text("hard_tabs = false\n", encoding="utf-8")
       errors: list[str] = []
 
       check_repository.check_format_policy(root, errors)
@@ -167,11 +177,12 @@ class FormatPolicyTests(unittest.TestCase):
       root = Path(directory)
       (root / ".editorconfig").write_text(
         "root = true\n\n[*]\nindent_style = tab\nindent_size = 4\n"
-        "tab_width = 4\n"
+        "tab_width = 4\n",
+        encoding="utf-8",
       )
-      (root / "rustfmt.toml").write_text("hard_tabs = true\ntab_spaces = 4\n")
-      (root / "bad.py").write_text("if True:\n    value = 1\n")
-      (root / "bad.rs").write_text("fn main() {\n\treturn;\n}\n")
+      (root / "rustfmt.toml").write_text("hard_tabs = true\ntab_spaces = 4\n", encoding="utf-8")
+      (root / "bad.py").write_text("if True:\n    value = 1\n", encoding="utf-8")
+      (root / "bad.rs").write_text("fn main() {\n\treturn;\n}\n", encoding="utf-8")
       errors: list[str] = []
 
       check_repository.check_format_policy(root, errors)
@@ -187,7 +198,7 @@ class CoreBoundaryTests(unittest.TestCase):
     for relative in check_repository.CORE_RUST_FILES:
       path = root / relative
       path.parent.mkdir(parents=True, exist_ok=True)
-      path.write_text("")
+      path.write_text("", encoding="utf-8")
 
   def test_rejects_async_wall_clock_and_transport_primitives_in_core(self) -> None:
     with tempfile.TemporaryDirectory() as directory:
@@ -203,7 +214,8 @@ class CoreBoundaryTests(unittest.TestCase):
         "async fn run() { value.await; }\n"
         "let closure = async || 1;\n"
         "let moved = async move |value| value;\n"
-        "use std::net::TcpStream;\n"
+        "use std::net::TcpStream;\n",
+        encoding="utf-8",
       )
       errors: list[str] = []
       check_repository.check_core_boundary(root, errors)
@@ -215,13 +227,13 @@ class CoreBoundaryTests(unittest.TestCase):
       self.assertTrue(any("transport type" in error for error in errors))
       self.assertTrue(all("src/kernel/mod.rs" in error for error in errors))
 
-      kernel_path.write_text("fn run() {}\n")
+      kernel_path.write_text("fn run() {}\n", encoding="utf-8")
       errors = []
       check_repository.check_core_boundary(root, errors)
       self.assertEqual(errors, [])
 
       extra = root / "src" / "lane" / "new_core.rs"
-      extra.write_text("use std::time::Instant;\n")
+      extra.write_text("use std::time::Instant;\n", encoding="utf-8")
       errors = []
       check_repository.check_core_boundary(root, errors)
       self.assertTrue(any("unclassified core boundary file" in error for error in errors))
@@ -233,7 +245,7 @@ class CoreBoundaryTests(unittest.TestCase):
       self.write_core_files(root)
       edge = root / "src" / "cli" / "mod.rs"
       edge.parent.mkdir(parents=True, exist_ok=True)
-      edge.write_text("use std::time::Instant;\nasync fn run() {}\n")
+      edge.write_text("use std::time::Instant;\nasync fn run() {}\n", encoding="utf-8")
       errors: list[str] = []
       check_repository.check_core_boundary(root, errors)
       self.assertEqual(errors, [])

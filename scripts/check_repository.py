@@ -285,7 +285,7 @@ def check_format_policy(root: Path = ROOT, errors: list[str] | None = None) -> N
   if not editorconfig_path.exists():
     errors.append(".editorconfig is missing")
   else:
-    editorconfig = editorconfig_path.read_text()
+    editorconfig = editorconfig_path.read_text(encoding="utf-8")
     if not re.search(r"(?m)^\[\*\]\s*$", editorconfig):
       errors.append(".editorconfig is missing its [*] section")
     for key, expected in (
@@ -302,7 +302,7 @@ def check_format_policy(root: Path = ROOT, errors: list[str] | None = None) -> N
     errors.append("rustfmt.toml is missing")
   else:
     try:
-      rustfmt = tomllib.loads(rustfmt_path.read_text())
+      rustfmt = tomllib.loads(rustfmt_path.read_text(encoding="utf-8"))
     except (OSError, tomllib.TOMLDecodeError) as error:
       errors.append(f"rustfmt.toml is unreadable: {error}")
     else:
@@ -314,31 +314,31 @@ def check_format_policy(root: Path = ROOT, errors: list[str] | None = None) -> N
   # Fixture bytes are immutable, but checked-in text still cannot contain tabs.
   for path in _format_text_files(root, include_compatibility_fixtures=True):
     try:
-      text = path.read_text()
+      text = path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
       continue
     if "\t" in text:
-      errors.append(f"{path.relative_to(root)} contains a hard tab")
+      errors.append(f"{path.relative_to(root).as_posix()} contains a hard tab")
 
   # Fixture indentation is syntax-sensitive and is therefore not rewritten.
   for path in _format_text_files(root):
     if path.suffix != ".py":
       continue
     try:
-      tokens = tokenize.generate_tokens(io.StringIO(path.read_text()).readline)
+      tokens = tokenize.generate_tokens(io.StringIO(path.read_text(encoding="utf-8")).readline)
       indentation_levels = [0]
       for token in tokens:
         if token.type == tokenize.INDENT:
           width = len(token.string)
           if width - indentation_levels[-1] != 2:
             errors.append(
-              f"{path.relative_to(root)}:{token.start[0]} must indent Python blocks by two spaces"
+              f"{path.relative_to(root).as_posix()}:{token.start[0]} must indent Python blocks by two spaces"
             )
           indentation_levels.append(width)
         elif token.type == tokenize.DEDENT and len(indentation_levels) > 1:
           indentation_levels.pop()
     except (IndentationError, tokenize.TokenError) as error:
-      errors.append(f"{path.relative_to(root)} has invalid Python indentation: {error}")
+      errors.append(f"{path.relative_to(root).as_posix()} has invalid Python indentation: {error}")
 
 
 def check_target(markdown_path: Path, target: str, root: Path, errors: list[str]) -> None:
@@ -352,10 +352,10 @@ def check_target(markdown_path: Path, target: str, root: Path, errors: list[str]
   try:
     candidate.relative_to(root)
   except ValueError:
-    errors.append(f"{markdown_path.relative_to(root)} -> outside repository: {target}")
+    errors.append(f"{markdown_path.relative_to(root).as_posix()} -> outside repository: {target}")
     return
   if not candidate.exists():
-    errors.append(f"{markdown_path.relative_to(root)} -> {target}")
+    errors.append(f"{markdown_path.relative_to(root).as_posix()} -> {target}")
 
 
 def check_local_links(root: Path = ROOT, errors: list[str] | None = None) -> None:
@@ -365,7 +365,7 @@ def check_local_links(root: Path = ROOT, errors: list[str] | None = None) -> Non
   for markdown_path in root.rglob("*.md"):
     if any(part in {".git", "target"} for part in markdown_path.parts):
       continue
-    text = markdown_path.read_text()
+    text = markdown_path.read_text(encoding="utf-8")
     for target in INLINE_LINK_PATTERN.findall(text):
       check_target(markdown_path, target, root, errors)
     definitions = {
@@ -378,7 +378,7 @@ def check_local_links(root: Path = ROOT, errors: list[str] | None = None) -> Non
       reference = (label or visible).strip().lower()
       if reference not in definitions:
         errors.append(
-          f"{markdown_path.relative_to(root)} -> missing reference: {label}"
+          f"{markdown_path.relative_to(root).as_posix()} -> missing reference: {label}"
         )
 
 
@@ -386,9 +386,9 @@ def check_currentness(root: Path = ROOT, errors: list[str] | None = None) -> Non
   root = root.resolve()
   if errors is None:
     errors = []
-  roadmap = (root / "ROADMAP.md").read_text()
-  spec = (root / "SPEC.md").read_text()
-  readme = (root / "README.md").read_text()
+  roadmap = (root / "ROADMAP.md").read_text(encoding="utf-8")
+  spec = (root / "SPEC.md").read_text(encoding="utf-8")
+  readme = (root / "README.md").read_text(encoding="utf-8")
 
   current_match = re.search(
     r"\*\*Current milestone:\*\*\s+`?(M\d+)\s+—", roadmap
@@ -450,7 +450,7 @@ def check_documented_package_version(
   root: Path, package_version: str, errors: list[str]
 ) -> None:
   """Keep the README package-status row bound to Cargo metadata."""
-  readme = (root / "README.md").read_text()
+  readme = (root / "README.md").read_text(encoding="utf-8")
   match = re.search(
     r"^\| Rust package \| `([^`]+)`, edition 2024, Rust `1\.96`,",
     readme,
@@ -513,7 +513,7 @@ def check_core_boundary(root: Path = ROOT, errors: list[str] | None = None) -> N
     errors.append(f"unclassified core boundary file: {relative}")
   for relative in sorted(discovered):
     path = root / relative
-    for line_number, line in enumerate(path.read_text().splitlines(), 1):
+    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
       if line.lstrip().startswith("//"):
         continue
       for label, pattern in CORE_BOUNDARY_PATTERNS:
@@ -590,8 +590,8 @@ def validate_dependency_exceptions(
 
 def check_package(errors: list[str]) -> None:
   try:
-    manifest = tomllib.loads((ROOT / "Cargo.toml").read_text())
-    toolchain = tomllib.loads((ROOT / "rust-toolchain.toml").read_text())
+    manifest = tomllib.loads((ROOT / "Cargo.toml").read_text(encoding="utf-8"))
+    toolchain = tomllib.loads((ROOT / "rust-toolchain.toml").read_text(encoding="utf-8"))
   except (OSError, tomllib.TOMLDecodeError) as error:
     errors.append(f"unable to parse package metadata: {error}")
     return
@@ -614,7 +614,7 @@ def check_package(errors: list[str]) -> None:
   if not lock_path.exists():
     errors.append("Cargo.lock is missing")
     return
-  lock_match = re.search(r'name = "fog-of-intent"\nversion = "([^"]+)"', lock_path.read_text())
+  lock_match = re.search(r'name = "fog-of-intent"\nversion = "([^"]+)"', lock_path.read_text(encoding="utf-8"))
   if lock_match is None or lock_match.group(1) != package.get("version"):
     errors.append("Cargo.lock package version does not match Cargo.toml")
 
@@ -644,7 +644,7 @@ def check_package(errors: list[str]) -> None:
     exceptions = {}
     if exceptions_path.exists():
       try:
-        exceptions = tomllib.loads(exceptions_path.read_text()).get(
+        exceptions = tomllib.loads(exceptions_path.read_text(encoding="utf-8")).get(
           "dependencies", {}
         )
       except (OSError, tomllib.TOMLDecodeError) as error:
