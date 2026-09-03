@@ -23,6 +23,8 @@ class McpTestClient:
       stdout=subprocess.PIPE,
       stderr=subprocess.PIPE,
       text=True,
+      # JSON-RPC over stdio is UTF-8; never inherit a Windows console codepage.
+      encoding="utf-8",
       bufsize=1,
     )
 

@@ -7,6 +7,15 @@ project uses the versioning policy in `README.md`; documentation-only changes do
 
 ### Changed
 
+- Contributor scripts now run unchanged on Windows, macOS, and Linux:
+  `scripts/check_repository.py` reads with explicit UTF-8, `scripts/verify_mcp_server.py`
+  speaks UTF-8 over the MCP stdio pipes, `scripts/test_check_repository.py` writes
+  UTF-8 fixtures, and checker messages report repository-relative paths with `/`
+  instead of a platform separator.
+- Added `.gitattributes` (`* text=auto eol=lf`) so a `core.autocrlf=true` Windows
+  checkout can no longer rewrite LF fixtures to CRLF and break `include_str!`
+  replay-hash round-trip tests.
+- README contributor checks now note the Windows `python` invocation.
 - M3 CLI scenario-selection prompts and recovery errors now derive their
   numeric range from the 16-entry scenario catalog, preventing stale guidance
   after catalog expansion.
