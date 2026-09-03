@@ -55,8 +55,31 @@ project uses the versioning policy in `README.md`; documentation-only changes do
   catalog as playable; it now lists what is shipped, what remains unevidenced, and
   the rule that implementation status never implies evidence status.
 
+### Fixed
+
+- **Warding now buys information in the played match.** `MatchMapState::observe` derived
+  team visibility only from locations occupied by allies, and the interactive host read
+  nothing else from vision state, so a placed ward could never reveal an opposing actor:
+  the effect reached the player solely as an `active_wards` counter, and the `ward` verb
+  was decorative. `MatchMapState::observe_with_wards(observer, &[(TeamSide,
+  MapLocation)])` now resolves allied ward coverage inside the fog-of-war projection
+  (opposing-team coverage is ignored so latent enemy ward positions cannot be spent as
+  allied sight), and `CliMatchHost::observation_report` supplies coverage from match
+  vision state. Verified end to end: warding the sector holding opposing actor 4 changes
+  its projection from `location=unknown` to `location=lane:mid:far-side`, warding
+  elsewhere leaves it hidden, and `observe()` stays a faithful no-ward wrapper.
+
 ### Documentation
 
+- Added `docs/adr/0005-product-identity-hybrid.md` (audit Priority 4) recording the
+  game / research-platform / hybrid question as an explicit, currently **open**
+  decision. It drafts the case for an explicit hybrid plus an audience-and-promotion
+  rule ("every subsystem names one primary audience and one promotion path; a
+  subsystem that can name neither is not built"), spells out what choosing A or B
+  would require, and awaits owner ratification rather than claiming a decision the
+  project owner has not made. README now states the dual audience plainly and links
+  the ADR; ROADMAP gains an `Open Decisions` table so identity and the actor-presence
+  question are governed separately from milestone scope.
 - Rewrote `HOW_TO_PLAY.md` against the shipped binary. It previously stated that the
   executable accepts only `--scenario m3-two-window-fixture-v1`, that no second
   scenario or GUI exists, and that an MCP server is out of scope; it now documents

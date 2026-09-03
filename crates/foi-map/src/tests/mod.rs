@@ -7,6 +7,7 @@ mod cost_profile;
 mod decision_density;
 mod match_scenarios;
 mod objective;
+mod observation;
 mod pivotal;
 mod population_validation;
 mod properties;

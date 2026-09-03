@@ -36,7 +36,7 @@ sequencing or checklist differs from this file, this file governs current work.
 
 | Surface | Current evidence | State |
 | --- | --- | --- |
-| Product direction | `docs/project-proposal.md` | Defined at proposal level |
+| Product direction | `docs/project-proposal.md`; [`docs/adr/0005-product-identity-hybrid.md`](docs/adr/0005-product-identity-hybrid.md) | Defined at proposal level; **primary-identity decision open** (ADR-0005 proposes an explicit hybrid, pending owner ratification) |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable & MCP | `src/main.rs`, `src/bin/fog-of-intent-mcp.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs`, `src/mcp/`, `src/cli/` | Full 16-scenario catalog (`--list-scenarios`, `--select`), dedicated standalone MCP binary (`cargo run --bin fog-of-intent-mcp`), 3 interactive strategy playthroughs, M6 behavioral experiments battery, M7 calibration proof battery, M8 team communication battery, M9 interactive match runner & replay transcript, M10 study synthesis & empirical trials battery, M11 HTML5 presentation exporter & browser flow battery, M12 release checks, reproducibility bundle & archive inventory runners |
 | Package | `Cargo.toml` | Version `0.1.239`, multi-crate Cargo workspace (`fog-of-intent`, `crates/foi-kernel`, `crates/foi-lane`, `crates/foi-map`, `crates/foi-agent`, `crates/foi-protocol`, `crates/foi-study`, `crates/foi-gui`, `crates/foi-alpha`), one deferred edge crate (`reedline`) |
@@ -46,6 +46,16 @@ sequencing or checklist differs from this file, this file governs current work.
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
 | Internal kernel/replay fixture | `src/kernel.rs`, `src/serialization.rs`, `crates/foi-kernel` | M1 complete; pure deterministic transition core |
 | Scenarios, CLI, MCP, research, GUI | Complete 8-domain member crate workspace + application runners | Reference CLI and interactive gameplay validation active; research, study, GUI, and release systems complete in library/CLI/MCP contracts |
+
+## Open Decisions
+
+Decisions that govern future tie-breaks and are therefore tracked separately from
+milestone scope. A milestone does not resolve them by completing.
+
+| Decision | Status | Where recorded | What it gates |
+| --- | --- | --- | --- |
+| Is Fog of Intent primarily a game, a research platform, or an explicit hybrid? | **Open** — ADR-0005 proposes the hybrid with an audience/promotion rule; owner ratification pending | [`docs/adr/0005-product-identity-hybrid.md`](docs/adr/0005-product-identity-hybrid.md) | Whether the next slice goes to gameplay quality or research instrumentation; how releases describe readiness |
+| Should actor presence resolve engagements, and does a five-a-side roster earn its cost? | **Open** — deferred until human match-play evidence exists | `ROADMAP.md` Phase 9, "Roster and resolution limit" | Any claim that the match is a full team-fidelity simulation; new combat-resolution mechanics |
 
 ## Milestone Map
 
@@ -2149,6 +2159,15 @@ surface, and the differences are structural rather than cosmetic:
   (`scenario-complete-comeback-concession-v1`). `MatchMapState` accepts arbitrary
   `ActorId` rosters, so five-a-side is representable, but no shipped scenario
   fields it, and no shipped evidence shows ten actors in play.
+- **Warded sight reaches the player.** `MatchMapState::observe_with_wards` resolves
+  allied ward coverage inside the redacted projection, and the interactive host feeds
+  it from match vision state, so warding a sector reveals an opposing actor standing
+  there (`src/host/match_host.rs`, `crates/foi-map/src/tests/observation.rs`). Before
+  this wiring, ward state reached the player only as the `active_wards` count and no
+  ward could ever reveal anything. Structures are still outside that projection: the
+  observation prints every structure's exact health regardless of sight, because no
+  `(lane, tier)` to `MapLocation` mapping exists yet, and inventing one is new model
+  work this roadmap deliberately defers.
 - **Actor presence does not resolve combat.** `transition_objective_contest` and
   `transition_structure_siege` consume a `TeamSide`, a declared intent, and a
   damage magnitude; neither reads actors or positions. Actor locations feed

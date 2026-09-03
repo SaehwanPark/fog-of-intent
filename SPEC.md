@@ -1981,6 +1981,13 @@ replays to an identical final hash at the library boundary.
   - Fail-closed error handling with actionable repair hints for syntax errors, out-of-order execution, roster bounds, and post-conclusion locking.
   - Integrated into `CLI_SCENARIO_CATALOG`, interactive menu selection (`--select`), and terminal/ANSI presentation renderers.
   - Verified through automated unit and binary integration tests and full in-game AI playtesting.
+- Actor-visible map observations accept allied ward coverage through
+  `MatchMapState::observe_with_wards(observer, &[(TeamSide, MapLocation)])`, which
+  reveals opposing actors only inside sectors warded by the observer's own team and
+  ignores coverage owned by the other team. `observe()` remains the no-ward wrapper.
+  `CliMatchHost::observation_report` supplies coverage from
+  `CompleteMatchState::vision()`, so `ward` purchases information a player can see
+  rather than only advancing the `active_wards` counter.
 
 #### Delivered in the bounded human usability and accessibility study protocol follow-up
 

@@ -182,9 +182,24 @@ actor_locations:
   actor: id=4 team=opposing location=unknown
 ```
 
-Unseen opponents are projected as `location=unknown`. Wards and shared vision turn
-that into an observed or last-known location — buying information is a real
-decision here, and `active_wards` is the visible budget.
+Unseen opponents are projected as `location=unknown`. Allies' own sectors and active
+wards reveal opponents standing in them, so buying information is a real decision and
+`active_wards` is the visible budget. This is the whole of what vision currently does:
+the projection reports `unknown` or an observed location, never a stale last-known
+position.
+
+A ward that lands on an opponent changes what you can see:
+
+```sh
+printf '%s\n' 'ward allied 3 mid_far_side 3' commit advance observe quit \
+  | cargo run -- --scenario m9-interactive-match-v1
+# actor: id=4 team=opposing location=lane:mid:far-side   (was: location=unknown)
+```
+
+One inconsistency to expect while you play: `observe` prints every structure on the map
+with exact health, including opposing structures you have no sight of, because the
+observation does not yet project structures through vision. `ROADMAP.md` Phase 9 records
+that as an open limit rather than intended design.
 
 A verified winning line, printed turn by turn:
 

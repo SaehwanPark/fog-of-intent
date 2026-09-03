@@ -1611,3 +1611,19 @@ canonical policy instead of duplicating it.
 - Cause: `core.autocrlf=true` rewrites checked-out text to CRLF while the stored blobs and replay-hash fixtures are LF, and implicit-encoding file I/O plus `Path` formatting leak the platform locale and separator into byte-exact comparisons and checker messages.
 - Resolution: Commit `.gitattributes` with `* text=auto eol=lf`, pass `encoding="utf-8"` to every `read_text`/`write_text`/`Popen` pipe in the contributor scripts, and format reported paths with `Path.as_posix()`.
 - Prevention: Never rely on the ambient line ending or locale for fixtures, hashes, or machine-readable messages; verify with `python -X encoding=cp1252 scripts/check_repository.py` and a `git -c core.autocrlf=true clone` probe before claiming cross-platform health.
+
+## Wire a capability into the actor-visible projection, not only into its own counter
+
+- Context: The M9 match owns vision state (`MapVisionState`, wards) separately from `MatchMapState`, and the CLI/MCP match host builds actor visibility from `MatchMapState::observe`.
+- Symptom: `ward` always reported `advanced: ... action=warding events=0 effects=0`, and an opposing actor stayed `location=unknown` forever, including directly above a freshly placed ward. The only observable effect was `active_wards=` rising.
+- Cause: `observe()` derived team-visible sectors solely from allied actor locations, and the host read vision state only for `active_wards().len()`. Ward placement therefore mutated authoritative state that no projection consumed, and the feature was decorative in the played game while passing every library test.
+- Resolution: Add the missing input to the projection itself — `MatchMapState::observe_with_wards(observer, &[(TeamSide, MapLocation)])` marks same-team ward sectors as seen, `observe()` becomes the no-ward wrapper, and the host passes coverage from `CompleteMatchState::vision()`. Prove the player-visible effect, not just the state change: ward the sector holding an opponent and assert the projection flips from `Unknown` to `Observed`.
+- Prevention: When a new authoritative subsystem should change what a player or agent can see, demonstrate it with one projection-level assertion end to end. A counter, event count, or state field is not evidence that the capability reaches the user. Because `observe()` is the redaction path, resolve visibility inside it and never re-derive visibility in hosts or renderers.
+
+## Re-read source lines containing string escapes after editing them through text-replacement tools
+
+- Context: Rust string literals embed `\n` as two source characters, and MCP prompt templates are single long literals (e.g. the `match_macro_turn` shot-caller prompt in `src/mcp/server.rs`).
+- Symptom: A rename inside such a literal turned `"...match.\n\nCurrent Match State:..."` into a broken literal ending in a stray `\`, and a follow-up in-place substitution deleted the remainder of the line instead of shortening it.
+- Cause: Backslash handling differs between a replacement tool's match text and its replacement text, so `\n` matched a literal backslash-n but wrote a doubled or real newline; shell `perl`/`sed` one-liners add their own second escaping layer.
+- Resolution: Rebuild from the exact source bytes with a script that constructs the escape explicitly (`chr(92) + "n"`) and splice the corrected line back in, then verify with `od -c` rather than a terminal echo.
+- Prevention: After any edit that touches a line containing backslash escapes, confirm the bytes (`od -c`/`git diff`) and compile before moving on; prefer rewriting the whole literal over partial in-place substitutions.
