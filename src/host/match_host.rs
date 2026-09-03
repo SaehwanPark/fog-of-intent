@@ -1,8 +1,8 @@
-//! Interactive 5v5 multi-lane tactical match host.
+//! Interactive multi-lane tactical match host.
 //!
 //! Milestone: M9 — Bounded Multi-Lane Match Prototype
 //!
-//! This host manages interactive 5v5 multi-lane match execution, supporting
+//! This host manages interactive multi-lane match execution, supporting
 //! tactical intent planning (`rotate`, `ward`, `contest`, `siege`, `evaluate`, `idle`),
 //! commitment, step-by-step turn advancement, event/effect tracking, and match debriefs.
 
@@ -113,7 +113,7 @@ impl From<CompleteMatchError> for CliMatchError {
   }
 }
 
-/// Synchronous host managing an interactive 5v5 multi-lane tactical match.
+/// Synchronous host managing an interactive multi-lane tactical match.
 pub struct CliMatchHost {
   pub(crate) scenario_id: &'static str,
   pub(crate) initial_hash: StateHash,
@@ -176,7 +176,16 @@ impl CliMatchHost {
       .actor_locations()
       .iter()
       .find_map(|(actor, _)| self.state.map().is_allied(*actor).then_some(*actor));
-    let map_observation = observer.and_then(|actor| self.state.map().observe(actor));
+    // Ward coverage reaches the player only through the redacted projection, so a
+    // placed ward reveals nothing until it is paired with an opposing location there.
+    let ward_coverage: Vec<(TeamSide, MapLocation)> = self
+      .state
+      .vision()
+      .team_wards(TeamSide::Allied)
+      .map(|ward| (ward.team, ward.location))
+      .collect();
+    let map_observation =
+      observer.and_then(|actor| self.state.map().observe_with_wards(actor, &ward_coverage));
     for (actor, loc) in self.state.map().actor_locations() {
       let is_allied = self.state.map().is_allied(*actor);
       let location = if is_allied {
@@ -801,6 +810,65 @@ mod tests {
         .find(|(actor, _, _)| actor.value() == 4)
         .map(|(_, _, location)| *location),
       Some(MatchActorLocation::Unknown)
+    );
+  }
+
+  #[test]
+  fn placed_ward_reveals_the_opposing_actor_it_covers() {
+    let mut host = CliMatchHost::default_session();
+    // The canonical scenario parks opposing actor 4 at mid_far_side with no allied
+    // presence there, so the ward - not an ally's position - must be what reveals it.
+    assert_eq!(
+      host
+        .observation_report()
+        .actor_locations
+        .iter()
+        .find(|(actor, _, _)| actor.value() == 4)
+        .map(|(_, _, location)| *location),
+      Some(MatchActorLocation::Unknown)
+    );
+
+    host
+      .apply_line("ward allied 3 mid_far_side 3")
+      .expect("ward should stage");
+    host.apply_line("commit").expect("commit should succeed");
+    host
+      .apply_line("advance")
+      .expect("advance should place the ward");
+
+    assert_eq!(
+      host
+        .observation_report()
+        .actor_locations
+        .iter()
+        .find(|(actor, _, _)| actor.value() == 4)
+        .map(|(_, _, location)| *location),
+      Some(MatchActorLocation::Observed(MapLocation::MID_FAR_SIDE)),
+      "a ward on the opposing actor's sector must buy the player information"
+    );
+  }
+
+  #[test]
+  fn an_ward_elsewhere_leaves_the_opposing_actor_in_fog() {
+    let mut host = CliMatchHost::default_session();
+
+    host
+      .apply_line("ward allied 3 bot_river 3")
+      .expect("ward should stage");
+    host.apply_line("commit").expect("commit should succeed");
+    host
+      .apply_line("advance")
+      .expect("advance should place the ward");
+
+    assert_eq!(
+      host
+        .observation_report()
+        .actor_locations
+        .iter()
+        .find(|(actor, _, _)| actor.value() == 4)
+        .map(|(_, _, location)| *location),
+      Some(MatchActorLocation::Unknown),
+      "ward coverage must not reveal an opponent standing in another sector"
     );
   }
 

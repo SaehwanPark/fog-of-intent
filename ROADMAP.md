@@ -36,16 +36,26 @@ sequencing or checklist differs from this file, this file governs current work.
 
 | Surface | Current evidence | State |
 | --- | --- | --- |
-| Product direction | `docs/project-proposal.md` | Defined at proposal level |
+| Product direction | `docs/project-proposal.md`; [`docs/adr/0005-product-identity-hybrid.md`](docs/adr/0005-product-identity-hybrid.md) | Defined at proposal level; **primary-identity decision open** (ADR-0005 proposes an explicit hybrid, pending owner ratification) |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
 | Executable & MCP | `src/main.rs`, `src/bin/fog-of-intent-mcp.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs`, `src/mcp/`, `src/cli/` | Full 16-scenario catalog (`--list-scenarios`, `--select`), dedicated standalone MCP binary (`cargo run --bin fog-of-intent-mcp`), 3 interactive strategy playthroughs, M6 behavioral experiments battery, M7 calibration proof battery, M8 team communication battery, M9 interactive match runner & replay transcript, M10 study synthesis & empirical trials battery, M11 HTML5 presentation exporter & browser flow battery, M12 release checks, reproducibility bundle & archive inventory runners |
 | Package | `Cargo.toml` | Version `0.1.239`, multi-crate Cargo workspace (`fog-of-intent`, `crates/foi-kernel`, `crates/foi-lane`, `crates/foi-map`, `crates/foi-agent`, `crates/foi-protocol`, `crates/foi-study`, `crates/foi-gui`, `crates/foi-alpha`), one deferred edge crate (`reedline`) |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Reconciled |
-| Independent technical audits | [`docs/audit_report_20260825.md`](docs/audit_report_20260825.md), [`docs/audit_report_20260828.md`](docs/audit_report_20260828.md) | Verified |
+| Independent technical audits | [`docs/audit_report_20260828.md`](docs/audit_report_20260828.md) (current); [`docs/audit_report_20260825.md`](docs/audit_report_20260825.md) (historical, superseded — describes the pre-workspace `0.1.218` tree) | Current audit reconciled into this roadmap; historical audit retained as dated evidence |
 | Agent workflow | `AGENTS.md`, `.agents/skills/`, `docs/harness/` | Initialized |
 | Internal kernel/replay fixture | `src/kernel.rs`, `src/serialization.rs`, `crates/foi-kernel` | M1 complete; pure deterministic transition core |
 | Scenarios, CLI, MCP, research, GUI | Complete 8-domain member crate workspace + application runners | Reference CLI and interactive gameplay validation active; research, study, GUI, and release systems complete in library/CLI/MCP contracts |
+
+## Open Decisions
+
+Decisions that govern future tie-breaks and are therefore tracked separately from
+milestone scope. A milestone does not resolve them by completing.
+
+| Decision | Status | Where recorded | What it gates |
+| --- | --- | --- | --- |
+| Is Fog of Intent primarily a game, a research platform, or an explicit hybrid? | **Open** — ADR-0005 proposes the hybrid with an audience/promotion rule; owner ratification pending | [`docs/adr/0005-product-identity-hybrid.md`](docs/adr/0005-product-identity-hybrid.md) | Whether the next slice goes to gameplay quality or research instrumentation; how releases describe readiness |
+| Should actor presence resolve engagements, and does a five-a-side roster earn its cost? | **Open** — deferred until human match-play evidence exists | `ROADMAP.md` Phase 9, "Roster and resolution limit" | Any claim that the match is a full team-fidelity simulation; new combat-resolution mechanics |
 
 ## Milestone Map
 
@@ -61,7 +71,7 @@ sequencing or checklist differs from this file, this file governs current work.
 | M7 | Semantic-to-parametric calibration proof | Complete (`foi-agent`, CLI runner) | Technically verified / model-card certified (synthetic distributions) | M6 |
 | M8 | Coordinated team decision play | Complete (`foi-agent`, CLI runner) | Synthetic multi-agent benchmark evidence & strategic dissent proofs | M4 and M5 |
 | M9 | Bounded multi-lane match prototype | Complete (`foi-map`, CLI runner, replay) | Replay verified; player & human match validation pending | M8 |
-| M10 | Human-usable and accessibility-tested alpha | Complete (`foi-study`, CLI runners) | Study framework verified; **human empirical evidence pending** | Stable M9 candidate; informal checks start earlier |
+| M10 | Human usability and accessibility study framework (the human-tested alpha is the *exit condition*, not the delivered state) | Complete (`foi-study`, CLI runners) | Study framework verified; **human empirical evidence pending** | Stable M9 candidate; informal checks start earlier |
 | M11 | Optional shared-boundary GUI | Complete (`foi-gui`, CLI/MCP runners) | HTML5/SVG generator & browser recovery verified; live browser validation pending | Demonstrated presentation need; stable host contracts |
 | M12 | Public research-capable alpha | Complete (`foi-alpha`, CLI/MCP runners) | Release checks & archive audit verified; official release gate pending (pre-alpha) | M10; M11 only if adopted |
 
@@ -1393,7 +1403,7 @@ transition authority.
 ### Developer Action Items
 
 - [x] Implement standalone MCP JSON-RPC stdio server adapter (`fog-of-intent mcp serve` / `--mcp`).
-- [x] Wire `ActorMessageDto`, `ActorDraftDto`, and 5v5 tactical match actions into live tool call schemas.
+- [x] Wire `ActorMessageDto`, `ActorDraftDto`, and multi-lane tactical match actions into live tool call schemas.
 - [x] Validate MCP protocol integration and stdio stream execution through unit and binary integration tests.
 
 ### Deliverables
@@ -2118,7 +2128,7 @@ replays, save/load of match replays, and human pacing evidence remain deferred.
 
 ### Developer Action Items
 
-- [x] Implement interactive 5v5 multi-lane CLI session runner (`--scenario m9-interactive-match-v1`).
+- [x] Implement interactive multi-lane CLI session runner (`--scenario m9-interactive-match-v1`), verified at the shipped 3v1 roster; five-a-side is not fielded by any shipped scenario.
 - [x] Support dynamic multi-turn tactical commands (`rotate`, `ward`, `contest`, `siege`, `evaluate`, `idle`) in the CLI match host.
 
 ### Deliverables
@@ -2137,16 +2147,72 @@ replays, save/load of match replays, and human pacing evidence remain deferred.
   without an explicit reason.
 - Multiple team strategies appear in representative replays.
 
+#### Roster and resolution limit (delivered surface versus exit evidence)
+
+Deterministic termination, replay-hash equality, and decision-density measurement
+are verified. Two exit conditions are **not** satisfied by the current match
+surface, and the differences are structural rather than cosmetic:
+
+- **Team size is not five-a-side.** The canonical playable rosters are three
+  allied actors against one opposing actor
+  (`scenario-complete-allied-snowball-v1`) and two against one
+  (`scenario-complete-comeback-concession-v1`). `MatchMapState` accepts arbitrary
+  `ActorId` rosters, so five-a-side is representable, but no shipped scenario
+  fields it, and no shipped evidence shows ten actors in play.
+- **Warded sight reaches the player.** `MatchMapState::observe_with_wards` resolves
+  allied ward coverage inside the redacted projection, and the interactive host feeds
+  it from match vision state, so warding a sector reveals an opposing actor standing
+  there (`src/host/match_host.rs`, `crates/foi-map/src/tests/observation.rs`). Before
+  this wiring, ward state reached the player only as the `active_wards` count and no
+  ward could ever reveal anything. Structures are still outside that projection: the
+  observation prints every structure's exact health regardless of sight, because no
+  `(lane, tier)` to `MapLocation` mapping exists yet, and inventing one is new model
+  work this roadmap deliberately defers.
+- **Actor presence does not resolve combat.** `transition_objective_contest` and
+  `transition_structure_siege` consume a `TeamSide`, a declared intent, and a
+  damage magnitude; neither reads actors or positions. Actor locations feed
+  shared **vision** only (an ally's current location becomes team-visible, and
+  wards add coverage). Team size therefore changes what a player can see, not
+  what wins an engagement. Adding five roster entries to obtain a "5v5" label
+  would add vision coverage and menu lines without changing any outcome, and is
+  deliberately not done; actor-presence-dependent resolution is a mechanics
+  decision that needs the human play evidence in Priority 3 of
+  `docs/audit_report_20260828.md` before it is designed.
+- **Role semantics live in the library, not the match loop.** `MatchRole`,
+  role-specific observations, actions, and debriefs are implemented and tested in
+  `crates/foi-map`, and the role scenario catalog exercises them. The interactive
+  match host commands plain `ActorId`s and never binds a `MatchRole` to an actor,
+  so "each role has strategically meaningful observations and decisions" is
+  verified at library level and unverified as something a player experiences.
+
+Consequently the shipped match is described as a **multi-lane tactical match**, in
+the scenario catalog, MCP tool descriptions, prompts, banner, help text, and
+documentation. `ROADMAP.md` item checkboxes below use the same wording.
+
 ### Explicit deferrals
 
 - No full fidelity to a proprietary game, roster, item system, or live metagame.
 - No networked multiplayer or production visual presentation.
+- No actor-presence-dependent combat resolution, unit/minion simulation, or
+  five-a-side canonical roster until the human match-play evidence above exists.
 
 ## Phase 10 — Human Usability and Accessibility Alpha
 
 **Milestone:** M10
 **Status:** Complete (Implementation: Complete; Evidence: Study framework verified; human empirical evidence pending)
 **Depends on:** Stable M9 candidate; informal checks should occur during M2-M9
+
+#### Name and claim limit
+
+This phase is named for its **goal**, and the goal is unmet. "Human-usable and
+accessibility-tested" is the exit condition below, not a description of delivered
+state: `foi-study`, its CLI runners, and its MCP tools are complete and verified as
+*framework*, while zero human participants have been recruited or observed. No
+document, release note, or report may state or imply that the alpha is usable,
+accessible, tested on humans, or accessibility-validated until the exit evidence
+below is satisfied. `docs/audit_report_20260828.md` identified this naming collision
+as the sharpest instance of compressing implementation maturity into an evidence
+claim; the milestone map row now states the distinction explicitly.
 
 ### Outcome
 
@@ -2509,7 +2575,7 @@ As identified in the independent technical audits ([`docs/audit_report_20260825.
 - [x] Partition the monolithic single crate into dedicated workspace members:
   - [x] `crates/foi-kernel` (authoritative transition, units, FNV-1a state hashing, snapshot/history codecs, replay verifier)
   - [x] `crates/foi-lane` (one-lane vertical slice)
-  - [x] `crates/foi-map` (5v5 multi-lane spatial map topology, structures & contest mechanics)
+  - [x] `crates/foi-map` (multi-lane spatial map topology, structures & contest mechanics)
   - [x] `crates/foi-agent` (behavioral policies, calibration & team communication)
   - [x] `crates/foi-protocol` (model-agnostic DTOs & MCP codecs)
   - [x] `crates/foi-study` (human usability, accessibility & alpha synthesis)

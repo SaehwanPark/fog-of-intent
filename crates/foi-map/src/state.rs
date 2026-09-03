@@ -100,7 +100,26 @@ impl MatchMapState {
   }
 
   /// Generate an actor-visible observation for an observer without leaking hidden state.
+  ///
+  /// Equivalent to [`Self::observe_with_wards`] with no ward coverage: only locations
+  /// occupied by the observer's own team are seen.
   pub fn observe(&self, observer: ActorId) -> Option<MatchMapObservation> {
+    self.observe_with_wards(observer, &[])
+  }
+
+  /// Generate an actor-visible observation where the observer's team additionally
+  /// wards the locations named in `ward_coverage`.
+  ///
+  /// Ward state lives in [`super::vision::MapVisionState`], not in this type, so the
+  /// caller supplies it. Coverage is paired with the owning `TeamSide` and entries
+  /// for the other team are ignored: a caller holding latent enemy ward positions
+  /// must not be able to spend them as allied sight. Resolution stays here so that
+  /// hosts and renderers never re-derive visibility downstream of the projection.
+  pub fn observe_with_wards(
+    &self,
+    observer: ActorId,
+    ward_coverage: &[(TeamSide, MapLocation)],
+  ) -> Option<MatchMapObservation> {
     let observer_team = if self.is_allied(observer) {
       TeamSide::Allied
     } else if self.is_opposing(observer) {
@@ -130,6 +149,13 @@ impl MatchMapState {
       }
     }
     team_visible_locations[self_location.current_location().index()] = true;
+
+    // Warded sectors see through fog for the warding team only.
+    for &(ward_team, location) in ward_coverage {
+      if ward_team == observer_team {
+        team_visible_locations[location.index()] = true;
+      }
+    }
 
     // Evaluate opposing actor visibility
     let mut opposing_sightings = Vec::new();

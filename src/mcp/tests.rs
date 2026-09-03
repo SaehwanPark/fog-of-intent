@@ -190,7 +190,7 @@ fn mcp_server_tools_list_and_call_lane_lifecycle() {
 }
 
 #[test]
-fn mcp_server_handles_5v5_tactical_match_tools() {
+fn mcp_server_handles_multi_lane_tactical_match_tools() {
   let mut server = McpServer::new();
 
   // Match observe

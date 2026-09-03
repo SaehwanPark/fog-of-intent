@@ -131,10 +131,10 @@ pub fn mcp_tools_catalog() -> Vec<McpTool> {
       ]),
     },
 
-    // 5v5 Multi-Lane Tactical Match Tools
+    // Multi-Lane Tactical Match Tools
     McpTool {
       name: "match_observe",
-      description: "Inspect 5v5 tactical match state (actor positions, active wards, neutral river objectives, structures summary).",
+      description: "Inspect the multi-lane tactical match state (actor positions, active wards, neutral river objectives, structures summary).",
       input_schema: JsonValue::Object(vec![
         ("type".into(), JsonValue::String("object".into())),
         ("properties".into(), JsonValue::Object(vec![])),
@@ -206,7 +206,7 @@ pub fn mcp_tools_catalog() -> Vec<McpTool> {
     },
     McpTool {
       name: "match_advance",
-      description: "Advance the 5v5 tactical match by 1 turn using the staged/committed action.",
+      description: "Advance the multi-lane tactical match by 1 turn using the staged/committed action.",
       input_schema: JsonValue::Object(vec![
         ("type".into(), JsonValue::String("object".into())),
         ("properties".into(), JsonValue::Object(vec![])),
@@ -214,7 +214,7 @@ pub fn mcp_tools_catalog() -> Vec<McpTool> {
     },
     McpTool {
       name: "match_debrief",
-      description: "Inspect causal debrief of concluded or ongoing 5v5 tactical match.",
+      description: "Inspect the causal debrief of a concluded or ongoing multi-lane tactical match.",
       input_schema: JsonValue::Object(vec![
         ("type".into(), JsonValue::String("object".into())),
         ("properties".into(), JsonValue::Object(vec![])),
@@ -356,7 +356,7 @@ pub fn mcp_prompts_catalog() -> Vec<McpPrompt> {
     },
     McpPrompt {
       name: "match_macro_turn",
-      description: "Macro strategic commander prompt for 5v5 multi-lane turn selection.",
+      description: "Macro strategic commander prompt for multi-lane turn selection.",
       arguments: vec![(
         "focus",
         "Priority objective (e.g. 'Dragon', 'MidSiege', 'VisionSetup')",

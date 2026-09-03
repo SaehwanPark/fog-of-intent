@@ -292,7 +292,7 @@ impl McpServer {
         }
       }
 
-      // 5v5 Multi-Lane Tactical Match Tools
+      // Multi-Lane Tactical Match Tools
       "match_observe" => match self.match_host.apply_line("observe") {
         Ok(out) => format_tool_success(&render_match_output(&out)),
         Err(err) => format_tool_error(&crate::terminal::render_match_error(&err)),
@@ -528,7 +528,7 @@ impl McpServer {
         let obs = self.match_host.observation_report();
         let obs_text = render_match_output(&CliMatchOutput::Observation(obs));
         let prompt_text = format!(
-          "You are the Macro Shot-Caller in a 5v5 multi-lane Fog of Intent match.\n\nCurrent Match State:\n{obs_text}\n\nChoose team macro priorities: plan rotations, vision control (wards), river objective contests (Dragon/Baron), or structure sieges."
+          "You are the Macro Shot-Caller in a multi-lane Fog of Intent match.\n\nCurrent Match State:\n{obs_text}\n\nChoose team macro priorities: plan rotations, vision control (wards), river objective contests (Dragon/Baron), or structure sieges. Read the roster in the match state above; it states how many actors each team fields."
         );
         JsonValue::Object(vec![
           (

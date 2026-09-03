@@ -2,6 +2,10 @@
 
 - **Status:** Accepted for Post-Alpha Modularization
 - **Date:** 2026-08-25
+- **Amended:** 2026-08-30 — the crate inventory and dependency DAG below were corrected to the
+  dependency sets actually declared in each `crates/*/Cargo.toml`. The originally recorded sets
+  were the *planned* upper bounds and overstated five of eight crates; `docs/audit_report_20260828.md`
+  flagged the divergence. The implementation is more decoupled than this ADR originally claimed.
 - **Scope:** Rust workspace layout, member crate boundaries, dependency DAG topology, public API encapsulation, and phased migration plan
 
 ## Context
@@ -38,42 +42,38 @@ src/ (or bins/)
 |---|---|---|
 | `foi-kernel` | Pure transition evaluation, `WorldState`, bounded `Units`, `Turn`, `ObservationId`, 64-bit FNV-1a state hashing, snapshot/history serialization, replay verifier | Zero external dependencies; zero async, network, wall-clock, or RNG primitives. |
 | `foi-lane` | `LaneSnapshot`, multi-beat windows (`LaneWindow`), `LaneResources` aggregate, delayed-effect queues, counterfactual branching, allied proposals, and lane causal debriefs | Depends only on `foi-kernel`. Pure deterministic simulation. |
-| `foi-map` | 15-node spatial topology, 26 defensive structures, neutral objectives (Dragon, Baron, Herald), comeback catch-up curves, 5 match roles, 5v5 complete match simulation | Depends on `foi-kernel` and `foi-lane`. Pure deterministic simulation. |
-| `foi-agent` | Scripted policies (`Anchor`, `Duelist`, `Pacer`), semantic profiles, regularized parametric fitting, 8 team speech acts, dialogue sessions, caller reputation, and 4-quadrant debriefs | Depends on `foi-kernel`, `foi-lane`, and `foi-map`. Zero private chain-of-thought in emitted types. |
+| `foi-map` | 15-node spatial topology, 26 defensive structures, neutral objectives (Dragon, Baron, Herald), comeback catch-up curves, 5 match roles, complete match simulation | Depends only on `foi-kernel`. Pure deterministic simulation. |
+| `foi-agent` | Scripted policies (`Anchor`, `Duelist`, `Pacer`), semantic profiles, regularized parametric fitting, 8 team speech acts, dialogue sessions, caller reputation, and 4-quadrant debriefs | Depends on `foi-kernel` and `foi-lane`. Zero private chain-of-thought in emitted types. |
 | `foi-protocol` | Model-agnostic actor DTOs (`ActorObservationDto`, `ActorActionDto`), session lifecycle state machine, JSON-RPC envelopes, and repair hints | Depends on `foi-kernel` and `foi-lane`. Pure serialization and mapping. |
-| `foi-study` | Human usability protocols, 4 participant cohorts, 10 cognitive dimensions, interaction audits, sampling limits, and alpha readiness synthesis | Depends on `foi-kernel`, `foi-lane`, `foi-map`, and `foi-agent`. |
-| `foi-gui` | Presentation-only HTML5/CSS/SVG document renderer, reversible GUI client state machine, triple CLI/MCP/GUI parity verifier, asset governance, and loopback transport | Depends on `foi-kernel`, `foi-lane`, `foi-map`, `foi-protocol`, and `foi-agent`. Presentation only; zero simulation authority. |
-| `foi-alpha` | Public Alpha release governance manifests, 8-domain cross-version compatibility matrix, data dictionary redaction auditing, limitations guidance, and multi-domain release checks | Depends on all domain crates to audit repository compliance. |
+| `foi-study` | Human usability protocols, 4 participant cohorts, 10 cognitive dimensions, interaction audits, sampling limits, and alpha readiness synthesis | Depends on no other workspace crate. Protocol and evaluation data only; it does not import the simulation. |
+| `foi-gui` | Presentation-only HTML5/CSS/SVG document renderer, reversible GUI client state machine, triple CLI/MCP/GUI parity verifier, asset governance, and loopback transport | Depends on `foi-kernel`, `foi-lane`, and `foi-protocol`. Presentation only; zero simulation authority. |
+| `foi-alpha` | Public Alpha release governance manifests, 8-domain cross-version compatibility matrix, data dictionary redaction auditing, limitations guidance, and multi-domain release checks | Depends on no other workspace crate. Release checks receive domain evidence as plain inputs from the application runner rather than importing domain crates. |
 
 ## Dependency Graph (DAG)
 
-The workspace enforces a strict, unidirectional dependency DAG with zero cyclic references:
+The workspace enforces a strict, unidirectional dependency DAG with zero cyclic references.
+Edges below are read directly from the `crates/*/Cargo.toml` manifests and are re-checked
+whenever a manifest changes:
 
 ```text
-                  +------------+
-                  | foi-kernel |
-                  +------------+
-                   /          \
-                  v            v
-           +----------+    +--------------+
-           | foi-lane |    | foi-protocol |
-           +----------+    +--------------+
-            /        \
-           v          \
-     +---------+       \
-     | foi-map |        \
-     +---------+         \
-          \               \
-           v               v
-         +-------------------+
-         |     foi-agent     |
-         +-------------------+
-          /        |        \
-         v         v         v
-   +-----------+ +---------+ +-----------+
-   | foi-study | | foi-gui | | foi-alpha |
-   +-----------+ +---------+ +-----------+
+foi-kernel            (no internal dependencies)
+  |-- foi-lane        -> foi-kernel
+  |     |-- foi-agent     -> foi-kernel, foi-lane
+  |     |-- foi-protocol  -> foi-kernel, foi-lane
+  |     |     |-- foi-gui -> foi-kernel, foi-lane, foi-protocol
+  |     +-- (no other dependents)
+  +-- foi-map         -> foi-kernel
+
+Dependency-free domain crates: foi-kernel, foi-study, foi-alpha
+
+fog-of-intent and fog-of-intent-mcp (workspace root application) ->
+  all eight domain crates, plus the single deferred edge dependency `reedline`
 ```
+
+`foi-study` and `foi-alpha` intentionally declare no workspace dependencies: they own protocol,
+governance, and evaluation data structures, and the application runners supply their inputs as
+plain values. This keeps study and release governance compilable and testable without the
+simulation, and it means the crates are more decoupled than this ADR originally projected.
 
 ## Architectural Invariants
 

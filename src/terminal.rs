@@ -495,10 +495,10 @@ pub fn render_match_output(output: &crate::host::CliMatchOutput) -> String {
   let mut text = String::new();
   match output {
     crate::host::CliMatchOutput::Help { topic: None } => {
-      line(&mut text, "help: 5v5 tactical match commands");
+      line(&mut text, "help: multi-lane tactical match commands");
       line(
         &mut text,
-        "command: name=observe usage=observe summary=inspect 5v5 map state, actor locations, wards, objectives, and structures",
+        "command: name=observe usage=observe summary=inspect multi-lane map state, actor locations, wards, objectives, and structures",
       );
       line(
         &mut text,

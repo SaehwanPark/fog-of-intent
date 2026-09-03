@@ -47,7 +47,7 @@ pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [
 pub enum ScenarioExecutionMode {
   /// Interactive lane decision loop supporting intent planning, advance, debrief, and persistence.
   InteractiveLane,
-  /// Interactive 5v5 multi-lane tactical match session supporting rotations, wards, contests, sieges, and debriefs.
+  /// Interactive multi-lane tactical match session supporting rotations, wards, contests, sieges, and debriefs.
   InteractiveMatch,
   /// Milestone M6 automated behavioral experiments and population validation battery; prints and exits.
   BehavioralExperimentsBattery,
@@ -157,10 +157,10 @@ pub const CLI_SCENARIO_CATALOG: &[CliScenarioCatalogEntry] = &[
   },
   CliScenarioCatalogEntry {
     id: crate::host::CLI_INTERACTIVE_MATCH_SCENARIO_ID,
-    display_name: "Interactive 5v5 Tactical Match Playthrough",
+    display_name: "Interactive Multi-Lane Tactical Match Playthrough",
     milestone: "M9",
     mode: ScenarioExecutionMode::InteractiveMatch,
-    description: "Interactive multi-lane command loop supporting tactical rotations, wards, contests, sieges, and debriefs.",
+    description: "Interactive multi-lane command loop: 3 allied actors vs 1 opposing actor on a 3-lane, 15-node map. Rotations, wards, contests, sieges, and debriefs.",
   },
   CliScenarioCatalogEntry {
     id: crate::cli::CLI_MATCH_REPLAY_SCENARIO_ID,
@@ -295,7 +295,7 @@ pub enum CliApplicationScenario {
   M7CalibrationProof,
   /// Milestone M8 team communication and shot-calling benchmark battery.
   M8TeamScenarios,
-  /// The interactive 5v5 multi-lane tactical match playthrough.
+  /// The interactive multi-lane tactical match playthrough.
   M9InteractiveMatch,
   /// The replay-verified complete-match transcript.
   M9CompleteMatchReplay,
@@ -786,7 +786,7 @@ pub enum CliLoopExit {
 pub enum CliCommandLoopHost {
   /// Bounded two-window lane scenario host.
   Scenario(CliScenarioHost),
-  /// Interactive 5v5 multi-lane tactical match host.
+  /// Interactive multi-lane tactical match host.
   Match(crate::host::CliMatchHost),
 }
 
@@ -810,12 +810,12 @@ impl CliCommandLoop {
     }
   }
 
-  /// Build the default interactive 5v5 tactical match session.
+  /// Build the default interactive tactical match session.
   pub fn match_session() -> Self {
     Self::match_host(crate::host::CliMatchHost::default_session())
   }
 
-  /// Build an interactive 5v5 match session from a registered scenario ID.
+  /// Build an interactive multi-lane match session from a registered scenario ID.
   pub fn match_session_from_id(id: &str) -> Self {
     Self::match_host(
       crate::host::CliMatchHost::from_scenario_id(id)
@@ -1165,6 +1165,8 @@ pub fn parse_scenario_selection(input: &str) -> Option<CliApplicationScenario> {
     | "interactive-match"
     | "match-interactive"
     | "match"
+    // Legacy input alias for the multi-lane match scenario. It is accepted input,
+    // not a roster claim: the catalog menu states the actual team sizes.
     | "5v5"
     | "m9-match" => Some(CliApplicationScenario::M9InteractiveMatch),
     crate::cli::CLI_MATCH_REPLAY_SCENARIO_ID | "match-replay" | "replay-match" | "m9" => {
@@ -2494,7 +2496,7 @@ mod tests {
     assert!(menu.contains("[5] Automated Behavioral Experiments & Population Validation"));
     assert!(menu.contains("[6] Semantic-to-Parametric Calibration Proof Battery"));
     assert!(menu.contains("[7] Team Communication & Shot-Calling Battery"));
-    assert!(menu.contains("[8] Interactive 5v5 Tactical Match Playthrough"));
+    assert!(menu.contains("[8] Interactive Multi-Lane Tactical Match Playthrough"));
     assert!(menu.contains("[9] Complete Match Replay Transcript"));
     assert!(menu.contains("[10] Human Usability & Accessibility Study Synthesis"));
     assert!(menu.contains("[11] Empirical Multi-Cohort Study Trials Battery"));

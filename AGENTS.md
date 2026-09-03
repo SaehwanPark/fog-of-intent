@@ -5,17 +5,28 @@ Keep this file short and repo-wide. Detailed project workflows live in
 
 ## What
 
-- Fog of Intent is a pre-implementation Rust 2024 project for a turn-based,
-  AI-native team-strategy simulation about intent, uncertainty, delegated
-  execution, communication, and bounded rationality.
+- Fog of Intent is a Rust 2024 turn-based, AI-native team-strategy simulation
+  about intent, uncertainty, delegated execution, communication, and bounded
+  rationality. It is implemented and technically verified; it is **not**
+  human-validated, and it is pre-release.
 - Canonical project state lives in `README.md`, `ROADMAP.md`, `SPEC.md`,
   `ARCHITECTURE.md`, and `CHANGELOG.md`. The longer proposal and stack analysis
   under `docs/` are design sources, not implementation evidence.
-- The repository currently contains a bounded two-window fixture command loop
-  (`--scenario m3-two-window-fixture-v1`) and a print-and-exit replay-verified
-  M9 complete-match transcript (`--scenario m9-complete-match-replay-v1`).
-  Do not describe an interactive complete match, MCP server, persistence
-  service, GUI, or other unshipped capabilities as playable from that runner.
+- Shipped and reachable now: a 16-scenario catalog (`--list-scenarios`,
+  `--select`), interactive lane scenarios including the two-window fixture
+  (`--scenario m3-two-window-fixture-v1`), the interactive multi-lane match
+  (`--scenario m9-interactive-match-v1`), a print-and-exit replay-verified match
+  transcript (`--scenario m9-complete-match-replay-v1`), run-directory
+  persistence (`--run-dir`), a Model Context Protocol server (`--mcp`, or the
+  dedicated `fog-of-intent-mcp` binary), and M6-M12 evaluation, study,
+  presentation, and release-audit runners.
+- Still **not** shipped or evidenced: human playtest or accessibility evidence,
+  a live browser client, and a published release. Do not describe those as
+  delivered. Milestone status is two-dimensional: Implementation State and
+  Evidence State are separate, and library or CLI completeness never implies
+  human validation. Read rosters, counts, and scenario names from the code
+  before restating them; `docs/audit_report_20260828.md` documents what happens
+  when labels outrun evidence.
 
 ## Why
 

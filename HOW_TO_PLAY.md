@@ -1,37 +1,14 @@
 # How to Play
 
-This is a beginner walkthrough of the **current runner**: a bounded two-window
-lane fixture. On a terminal you see a `> ` prompt, a status line, and Tab
-completion. Piped input has no prompt and prints labeled plain text. There is
-no GUI or second scenario.
+This is a walkthrough of the **shipped runner**. It documents what the binary
+actually accepts and prints, and it states plainly which claims it does **not**
+support.
 
-It does not prove enjoyment, accessibility, or human-valid behavior. It is a
-fixture, not a complete match.
+The runner opens sixteen scenarios. Pick one from a menu with `--select`, name one
+with `--scenario <id>`, or list them with `--list-scenarios`.
 
-## What you are playing
-
-You are the human laner in a short, deterministic scenario:
-
-- one opposing laner;
-- one allied autonomous actor;
-- one abstract opposing jungle threat;
-- two decision windows, then a debrief.
-
-You express intent. Simulated execution happens after you `commit` and
-`advance`. You see only actor-visible information.
-
-## What you are not playing
-
-The binary accepts only `--scenario m3-two-window-fixture-v1`. These are **not**
-in this runner:
-
-- a full three-lane match or victory screen;
-- an MCP server, research notebook, or GUI;
-- M4–M9 library catalogs (scripted-agent experiments, team speech-act
-  schemas, map/travel contracts).
-
-Those contracts live in the crate and in [SPEC.md](SPEC.md). You cannot invoke
-them by typing into this command loop.
+This guide is functional documentation. It does not prove enjoyment, accessibility,
+strategic depth, or human-valid behaviour — see [Claim limits](#claim-limits).
 
 ## Start
 
@@ -39,24 +16,67 @@ Install a Rust toolchain with Rust 2024 edition support (this repository pins
 `1.96.0`), then:
 
 ```sh
+cargo run -- --select                 # interactive scenario menu
+cargo run -- --list-scenarios         # id, milestone, mode, description for all 16
+cargo run -- --scenario <id>          # run one scenario directly
+cargo run -- --help                   # process flags
+```
+
+On a TTY you get a `> ` prompt, a banner, and Tab completion. Piped input has no
+prompt and prints machine-checkable labelled plain text — that piped form is the
+script contract, and it is what the examples below show.
+
+| Flag | Effect |
+| --- | --- |
+| `--scenario <id>` | Run one scenario; see `--list-scenarios` for the ids |
+| `--select`, `-s` | Choose a scenario interactively |
+| `--list-scenarios`, `-l` | Print the catalog without starting a session |
+| `--mcp` | Start the MCP JSON-RPC stdio server in this binary |
+| `--run-dir <path>` | Store run artifacts here (interactive scenarios only, no default) |
+| `--color auto\|always\|never` | ANSI colouring; `auto` honours `NO_COLOR` |
+| `--width <cols>` | Line-wrap width (default 80) |
+| `--version`, `-V` | Package metadata without opening a session |
+
+The MCP server also ships as its own binary:
+`cargo run --bin fog-of-intent-mcp` (see [Play through MCP](#play-through-mcp)).
+
+## The scenarios you can actually run
+
+| Kind | Scenario ids | What it does |
+| --- | --- | --- |
+| Interactive lane | `m3-two-window-fixture-v1`, `m2-strategy-happy-path-v1`, `m2-strategy-risk-taking-v1`, `m2-strategy-conservative-v1` | Command one laner through two decision windows, then debrief |
+| Interactive match | `m9-interactive-match-v1` | Command a multi-lane team turn by turn to a victory condition (see [Roster honesty](#roster-honesty)) |
+| Print-and-exit report | `m9-complete-match-replay-v1`, `m6-behavioral-experiments-v1`, `m7-calibration-proof-v1`, `m8-team-scenarios-v1`, `m10-human-study-synthesis-v1`, `m10-empirical-cohort-study-v1`, `m11-gui-presentation-v1`, `m11-gui-browser-flow-v1`, `m12-alpha-release-checks-v1`, `m12-reproducibility-bundle-v1`, `m12-alpha-archive-v1` | Run a deterministic battery and print a report; no prompt |
+
+Interactive lanes share one verb set. The interactive match has its own verb set.
+Neither accepts the other's verbs.
+
+## The loop you are playing
+
+Every interactive scenario is the same loop:
+
+```text
+observe  ->  understand what you do not know  ->  form intent
+   ^                                                        |
+   |                                                        v
+debrief  <-  observe execution  <-  commit  <-  communicate / delegate
+```
+
+You never aim, target, or micro-manage an execution. You state intent, commit it,
+and the host resolves it. The debrief is where you find out why reality diverged.
+
+## Play a lane window
+
+Start the reference fixture:
+
+```sh
 cargo run -- --scenario m3-two-window-fixture-v1
 ```
 
-On a TTY, a banner lists `observe  plan  commit  advance  help  quit` and the
-prompt is `> `. Type `?` or `help` and press Enter. `help plan` (or `? plan`)
-explains one command. Tab completes verbs, `inspect` targets, and plan intents.
-
-Pipes skip the prompt. `cargo run -- --help` prints process flags (`--scenario`,
-`--run-dir`, `--color`, `--version`). `--color auto` (default) colors a TTY
-unless `NO_COLOR` is set; `--color never` disables ANSI; `--color always` colors
-even a pipe. `cargo run -- --version` prints the package version without opening
-a session.
-
-## Read the observation
-
-Type `observe`:
+### 1. Observe
 
 ```text
+> observe
 observation: schema=m2-lane-observation-v3 turn=0 observation_id=1
 self: health=8 position=center mana=6 gold=0 experience=0 cooldown=0
 opponent: label=unknown position=unknown
@@ -67,176 +87,233 @@ available_intents: stabilize,contest,yield,recall
 How to read it:
 
 - `self` is your visible body and resources.
-- `opponent: label=unknown` means you do not currently see them. A later
-  sighting can become `label=reported` with a last-seen turn. Hidden true
-  state is never printed.
-- `jungle_threat: label=unknown` is the same rule for the abstract jungle
-  actor.
-- `available_intents` are the legal plans for this window. The runner
-  recognizes `stabilize`, `contest`, `yield`, and `recall` as plan text.
+- `opponent: label=unknown position=unknown` means you do not currently see them.
+  A later sighting becomes a `reported` label with a last-seen turn. Hidden true
+  state is never printed. **Absence of information is information** — the first
+  decision of the scenario is what you are willing to risk while blind.
+- `jungle_threat` follows the same rule for the abstract jungle actor.
+- `available_intents` are the only legal plans this window.
 
-`inspect observation` reprints that projection. `inspect history` at the start
-of a fresh run reports `history: records=0 status=open`.
+`inspect observation` reprints the projection; `inspect history` prints record
+count and status.
 
-## Stage, undo, and commit
+### 2. Form intent, communicate, delegate
 
-Drafts are local until `commit`. They do not move the lane by themselves.
+Drafts are local and cost nothing until you commit:
 
 ```text
-message ping ally
+> message ping ally
 draft: status=staged field=message
-
-contingency retreat if threat
+> contingency retreat if threat
 draft: status=staged field=contingency
-
-plan contest
+> plan contest
 draft: status=staged field=plan
 ```
 
-`undo` clears uncommitted drafts:
+`undo` clears uncommitted drafts and nothing else:
 
 ```text
-undo
+> undo
 undo: status=cleared-uncommitted-draft
 ```
 
-Stage again, then `commit`. The host binds the plan to an intent:
+Messages and contingencies are how you delegate to the autonomous allied actor.
+They are recorded as communication; they do not by themselves move the lane, and
+the allied actor decides whether to follow.
+
+### 3. Commit, then advance
 
 ```text
-plan contest
-draft: status=staged field=plan
-
-commit
+> commit
 commit: status=committed intent=contest
-```
-
-If commit fails, the runner prints a labeled error and leaves history
-unchanged. Fix the draft and try again.
-
-## Advance two windows
-
-`advance` asks the host to resolve the committed window. Execution is
-delegated; you do not aim or kite.
-
-First window after `contest`:
-
-```text
-advance
+> advance
 advanced: window=first outcome=held_space
 ```
 
-Stage and commit a second intent, then advance again:
+Two windows exist. Repeat stage → commit → advance, then review.
+
+### 4. Debrief and revise
 
 ```text
-plan stabilize
-draft: status=staged field=plan
-
-commit
-commit: status=committed intent=stabilize
-
-advance
-advanced: window=second outcome=yielded_space
-```
-
-This fixture has exactly two windows. After the second advance, the run is
-ready for review and debrief.
-
-## Review, debrief, and replay
-
-```text
-review
-review: records=2 status=complete
-
-replay
-replay: status=verified run_id=current records=2
-
-debrief
+> debrief
 debrief: schema=m2-two-window-final-debrief-v3 final_objective=goal_missed
 window: name=first intent=contest outcome=held_space position=center health=8 wave=advanced objective=goal_achieved
 window: name=second intent=stabilize outcome=yielded_space position=near_tower health=8 wave=held objective=goal_missed
 ```
 
-`review` summarizes committed records. `replay` rechecks them. `debrief`
-separates what you intended from what happened. A missed final objective is
-not a crash, and a held first window is not proof that `contest` was the
-correct call.
+The debrief separates what you intended from what happened. A missed final
+objective is not a crash, and a held first window is not proof that `contest` was
+the right call. `review` summarises committed records; `replay` re-verifies them.
 
-## Optional: branch
+### 5. Branch a counterfactual
 
-After the first window, you can inspect a bounded counterfactual before
-committing the next plan. Stage a different intent, then `branch first`:
+After the first window, before committing the next plan:
 
 ```text
-plan stabilize
+> plan stabilize
 draft: status=staged field=plan
-
-branch first
+> branch first
 branch: status=verified point=first parent_intent=contest branch_intent=stabilize parent_outcome=held_space branch_outcome=yielded_space execution=matched
 ```
 
-The branch is a read of an alternate path at that point. It does not rewrite
-committed history. `commit` and `advance` still apply to the live run.
+A branch is a read of an alternate path at a committed point. It never rewrites
+history, and `commit`/`advance` keep applying to the live run.
 
-## Optional: save and load
+## Play a match
 
-The executable does not pick a default directory. Pass `--run-dir` and a run
-id:
+```sh
+cargo run -- --scenario m9-interactive-match-v1
+```
+
+`help` lists the match verbs: `observe`, `rotate`, `ward`, `contest`, `siege`,
+`evaluate`, `idle`, `commit`, `advance`, `debrief`, `undo`, `quit`. Verbs work bare
+(`rotate 1 bot_river`) or prefixed (`plan rotate 1 bot_river`), and `help <verb>`
+explains one verb.
+
+```text
+> observe
+match_observation: turn=1 status=in_progress winner=none condition=none
+objectives_secured: allied=0 opposing=0
+river_objectives: top=unspawned bot=unspawned active_wards=0
+actor_locations:
+  actor: id=1 team=allied location=base:allied
+  actor: id=2 team=allied location=lane:mid:center
+  actor: id=3 team=allied location=lane:bot:near-tower
+  actor: id=4 team=opposing location=unknown
+```
+
+Unseen opponents are projected as `location=unknown`. Allies' own sectors and active
+wards reveal opponents standing in them, so buying information is a real decision and
+`active_wards` is the visible budget. This is the whole of what vision currently does:
+the projection reports `unknown` or an observed location, never a stale last-known
+position.
+
+A ward that lands on an opponent changes what you can see:
+
+```sh
+printf '%s\n' 'ward allied 3 mid_far_side 3' commit advance observe quit \
+  | cargo run -- --scenario m9-interactive-match-v1
+# actor: id=4 team=opposing location=lane:mid:far-side   (was: location=unknown)
+```
+
+One inconsistency to expect while you play: `observe` prints every structure on the map
+with exact health, including opposing structures you have no sight of, because the
+observation does not yet project structures through vision. `ROADMAP.md` Phase 9 records
+that as an open limit rather than intended design.
+
+A verified winning line, printed turn by turn:
+
+```sh
+printf '%s\n' observe \
+  'rotate 1 bot_river' advance \
+  'ward allied 3 bot_river 3' advance \
+  idle advance idle advance idle advance \
+  'contest bot 4000' advance \
+  'siege outer mid 4000' advance idle advance \
+  'siege inner mid 4500' advance idle advance \
+  'siege inhibitor_turret mid 5000' advance \
+  'siege inhibitor mid 3500' advance \
+  'rotate 2 opposing_base' advance \
+  'siege nexus 6500' advance \
+  evaluate advance debrief quit \
+  | cargo run -- --scenario m9-interactive-match-v1
+```
+
+It ends in `match_debrief: ... winner=allied condition=nexus-demolished`.
+Structure tiers must be sieged in hierarchy order (`outer` → `inner` →
+`inhibitor_turret` → `inhibitor` → `nexus`); skipping a tier fails closed.
+
+Two things to know before you judge the design:
+
+- `siege` and `contest` ask you for a raw damage integer. That is mechanics, not
+  intent, and it is an open design problem rather than an intended expression of
+  the project thesis.
+- An action that changes nothing prints `events=0 effects=0` with no reason. Read
+  the objective status line before concluding the action failed.
+
+### Roster honesty
+
+The shipped default scenario `scenario-complete-allied-snowball-v1` fields
+**three allied actors against one opposing actor**; the second catalog scenario,
+`scenario-complete-comeback-concession-v1`, fields **two against one**.
+
+Two facts explain why this is stated so bluntly, and both matter when you judge the
+design:
+
+- Objective contests and structure sieges resolve from **team side, declared intent,
+  and damage magnitude**. Neither reads which actors are present or where they stand.
+- Actor locations feed **vision** only: each ally's current location becomes
+  team-visible, wards add coverage, and unseen opponents are projected as `unknown`.
+
+So a bigger roster would widen what you can see, not change what wins a fight. That
+is why the runners say "multi-lane" rather than "5v5": the map model and roster type
+are team-size agnostic, but no shipped scenario fields five-a-side, and ten actors
+would not yet alter an outcome. The open question — whether actor presence should
+determine combat — is recorded in `ROADMAP.md` Phase 9 and needs the human play
+evidence `docs/audit_report_20260828.md` calls for.
+
+## Persist and resume
+
+The executable never picks a default directory. Pass `--run-dir` explicitly:
 
 ```sh
 printf 'plan contest\ncommit\nadvance\nsave run\nquit\n' \
   | cargo run -- --scenario m3-two-window-fixture-v1 --run-dir ./runs
-```
-
-```text
 save: status=saved run_id=run records=1
-```
 
-A later process with the same `--run-dir` can restore that id:
-
-```sh
 printf 'load run\ninspect history\nquit\n' \
   | cargo run -- --scenario m3-two-window-fixture-v1 --run-dir ./runs
-```
-
-```text
 load: status=loaded run_id=run records=1
 history: records=1 status=open
 ```
 
-## Command cheat sheet
+Artifacts are bounded, written to a same-directory temporary file and renamed
+atomically, and validated with a state hash on load.
 
-| Command | What it does |
-| --- | --- |
-| `help` / `?` | List the sixteen runner verbs |
-| `help <command>` / `? <command>` | Explain one verb |
-| `observe` | Print the actor-visible observation |
-| `inspect [observation\|history]` | Reprint the observation or visible history |
-| `message <text>` | Stage a message draft |
-| `plan <text>` | Stage a plan draft (`stabilize`, `contest`, `yield`, `recall`) |
-| `contingency <text>` | Stage a contingency draft |
-| `undo` | Clear uncommitted drafts |
-| `commit` | Commit staged choices to the host |
-| `advance` | Resolve the current window |
-| `review` | Summarize committed records |
-| `debrief` | Print the two-window causal debrief |
-| `replay [id]` | Recheck committed records |
-| `branch [id]` | Inspect a bounded counterfactual |
-| `save <id>` | Save artifacts when `--run-dir` is set |
-| `load <id>` | Load artifacts when `--run-dir` is set |
-| `quit` | Close the session |
+## Play through MCP
 
-## Scripted full session
-
-The same two-window path as a single pipe (live capture):
+External agents and IDE plugins drive the same hosts over JSON-RPC 2.0 on stdio:
 
 ```sh
-printf 'observe\nmessage ping ally\ncontingency retreat if threat\nplan contest\ncommit\nadvance\nplan stabilize\ncommit\nadvance\nreplay\ndebrief\nquit\n' \
-  | cargo run -- --scenario m3-two-window-fixture-v1
+cargo run --bin fog-of-intent-mcp                       # serve
+cargo run --bin fog-of-intent-mcp -- --tools            # 25 tools
+cargo run --bin fog-of-intent-mcp -- --resources        # 8 resources
+cargo run --bin fog-of-intent-mcp -- --prompts          # 3 prompts
 ```
+
+`fog-of-intent --mcp` serves the same surface from the main binary. Lane tools
+(`observe`, `stage_draft`, `read_draft`, `clear_draft`, `commit_plan`,
+`advance_window`, `inspect_history`, `get_debrief`, `branch_scenario`), match tools
+(`match_observe`, `match_plan_action`, `match_advance`, `match_debrief`), and the
+battery runners behave exactly as the CLI does, including actor-visible redaction:
+an MCP client sees what a CLI client sees.
+
+## Command cheat sheet
+
+Lane scenarios: `help`, `?`, `help <command>`, `observe`, `inspect
+[observation|history]`, `message <text>`, `plan <stabilize|contest|yield|recall>`,
+`contingency <text>`, `undo`, `commit`, `advance`, `review`, `debrief`,
+`replay [id]`, `branch [id]`, `save <id>`, `load <id>`, `quit`.
+
+Match scenario: `help`, `help <verb>`, `observe`, `rotate <actor> <destination>`,
+`ward [team] <actor> <location> [turns]`, `contest <top|bot> [damage] [burst]`,
+`siege [side] <tier> [lane] <damage>`, `evaluate`, `idle`, `undo`, `commit`,
+`advance`, `debrief`, `quit`.
 
 ## Claim limits
 
-This guide documents the fixture command loop only. Completing it does not
-mean the one-lane scenario, CLI reference client, or human-playable product
-is finished. See [README.md](README.md) for status and [SPEC.md](SPEC.md)
-for verified library work that is not reachable from this runner.
+- Completing this guide means you operated the shipped runners. It does **not**
+  mean the game is validated: no human playtest, accessibility inspection, or
+  player-validation evidence exists.
+- Deterministic replay verification proves reproducibility, not balance,
+  fairness, or fun.
+- The interactive match roster is three-versus-one and two-versus-one, as stated
+  above. Do not describe it as a five-versus-five match.
+- The `m10-*`, `m11-*`, and `m12-*` scenarios are deterministic framework reports.
+  They do not report human participants, a deployed browser client, or a published
+  release; `ROADMAP.md` records each as human or release-gate pending.
+- Library surfaces that no scenario registers are reachable as a library and
+  through MCP runners, not by typing into the command loop.
+
+See [README.md](README.md) for status and [SPEC.md](SPEC.md) for verified library
+work.
