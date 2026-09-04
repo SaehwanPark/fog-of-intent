@@ -23,6 +23,9 @@ Before reading the decisions, three facts about the current state:
   an interactive lane runner, an interactive multi-lane match with 13 verbs, a
   replay-verified complete-match transcript, run-directory save/load, and an MCP server
   with 25 tools. `HOW_TO_PLAY.md` documents these and was written against measurement.
+  (Corrected 2026-09-04: the catalog holds 17 entries with the addition of the `D8` onboarding
+  exception, and run-directory save/load is accepted for interactive **lane** scenarios only, which
+  is what the binary has always enforced. `docs/decision_report_20260904.md` closes the sequence.)
 - **What is *not* established** is equally important: no human playtest has ever run, so
   nothing in this repository is human-validated — not enjoyment, not learnability, not
   accessibility. That gap is the origin of most decisions below.
@@ -53,6 +56,10 @@ each in its own branch and pull request, each verified by the pinned repository 
 breadth freeze is in force, with its named onboarding exception still open. **D6 is shut and is
 the stop gate**: no human player has looked at this, so nothing below "technically verified" is
 claimed anywhere in the project, and D6 is not scheduled by a commit.
+
+**Closed out 2026-09-04.** Every accepted decision except `D6` is implemented and verified, one
+slice per branch and pull request. `docs/decision_report_20260904.md` records what landed, what
+stays open and what unblocks each item, and the list of claims this project has not earned.
 
 ---
 
