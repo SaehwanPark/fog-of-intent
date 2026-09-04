@@ -222,6 +222,56 @@ The specialist skills define their own deterministic section contracts. Runtime
 artifacts are created only when their inspection, resumption, audit, or
 cross-agent consumption value justifies them.
 
+## Claim Precedence and Promotion Evidence
+
+This section settles two recurring failures: documents contradicting each other, and prose
+quietly promoting a subsystem up the evidence ladder (`docs/decision_brief_20260830.md`
+D7 and D9).
+
+### Precedence
+
+When two documents disagree, the lower rule wins, and the higher one is corrected in the same
+change rather than left to argue:
+
+1. Executed code and its tests, and the output a repository command actually prints.
+2. `docs/TERMINOLOGY.md` for the meaning of a domain term, and `docs/COMPATIBILITY.md` for an
+   artifact, version, or migration claim.
+3. `SPEC.md` for delivered scope, `ARCHITECTURE.md` for module boundaries and ownership, and
+   `ROADMAP.md` for milestone status and evidence.
+4. `README.md` and `HOW_TO_PLAY.md` for what a reader may do and what may be claimed about it.
+5. `CHANGELOG.md` for what changed in a given version.
+6. Dated artifacts — `docs/audit_report_*.md`, `docs/decision_brief_*.md`, ADRs, run outputs.
+
+A dated artifact is evidence about its date. It may record that a claim was once wrong, and it
+may set a decision, but it never describes current behaviour and never promotes a claim on its
+own. Quote it as history, with its date; never paraphrase it into present tense. If a dated
+artifact's premise turns out to be false — an audit count that does not match the tree, a
+decision that names a module doing something it does not do — implement the accepted *intent*,
+correct the artifact in the same change, and keep the correction out of player-facing strings.
+
+One active phase is a checker-enforced convention, not a statement about where work lands.
+`ROADMAP.md` declares one current milestone and exactly one phase with `**Status:** Active`;
+Phase 3 (`M3`) holds that marker because its remaining exit conditions are human-evidence checks,
+and they are blocked by the same human gate as `D6`. Accepted-decision slices are recorded as
+evidence sections in the phase whose behaviour they change — Phase 9 for the match slices — while
+`M3` stays Active. A reader who takes `Active` as "this is where the next commit goes" will read
+the roadmap backwards.
+
+### Promotion evidence
+
+Every new or changed subsystem records, in the `ROADMAP.md` evidence section for its slice:
+
+- **Primary audience** — player, agent, or researcher. Where two audiences use one surface, name
+  both and say what each can see.
+- **The specific evidence that would promote it** one rung on the ladder in `README.md`, named
+  narrowly enough that a reader can tell whether it exists.
+- **What is explicitly not claimed**, stated in the same paragraph rather than in a footnote.
+
+The default disposition is the rung the evidence actually reaches, and the ladder has five rungs:
+implemented, deterministic, technically verified, human validated, externally released. Writing
+the note by hand is required before any checker enforces it; a checker that only detects an
+absent heading produces compliant, empty prose, which is the failure this rule exists to stop.
+
 ## Optional Delegation Policy
 
 Use direct work unless specialization, independent read-heavy exploration, or
@@ -275,6 +325,10 @@ required by this portable contract.
 - Parallel writes and stateful tests require disjoint ownership or isolation.
 - No model-specific runtime assumption is needed to use the harness.
 - `AGENTS.md` remains short and points here for conditional detail.
+- Each new or changed subsystem names its primary audience and the evidence that would promote
+  it, in the `ROADMAP.md` section for its slice, with the unclaimed part stated alongside.
+- A document contradicted by executed code is corrected in the same change, and no dated
+  artifact is restated as present behaviour.
 
 ## Scenario Tests
 

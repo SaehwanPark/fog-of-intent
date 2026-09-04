@@ -119,7 +119,11 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 
 - No lane model, full scenario, interactive CLI, MCP transport, general
   entity-component system, arbitrary scenario scripting, migration support, or
-  richer external replay bundle is implemented.
+  richer external replay bundle is implemented. Reject-on-mismatch is the published
+  contract rather than an unfinished migration (`docs/decision_brief_20260830.md` D7):
+  `check_version` fails closed naming artifact, expected, and actual, and any breaking change
+  to a circulating artifact must ship its migration in the same change — see
+  `docs/COMPATIBILITY.md`.
 - The codec remains a local fixture contract; it does not claim external
   compatibility, human experience, or a playable simulation.
 
@@ -2349,13 +2353,41 @@ behavioral research claims remain deferred until study data is collected.
 - Release candidate human testing and release tag archiving.
 
 
+### Governance — claim precedence, promotion evidence, and the artifact contract — 2026-09-03
+
+**Status:** Delivered (documentation and policy; no behavior change)
+
+- `docs/harness/fog-of-intent/team-spec.md` records a precedence order for the repository's
+  documents — executed code and printed output first, terminology and compatibility next,
+  `SPEC.md`/`ARCHITECTURE.md`/`ROADMAP.md`, then reader-facing docs, with dated artifacts
+  (audits, decision briefs, ADRs) describing only their date and never promoting a claim — and
+  the same rule in short form in `AGENTS.md`. It also states what `Active` means under the
+  checker's exactly-one-active-phase rule, since Phase 3 holds the marker on human-evidence
+  grounds while accepted-decision slices land in Phase 9.
+- Every new or changed subsystem now records a primary audience, the specific evidence that
+  would promote it one rung of the `README.md` ladder, and what is explicitly not claimed, in
+  the `ROADMAP.md` evidence section for its slice (`D9`). Written by hand deliberately: the
+  `scripts/check_repository.py` enforcement `D9` option (iii) describes is deferred until the
+  notes' useful shape is known, because a check on heading presence alone yields compliant,
+  empty prose.
+- `docs/COMPATIBILITY.md` publishes reject-on-mismatch as the contract and binds a migration to
+  any breaking change touching a circulating artifact, while naming retire-and-reidentify — the
+  route the M9 `-v2`/`v4` changes took — as legitimate only while that identity has no release,
+  tag, or stored artifact (`D7`).
+- Stale prose corrected against the tree in the same change: `SPEC.md` Future said actor
+  presence resolving engagements was deferred, which D2 disproved, and named rosters of "3v1 and
+  2v1" where both catalog scenarios field three allied actors against one opposing actor.
+- Not claimed: that the precedence order has been exercised against a live contradiction beyond
+  the two corrected above, or that the audience notes are sufficient — both are review-time
+  judgements with no tooling and no human evidence behind them.
+
 ## Future
 
 The canonical milestone sequencing and promotion gates are governed by `ROADMAP.md`.
 Following the ADR-0004 workspace modularization, future work centers on empirical product validation:
 
 - **M3 (Qualitative Gameplay Validation):** Conduct informal qualitative playtest sessions; evaluate decision feel, cognitive friction, agency, and debrief utility.
-- **M9 (Human Match Playtesting):** Conduct human playtesting of complete multi-lane matches at the shipped rosters (3v1 and 2v1); validate strategic depth, role agency, and comeback mechanics. Whether actor presence should resolve engagements, and whether a five-a-side canonical roster is warranted, is deferred to that evidence — see `ROADMAP.md` Phase 9 "Roster and resolution limit".
+- **M9 (Human Match Playtesting):** Conduct human playtesting of complete multi-lane matches at the shipped roster — three allied actors against one opposing actor in both catalog scenarios; validate strategic depth, role agency, and comeback mechanics. Actor presence resolving engagements is **decided and shipped** (`docs/decision_brief_20260830.md` D2); what that evidence must decide is whether the constant, the reach, and the staging refusal are the right rule, and whether a five-a-side canonical roster is warranted — see `ROADMAP.md` Phase 9 "Roster and resolution limit".
 - **M10 (Human Empirical Studies):** Execute live empirical human trials with recruited participants across all 4 cohorts (`StrategyGamer`, `MobaPlayer`, `AccessNeeds`, `NoviceStrategy`); collect empirical data and evaluate alpha readiness disposition gates.
 - **M11 (Live Graphical Interface):** Implement a live browser presentation client only if empirical study evidence demonstrates a user need that text/SVG exports cannot satisfy.
 - **M12 (Public Research Alpha Release):** Tag and publish the official public research alpha distribution with verified reproducibility bundles once human evidence gates are satisfied.

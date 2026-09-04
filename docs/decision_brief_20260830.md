@@ -48,6 +48,12 @@ judgment, not project policy, until the owner ratifies them.
 | **D8** | Keep widening surfaces or deepen the match? | Freeze breadth until D2-D6 land | process | focus |
 | **D9** | Who promotes a claim up the evidence ladder? | Per-subsystem audience + promotion note for new/changed work | S | no more overclaim regressions |
 
+**Status as of 2026-09-03.** D1 ratified. D2, D3, D4, D5, D7, and D9 are accepted and landed —
+each in its own branch and pull request, each verified by the pinned repository checks. D8's
+breadth freeze is in force, with its named onboarding exception still open. **D6 is shut and is
+the stop gate**: no human player has looked at this, so nothing below "technically verified" is
+claimed anywhere in the project, and D6 is not scheduled by a commit.
+
 ---
 
 ## D1 — Product identity: **decided, game-first hybrid**
@@ -314,6 +320,17 @@ reject-on-mismatch as the contract with a binding rule for later.
 revisit when a real second artifact version exists or when run dirs are shared outside
 the project.
 
+**Status (2026-09-03): accepted as (ii) and published.** `docs/COMPATIBILITY.md` gained
+"Published contract: reject on mismatch", which names the fail-closed error actually produced
+(`SerializationError::UnsupportedVersion` via `check_version`, artifact + expected + actual +
+line), and adds the binding half the recommendation asked for: a breaking change to a
+circulating artifact ships its migration in the same change. The clause "revisit when a real
+second artifact version exists or when run dirs are shared outside the project" became the
+condition that closes the escape hatch D2 and D5 used — retire-and-reidentify (`-v1` → `-v2`,
+host `v3` → `v4`) is legitimate **only** while the retired identity has no release, tag, or
+stored artifact. Stating that boundary is what keeps those retirements from quietly becoming a
+habit of deleting other people's data.
+
 ## D8 — Breadth or depth
 
 **Problem.** Sixteen scenarios, 25 MCP tools, eight resources, three prompts, and
@@ -353,16 +370,53 @@ that.
 **Recommendation: (i) now, (iii) only after the notes have been written by hand a few
 times and their useful shape is known.**
 
+**Status (2026-09-03): accepted as (i) and recorded.** `docs/harness/fog-of-intent/team-spec.md`
+now carries a "Claim Precedence and Promotion Evidence" section — a precedence order that puts
+executed code and printed output above every document and dated artifacts below them, and the
+requirement that each new or changed subsystem state its primary audience, the specific evidence
+that would promote it, and what is not claimed, in the `ROADMAP.md` section for its slice.
+`AGENTS.md` carries the short form. The four interactive-match slices already write those notes,
+which is the hand-writing this recommendation asked for before tooling.
+
+**Option (iii) is still deferred, deliberately.** A checker can detect a missing heading; it
+cannot detect a note that says nothing. The failure mode this decision named was prose promoting
+a subsystem quietly, and a compliant-empty-note checker would optimise for the heading.
+
+**Two corrections this slice had to make on the way.** `D9`'s own Problem text was measured
+against a `docs/` directory of about 5,500 lines across 21 files over 300 lines. As of this slice
+`docs/` holds **under 5,000 lines across 14 files, five of them over 300**, and the bulk of the
+project's prose sits in the root documents — roughly 11,000 lines across `ROADMAP.md`, `SPEC.md`,
+`CHANGELOG.md`, and `LESSONS.md`.
+So the "consolidate the docs" instinct pointed at the wrong directory, and no consolidation was
+performed on the strength of that number. Separately, a live contradiction of the kind `D9`
+describes did exist — `SPEC.md` Future said actor presence resolving engagements was *deferred*
+after D2 had shipped it, and named rosters of "3v1 and 2v1" where both catalog scenarios field
+three allied actors against one — and both were corrected against the code rather than argued.
+
 ## Also open, smaller
 
-- **The `"5v5"` selection alias.** It still selects the multi-lane match for input
-  continuity. Keep it until D2 resolves, then decide whether it should ever have existed.
-- **`OpponentSighting::LastKnown`** is modelled and never emitted by the match projection.
-  Resolve together with D3 rather than leaving a dead variant.
-- **Verb-set divergence** (16 lane verbs, 13 match verbs). Decide whether to converge
-  after D5 fixes the economy vocabulary; converging first would move the target twice.
-- **Release posture.** No tag or "release-ready" language until D6 produces human
-  evidence; version bumps follow user-visible behavior, so D2-D5 each carry one.
+- **The `"5v5"` selection alias.** D2 resolved, and the answer is that the alias never described
+  a roster: it selects the multi-lane match, which fields three allied actors against one.
+  **Decision: keep it, and stop it from lying.** No shipped scenario is five-a-side and none will
+  be before D6, so an alias that reads as a team size is a claim a player can act on. The alias
+  stays for input continuity — removing it would break command lists and muscle memory for no
+  player gain — but the surface that offers it must say it selects the multi-lane match, not five
+  actors. Tracked as a small follow-up; it is a string and its test, not a redesign.
+- **`OpponentSighting::LastKnown`** is modelled and never emitted: `crates/foi-map/src/state.rs`
+  constructs only `Observed` and `Unknown`, and a property test panics if a `LastKnown` sighting
+  ever appears. D3 settled the modeling question — the match projection reports a current sighting
+  or `unknown`, never a stale position — so the variant is not a future feature but a dead door
+  that a future writer could open to leak exactly what D3 closed. **Decision: remove the variant.**
+  Nothing emits it, so no output, schema, or ruleset identity changes; it is a small code slice
+  awaiting its own branch, not a rewrite.
+- **Verb-set divergence** (16 lane verbs, 13 match verbs). **Decision: do not converge before
+  D6.** D5 removed the reason the question was premature — the economy vocabulary is now coherent —
+  but converging two verb sets is interface churn across help text, tests, scripts, and docs on a
+  loop nobody has played yet, under a breadth freeze (D8) whose whole point is to stop spending
+  exactly that. Converge only if human evidence shows the two grammars are actually confusing.
+- **Release posture.** Unchanged and honored: no tag, no release-ready language, nothing published
+  while D6 is shut. Version bumps have followed user-visible behavior — D2, D3, D4, and D5 each
+  carried one — and docs-only changes have not bumped the package, per `README.md`.
 
 ## What this brief deliberately does not decide
 

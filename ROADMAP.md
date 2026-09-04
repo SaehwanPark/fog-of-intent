@@ -3,11 +3,24 @@
 **Document role:** Canonical milestone order, scope, and promotion gates
 **Status:** Active
 **Current milestone:** M3 — CLI Reference Experience
-**Last reviewed:** 2026-08-30
+**Last reviewed:** 2026-09-03
 
 This document is the authoritative execution roadmap. The project proposal
 explains the broader vision and preserves the original roadmap concept; when its
 sequencing or checklist differs from this file, this file governs current work.
+
+**What `Active` means here.** Exactly one phase carries `**Status:** Active`, and it must be the
+milestone named above — the repository checker enforces both. `M3` holds the marker because what
+remains of it is human-evidence validation (keyboard-only flow, screen-reader semantics,
+complete interactive behavior), which is gated by the same missing human play evidence as
+decision `D6` of `docs/decision_brief_20260830.md`. It does **not** mean that the next commit
+lands in Phase 3: accepted-decision slices are recorded as evidence sections in the phase whose
+behaviour they change, which since 2026-08-30 has been Phase 9 for every interactive-match slice
+(structure fog, presence resolution, commit-strength vocabulary). `M9` therefore reads
+`Complete (Implementation: Complete; Evidence: Match replay verified; player validation pending)`
+while continuing to receive slices, and that is the honest pair of statements rather than a
+contradiction to smooth over: the phase's own exit conditions stay unmet until humans play, and
+slices keep landing in it because the player-facing loop is where the accepted decisions bite.
 
 ## How to Use This Roadmap
 
@@ -191,6 +204,16 @@ and enough governance to begin the deterministic kernel without ambiguity.
 - [x] Document dependency, security-advisory, and license-policy checks.
 - [x] Define scenario, ruleset, schema, and replay compatibility conventions at
   the minimum depth M1 requires.
+- [x] Publish reject-on-mismatch as the artifact contract and bind a migration to any breaking
+  change that touches a circulating artifact, with retire-and-reidentify permitted only while an
+  identity has no release, tag, or stored artifact (`docs/decision_brief_20260830.md` D7;
+  `docs/COMPATIBILITY.md`, "Published contract: reject on mismatch").
+- [x] Record document precedence and the per-slice audience/promotion-evidence requirement
+  (`docs/decision_brief_20260830.md` D9; `docs/harness/fog-of-intent/team-spec.md`, "Claim
+  Precedence and Promotion Evidence", and `AGENTS.md`). Enforcement stays in review, not in
+  `scripts/check_repository.py`: a check that only finds a missing heading produces compliant,
+  empty prose, which is the failure the rule targets. Reconsider enforcement only after the
+  notes have been written by hand often enough to know their useful shape.
 
 ### Deliverables
 
