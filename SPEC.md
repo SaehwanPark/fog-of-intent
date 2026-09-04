@@ -927,9 +927,10 @@ remain open.
   strategy fixtures and the M9 interactive match. The resulting evidence is
   limited to reproducible protocol behavior and software defects; it does not
   establish human enjoyment, accessibility, trust, or research validity.
-- M9 match observations now consume `MatchMapState::observe` and preserve
-  `Observed`, `LastKnown`, or payload-free `Unknown` opponent-location
-  certainty. In-progress debriefs fail closed, siege descriptions identify
+- M9 match observations now consume `MatchMapState::observe` and preserve its
+  two-valued opponent-location certainty: `Observed`, or payload-free `Unknown`.
+  (Corrected 2026-09-04: this bullet listed `LastKnown`, a variant the
+  projection never emitted and which has since been removed.) In-progress debriefs fail closed, siege descriptions identify
   their target team and attacker, and staged actions require an explicit undo
   before replacement.
 - Focused host, terminal, and executable regressions cover the actor-safety,

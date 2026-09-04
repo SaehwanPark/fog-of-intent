@@ -24,12 +24,8 @@ pub enum OpponentSighting {
     location: MapLocation,
     in_transit: bool,
   },
-  /// Opponent is in fog of war, but was previously observed.
-  LastKnown {
-    location: MapLocation,
-    last_seen_turn: u32,
-  },
-  /// Opponent is entirely in fog of war with no recent sighting.
+  /// Opponent is in fog of war. The match projection never reports a stale position, so an
+  /// unseen opponent carries no location at all; a sighting is either current or absent.
   Unknown,
 }
 

@@ -294,6 +294,8 @@ fn observations_only_reveal_team_visible_enemies() {
           .get_actor_location(*enemy)
           .expect("sighted enemy is tracked")
           .current_location();
+        // The projection has no stale-position variant to produce: an opponent is
+        // either currently sighted or carries no location at all.
         match sighting {
           OpponentSighting::Observed { location, .. } => {
             assert_eq!(
@@ -311,9 +313,6 @@ fn observations_only_reveal_team_visible_enemies() {
               "enemy at {true_location:?} on a team-visible location must be Observed"
             );
           }
-          // Generated states have stationary actors and no prior sightings,
-          // so a fresh observation never carries a stale LastKnown entry.
-          OpponentSighting::LastKnown { .. } => panic!("unexpected LastKnown sighting"),
         }
       }
       // Projection determinism: the same state must project identically.

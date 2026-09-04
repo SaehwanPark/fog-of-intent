@@ -32,6 +32,13 @@ already accepted. That is **additive input acceptance**: a wider set of inputs r
 same sectors it always named, no previously accepted input changes meaning, and no projection
 changed — so the host identifier stays `v4` and no replay identity moves.
 
+One removal, recorded for completeness. `OpponentSighting::LastKnown` and the host report's
+matching certainty case were deleted: declared, never constructed, and never written to a stored
+artifact, replay, or protocol payload — an in-process projection type only. No identifier moves
+and no reader can ever meet an old value, which is what makes retiring it legitimate under this
+contract rather than a migration to write. The lane subsystem keeps its own `LaneBelief::LastKnown`,
+which the lane observation genuinely produces.
+
 M2 v1 is retired internal history. It has no release, tag, external codec, or
 supported artifact, so there is no migration path. The current M2 contract uses
 ruleset `4`, v3 observation/profile/replay/strategy/scenario/debrief/branch

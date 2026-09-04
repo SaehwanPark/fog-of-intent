@@ -417,11 +417,22 @@ three allied actors against one — and both were corrected against the code rat
   stays for input continuity — removing it would break command lists and muscle memory for no
   player gain — but the surface that offers it must say it selects the multi-lane match, not five
   actors. Tracked as a small follow-up; it is a string and its test, not a redesign.
+  **Status (2026-09-04): closed.** The alias resolves and nothing player-visible offers it: the
+  catalog entry a player chooses from reads "3 allied actors vs 1 opposing actor", its display
+  name and description contain no `5v5`, and the usage text does not advertise it. A test pins all
+  three facts alongside the alias still resolving, so the label cannot creep back into a menu.
 - **`OpponentSighting::LastKnown`** is modelled and never emitted: `crates/foi-map/src/state.rs`
   constructs only `Observed` and `Unknown`, and a property test panics if a `LastKnown` sighting
   ever appears. D3 settled the modeling question — the match projection reports a current sighting
   or `unknown`, never a stale position — so the variant is not a future feature but a dead door
   that a future writer could open to leak exactly what D3 closed. **Decision: remove the variant.**
+  **Status (2026-09-04): removed.** `OpponentSighting` is now `Observed` or `Unknown`, and the host
+  report type it fed (`MatchActorLocation`) lost its matching stale case and the `last_known:`
+  spelling that would have rendered it. The property test keeps asserting the same property with
+  one arm fewer — there is no longer a variant that could carry a stale position. The lane
+  subsystem's `LaneBelief::LastKnown` and the GUI's vision status are untouched: the lane fixture
+  really does model a stale report, which is why its `LastKnown` is a feature and the match
+  projection's was a door.
   Nothing emits it, so no output, schema, or ruleset identity changes; it is a small code slice
   awaiting its own branch, not a rewrite.
 - **Verb-set divergence** (16 lane verbs, 13 match verbs). **Decision: do not converge before
