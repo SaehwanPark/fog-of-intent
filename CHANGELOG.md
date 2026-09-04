@@ -3,6 +3,34 @@
 All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 
+## Unreleased — 2026-09-04 (stop-gate decision report, docs only)
+
+### Added
+
+- **`docs/decision_report_20260904.md`** closes the implementation sequence opened by
+  `docs/decision_brief_20260830.md`. Eight merges, `0.1.239` → `0.1.245`, one branch and pull
+  request per slice: `D4`, `D3`, `D2`, `D5`, `D7`+`D9`, `D8`'s named onboarding exception, the two
+  dead-door dispositions, and the identifier sweep. The report states the stop gate and why work
+  stopped at it, what each slice changed authoritatively, what the sequence established at the
+  technically-verified rung, a paste-ready list of claims the project has **not** earned, and an
+  open-items table naming what unblocks each — `D6` for the human-evidence items, the `D8` freeze for
+  MCP exposure of the teaching plan, and a stated reason to persist matches for `--run-dir`.
+  It is written as a dated artifact and promotes no current-state claim, per the precedence rule in
+  `docs/harness/fog-of-intent/team-spec.md`.
+
+### Corrected
+
+- The decision brief's opening "what a person can actually do today" block still read "a
+  16-scenario CLI catalog" after the seventeenth entry shipped, and described run-directory
+  save/load without its lane-only scope. Both corrected in place with a dated parenthetical rather
+  than rewritten, so the brief still reads as the document that was ratified.
+
+### Evidence boundary
+
+- The report claims nothing beyond technically verified and asserts explicitly that no person
+  unfamiliar with the game has been watched using any of it. `ROADMAP.md` keeps its Active marker on
+  M3 because the remaining items are the human-evidence checks `D6` blocks.
+
 ## Unreleased — 2026-09-04 (identifiers a reader could not grep, docs only)
 
 ### Corrected
