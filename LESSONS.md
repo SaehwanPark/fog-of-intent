@@ -1797,3 +1797,26 @@ canonical policy instead of duplicating it.
   runner, report, or published transcript iterates it, membership is a claim, not a detail: add an
   explicit second accessor for the new role rather than widening the measured one, and pin
   membership with a test that names the expected members.
+
+## Quote identifiers from the code that defines them, not from prose memory
+
+- Context: `ARCHITECTURE.md`'s M9 module list describes each catalog in one long bullet and names
+  the canonical scenarios it registers.
+- Symptom: Those bullets cited `base_race_decisive_swing`, `teamfight_comeback`,
+  `routine_laning_absorption`, `diverse_engaged_population`, `complete_allied_snowball`, and
+  `MapLocation::AlliedBase`. None of those strings exists in the tree, so a reader who grep'd one to
+  find the implementing code concluded the feature was missing. Nothing could have caught it: no
+  build, test, or checker reads a backtick.
+- Cause: The list was written as prose description rather than copied from the `scenario_id` fields
+  that define those names, so it also silently predated `D2`'s `-v2` re-identification. Prose
+  identifiers drift at every rename and leave no failure behind.
+- Resolution: Quote identifiers from the code that defines them. Sweep current-state docs after a
+  re-identification: extract every backticked token containing a dash, underscore, digit, or
+  interior capital, and check each against concatenated `src/`/`crates/`/`scripts/` sources. Expect
+  roughly 3 false positives per real finding - `Type::method` spellings, skill-directory names,
+  retired ids `docs/COMPATIBILITY.md` exists to name, and future-type constraints under
+  "Consequential Type Boundaries" are all legitimately absent - so read each hit instead of
+  trusting the count.
+- Prevention: Keep the sweep out of CI. A permanent checker needs an allowlist for the absent names
+  above, and that allowlist becomes the drift it was meant to prevent; `D9` deferred checker
+  enforcement of claim precedence for the same reason.
