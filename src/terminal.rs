@@ -511,11 +511,11 @@ pub fn render_match_output(output: &crate::host::CliMatchOutput) -> String {
       );
       line(
         &mut text,
-        "command: name=contest usage=plan contest <top|bot> [damage] [burst] summary=engage or burst river neutral objective (Dragon/Baron)",
+        "command: name=contest usage=plan contest <top|bot> [damage] [burst] summary=engage or burst river neutral objective (Dragon/Baron); only actors in its sector, or one beat away, deliver the force",
       );
       line(
         &mut text,
-        "command: name=siege usage=plan siege [side] <tier> [lane] <damage> summary=attack enemy structure along defense hierarchy (side names the attacker; allied is the default)",
+        "command: name=siege usage=plan siege [side] <tier> [lane] <damage> summary=attack enemy structure along defense hierarchy (side names the attacker; allied is the default); only actors in its sector, or one beat away, deliver the force",
       );
       line(
         &mut text,
@@ -724,12 +724,12 @@ fn render_match_help_topic(text: &mut String, topic: &str) {
     ),
     "contest" => (
       "plan contest <top|bot> [damage] [burst]",
-      "stage a river objective engagement or burst",
+      "stage a river objective engagement or burst; present actors cap what lands",
       "plan contest bot 4000 burst",
     ),
     "siege" => (
       "plan siege [side] <tier> [lane] <damage>",
-      "stage an attack against the enemy structure hierarchy; side names the attacker (allied by default)",
+      "stage an attack against the enemy structure hierarchy; side names the attacker (allied by default); present actors cap what lands",
       "plan siege outer mid 4000",
     ),
     "evaluate" => (
@@ -816,6 +816,9 @@ pub fn render_match_error(error: &crate::host::CliMatchError) -> String {
     }
     crate::host::CliMatchError::ExecutionFailed(err) => {
       format!("tactical execution failed: {err}")
+    }
+    crate::host::CliMatchError::ForceWithoutPresence { message } => {
+      format!("no force in reach: {message}")
     }
     crate::host::CliMatchError::DebriefUnavailable => {
       "match debrief is unavailable until terminal evaluation".to_owned()

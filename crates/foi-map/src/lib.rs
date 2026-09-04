@@ -41,6 +41,13 @@ mod tests;
 
 use foi_kernel::RulesetId;
 
+/// Identity of the map rule layer: sector topology, beat travel, ward sight, and the
+/// structure/objective state machines that consume them.
+///
+/// Presence-gated force delivery (`m9-complete-match-v2`) measures presence with this
+/// layer's existing beat distances and changes none of them, so this id is deliberately
+/// unchanged; the rule that did change is carried by the composed-match schema and the
+/// scenario ids, which are the identities that travel with match transcripts and debriefs.
 pub const M9_MAP_RULESET: RulesetId = RulesetId::new(9);
 pub const M9_MAP_TOPOLOGY_SCHEMA_V1: &str = "m9-map-topology-v1";
 pub const M9_TRAVEL_MODEL_SCHEMA_V1: &str = "m9-travel-model-v1";
@@ -66,6 +73,10 @@ pub const M9_DECISION_DENSITY_SCHEMA_V1: &str = "m9-decision-density-v1";
 pub const M9_DECISION_DENSITY_CATALOG_SCHEMA_V1: &str = "m9-decision-density-catalog-v1";
 pub const M9_COMPLETE_MATCH_SCHEMA_V1: &str = "m9-complete-match-v1";
 pub const M9_COMPLETE_MATCH_CATALOG_SCHEMA_V1: &str = "m9-complete-match-catalog-v1";
+/// Current composed complete-match and catalog identities, defined in their own modules
+/// and re-exported here so the registry never holds a second copy of a version string.
+pub use crate::complete_match::M9_COMPLETE_MATCH_SCHEMA_V2;
+pub use crate::complete_match_catalog::M9_COMPLETE_MATCH_CATALOG_SCHEMA_V2;
 pub const M9_POPULATION_VALIDATION_SCHEMA_V1: &str = "m9-population-validation-v1";
 pub const M9_POPULATION_VALIDATION_CATALOG_SCHEMA_V1: &str = "m9-population-validation-catalog-v1";
 

@@ -1678,3 +1678,52 @@ canonical policy instead of duplicating it.
   entity the rule has redacted. On a coarse sector map, write fog tests from the sector
   outward, and re-run whole-text redaction assertions after any renderer change, since they
   scan every line the projection produces.
+
+## Re-derive scripted fixtures from an authority change, never patch their expected counters
+
+- Context: Decision D2 (`docs/decision_brief_20260830.md`) made actor presence an input to
+  objective and siege resolution, so the two canonical complete-match plans in
+  `crates/foi-map/src/complete_match_catalog.rs`, their replay-verified transcript, the host
+  and binary command scripts, and several expected counters all became claims about a rule the
+  code no longer applied.
+- Symptom: Patching ids and expected numbers by hand turns one authority change into a dozen
+  unrelated test failures whose diffs look like noise. The real finding hid inside that noise:
+  the two-actor comeback plan stops winning once delivery is capped per present actor, which is
+  evidence about the rule, not a fixture to be repaired back to its old value.
+- Cause: Canonical scenario plans are *derived* from the ruleset. Editing their expectations
+  instead of re-deriving them keeps the old rule's shape while claiming the new identity, which
+  is exactly the label-outruns-evidence failure `docs/audit_report_20260828.md` documents.
+- Resolution: Rebuild each plan by simulating the new rule, then read the resulting turn,
+  objective, event, and effect counts back out of the run and let those become the expectations
+  (`CompleteMatchCatalog::all()` over a temporary debug run, then the transcript and host scripts
+  rewritten from the same script). Bump the whole identity chain together:
+  `m9-complete-match-v2`, `m9-complete-match-catalog-v2`, both `-v2` scenario ids, and
+  `m9-interactive-match-host-v3`, and keep the retired constants documented as retired.
+- Prevention: When a change touches authoritative resolution, treat every scripted scenario,
+  transcript, and piped command list as generated output: regenerate, then copy actual into
+  expected. If a shipped scenario no longer reaches its stated ending, record that as a result
+  of the decision rather than as a failure to fix.
+
+## Refuse a player action only on facts the player could have computed
+
+- Context: Presence-gated delivery makes some legal declarations deliver nothing. The host had
+  to choose between committing a turn that applies zero force, silently ignoring the turn, or
+  refusing the declaration before it is staged.
+- Symptom: A committed turn that delivers nothing is indistinguishable from a rules quirk, and
+  the zero-delivery path also masks the subsystem's own legality error - a 0-presence siege never
+  reaches `transition_structure_siege`, so `StructureInvulnerable` is never surfaced for an
+  attack that never happened. A naive pre-check would have made that worse by reporting unseen
+  opponents standing in the target sector.
+- Cause: The pre-validation lives at the host edge, where it can see latent truth that the
+  actor-visible observation deliberately withholds, and any refusal there can become a leak.
+- Resolution: `CliMatchHost::stage` refuses only what the player could have worked out - own
+  actor sectors from `observe` plus static map adjacency - phrased as
+  `error: no force in reach: … rotate first`, and it refuses *before* staging so no turn is
+  spent. Partial delivery stays a committed turn and is explained through the existing note
+  channel with declared, present, and delivered figures. `CompleteMatchState::force_declaration`
+  supplies the target sector so the host never re-derives the rule, and pinning tests cover both
+  the refusal and the absence of hidden information.
+- Prevention: Gate any host-side pre-validation on actor-visible facts, and state that boundary
+  in `docs/TERMINOLOGY.md`. Prefer refusing before committing over explaining afterwards, but
+  only for what the player could have predicted; report the gap between declared and delivered
+  instead of inventing a new legality token.

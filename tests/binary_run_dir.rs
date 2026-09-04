@@ -402,10 +402,10 @@ fn binary_prints_replay_verified_complete_match_transcript() {
   assert_eq!(lines.len(), 6, "full transcript: {stdout}");
   assert_eq!(lines[0], "match-replay: begin");
   assert!(lines[1].starts_with(
-    "match: scenario=scenario-complete-allied-snowball-v1 winner=allied condition=nexus-demolished"
+    "match: scenario=scenario-complete-allied-snowball-v2 winner=allied condition=nexus-demolished"
   ));
   assert!(lines[3].starts_with(
-    "match: scenario=scenario-complete-comeback-concession-v1 winner=allied condition=match-conceded"
+    "match: scenario=scenario-complete-comeback-concession-v2 winner=allied condition=match-conceded"
   ));
   assert_eq!(lines[5], "match-replay: complete");
 }
@@ -649,6 +649,7 @@ fn binary_runs_interactive_m9_match_and_reaches_victory() {
   let binary = binary_path();
   let commands = [
     "observe",
+    "siege nexus 6500",
     "rotate 1 bot_river",
     "advance",
     "ward allied 3 bot_river 3",
@@ -665,15 +666,15 @@ fn binary_runs_interactive_m9_match_and_reaches_victory() {
     "advance",
     "idle",
     "advance",
+    "rotate 1 mid_far_side",
+    "advance",
     "siege inner mid 4500",
     "advance",
-    "idle",
+    "rotate 2 opposing_base",
     "advance",
     "siege inhibitor_turret mid 5000",
     "advance",
     "siege inhibitor mid 3500",
-    "advance",
-    "rotate 2 opposing_base",
     "advance",
     "siege nexus 6500",
     "advance",
@@ -707,14 +708,21 @@ fn binary_runs_interactive_m9_match_and_reaches_victory() {
   assert!(stdout.contains("match_observation: turn=1 status=in_progress"));
   assert!(stdout.contains("actor: id=4 team=opposing location=unknown"));
   assert!(!stdout.contains("actor: id=4 team=opposing location=lane:mid:far-side"));
-  assert!(stdout.contains("advanced: turn=1 action=rotation"));
+  assert!(
+    stdout.contains("advanced: turn=1 action=rotation"),
+    "the refused declaration must not have consumed turn 1"
+  );
   assert!(stdout.contains("advanced: turn=2 action=warding"));
   assert!(stdout.contains("advanced: turn=6 action=objective-contest"));
   assert!(stdout.contains("advanced: turn=7 action=structure-siege"));
   assert!(stdout.contains(
     "advanced: turn=15 action=terminal-evaluation events=0 effects=0 match_status=concluded"
   ));
-  assert!(stdout.contains("match_debrief: scenario=scenario-complete-allied-snowball-v1 winner=allied condition=nexus-demolished final_turn=14"));
+  assert!(
+    stdout.contains("error: no force in reach:"),
+    "a declaration no actor can carry must be refused with a reason, not silently applied"
+  );
+  assert!(stdout.contains("match_debrief: scenario=scenario-complete-allied-snowball-v2 winner=allied condition=nexus-demolished final_turn=14"));
   assert!(stdout.contains("quit: session=closed"));
 }
 

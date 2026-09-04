@@ -45,7 +45,7 @@ The MCP server also ships as its own binary:
 | Kind | Scenario ids | What it does |
 | --- | --- | --- |
 | Interactive lane | `m3-two-window-fixture-v1`, `m2-strategy-happy-path-v1`, `m2-strategy-risk-taking-v1`, `m2-strategy-conservative-v1` | Command one laner through two decision windows, then debrief |
-| Interactive match | `m9-interactive-match-v1` | Command a multi-lane team turn by turn to a victory condition (see [Roster honesty](#roster-honesty)) |
+| Interactive match | `m9-interactive-match-v1` | Command a multi-lane team turn by turn to a victory condition (see [Presence decides what lands](#presence-decides-what-lands)) |
 | Print-and-exit report | `m9-complete-match-replay-v1`, `m6-behavioral-experiments-v1`, `m7-calibration-proof-v1`, `m8-team-scenarios-v1`, `m10-human-study-synthesis-v1`, `m10-empirical-cohort-study-v1`, `m11-gui-presentation-v1`, `m11-gui-browser-flow-v1`, `m12-alpha-release-checks-v1`, `m12-reproducibility-bundle-v1`, `m12-alpha-archive-v1` | Run a deterministic battery and print a report; no prompt |
 
 Interactive lanes share one verb set. The interactive match has its own verb set.
@@ -222,25 +222,37 @@ A verified winning line, printed turn by turn:
 
 ```sh
 printf '%s\n' observe \
+  'siege nexus 6500' \
   'rotate 1 bot_river' advance \
   'ward allied 3 bot_river 3' advance \
   idle advance idle advance idle advance \
   'contest bot 4000' advance \
   'siege outer mid 4000' advance idle advance \
-  'siege inner mid 4500' advance idle advance \
+  'rotate 1 mid_far_side' advance \
+  'siege inner mid 4500' advance \
+  'rotate 2 opposing_base' advance \
   'siege inhibitor_turret mid 5000' advance \
   'siege inhibitor mid 3500' advance \
-  'rotate 2 opposing_base' advance \
   'siege nexus 6500' advance \
   evaluate advance debrief quit \
   | cargo run -- --scenario m9-interactive-match-v1
 ```
 
-It ends in `match_debrief: ... winner=allied condition=nexus-demolished`.
-Structure tiers must be sieged in hierarchy order (`outer` → `inner` →
-`inhibitor_turret` → `inhibitor` → `nexus`); skipping a tier fails closed.
+The first `siege` is refused on purpose, and it costs no turn:
 
-Two things to know before you judge the design:
+```text
+error: no force in reach: no allied actor stands in base:opposing or a neighbouring sector, so this action would deliver no force; rotate first
+```
+
+The rotations that follow are the roster walking its force into position: an actor in a
+lane's far-side sector reaches that lane's inner tier, and an actor standing in the
+enemy base sector reaches the deep tiers of all three lanes at once. The line ends in
+`match_debrief: ... winner=allied condition=nexus-demolished`. Structure tiers must be
+sieged in hierarchy order (`outer` → `inner` → `inhibitor_turret` → `inhibitor` →
+`nexus`); skipping a tier fails closed, and so does a tier that your own actors cannot
+reach from where they stand.
+
+Three things to know before you judge the design:
 
 - `siege` and `contest` ask you for a raw damage integer. That is mechanics, not
   intent, and it is an open design problem rather than an intended expression of
@@ -249,32 +261,48 @@ Two things to know before you judge the design:
   `turn_note:` line, for example
   `turn_note: code=objective-unspawned detail=bot-river-drake is not on the map yet (spawns in 3 turn(s)), so the declared force had nothing to hit`.
   Wards (`ward-placement-recorded-as-phase`), explicit `idle`
-  (`idle-without-action`), a zero damage declaration (`zero-declared-force`), and a
-  plain `evaluate` (`terminal-evaluation-only`) are each named the same way. The
+  (`idle-without-action`), a zero damage declaration (`zero-declared-force`), a siege or
+  contest that fewer actors than you assumed could carry (`force-capped`, for example
+  `turn_note: code=force-capped detail=declared 7500 force at lane:mid:center but only 1 actor(s) stood within reach, so 3500 landed`),
+  and a plain `evaluate` (`terminal-evaluation-only`) are each named the same way. The
   note is a host explanation built from facts `observe` already shows you, not an
   authoritative event: `events` and `effects` stay the authoritative counters.
 
-### Roster honesty
+### Presence decides what lands
 
-The shipped default scenario `scenario-complete-allied-snowball-v1` fields
-**three allied actors against one opposing actor**; the second catalog scenario,
-`scenario-complete-comeback-concession-v1`, fields **two against one**.
+The shipped default scenario `scenario-complete-allied-snowball-v2` fields **three
+allied actors against one opposing actor**; the second catalog scenario,
+`scenario-complete-comeback-concession-v2`, fields **three against one** as well.
 
-Two facts explain why this is stated so bluntly, and both matter when you judge the
-design:
+The rosters are stated bluntly because they now decide outcomes:
 
-- Objective contests and structure sieges resolve from **team side, declared intent,
-  and damage magnitude**. Neither reads which actors are present or where they stand.
-- Actor locations feed **vision** only: each ally's current location becomes
-  team-visible, wards add coverage, unseen opponents are projected as `unknown`, and
-  unseen opposing structures are projected as `not-visible` rather than as exact health.
+- A contest or a siege delivers at most **3 500 force per own actor standing in the
+  target sector, or one beat away** — that sector, or somewhere the actor could already
+  step to. Declare 7 500 with one actor in reach and 3 500 lands; the turn says so with
+  a `force-capped` note.
+- A declaration with **nobody** in reach is refused before it is staged, so no turn is
+  spent delivering nothing. That check uses only facts you already hold: your own
+  actors' locations from `observe`, and the static map. It never reveals an unseen
+  opponent.
+- Structure tier health decides how many actors a push needs — outer turret 3 500,
+  inhibitor 3 000, inner turret 4 000, inhibitor turret 4 500, Nexus 6 000 — so one
+  actor takes an outer turret and everything deeper needs a second actor standing with
+  you. That is why the comeback scenario concedes only with three allied actors: two
+  hold the enemy base sector, which touches all three lane far-sides at once, while the
+  third walks the rivers.
 
-So a bigger roster would widen what you can see, not change what wins a fight. That
-is why the runners say "multi-lane" rather than "5v5": the map model and roster type
-are team-size agnostic, but no shipped scenario fields five-a-side, and ten actors
-would not yet alter an outcome. The open question — whether actor presence should
-determine combat — is recorded in `ROADMAP.md` Phase 9 and needs the human play
-evidence `docs/audit_report_20260828.md` calls for.
+Actor positions still feed **vision** on the same terms as before: each ally's current
+location becomes team-visible, wards add coverage, unseen opponents are projected as
+`unknown`, and unseen opposing structures are projected as `not-visible` rather than as
+exact health.
+
+What remains untrue, and is not claimed: this is not five-a-side. The map model and
+roster type are team-size agnostic and `MatchMapState` accepts arbitrary rosters, but no
+shipped scenario fields ten actors. And the specific numbers — 3 500 per actor, one beat
+of reach, a raw damage integer as your expression of intent — are one coherent proposal,
+not a balanced rule set. Whether standing where the force lands feels like strategy or
+like bookkeeping is exactly the question `docs/audit_report_20260828.md` says needs human
+play evidence, and that evidence does not exist yet.
 
 ## Persist and resume
 

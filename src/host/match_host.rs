@@ -9,7 +9,8 @@
 use crate::kernel::{ActorId, StateHash};
 use crate::map::complete_match::{
   CompleteMatchAction, CompleteMatchError, CompleteMatchPlan, CompleteMatchResult,
-  CompleteMatchState, M9_COMPLETE_MATCH_SCHEMA_V1, MatchPhaseKind, MatchPhaseRecord,
+  CompleteMatchState, M9_COMPLETE_MATCH_SCHEMA_V2, MatchPhaseKind, MatchPhaseRecord,
+  PRESENCE_REACH_BEATS, deliverable_force,
 };
 use crate::map::complete_match_catalog::CompleteMatchCatalog;
 use crate::map::contest::ObjectiveIntent;
@@ -24,8 +25,10 @@ use crate::map::vision::DEFAULT_WARD_DURATION_TURNS;
 /// Identity of the interactive match host contract, including its observation
 /// projection. `v2` reports defensive structures through the team's sight as coarse
 /// health bands instead of exact global health (`docs/decision_brief_20260830.md`
-/// decision D3); the authoritative transitions, events, and state hashes did not change.
-pub const CLI_MATCH_HOST_SCHEMA: &str = "m9-interactive-match-host-v2";
+/// decision D3). `v3` resolves declared force against the actors standing in the target
+/// sector (decision D2): an over-declared siege or contest delivers less than it names,
+/// an unbacked declaration is refused at staging, and the turn note reports the cap.
+pub const CLI_MATCH_HOST_SCHEMA: &str = "m9-interactive-match-host-v3";
 
 /// Default interactive match scenario ID.
 pub const CLI_INTERACTIVE_MATCH_SCENARIO_ID: &str = "m9-interactive-match-v1";
@@ -72,6 +75,13 @@ pub enum MatchTurnNote {
   },
   /// The target objective was active, but the declared force resolved to zero.
   ZeroDeclaredForce { objective: ObjectiveKind },
+  /// Declared force was more than the actors standing in reach could deliver.
+  ForceCapped {
+    sector: &'static str,
+    declared: u32,
+    present: usize,
+    delivered: u32,
+  },
   /// Nothing else explained the empty turn; the counters are still accurate.
   Unattributed,
 }
@@ -86,6 +96,7 @@ impl MatchTurnNote {
       Self::ObjectiveUnspawned { .. } => "objective-unspawned",
       Self::ObjectiveSecured { .. } => "objective-secured",
       Self::ZeroDeclaredForce { .. } => "zero-declared-force",
+      Self::ForceCapped { .. } => "force-capped",
       Self::Unattributed => "unattributed",
     }
   }
@@ -124,6 +135,14 @@ impl MatchTurnNote {
       Self::ZeroDeclaredForce { objective } => format!(
         "{} is active, but the declared force was zero, so nothing landed",
         objective.as_str()
+      ),
+      Self::ForceCapped {
+        sector,
+        declared,
+        present,
+        delivered,
+      } => format!(
+        "declared {declared} force at {sector} but only {present} actor(s) stood within reach, so {delivered} landed"
       ),
       Self::Unattributed => {
         "the committed action resolved without recording an event or effect".to_owned()
@@ -182,16 +201,26 @@ pub enum CliMatchOutput {
 pub enum CliMatchError {
   Closed,
   EmptyInput,
-  UnknownCommand { verb: String },
-  InvalidSyntax { message: String },
+  UnknownCommand {
+    verb: String,
+  },
+  InvalidSyntax {
+    message: String,
+  },
   MissingAction,
   MissingCommittedAction,
   NothingToUndo,
   MatchAlreadyConcluded,
   MatchDidNotTerminate,
   ExecutionFailed(CompleteMatchError),
+  /// A force declaration no own actor can back up was refused before staging.
+  ForceWithoutPresence {
+    message: String,
+  },
   DebriefUnavailable,
-  UnknownHelpTopic { topic: String },
+  UnknownHelpTopic {
+    topic: String,
+  },
 }
 
 impl From<CompleteMatchError> for CliMatchError {
@@ -474,8 +503,7 @@ impl CliMatchHost {
         let destination = parse_map_location(tokens[2])?;
         let desc = format!("rotate actor {} to {}", actor.value(), destination.as_str());
         let action = CompleteMatchAction::Rotate { actor, destination };
-        self.staged_action = Some((action, desc.clone()));
-        Ok(CliMatchOutput::DraftStaged { description: desc })
+        self.stage(action, desc)
       }
       "ward" => {
         // syntax: ward [team] <actor_id> <location> [duration]
@@ -530,8 +558,7 @@ impl CliMatchHost {
           location,
           duration_turns,
         };
-        self.staged_action = Some((action, desc.clone()));
-        Ok(CliMatchOutput::DraftStaged { description: desc })
+        self.stage(action, desc)
       }
       "contest" => {
         // syntax: contest <top|bot> [damage] [burst]
@@ -572,8 +599,7 @@ impl CliMatchHost {
           allied_intent: Some(intent),
           opposing_intent: None,
         };
-        self.staged_action = Some((action, desc.clone()));
-        Ok(CliMatchOutput::DraftStaged { description: desc })
+        self.stage(action, desc)
       }
       "siege" => {
         // syntax: siege [side] <tier> [lane] <damage>
@@ -637,14 +663,12 @@ impl CliMatchHost {
           lane,
           raw_damage,
         };
-        self.staged_action = Some((action, desc.clone()));
-        Ok(CliMatchOutput::DraftStaged { description: desc })
+        self.stage(action, desc)
       }
       "evaluate" => {
         let desc = "evaluate terminal victory conditions".to_string();
         let action = CompleteMatchAction::EvaluateTerminal;
-        self.staged_action = Some((action, desc.clone()));
-        Ok(CliMatchOutput::DraftStaged { description: desc })
+        self.stage(action, desc)
       }
       "idle" | "hold" | "pass" => {
         let desc = "idle (no tactical contest action)".to_string();
@@ -652,13 +676,42 @@ impl CliMatchHost {
           allied_intent: None,
           opposing_intent: None,
         };
-        self.staged_action = Some((action, desc.clone()));
-        Ok(CliMatchOutput::DraftStaged { description: desc })
+        self.stage(action, desc)
       }
       other => Err(CliMatchError::UnknownCommand {
         verb: other.to_string(),
       }),
     }
+  }
+
+  /// Stage a parsed action, refusing force that no own actor can back up.
+  ///
+  /// The authority would apply such a declaration as zero damage. Committing a turn to
+  /// deliver nothing is never what a player means, and both inputs to this check - the
+  /// team's own positions and the static map - are facts the player already holds, so
+  /// it refuses nothing the player could not have worked out alone.
+  fn stage(
+    &mut self,
+    action: CompleteMatchAction,
+    desc: String,
+  ) -> Result<CliMatchOutput, CliMatchError> {
+    if let Some((sector, team)) = self.state.force_declaration(&action) {
+      let present = self
+        .state
+        .map()
+        .presence_within(team, sector, PRESENCE_REACH_BEATS);
+      if present == 0 {
+        return Err(CliMatchError::ForceWithoutPresence {
+          message: format!(
+            "no {} actor stands in {} or a neighbouring sector, so this action would deliver no force; rotate first",
+            team.as_str(),
+            sector.as_str()
+          ),
+        });
+      }
+    }
+    self.staged_action = Some((action, desc.clone()));
+    Ok(CliMatchOutput::DraftStaged { description: desc })
   }
 
   fn apply_commit(&mut self) -> Result<CliMatchOutput, CliMatchError> {
@@ -693,6 +746,12 @@ impl CliMatchHost {
     }
 
     let action_turn = self.state.turn();
+    // Presence is read before the transition runs, because the transition is what would
+    // otherwise change the picture the turn note describes.
+    let declaration = self
+      .state
+      .force_declaration(&action)
+      .map(|(sector, team)| (sector, declared_total(&action), team));
     let (kind, events, effects) = self.state.apply_action(&action)?;
     self.total_events += events;
     self.total_effects += effects;
@@ -735,7 +794,21 @@ impl CliMatchHost {
       events,
       effects,
       self.is_concluded(),
-    );
+    )
+    .or_else(|| {
+      declaration.and_then(|(sector, declared, team)| {
+        let present = self
+          .state
+          .map()
+          .presence_within(team, sector, PRESENCE_REACH_BEATS);
+        force_cap_note(
+          sector,
+          declared,
+          present,
+          deliverable_force(present, declared),
+        )
+      })
+    });
 
     Ok(CliMatchOutput::Advanced {
       turn: action_turn,
@@ -752,7 +825,7 @@ impl CliMatchHost {
       let final_hash = self.state.combined_hash();
       Ok(CliMatchOutput::Debrief(CompleteMatchResult {
         scenario_id: self.scenario_id,
-        schema: M9_COMPLETE_MATCH_SCHEMA_V1,
+        schema: M9_COMPLETE_MATCH_SCHEMA_V2,
         initial_hash: self.initial_hash,
         final_hash,
         final_turn,
@@ -777,6 +850,28 @@ impl CliMatchHost {
     } else {
       Err(CliMatchError::NothingToUndo)
     }
+  }
+}
+
+/// Explain a force declaration that fewer actors than its player assumed could back.
+///
+/// The turn recorded something, so this is not a quiet-turn note: it names the roster
+/// that stood behind the declaration, which is the fact the declaration cannot show.
+fn force_cap_note(
+  sector: MapLocation,
+  declared: u32,
+  present: usize,
+  delivered: u32,
+) -> Option<MatchTurnNote> {
+  if delivered == declared {
+    None
+  } else {
+    Some(MatchTurnNote::ForceCapped {
+      sector: sector.as_str(),
+      declared,
+      present,
+      delivered,
+    })
   }
 }
 
@@ -853,6 +948,27 @@ fn contest_note(
       Some(_) => None,
       None => quiet.then_some(MatchTurnNote::Unattributed),
     },
+  }
+}
+
+/// Total force an action declares across both teams' intents.
+///
+/// The interactive session is single-sided, so this is the force the acting player
+/// should expect to see land.
+fn declared_total(action: &CompleteMatchAction) -> u32 {
+  match action {
+    CompleteMatchAction::SiegeStructure { raw_damage, .. } => *raw_damage,
+    CompleteMatchAction::ContestObjectives {
+      allied_intent,
+      opposing_intent,
+    } => {
+      allied_intent.as_ref().and_then(declared_force).unwrap_or(0)
+        + opposing_intent
+          .as_ref()
+          .and_then(declared_force)
+          .unwrap_or(0)
+    }
+    _ => 0,
   }
 }
 
@@ -1167,11 +1283,11 @@ mod tests {
       "contest bot 4000",
       "siege outer mid 4000",
       "idle",
+      "rotate 1 mid_far_side",
       "siege inner mid 4500",
-      "idle",
+      "rotate 2 opposing_base",
       "siege inhibitor_turret mid 5000",
       "siege inhibitor mid 3500",
-      "rotate 2 opposing_base",
       "siege nexus 6500",
       "evaluate",
     ];
@@ -1261,9 +1377,44 @@ mod tests {
       );
     }
     // The drake is on the map by turn 4, so the declared force lands and there
-    // is nothing to explain; the siege lands too.
-    assert_eq!(note_for(&mut host, "contest bot 4000"), None);
-    assert_eq!(note_for(&mut host, "siege outer mid 4000"), None);
+    // is nothing to explain; the siege lands too. Both declarations sit at the
+    // one-actor delivery cap, so nothing is left over to explain.
+    assert_eq!(note_for(&mut host, "contest bot 3500"), None);
+    assert_eq!(note_for(&mut host, "siege outer mid 3500"), None);
+  }
+
+  #[test]
+  fn an_over_declared_turn_reports_the_force_cap() {
+    let mut host = CliMatchHost::default_session();
+    for _ in 0..3 {
+      note_for(&mut host, "idle");
+    }
+    // Exactly one allied actor stands within reach of the bot river, so the extra
+    // 500 force has nobody to carry it.
+    assert_eq!(
+      note_for(&mut host, "contest bot 4000"),
+      Some(MatchTurnNote::ForceCapped {
+        sector: "river:bot",
+        declared: 4_000,
+        present: 1,
+        delivered: 3_500,
+      })
+    );
+  }
+
+  #[test]
+  fn force_without_presence_is_refused_before_it_is_committed() {
+    let mut host = CliMatchHost::default_session();
+    // Nobody stands near the enemy Nexus on turn 1, and the player can see that from
+    // their own roster: the declaration is refused instead of quietly wasting a turn.
+    let error = host.apply_line("siege nexus 6500").unwrap_err();
+    assert!(matches!(error, CliMatchError::ForceWithoutPresence { .. }));
+    assert_eq!(
+      host.turn(),
+      1,
+      "a refused declaration must not commit a turn"
+    );
+    assert!(!host.is_concluded());
   }
 
   #[test]

@@ -14,7 +14,7 @@ resolver = "2"
 
 [package]
 name = "fog-of-intent"
-version = "0.1.241"
+version = "0.1.242"
 edition = "2024"
 rust-version = "1.96"
 license = "MIT"

@@ -878,19 +878,19 @@ fn match_replay_transcript_lists_both_replay_verified_matches() {
   assert_eq!(lines[0], "match-replay: begin");
   assert_eq!(
     lines[1],
-    "match: scenario=scenario-complete-allied-snowball-v1 winner=allied condition=nexus-demolished final-turn=14 objectives-allied=1 objectives-opposing=0 phases=15 events=15 effects=10"
+    "match: scenario=scenario-complete-allied-snowball-v2 winner=allied condition=nexus-demolished final-turn=14 objectives-allied=1 objectives-opposing=0 phases=15 events=16 effects=11"
   );
   assert_eq!(
     lines[2],
-    "replay: scenario=scenario-complete-allied-snowball-v1 initial-hash-match=yes final-hash-match=yes"
+    "replay: scenario=scenario-complete-allied-snowball-v2 initial-hash-match=yes final-hash-match=yes"
   );
   assert_eq!(
     lines[3],
-    "match: scenario=scenario-complete-comeback-concession-v1 winner=allied condition=match-conceded final-turn=29 objectives-allied=3 objectives-opposing=1 phases=29 events=26 effects=21"
+    "match: scenario=scenario-complete-comeback-concession-v2 winner=allied condition=match-conceded final-turn=34 objectives-allied=3 objectives-opposing=1 phases=34 events=36 effects=26"
   );
   assert_eq!(
     lines[4],
-    "replay: scenario=scenario-complete-comeback-concession-v1 initial-hash-match=yes final-hash-match=yes"
+    "replay: scenario=scenario-complete-comeback-concession-v2 initial-hash-match=yes final-hash-match=yes"
   );
   assert_eq!(lines[5], "match-replay: complete");
 }

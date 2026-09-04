@@ -16,9 +16,12 @@
 use crate::kernel::ActorId;
 use crate::map::complete_match::{
   CompleteMatchAction, CompleteMatchError, CompleteMatchPlan, CompleteMatchState,
-  M9_COMPLETE_MATCH_SCHEMA_V1, MatchPhaseKind,
+  M9_COMPLETE_MATCH_SCHEMA_V2, MatchPhaseKind,
 };
 use crate::map::complete_match_catalog::CompleteMatchCatalog;
+use crate::map::contest::ObjectiveIntent;
+use crate::map::objective::{ObjectiveKind, ObjectiveStatus};
+use crate::map::structures::StructureStatus;
 use crate::map::structures::StructureTier;
 use crate::map::topology::{LaneId, MapLocation, TeamSide};
 use crate::map::travel::ActorLocation;
@@ -34,10 +37,35 @@ fn single_actor_state() -> CompleteMatchState {
   )
 }
 
+/// A roster positioned to back a full enemy mid-ladder siege.
+///
+/// Presence caps delivery, so a fixture that expects a ladder to fall needs actors in
+/// the sectors the damage lands in: the lane far-side sector reaches the outer tier,
+/// the inner tier, and the enemy base, and two present actors are what a 4 500-health
+/// inhibitor turret and a 6 000-health Nexus require.
+fn siege_roster_state() -> CompleteMatchState {
+  let forward = ActorId::new(1);
+  let second = ActorId::new(2);
+  let deep = ActorId::new(3);
+  CompleteMatchState::new(
+    1,
+    vec![forward, second, deep],
+    vec![],
+    vec![
+      (
+        forward,
+        ActorLocation::Stationary(MapLocation::MID_FAR_SIDE),
+      ),
+      (second, ActorLocation::Stationary(MapLocation::MID_FAR_SIDE)),
+      (deep, ActorLocation::Stationary(MapLocation::OPPOSING_BASE)),
+    ],
+  )
+}
+
 fn terminating_plan() -> CompleteMatchPlan {
   CompleteMatchPlan {
     scenario_id: "test-nexus-plan",
-    initial: single_actor_state(),
+    initial: siege_roster_state(),
     actions: vec![
       CompleteMatchAction::SiegeStructure {
         side: TeamSide::Allied,
@@ -80,7 +108,7 @@ fn terminating_plan() -> CompleteMatchPlan {
 fn allied_snowball_terminates_by_nexus_demolition() {
   let plan = CompleteMatchCatalog::allied_snowball_victory();
   let result = plan.execute().expect("snowball plan executes");
-  assert_eq!(result.schema, M9_COMPLETE_MATCH_SCHEMA_V1);
+  assert_eq!(result.schema, M9_COMPLETE_MATCH_SCHEMA_V2);
   assert_eq!(result.winner, TeamSide::Allied);
   assert_eq!(result.condition, MatchVictoryCondition::NexusDemolished);
   assert_eq!(result.allied_objectives_secured, 1);
@@ -109,14 +137,16 @@ fn comeback_concession_terminates_by_concession() {
   assert_eq!(result.condition, MatchVictoryCondition::MatchConceded);
   assert_eq!(result.allied_objectives_secured, 3);
   assert_eq!(result.opposing_objectives_secured, 1);
-  assert_eq!(result.final_turn, 29);
+  // Presence-gated resolution made this scenario longer: the roster has to walk into
+  // the enemy base before the deep tiers can fall, which is the point of the change.
+  assert_eq!(result.final_turn, 34);
 }
 
 #[test]
 fn catalog_find_and_all_are_consistent() {
   assert_eq!(CompleteMatchCatalog::all().len(), 2);
-  assert!(CompleteMatchCatalog::find("scenario-complete-allied-snowball-v1").is_some());
-  assert!(CompleteMatchCatalog::find("scenario-complete-comeback-concession-v1").is_some());
+  assert!(CompleteMatchCatalog::find("scenario-complete-allied-snowball-v2").is_some());
+  assert!(CompleteMatchCatalog::find("scenario-complete-comeback-concession-v2").is_some());
   assert!(CompleteMatchCatalog::find("missing").is_none());
   for plan in CompleteMatchCatalog::all() {
     let result = plan.execute().expect("catalog plan executes");
@@ -156,7 +186,7 @@ fn final_hash_commits_subsystem_changes() {
   let actor = ActorId::new(1);
   let ward_plan = |ward_location: MapLocation| CompleteMatchPlan {
     scenario_id: "hash-vision-check",
-    initial: single_actor_state(),
+    initial: siege_roster_state(),
     actions: vec![
       CompleteMatchAction::Rotate {
         actor,
@@ -266,7 +296,7 @@ fn ward_id_history_is_committed_by_the_hash() {
   // ward at the same spot leaves one active ward with a later id.
   let early = CompleteMatchPlan {
     scenario_id: "ward-history-early",
-    initial: single_actor_state(),
+    initial: siege_roster_state(),
     actions: vec![
       ward(1),
       CompleteMatchAction::ContestObjectives {
@@ -291,7 +321,7 @@ fn ward_id_history_is_committed_by_the_hash() {
   // Late single ward: same active set shape, different id sequence.
   let late = CompleteMatchPlan {
     scenario_id: "ward-history-late",
-    initial: single_actor_state(),
+    initial: siege_roster_state(),
     actions: {
       let mut actions = vec![
         CompleteMatchAction::Rotate {
@@ -314,6 +344,139 @@ fn ward_id_history_is_committed_by_the_hash() {
   assert_ne!(
     early.final_hash, late.final_hash,
     "the combined hash must commit ward placement history"
+  );
+}
+
+// --- Presence-gated delivery ---
+
+#[test]
+fn force_without_presence_delivers_nothing() {
+  let mut state = single_actor_state();
+  // Nobody stands near the enemy Nexus. The siege is recorded, applies no damage, and
+  // is not an error: presence removes force, not legality.
+  let (kind, events, effects) = state
+    .apply_action(&CompleteMatchAction::SiegeStructure {
+      side: TeamSide::Allied,
+      tier: StructureTier::Nexus,
+      lane: None,
+      raw_damage: 6_500,
+    })
+    .expect("an unbacked siege is recorded, not rejected");
+  assert_eq!(kind, MatchPhaseKind::StructureSiege);
+  assert_eq!(events, 0);
+  assert_eq!(effects, 0);
+  assert!(
+    state
+      .structures()
+      .get_structure(TeamSide::Opposing, None, StructureTier::Nexus)
+      .is_some_and(|entry| entry.status.is_standing()),
+    "an unbacked siege must leave the Nexus standing"
+  );
+
+  // An objective intent with nobody in its sector delivers nothing either, while the
+  // contest transition still runs so spawn timers keep their cadence.
+  let mut state = single_actor_state();
+  let idle = CompleteMatchAction::ContestObjectives {
+    allied_intent: None,
+    opposing_intent: None,
+  };
+  for _ in 0..5 {
+    state.apply_action(&idle).expect("uncommitted contest");
+  }
+  state
+    .apply_action(&CompleteMatchAction::ContestObjectives {
+      allied_intent: Some(ObjectiveIntent::Engage {
+        objective: ObjectiveKind::BotRiverObjective,
+        damage: 4_000,
+      }),
+      opposing_intent: None,
+    })
+    .expect("the Drake has spawned by now");
+  assert_eq!(
+    state
+      .objectives()
+      .get(ObjectiveKind::BotRiverObjective)
+      .status,
+    ObjectiveStatus::Active {
+      current_health: 3_500,
+      max_health: 3_500,
+      engaged_by: None
+    },
+    "declared force with no present actor must not damage the objective"
+  );
+}
+
+#[test]
+fn declared_force_is_clamped_to_present_actors() {
+  let lone = ActorId::new(1);
+  let support = ActorId::new(2);
+  let siege_inner = CompleteMatchAction::SiegeStructure {
+    side: TeamSide::Allied,
+    tier: StructureTier::InnerTurret,
+    lane: Some(LaneId::Mid),
+    raw_damage: 4_500,
+  };
+  let mut state = CompleteMatchState::new(
+    1,
+    vec![lone, support],
+    vec![],
+    vec![
+      (lone, ActorLocation::Stationary(MapLocation::MID_FAR_SIDE)),
+      (support, ActorLocation::Stationary(MapLocation::ALLIED_BASE)),
+    ],
+  );
+  // The ladder opens first: a lone present actor takes the 3 500-health outer turret.
+  state
+    .apply_action(&CompleteMatchAction::SiegeStructure {
+      side: TeamSide::Allied,
+      tier: StructureTier::OuterTurret,
+      lane: Some(LaneId::Mid),
+      raw_damage: 4_000,
+    })
+    .expect("the outer tier is backed by the actor in the sector");
+  // One present actor delivers one actor's worth of force, so the over-declared 4 500
+  // leaves the 4 000-health inner turret standing at the difference.
+  state
+    .apply_action(&siege_inner)
+    .expect("one actor still delivers");
+  assert!(
+    matches!(
+      state
+        .structures()
+        .get_structure(
+          TeamSide::Opposing,
+          Some(LaneId::Mid),
+          StructureTier::InnerTurret
+        )
+        .map(|entry| entry.status),
+      Some(StructureStatus::Standing {
+        current_hp: 500,
+        ..
+      })
+    ),
+    "a lone present actor must deliver a partial siege, not the declared total"
+  );
+
+  // With a second actor in the sector the same declaration is fully backed.
+  state
+    .apply_action(&CompleteMatchAction::Rotate {
+      actor: support,
+      destination: MapLocation::MID_FAR_SIDE,
+    })
+    .expect("the support rotates into the sector");
+  state
+    .apply_action(&siege_inner)
+    .expect("two present actors back the declaration");
+  assert!(
+    state
+      .structures()
+      .get_structure(
+        TeamSide::Opposing,
+        Some(LaneId::Mid),
+        StructureTier::InnerTurret
+      )
+      .is_some_and(|entry| !entry.status.is_standing()),
+    "a second present actor must back the same declaration"
   );
 }
 
@@ -386,10 +549,12 @@ fn rotating_an_untracked_actor_is_rejected() {
 
 #[test]
 fn illegal_sieges_are_rejected_through_the_structure_transition() {
-  // Inner turret before outer turret violates the vulnerability hierarchy.
+  // Inner turret before outer turret violates the vulnerability hierarchy. The
+  // fixture roster stands where the damage would land, so the subsystem's legality
+  // rejection is what surfaces rather than the presence cap.
   let plan = CompleteMatchPlan {
     scenario_id: "illegal-siege",
-    initial: single_actor_state(),
+    initial: siege_roster_state(),
     actions: vec![
       CompleteMatchAction::SiegeStructure {
         side: TeamSide::Allied,
@@ -436,7 +601,7 @@ fn markdown_contains_match_labels_without_hidden_state() {
   let result = plan.execute().expect("snowball plan executes");
   let markdown = result.render_markdown();
   assert!(markdown.contains("# M9 Complete Match Report"));
-  assert!(markdown.contains("**Scenario**: `scenario-complete-allied-snowball-v1`"));
+  assert!(markdown.contains("**Scenario**: `scenario-complete-allied-snowball-v2`"));
   assert!(markdown.contains("**Winner**: Allied"));
   assert!(markdown.contains("**Condition**: `nexus-demolished`"));
   assert!(markdown.contains("**Objectives Secured**: allied 1, opposing 0"));
