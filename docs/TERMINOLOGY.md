@@ -79,6 +79,12 @@ below.
   the declaring team's present actors. Declared force is the player's intent and can exceed
   what the roster can carry; delivered force is the authoritative outcome, and the gap
   between them is reported rather than hidden.
+- **Commit strength:** The player-facing word for declared force — `light`, `committed`, or
+  `all-in`, priced at one actor's delivery, two, and the whole roster's. It is a spelling of
+  a declaration, never a separate resource or a second economy: an exact integer names the
+  same quantity and is the expert and automation spelling. A word is resolved before the
+  authority sees the action, so a word and its integer produce identical state, events, and
+  hashes.
 
 ## Authority rules
 
@@ -90,6 +96,9 @@ below.
 - Exact structure health is latent host-authoritative data. A player projection
   reports only the observed structure state above, so an adapter or renderer must
   not print, summarize, or re-derive an exact health value.
+- Only the **host** turns a commit-strength word into a number. An adapter may forward a
+  word or an integer, but must not price, scale, round, or clamp a commitment itself, and
+  must not accept both spellings for one action.
 - A presence check reads only the declaring team's own actor positions and static map
   knowledge. Refusing or capping a declaration must not report whether an unseen opponent
   stands in the target sector.

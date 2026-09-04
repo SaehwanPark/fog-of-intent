@@ -2248,6 +2248,48 @@ rather than like the game arguing with the player. Whether this feels like strat
 bookkeeping is the question Priority 3 of `docs/audit_report_20260828.md` reserves for human
 play evidence. No fun, balance, or fairness claim is attached.
 
+### Current M9 commit-strength vocabulary evidence
+
+The force vocabulary (`docs/decision_brief_20260830.md` decision D5) was **accepted as
+option (ii) and implemented**: commit-strength words are the player-facing spelling and raw
+integers remain as the expert and automation alias. This is a host-surface change only — the
+authority still receives an integer declaration — so the match schema stays
+`m9-complete-match-v2` and `CLI_MATCH_HOST_SCHEMA` moves to `m9-interactive-match-host-v4`,
+which is additive: every `v3` script and MCP call means exactly what it meant before.
+
+- [x] One vocabulary, priced in the unit the authority pays. `CommitStrength` in
+  `crates/foi-map/src/complete_match.rs` maps `light` to `FORCE_PER_PRESENT_ACTOR`,
+  `committed` to twice it, and `all-in` to `MatchMapState::team_size` multiples of it, so a
+  player who learns "one present actor delivers this much" also learns what each word costs.
+  `CommitStrength::parse` accepts `all-in`, `all_in`, and `allin`.
+- [x] One resolver. `parse_force` in `src/host/match_host.rs` is the only place a word
+  becomes a number; the terminal, a recorded script, and MCP all reach the same function, so
+  `committed` is 7 000 everywhere. A rejected word quotes the accepted list.
+- [x] Agents are not penalised by the human spelling. `match_plan_action` gained a `commit`
+  enum parameter alongside `damage`, and `force_argument` refuses a request that supplies
+  both rather than silently preferring one.
+- [x] **Two things this slice deliberately did not do.** The default amount for a bare
+  `contest`/`siege` stays the integer 4 000 (`LEGACY_DEFAULT_FORCE`), which no word spells:
+  re-pricing a bare command would be a balance change arriving inside a vocabulary change.
+  And the words are **not** resolved through `crates/foi-map/src/cost_profile.rs`, despite how
+  D5 was phrased: that module counts executed transitions, hashes, projections, and replays —
+  it is a deterministic performance profile, not a resource economy, and no force cost table
+  exists in the repository. The accepted intent behind D5 (one coherent, teachable economy
+  instead of an unexplained damage integer) is served by pricing the words against the unit
+  the presence rule already pays.
+
+**Audience and promotion evidence**: the same audience as above — the human player of
+`--scenario m9-interactive-match-v1` and the agent driving `match_plan_action`. The promoted
+claim is "the player's words for commitment and an expert's integer name the same declaration,
+resolved by one host function, and an agent is offered both" — **technically verified** by 2
+`foi-map` vocabulary tests, 2 host tests (token/integer equivalence by state hash, rejection
+wording), and 1 MCP test (token accepted, both-parameters refused). It is not human validated:
+no playtest has shown that three words are the right granularity, that a learner maps
+`committed` onto two actors' force without reading this document, or that two spellings of one
+quantity do not read as an inconsistent interface. Whether the vocabulary teaches the presence
+rule or merely decorates it is reserved for the human play evidence in Priority 3 of
+`docs/audit_report_20260828.md`. No fun, balance, or fairness claim is attached.
+
 ### Developer Action Items
 
 - [x] Implement interactive multi-lane CLI session runner (`--scenario m9-interactive-match-v1`), verified at the shipped 3v1 roster; five-a-side is not fielded by any shipped scenario.

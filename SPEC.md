@@ -1989,6 +1989,29 @@ replays to an identical final hash at the library boundary.
   `CompleteMatchState::vision()`, so `ward` purchases information a player can see
   rather than only advancing the `active_wards` counter.
 
+#### Delivered in the interactive match commit-strength vocabulary slice — 2026-09-03
+
+- The player commits in words (`docs/decision_brief_20260830.md` D5, accepted as option ii).
+  `CommitStrength` names `light`, `committed`, and `all-in`, priced at one actor's delivery, two
+  actors', and the whole roster's — the same unit the presence rule pays — and `parse_force` in
+  the match host is the only function that resolves a word into a declaration. An exact integer
+  is still accepted and means exactly what it meant before the words existed, as the expert and
+  automation spelling; MCP offers `commit` and `damage` and refuses a request giving both.
+- The vocabulary is a spelling, not a second economy. A word is resolved before the authority
+  sees the action, so `committed` and `7000` produce identical events, state, and hashes, and no
+  new legality, resource, or cost token was created. `CLI_MATCH_HOST_SCHEMA` moves to
+  `m9-interactive-match-host-v4`, additive over `v3`; the match schema and catalog ids are
+  unchanged.
+- A bare `contest` or `siege` still declares `LEGACY_DEFAULT_FORCE` (4 000), a number no word
+  spells, kept so existing scripts and MCP defaults mean what they meant; re-pricing it would be
+  a balance change disguised as a vocabulary change.
+- The words are not priced by `crates/foi-map/src/cost_profile.rs`, despite D5's phrasing: that
+  module is a deterministic count of transitions, hashes, projections, and replays, not a
+  resource economy, and the repository contains no force cost table.
+- Not claimed: that three words are the right granularity, that a player maps them onto actor
+  counts without reading a document, or that two spellings of one quantity read as coherent.
+  Human play evidence (`D6`) remains the gate.
+
 #### Delivered in the interactive match presence-resolution slice — 2026-09-03
 
 - Actor presence is an input to resolution (`docs/decision_brief_20260830.md` D2, accepted).

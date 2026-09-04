@@ -3,6 +3,54 @@
 All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 
+## Unreleased — 2026-09-03 (commit-strength vocabulary, `0.1.243`)
+
+### Changed
+
+- **The player commits in words** (`docs/decision_brief_20260830.md` D5, accepted as option
+  ii). `contest` and `siege` accept `light`, `committed`, or `all-in` where they used to accept
+  only a damage integer. `CommitStrength` (`crates/foi-map/src/complete_match.rs`) prices them
+  at one actor's delivery, two actors', and the whole roster's (`MatchMapState::team_size`) —
+  the unit the presence rule already pays — and the host's `parse_force` is the only function
+  that turns a word into a declaration, so a terminal session, a recorded script, and an MCP
+  agent asking for `committed` all ask for 7 000.
+- Raw integers remain the expert and automation alias and mean exactly what they meant before.
+  A word is resolved before the authority sees the action, so a word and its integer produce
+  identical events, state, and hashes; no resource, cost, or legality token was created. A
+  made-up word is rejected quoting the accepted list, and the staged draft shows both the
+  resolved figure and the word (`… for 7000 damage (attacker=Allied, strength=committed)`).
+- MCP agents get the same choice, not a second vocabulary: `match_plan_action` accepts `commit`
+  beside `damage`, and `force_argument` refuses a request supplying both instead of silently
+  preferring one.
+- `CLI_MATCH_HOST_SCHEMA` moves to `m9-interactive-match-host-v4`. The change is additive, so a
+  `v3` script or MCP call is still a valid `v4` call, and the match schema and catalog ids are
+  unchanged. A bare `contest`/`siege` still declares `LEGACY_DEFAULT_FORCE` (4 000): re-pricing
+  a command that names no amount would be a balance change arriving inside a vocabulary change.
+- `cost_profile.rs` is named where D5 pointed: it counts executed transitions, hashes,
+  projections, and replays — a deterministic performance profile, not a resource economy. No
+  force cost table exists in the repository, and none was invented for this slice.
+
+### Tests
+
+- 2 new `foi-map` tests (the token ladder is priced in the delivery unit; `all-in` declares the
+  roster and presence prices it), 2 new host tests (a token and its integer stage the same
+  declaration and reach the same state hash; a rejection names the words it accepts), and 1 new
+  MCP test (a token commits, both parameters together are refused and stage nothing).
+- `run_store` test roots now carry a nanosecond component and are cleared before use. Windows
+  recycles process IDs and not every test in that module cleans up, so a counter restarting at
+  zero could inherit a leftover directory's files and fail "one artifact remains".
+
+### Documentation
+
+- `HOW_TO_PLAY.md` gains "How hard to commit" — the word table, the worked `all-in` example with
+  its `force-capped` note, and the integer as expert spelling — plus the updated match command
+  cheat sheet.
+- `docs/TERMINOLOGY.md` defines **commit strength** and rules that only the host prices a word
+  and an adapter must not accept both spellings. `docs/COMPATIBILITY.md` records `v4` as
+  additive over `v3`. `ROADMAP.md` and `SPEC.md` record the slice, the preserved legacy default,
+  and what the vocabulary does not claim; `docs/decision_brief_20260830.md` records D5's status
+  and corrects its own "bypass the cost profile" framing.
+
 ## Unreleased — 2026-09-03 (presence-resolved force, `0.1.242`)
 
 ### Changed

@@ -1727,3 +1727,28 @@ canonical policy instead of duplicating it.
   in `docs/TERMINOLOGY.md`. Prefer refusing before committing over explaining afterwards, but
   only for what the player could have predicted; report the gap between declared and delivered
   instead of inventing a new legality token.
+
+## Check what a named module actually models before implementing a decision phrased in its terms
+
+- Context: Decision D5 was written as "raw damage integers bypass the cost profile, so resolve
+  `light`/`committed`/`all-in` through the cost profile". Implementing that sentence literally
+  meant wiring the new vocabulary to `crates/foi-map/src/cost_profile.rs`.
+- Symptom: That module is `OperationCounts` - transitions executed, state hashes computed,
+  observation projections performed, replays verified - plus a [1, 8, 64, 512] scaling ladder. It
+  is a deterministic performance profile with no resources, no prices, and no force table
+  anywhere in the repository. Resolving a commitment "through the cost profile" would have meant
+  inventing a force economy inside an unrelated profiler, or shipping a token whose stated
+  resolver was a lie that help text and error strings would have repeated to players.
+- Cause: A decision brief can name a module by an assumed role rather than by its shipped
+  behaviour, and a module named "cost profile" in a game engine invites the resource-economy
+  reading. Docs and code had drifted apart before the decision was written, not during it.
+- Resolution: Price the tokens against the quantity the shipped authority already pays -
+  `FORCE_PER_PRESENT_ACTOR` per present actor from D2 - resolve them in one host function
+  (`parse_force`), and state in `ROADMAP.md`, `SPEC.md`, and the decision brief itself that
+  `cost_profile.rs` is an operation counter and that no force cost table exists. The correction
+  also removed the phrase "whatever the cost profile" from the player-visible rejection message.
+- Prevention: Before coding against a module a decision or audit names, read the module's own
+  doc comment and public API and quote what it returns. If the decision's premise does not hold,
+  implement the accepted *intent*, then correct the brief in the same change instead of silently
+  reinterpreting it. Keep that correction out of player-facing strings, which should state rules,
+  not the history of a design mistake.

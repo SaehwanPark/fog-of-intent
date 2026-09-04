@@ -511,11 +511,11 @@ pub fn render_match_output(output: &crate::host::CliMatchOutput) -> String {
       );
       line(
         &mut text,
-        "command: name=contest usage=plan contest <top|bot> [damage] [burst] summary=engage or burst river neutral objective (Dragon/Baron); only actors in its sector, or one beat away, deliver the force",
+        "command: name=contest usage=plan contest <top|bot> [light|committed|all-in|damage] [burst] summary=engage or burst river neutral objective (Dragon/Baron); commit with light/committed/all-in or an exact integer; only actors in its sector, or one beat away, deliver the force",
       );
       line(
         &mut text,
-        "command: name=siege usage=plan siege [side] <tier> [lane] <damage> summary=attack enemy structure along defense hierarchy (side names the attacker; allied is the default); only actors in its sector, or one beat away, deliver the force",
+        "command: name=siege usage=plan siege [side] <tier> [lane] [light|committed|all-in|damage] summary=attack enemy structure along defense hierarchy (side names the attacker; allied is the default); commit with light/committed/all-in or an exact integer; only actors in its sector, or one beat away, deliver the force",
       );
       line(
         &mut text,
@@ -723,14 +723,14 @@ fn render_match_help_topic(text: &mut String, topic: &str) {
       "plan ward allied 3 bot_river 3",
     ),
     "contest" => (
-      "plan contest <top|bot> [damage] [burst]",
-      "stage a river objective engagement or burst; present actors cap what lands",
-      "plan contest bot 4000 burst",
+      "plan contest <top|bot> [light|committed|all-in|damage] [burst]",
+      "stage a river objective engagement or burst; commit by token (light = one actor's force, committed = two, all-in = the roster) or by exact integer; present actors cap what lands",
+      "plan contest bot committed burst",
     ),
     "siege" => (
-      "plan siege [side] <tier> [lane] <damage>",
-      "stage an attack against the enemy structure hierarchy; side names the attacker (allied by default); present actors cap what lands",
-      "plan siege outer mid 4000",
+      "plan siege [side] <tier> [lane] [light|committed|all-in|damage]",
+      "stage an attack against the enemy structure hierarchy; side names the attacker (allied by default); commit by token (light = one actor's force, committed = two, all-in = the roster) or by exact integer; present actors cap what lands",
+      "plan siege outer mid committed",
     ),
     "evaluate" => (
       "plan evaluate",

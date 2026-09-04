@@ -225,6 +225,22 @@ impl MatchMapState {
     sight
   }
 
+  /// How many actors `team` fields, wherever they are standing.
+  ///
+  /// This is the roster a commit-strength token is priced against: `all-in` declares what
+  /// the whole roster could deliver if it all stood at the target, while presence decides
+  /// how much of that declaration actually lands.
+  pub fn team_size(&self, team: TeamSide) -> usize {
+    self
+      .actor_locations
+      .iter()
+      .filter(|(id, _)| match team {
+        TeamSide::Allied => self.is_allied(*id),
+        TeamSide::Opposing => self.is_opposing(*id),
+      })
+      .count()
+  }
+
   /// Count `team`'s actors that can apply force at `target` this turn.
   ///
   /// An actor is present when it stands in the target sector or in a sector at most
