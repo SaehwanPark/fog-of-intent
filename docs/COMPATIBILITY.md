@@ -9,7 +9,12 @@ external backward-compatibility support.
 M9 complete match `m9-complete-match-v1` is retired the same way. Its transition changed
 meaning when actor presence became a resolution input, so its catalog
 (`m9-complete-match-catalog-v1`) and both scenario ids moved to `-v2` and the interactive host
-contract moved to `m9-interactive-match-host-v3`. The retired identities have no release, tag,
+contract moved to `m9-interactive-match-host-v3`, and moved again to
+`m9-interactive-match-host-v4` when the commit-strength words `light`, `committed`, and
+`all-in` joined the force slot of `contest` and `siege`. `v4` is purely additive: an integer
+means exactly what it meant under `v3`, so every `v3` script, MCP call, and recorded plan
+remains valid, and a word resolves to a number in the host before the authority sees the
+action. The retired identities have no release, tag,
 external codec, or stored artifact, so there is no migration path and no v1 plan remains
 executable; a reader must reject `v1`-labeled match input rather than resolving it as `v2`.
 The map ruleset identifier is deliberately unchanged, because the presence test reuses the map

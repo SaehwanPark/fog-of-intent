@@ -330,11 +330,11 @@ impl McpServer {
               .get("objective")
               .and_then(JsonValue::as_str)
               .unwrap_or("bot");
-            let dmg = args
-              .get("damage")
-              .and_then(JsonValue::as_i64)
-              .unwrap_or(4000);
-            format!("contest {obj} {dmg}")
+            let force = match force_argument(args) {
+              Ok(force) => force,
+              Err(message) => return format_tool_error(message),
+            };
+            format!("contest {obj} {force}")
           }
           "siege" => {
             let tier = args
@@ -345,14 +345,14 @@ impl McpServer {
               .get("lane")
               .and_then(JsonValue::as_str)
               .unwrap_or("mid");
-            let dmg = args
-              .get("damage")
-              .and_then(JsonValue::as_i64)
-              .unwrap_or(4000);
+            let force = match force_argument(args) {
+              Ok(force) => force,
+              Err(message) => return format_tool_error(message),
+            };
             if tier == "nexus" {
-              format!("siege nexus {dmg}")
+              format!("siege nexus {force}")
             } else {
-              format!("siege {tier} {lane} {dmg}")
+              format!("siege {tier} {lane} {force}")
             }
           }
           "evaluate" => "evaluate".to_string(),
@@ -734,6 +734,28 @@ fn format_tool_success(text: &str) -> JsonValue {
     ),
     ("isError".into(), JsonValue::Bool(false)),
   ])
+}
+
+/// Resolve the force slot of a `match_plan_action` contest or siege.
+///
+/// An agent gets the same vocabulary as a player: `commit` names a commit-strength token
+/// and `damage` names an exact figure (decision D5's expert and automation alias). They
+/// are alternatives, not layers - accepting both would make one action mean two amounts -
+/// and neither is turned into a number here. The host parser is the single resolver, so the
+/// token means the same thing through MCP, in the terminal, and in a recorded script.
+fn force_argument(args: &JsonValue) -> Result<String, &'static str> {
+  match (args.get("commit"), args.get("damage")) {
+    (Some(_), Some(_)) => Err("give either commit or damage, not both"),
+    (Some(token), None) => token
+      .as_str()
+      .map(str::to_owned)
+      .ok_or("commit must be a token string: light, committed, or all-in"),
+    (None, Some(amount)) => amount
+      .as_i64()
+      .map(|amount| amount.to_string())
+      .ok_or("damage must be an integer"),
+    (None, None) => Ok(crate::host::LEGACY_DEFAULT_FORCE.to_string()),
+  }
 }
 
 fn format_tool_error(error_message: &str) -> JsonValue {

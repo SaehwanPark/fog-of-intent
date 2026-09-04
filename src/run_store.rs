@@ -163,10 +163,19 @@ mod tests {
 
   fn temporary_root() -> PathBuf {
     let id = NEXT_ROOT.fetch_add(1, Ordering::Relaxed);
-    std::env::temp_dir().join(format!(
-      "fog-of-intent-run-store-{}-{id}",
+    let nanos = std::time::SystemTime::now()
+      .duration_since(std::time::UNIX_EPOCH)
+      .map(|since| since.subsec_nanos())
+      .unwrap_or(0);
+    let root = std::env::temp_dir().join(format!(
+      "fog-of-intent-run-store-{}-{id}-{nanos}",
       std::process::id()
-    ))
+    ));
+    // Windows recycles process IDs, and not every test here cleans up, so a counter that
+    // restarts at zero can land on a leftover directory from a dead process and inherit its
+    // files. A fresh name is cleared first so "one artifact remains" means what it says.
+    let _ = fs::remove_dir_all(&root);
+    root
   }
 
   fn artifact() -> &'static str {

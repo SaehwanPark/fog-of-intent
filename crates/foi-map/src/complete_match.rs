@@ -103,6 +103,81 @@ fn contested_objective(intent: &ObjectiveIntent) -> Option<ObjectiveKind> {
   }
 }
 
+/// How hard a player commits, in the words the player uses.
+///
+/// The tokens are the canonical force vocabulary for the match (decision D5 in
+/// `docs/decision_brief_20260830.md`): they name a commitment without asking the player to
+/// know structure health or the per-actor delivery cap. Raw integers keep working as the
+/// expert and automation spelling, so a script or an agent can still ask for an exact
+/// figure; a token is the same declaration written in words. Resolve a token to a number
+/// with [`CommitStrength::declared_force`], then let the presence rule decide what lands.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum CommitStrength {
+  /// One actor's worth of force.
+  Light,
+  /// Two actors' worth of force: a commit that clears a defended tier.
+  Committed,
+  /// Everything the roster could deliver if every actor stood at the target.
+  AllIn,
+}
+
+/// The commit-strength tokens, in escalating order, for help text.
+pub const COMMIT_STRENGTH_TOKENS: [CommitStrength; 3] = [
+  CommitStrength::Light,
+  CommitStrength::Committed,
+  CommitStrength::AllIn,
+];
+
+impl CommitStrength {
+  /// The token spelling a player types.
+  pub const fn as_str(self) -> &'static str {
+    match self {
+      Self::Light => "light",
+      Self::Committed => "committed",
+      Self::AllIn => "all-in",
+    }
+  }
+
+  /// Parse a token, case-insensitively. `allin` and `all_in` are accepted for the same
+  /// token as `all-in` because the hyphen is the awkward one to type under time pressure.
+  pub fn parse(token: &str) -> Option<Self> {
+    match token.to_ascii_lowercase().as_str() {
+      "light" => Some(Self::Light),
+      "committed" | "commit" => Some(Self::Committed),
+      "all-in" | "all_in" | "allin" => Some(Self::AllIn),
+      _ => None,
+    }
+  }
+
+  /// The force this token declares for a team of `roster_size` actors.
+  ///
+  /// One token unit is one actor's worth of delivered force
+  /// ([`FORCE_PER_PRESENT_ACTOR`]), so the vocabulary and the presence rule count in the
+  /// same unit: `all-in` declares the whole roster, and a roster that is not standing at
+  /// the target delivers less than it declared - which is exactly what the turn note
+  /// reports. A roster smaller than the token's actor count still declares that much,
+  /// because the declaration is an intention, and presence is what prices it.
+  pub fn declared_force(self, roster_size: usize) -> u32 {
+    let actors = match self {
+      Self::Light => 1,
+      Self::Committed => 2,
+      // An empty roster cannot happen in a played match; declaring one actor's worth
+      // keeps the token from silently meaning zero.
+      Self::AllIn => roster_size.max(1),
+    };
+    let capacity = u64::from(FORCE_PER_PRESENT_ACTOR)
+      .saturating_mul(u64::try_from(actors).unwrap_or(u64::MAX))
+      .min(u64::from(u32::MAX));
+    u32::try_from(capacity).unwrap_or(u32::MAX)
+  }
+}
+
+impl fmt::Display for CommitStrength {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    f.write_str(self.as_str())
+  }
+}
+
 /// Clamp a declared objective intent to the force `team` can apply at that objective.
 ///
 /// Zero presence resolves to `None` — "this team committed no force this turn" — rather

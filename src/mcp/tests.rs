@@ -789,3 +789,79 @@ fn mcp_server_executes_m10_cohort_study_tool_and_resource() {
   );
   assert!(res_text.contains("m10-cohort-study-cli-report-v1"));
 }
+
+/// Pull the tool text out of a JSON-RPC tools/call response, plus the isError flag.
+fn tool_text(server: &mut McpServer, request: &str) -> (String, bool) {
+  let response = parse_json(&server.handle_line(request).unwrap()).unwrap();
+  let result = response.get("result").expect("result present");
+  let text = result.get("content").unwrap().as_array().unwrap()[0]
+    .get("text")
+    .unwrap()
+    .as_str()
+    .unwrap()
+    .to_owned();
+  let is_error = result
+    .get("isError")
+    .and_then(JsonValue::as_bool)
+    .unwrap_or(false);
+  (text, is_error)
+}
+
+fn plan(server: &mut McpServer, id: u8, arguments: &str) -> (String, bool) {
+  tool_text(
+    server,
+    &format!(
+      r#"{{"jsonrpc":"2.0","id":{id},"method":"tools/call","params":{{"name":"match_plan_action","arguments":{{{arguments}}}}}}}"#
+    ),
+  )
+}
+
+#[test]
+fn mcp_agents_commit_with_the_same_tokens_the_player_types() {
+  let mut server = McpServer::new();
+
+  // The same vocabulary is offered to an agent: the token resolves in the host, so the
+  // staged draft names the figure it stands for.
+  let (draft, is_error) = plan(
+    &mut server,
+    40,
+    r#""action":"siege","tier":"outer","lane":"mid","commit":"committed""#,
+  );
+  assert!(!is_error, "{draft}");
+  assert!(draft.contains("for 7000 damage"), "{draft}");
+  assert!(draft.contains("strength=committed"), "{draft}");
+  // Commit it so the next request starts from a clean slate.
+  let (advanced, is_error) = tool_text(
+    &mut server,
+    r#"{"jsonrpc":"2.0","id":41,"method":"tools/call","params":{"name":"match_advance","arguments":{}}}"#,
+  );
+  assert!(!is_error, "{advanced}");
+
+  // Giving both spellings is rejected instead of silently preferring one, and the rejected
+  // request stages nothing.
+  let (both, is_error) = plan(
+    &mut server,
+    42,
+    r#""action":"siege","tier":"outer","lane":"mid","commit":"light","damage":3500"#,
+  );
+  assert!(is_error, "{both}");
+  assert!(both.contains("either commit or damage"), "{both}");
+  let (nothing, is_error) = tool_text(
+    &mut server,
+    r#"{"jsonrpc":"2.0","id":43,"method":"tools/call","params":{"name":"match_advance","arguments":{}}}"#,
+  );
+  assert!(
+    is_error && nothing.contains("needs a committed tactical action"),
+    "the rejected request must stage nothing: {nothing}"
+  );
+
+  // The integer alias still works, and the exact figure is what stages.
+  let (integer, is_error) = plan(
+    &mut server,
+    44,
+    r#""action":"contest","objective":"bot","damage":4000"#,
+  );
+  assert!(!is_error, "{integer}");
+  assert!(integer.contains("damage=4000"), "{integer}");
+  assert!(!integer.contains("strength="), "{integer}");
+}

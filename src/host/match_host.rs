@@ -8,7 +8,7 @@
 
 use crate::kernel::{ActorId, StateHash};
 use crate::map::complete_match::{
-  CompleteMatchAction, CompleteMatchError, CompleteMatchPlan, CompleteMatchResult,
+  CommitStrength, CompleteMatchAction, CompleteMatchError, CompleteMatchPlan, CompleteMatchResult,
   CompleteMatchState, M9_COMPLETE_MATCH_SCHEMA_V2, MatchPhaseKind, MatchPhaseRecord,
   PRESENCE_REACH_BEATS, deliverable_force,
 };
@@ -27,8 +27,20 @@ use crate::map::vision::DEFAULT_WARD_DURATION_TURNS;
 /// health bands instead of exact global health (`docs/decision_brief_20260830.md`
 /// decision D3). `v3` resolves declared force against the actors standing in the target
 /// sector (decision D2): an over-declared siege or contest delivers less than it names,
-/// an unbacked declaration is refused at staging, and the turn note reports the cap.
-pub const CLI_MATCH_HOST_SCHEMA: &str = "m9-interactive-match-host-v3";
+/// an unbacked declaration is refused at staging, and the turn note reports the cap. `v4`
+/// adds the commit-strength token vocabulary to the force slot of `contest` and `siege`
+/// (decision D5); raw integers keep working unchanged, so a `v3` script is still a `v4`
+/// script.
+pub const CLI_MATCH_HOST_SCHEMA: &str = "m9-interactive-match-host-v4";
+
+/// Force a `contest` or `siege` declares when the player names no amount.
+///
+/// This is the integer the interactive host shipped with before commit-strength tokens
+/// existed, kept so an existing script or MCP caller asking for the default still means
+/// exactly what it meant then. It is deliberately not a token value: no token spells 4 000,
+/// and quietly re-pricing a bare command would be a balance change wearing a vocabulary
+/// costume.
+pub const LEGACY_DEFAULT_FORCE: u32 = 4_000;
 
 /// Default interactive match scenario ID.
 pub const CLI_INTERACTIVE_MATCH_SCENARIO_ID: &str = "m9-interactive-match-v1";
@@ -561,21 +573,17 @@ impl CliMatchHost {
         self.stage(action, desc)
       }
       "contest" => {
-        // syntax: contest <top|bot> [damage] [burst]
+        // syntax: contest <top|bot> [light|committed|all-in|damage] [burst]
         if tokens.len() < 2 {
           return Err(CliMatchError::InvalidSyntax {
-            message: "usage: plan contest <top|bot> [damage] [burst]".into(),
+            message: "usage: plan contest <top|bot> [light|committed|all-in|damage] [burst]".into(),
           });
         }
         let objective = parse_objective_kind(tokens[1])?;
-        let damage = if tokens.len() >= 3 {
-          tokens[2]
-            .parse::<u32>()
-            .map_err(|_| CliMatchError::InvalidSyntax {
-              message: "invalid damage amount; expected integer".into(),
-            })?
+        let (damage, strength) = if tokens.len() >= 3 {
+          parse_force(tokens[2], self.state.map().team_size(TeamSide::Allied))?
         } else {
-          4_000
+          (LEGACY_DEFAULT_FORCE, None)
         };
         let is_burst = tokens.len() >= 4 && tokens[3].eq_ignore_ascii_case("burst");
         let intent = if is_burst {
@@ -587,12 +595,13 @@ impl CliMatchHost {
           ObjectiveIntent::Engage { objective, damage }
         };
         let desc = format!(
-          "contest {} (damage={}, burst={})",
+          "contest {} (damage={}, {}burst={})",
           match objective {
             ObjectiveKind::TopRiverObjective => "top_river_objective",
             ObjectiveKind::BotRiverObjective => "bot_river_objective",
           },
           damage,
+          strength.map_or("".to_owned(), |strength| format!("strength={}, ", strength)),
           is_burst
         );
         let action = CompleteMatchAction::ContestObjectives {
@@ -602,13 +611,13 @@ impl CliMatchHost {
         self.stage(action, desc)
       }
       "siege" => {
-        // syntax: siege [side] <tier> [lane] <damage>
-        // e.g. siege outer mid 4000  OR  siege allied outer mid 4000  OR  siege nexus 6500
+        // syntax: siege [side] <tier> [lane] [light|committed|all-in|damage]
+        // e.g. siege outer mid committed  OR  siege allied outer mid 4000  OR  siege nexus all-in
         if tokens.len() < 3 {
           return Err(CliMatchError::InvalidSyntax {
-            message:
-              "usage: plan siege <outer|inner|inhibitor_turret|inhibitor|nexus> [lane] <damage>"
-                .into(),
+            message: "usage: plan siege <outer|inner|inhibitor_turret|inhibitor|nexus> [lane] \
+                      [light|committed|all-in|damage]"
+              .into(),
           });
         }
         let mut idx = 1;
@@ -635,27 +644,22 @@ impl CliMatchHost {
           Some(LaneId::Mid)
         };
 
-        let raw_damage = if idx < tokens.len() {
-          tokens[idx]
-            .parse::<u32>()
-            .map_err(|_| CliMatchError::InvalidSyntax {
-              message: "invalid siege damage; expected integer".into(),
-            })?
+        let (raw_damage, strength) = if idx < tokens.len() {
+          parse_force(tokens[idx], self.state.map().team_size(side))?
         } else {
-          4_000
+          (LEGACY_DEFAULT_FORCE, None)
         };
 
-        let target_side = match side {
-          TeamSide::Allied => TeamSide::Opposing,
-          TeamSide::Opposing => TeamSide::Allied,
-        };
+        let target_side = side.opposing();
         let desc = format!(
-          "siege {:?} {:?}{} for {} damage (attacker={:?})",
+          "siege {:?} {:?}{} for {} damage ({})",
           target_side,
           tier,
           lane.map_or("".into(), |l| format!(" on {:?}", l)),
           raw_damage,
-          side
+          strength.map_or(format!("attacker={:?}", side), |strength| {
+            format!("attacker={:?}, strength={}", side, strength)
+          })
         );
         let action = CompleteMatchAction::SiegeStructure {
           side,
@@ -989,6 +993,31 @@ fn intent_objective(intent: &ObjectiveIntent) -> ObjectiveKind {
     | ObjectiveIntent::ZoneOpponents { objective, .. } => *objective,
     ObjectiveIntent::ConcedeAndTrade { conceded, .. } => *conceded,
   }
+}
+
+/// Resolve the force slot of `contest` or `siege` as a commit-strength token or an
+/// integer.
+///
+/// The token is the player-facing spelling and the integer is the expert and automation
+/// alias (decision D5). The host is the only place that turns a token into a number, so a
+/// human, a recorded script, and an agent asking through MCP cannot drift apart. The
+/// resolved figure is a *declaration*: the presence rule still decides how much of it
+/// lands.
+fn parse_force(
+  token: &str,
+  roster_size: usize,
+) -> Result<(u32, Option<CommitStrength>), CliMatchError> {
+  if let Some(strength) = CommitStrength::parse(token) {
+    return Ok((strength.declared_force(roster_size), Some(strength)));
+  }
+  token
+    .parse::<u32>()
+    .map(|amount| (amount, None))
+    .map_err(|_| CliMatchError::InvalidSyntax {
+      message: format!(
+        "invalid force '{token}'; expected light, committed, all-in, or an exact integer"
+      ),
+    })
 }
 
 fn parse_actor_id(token: &str) -> Result<ActorId, CliMatchError> {
@@ -1381,6 +1410,52 @@ mod tests {
     // one-actor delivery cap, so nothing is left over to explain.
     assert_eq!(note_for(&mut host, "contest bot 3500"), None);
     assert_eq!(note_for(&mut host, "siege outer mid 3500"), None);
+  }
+
+  #[test]
+  fn a_commit_token_stages_the_force_the_matching_integer_stages() {
+    let mut tokenised = CliMatchHost::default_session();
+    let mut numeric = CliMatchHost::default_session();
+    let staged = |host: &mut CliMatchHost, command: &str| match host.apply_line(command) {
+      Ok(CliMatchOutput::DraftStaged { description }) => description,
+      other => panic!("expected a staged draft, got {other:?}"),
+    };
+    let by_token = staged(&mut tokenised, "siege outer mid committed");
+    let by_integer = staged(&mut numeric, "siege outer mid 7000");
+    // The draft is where a player sees what will be declared, so the token must name the
+    // same figure the integer names - and keep the token visible next to it.
+    assert!(by_integer.contains("for 7000 damage"), "{by_integer}");
+    assert!(by_token.contains("for 7000 damage"), "{by_token}");
+    assert!(by_token.contains("strength=committed"), "{by_token}");
+
+    // Both hosts now hold the same declaration, so the same turn must produce the same
+    // authority state: the token is a spelling, not a second economy.
+    for host in [&mut tokenised, &mut numeric] {
+      host.apply_line("advance").expect("advance tokenised");
+    }
+    assert_eq!(
+      tokenised.state.combined_hash(),
+      numeric.state.combined_hash()
+    );
+  }
+
+  #[test]
+  fn an_unknown_force_word_names_the_tokens_it_accepts() {
+    let mut host = CliMatchHost::default_session();
+    let error = host
+      .apply_line("siege outer mid heavy")
+      .expect_err("a made-up force word must not stage");
+    let message = match error {
+      CliMatchError::InvalidSyntax { message } => message,
+      other => panic!("expected invalid syntax, got {other:?}"),
+    };
+    for token in ["light", "committed", "all-in"] {
+      assert!(message.contains(token), "{message} omits {token}");
+    }
+    assert!(
+      message.contains("heavy"),
+      "the rejection should quote the word that failed: {message}"
+    );
   }
 
   #[test]

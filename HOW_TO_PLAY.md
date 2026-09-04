@@ -254,9 +254,11 @@ reach from where they stand.
 
 Three things to know before you judge the design:
 
-- `siege` and `contest` ask you for a raw damage integer. That is mechanics, not
-  intent, and it is an open design problem rather than an intended expression of
-  the project thesis.
+- `siege` and `contest` used to ask only for a raw damage integer — mechanics, not
+  intent. They now take `light`, `committed`, or `all-in`, with the integer kept as the
+  expert spelling. Whether those three words are the right ones, and whether two
+  spellings of one quantity is a tutorial cost worth paying, is still an open design
+  question rather than a validated design.
 - An action that changes nothing says why. The `advanced:` line is followed by a
   `turn_note:` line, for example
   `turn_note: code=objective-unspawned detail=bot-river-drake is not on the map yet (spawns in 3 turn(s)), so the declared force had nothing to hit`.
@@ -291,6 +293,43 @@ The rosters are stated bluntly because they now decide outcomes:
   hold the enemy base sector, which touches all three lane far-sides at once, while the
   third walks the rivers.
 
+### How hard to commit
+
+`contest` and `siege` take a commitment word in place of a number:
+
+| Word | What it declares |
+| --- | --- |
+| `light` | one actor's worth of force — 3 500 |
+| `committed` | two actors' worth — 7 000 |
+| `all-in` | what your whole roster could deliver if every actor stood at the target |
+
+```text
+plan siege outer mid committed      # declare 7 000 force
+plan contest bot light              # declare 3 500 force
+plan siege nexus all-in             # declare roster x 3 500 force
+```
+
+A word is priced in the same unit the presence rule pays: one actor standing in reach is
+one unit of delivery. So `all-in` with three actors declares 10 500, and when the push above
+leaves only two of them at the enemy base the turn answers
+`turn_note: code=force-capped detail=declared 10500 force at base:opposing but only 2 actor(s)
+stood within reach, so 7000 landed`. That is the point of the words — they keep your
+*intention* visible separately from what your positioning actually carried.
+
+An exact integer still works and means exactly what it always meant:
+
+```text
+plan siege outer mid 4200           # expert spelling: declare 4 200 force
+```
+
+Use it when you want a figure no word names — to finish a tier with no overkill, or to
+keep a recorded script reproducible. It is not a second system: the host resolves words to
+numbers and nothing else does, so a script, a terminal session, and an MCP agent asking
+for `committed` are asking for the same 7 000. An MCP agent passes either `commit` (a word)
+or `damage` (a number), never both. Omitting the amount entirely still means the 4 000 the
+command shipped with before the words existed — a number no word spells, kept so old
+scripts mean what they meant.
+
 Actor positions still feed **vision** on the same terms as before: each ally's current
 location becomes team-visible, wards add coverage, unseen opponents are projected as
 `unknown`, and unseen opposing structures are projected as `not-visible` rather than as
@@ -299,8 +338,8 @@ exact health.
 What remains untrue, and is not claimed: this is not five-a-side. The map model and
 roster type are team-size agnostic and `MatchMapState` accepts arbitrary rosters, but no
 shipped scenario fields ten actors. And the specific numbers — 3 500 per actor, one beat
-of reach, a raw damage integer as your expression of intent — are one coherent proposal,
-not a balanced rule set. Whether standing where the force lands feels like strategy or
+of reach, three commitment words priced at one, two, and a roster of that unit — are one
+coherent proposal, not a balanced rule set. Whether standing where the force lands feels like strategy or
 like bookkeeping is exactly the question `docs/audit_report_20260828.md` says needs human
 play evidence, and that evidence does not exist yet.
 
@@ -348,8 +387,10 @@ Lane scenarios: `help`, `?`, `help <command>`, `observe`, `inspect
 `replay [id]`, `branch [id]`, `save <id>`, `load <id>`, `quit`.
 
 Match scenario: `help`, `help <verb>`, `observe`, `rotate <actor> <destination>`,
-`ward [team] <actor> <location> [turns]`, `contest <top|bot> [damage] [burst]`,
-`siege [side] <tier> [lane] <damage>`, `evaluate`, `idle`, `undo`, `commit`,
+`ward [team] <actor> <location> [turns]`,
+`contest <top|bot> [light|committed|all-in|damage] [burst]`,
+`siege [side] <tier> [lane] [light|committed|all-in|damage]`, `evaluate`, `idle`, `undo`,
+`commit`,
 `advance`, `debrief`, `quit`.
 
 ## Claim limits

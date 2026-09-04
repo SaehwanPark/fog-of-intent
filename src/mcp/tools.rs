@@ -196,7 +196,16 @@ pub fn mcp_tools_catalog() -> Vec<McpTool> {
           ])),
           ("damage".into(), JsonValue::Object(vec![
             ("type".into(), JsonValue::String("integer".into())),
-            ("description".into(), JsonValue::String("Raw force to declare for contest or siege. Only actors standing in the target sector, or one beat away, deliver it: an unbacked declaration is refused before it is staged, and an over-declared one lands less than it names.".into())),
+            ("description".into(), JsonValue::String("Exact force to declare for contest or siege - the expert and automation alias for the commit token. Give either damage or commit, not both. Only actors standing in the target sector, or one beat away, deliver it: an unbacked declaration is refused before it is staged, and an over-declared one lands less than it names.".into())),
+          ])),
+          ("commit".into(), JsonValue::Object(vec![
+            ("type".into(), JsonValue::String("string".into())),
+            ("enum".into(), JsonValue::Array(vec![
+              JsonValue::String("light".into()),
+              JsonValue::String("committed".into()),
+              JsonValue::String("all-in".into()),
+            ])),
+            ("description".into(), JsonValue::String("How hard to commit for contest or siege, in the player's own words: light is one actor's worth of force, committed is two, all-in is the whole roster's. The host resolves the token to a number, so a token and the equivalent integer mean the same thing. Give either commit or damage, not both.".into())),
           ])),
         ])),
         ("required".into(), JsonValue::Array(vec![

@@ -15,8 +15,9 @@
 
 use crate::kernel::ActorId;
 use crate::map::complete_match::{
-  CompleteMatchAction, CompleteMatchError, CompleteMatchPlan, CompleteMatchState,
-  M9_COMPLETE_MATCH_SCHEMA_V2, MatchPhaseKind,
+  COMMIT_STRENGTH_TOKENS, CommitStrength, CompleteMatchAction, CompleteMatchError,
+  CompleteMatchPlan, CompleteMatchState, FORCE_PER_PRESENT_ACTOR, M9_COMPLETE_MATCH_SCHEMA_V2,
+  MatchPhaseKind, deliverable_force,
 };
 use crate::map::complete_match_catalog::CompleteMatchCatalog;
 use crate::map::contest::ObjectiveIntent;
@@ -568,6 +569,81 @@ fn illegal_sieges_are_rejected_through_the_structure_transition() {
   let error = plan.execute().expect_err("hierarchy violation must fail");
   assert!(matches!(error, CompleteMatchError::Siege(_)));
   assert!(error.to_string().contains("siege failed"));
+}
+
+// --- Commit-strength vocabulary ---
+
+#[test]
+fn commit_tokens_are_priced_in_the_unit_presence_delivers() {
+  // The token ladder and the presence rule count in the same unit, so a player who learns
+  // "one actor delivers this much" also learns what each word costs.
+  assert_eq!(
+    CommitStrength::Light.declared_force(5),
+    FORCE_PER_PRESENT_ACTOR
+  );
+  assert_eq!(
+    CommitStrength::Committed.declared_force(5),
+    2 * FORCE_PER_PRESENT_ACTOR
+  );
+  assert_eq!(
+    CommitStrength::AllIn.declared_force(5),
+    5 * FORCE_PER_PRESENT_ACTOR
+  );
+  // A roster smaller than the word still declares that much; presence does the pricing.
+  assert_eq!(
+    CommitStrength::AllIn.declared_force(1),
+    FORCE_PER_PRESENT_ACTOR
+  );
+  for strength in COMMIT_STRENGTH_TOKENS {
+    assert_eq!(CommitStrength::parse(strength.as_str()), Some(strength));
+  }
+  assert_eq!(CommitStrength::parse("heavy"), None);
+}
+
+#[test]
+fn all_in_declares_the_roster_and_presence_prices_it() {
+  // Three actors fielded, one standing near the target: `all-in` declares 10 500 and the
+  // presence rule delivers a single actor's worth, so the roster stays visible in the
+  // declaration instead of hiding inside a damage number.
+  let (forward, second, third) = (ActorId::new(1), ActorId::new(2), ActorId::new(3));
+  let mut state = CompleteMatchState::new(
+    1,
+    vec![forward, second, third],
+    vec![],
+    vec![
+      (
+        forward,
+        ActorLocation::Stationary(MapLocation::MID_FAR_SIDE),
+      ),
+      (second, ActorLocation::Stationary(MapLocation::ALLIED_BASE)),
+      (third, ActorLocation::Stationary(MapLocation::ALLIED_BASE)),
+    ],
+  );
+  let roster = state.map().team_size(TeamSide::Allied);
+  assert_eq!(roster, 3);
+  let declared = CommitStrength::AllIn.declared_force(roster);
+  let present = state.map().presence_within(
+    TeamSide::Allied,
+    MapLocation::MID_FAR_SIDE,
+    crate::map::complete_match::PRESENCE_REACH_BEATS,
+  );
+  debug_assert_eq!(roster, 3);
+  assert_eq!(present, 1);
+  assert_eq!(
+    deliverable_force(present, declared),
+    FORCE_PER_PRESENT_ACTOR
+  );
+  let (_, events, _) = state
+    .apply_action(&CompleteMatchAction::SiegeStructure {
+      side: TeamSide::Allied,
+      tier: StructureTier::OuterTurret,
+      lane: Some(LaneId::Mid),
+      raw_damage: declared,
+    })
+    .expect("outer tier siege with a present actor executes");
+  // A present actor still takes an outer turret outright, so one event is recorded even
+  // though the declaration named three times the force that landed.
+  assert_eq!(events, 1);
 }
 
 #[test]

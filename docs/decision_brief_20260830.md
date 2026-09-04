@@ -252,6 +252,24 @@ whether raw integers survive.
 **Recommendation: (ii).** Resolve tokens in the host (authority, deterministic) and keep
 integers working; document the alias as expert-level in `HOW_TO_PLAY.md`.
 
+**Status (2026-09-03): accepted as (ii) and landed** in the `0.1.243` package as
+`CommitStrength` in `crates/foi-map/src/complete_match.rs`, resolved by the host's
+`parse_force`, with `m9-interactive-match-host-v4` (additive over `v3`) and an MCP `commit`
+parameter beside `damage`.
+
+**One correction to the Problem framing.** "Raw damage integers … bypass the cost profile"
+assumed `crates/foi-map/src/cost_profile.rs` was a resource economy. It is a deterministic
+operation counter — transitions executed, hashes computed, projections performed, replays
+verified — and no force cost table exists anywhere in the repository, so there was no economy
+to bypass and no table for a token to be "resolved through". The tokens are therefore priced
+against the unit the shipped resolution rule already pays: `FORCE_PER_PRESENT_ACTOR` per
+present actor (D2). That serves the accepted intent — one teachable quantity instead of an
+unexplained damage number — without inventing the cost economy this decision did not scope.
+
+**Not settled by shipping.** Whether the default amount of a bare `contest`/`siege` should stop
+being the legacy integer 4 000 (kept unchanged here on purpose), and whether three words are the
+right granularity, are playtest questions — **D6 remains the gate**.
+
 ## D6 — When does the first human playtest happen?
 
 **Problem.** The audit's Priority 3 is a stop gate, and it is still shut: nothing in this
