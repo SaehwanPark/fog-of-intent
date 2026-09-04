@@ -3,6 +3,61 @@
 All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 
+## Unreleased — 2026-09-04 (identifiers a reader could not grep, docs only)
+
+### Corrected
+
+`ARCHITECTURE.md` named identifiers that do not exist in the tree, so a reader who grep'd any of
+them concluded the corresponding code was missing. Every correction below was made against the
+code, not against another document:
+
+- **`topology.rs` bullet.** The two bases were called `AlliedBase` and `OpposingBase`.
+  `MapLocation` has no such variants: `MapLocation::ALLIED_BASE` and `OPPOSING_BASE` are `const`s
+  over `Base(TeamSide)`. The lane, river, and jungle spellings are now qualified to the enums that
+  own them (`LaneId::Top`, `RiverSide::TopRiver`, `JungleSide::TopJungle`); the sector arithmetic
+  they were cited for — 2 + 9 + 2 + 2 = 15 — is correct and unchanged.
+- **Four catalog bullets** in the M9 module list named canonical scenarios in a snake_case style
+  that exists nowhere: `teamfight_comeback`, `base_race_decisive_swing`, `routine_laning_absorption`,
+  `diverse_engaged_population`, and their siblings. The registered ids are kebab-case and
+  versioned — `scenario-teamfight-comeback-v1`, `scenario-base-race-decisive-swing-v1`,
+  `scenario-routine-laning-absorption-v1`, `scenario-diverse-engaged-population-v1`, and so on,
+  read from each catalog's `scenario_id` fields.
+- **The `complete_match_catalog.rs` bullet** named `complete_allied_snowball` and
+  `complete_comeback_concession`. Those pre-`D2` ids no longer resolve; the plans are
+  `scenario-complete-allied-snowball-v2` and `scenario-complete-comeback-concession-v2`. The turn
+  numbers that bullet quotes were re-checked against the built binary rather than trusted: the
+  replay transcript still prints `final-turn=14 ... nexus-demolished` and `final-turn=34 ...
+  match-conceded`, and `MatchVictoryCondition::NexusDemolished`/`MatchConceded` are real variants,
+  so only the ids were wrong.
+
+### Verified and left alone
+
+- **Counts a newcomer runs something to match.** The MCP catalog really holds 25 tools, 8
+  resources, and 3 prompts, confirmed by running `fog-of-intent-mcp --tools|--resources|--prompts`
+  against the counts in `README.md` and `HOW_TO_PLAY.md`. The MCP flags those documents show
+  (`--tools`, `--resources`, `--prompts`) are parsed in `src/bin/fog-of-intent-mcp.rs`.
+- **Every `.rs` file `ARCHITECTURE.md` cites exists on disk**, and every CLI flag the current-state
+  documents show is parsed somewhere in `src/` — the only doc-only flags were cargo's own
+  (`--locked`, `--all-targets`) inside verification command lines.
+- **`TrueState` versus `BeliefState` in "Consequential Type Boundaries" are not findings.** That
+  section states constraints future types must preserve; it makes no claim that those identifiers
+  ship, so leaving them is correct and grep-ability is not the standard it is written against.
+- **`m9-interactive-match-host-v3` and `OpponentSighting::LastKnown` in `docs/COMPATIBILITY.md` are
+  not findings either**: they are the retired identities the contract exists to name.
+
+### Method, so the sweep is repeatable
+
+A script extracted every backticked token that looks like an identifier (dashes, underscores,
+digits, or interior capitals) from `README.md`, `HOW_TO_PLAY.md`, `ARCHITECTURE.md`,
+`docs/TERMINOLOGY.md`, and `docs/COMPATIBILITY.md`, then checked each against the concatenated
+`src/`, `crates/`, and `scripts/` sources. It reported 23 candidates; 17 were false positives from
+`Type::method` spellings and skill-directory names, and the remaining 6 were the real findings
+above. The sweep is not checked in: a permanent version needs an allowlist for legitimately absent
+names — retired ids, future-type constraints, prose terms — and an allowlist is the drift machine
+this repository is trying not to build. `LESSONS.md` records why.
+
+No behaviour, schema, identifier, or version changed; this is documentation only.
+
 ## Unreleased — 2026-09-04 (one certainty ladder, `0.1.245`)
 
 ### Removed
