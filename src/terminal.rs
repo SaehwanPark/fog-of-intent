@@ -585,9 +585,6 @@ pub fn render_match_output(output: &crate::host::CliMatchOutput) -> String {
       for (actor, is_allied, loc) in &obs.actor_locations {
         let location = match loc {
           crate::host::MatchActorLocation::Observed(location) => location.as_str().to_owned(),
-          crate::host::MatchActorLocation::LastKnown(location) => {
-            format!("last_known:{}", location.as_str())
-          }
           crate::host::MatchActorLocation::Unknown => "unknown".to_owned(),
         };
         line(

@@ -3,6 +3,50 @@
 All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 
+## Unreleased — 2026-09-04 (one certainty ladder, `0.1.245`)
+
+### Removed
+
+- **`OpponentSighting::LastKnown`**, and with it `MatchActorLocation::LastKnown` and the
+  `last_known:<sector>` spelling that would have rendered it. Both were declared and never
+  constructed: `MatchMapState::observe` emits `Observed` or payload-free `Unknown`, and `D3`
+  settled that the match projection reports a current sighting or nothing. A variant nobody
+  produced was a door a later writer could open to reintroduce exactly the stale-position leak
+  that decision closed, so it is removed rather than left as a future feature. The lane
+  subsystem's `LaneBelief::LastKnown` and the GUI vision status are untouched — the lane
+  fixture genuinely models a stale report.
+
+### Corrected
+
+- `ROADMAP.md` and `ARCHITECTURE.md` described the match projection as retaining
+  `Observed`/`LastKnown`/`Unknown` certainty, and `SPEC.md` listed the same three-valued ladder
+  for a delivered slice. All three now state the two-valued ladder the code implements, per the
+  precedence rule in `docs/harness/fog-of-intent/team-spec.md`.
+
+### Verified
+
+- **A legacy alias that no longer lies by omission.** `"5v5"` still selects the multi-lane match —
+  removing it would break command lists and muscle memory for no player gain — but nothing a
+  player reads offers it. A test pins three facts at once: the alias resolves, the catalog entry's
+  display name and description carry no `5v5` and do state "3 allied actors vs 1 opposing actor",
+  and the usage text does not advertise the label. `docs/decision_brief_20260830.md` records both
+  smaller dispositions as closed.
+- The property test over generated match states still asserts that an observed sighting carries
+  the true location and that an enemy on a team-visible location is never projected `Unknown`;
+  with the dead variant gone the match is exhaustive at two arms, so the property is now enforced
+  by the type rather than by a panic arm.
+- `cargo +1.96.0 fmt --all -- --check`, `cargo +1.96.0 clippy --locked --all-targets
+  --all-features -- -D warnings`, and `cargo +1.96.0 test --locked` pass (205 lib tests), as do
+  `scripts/check_repository.py` and its unit tests. `docs/COMPATIBILITY.md` records why retiring
+  an in-process variant needs no migration.
+
+### Evidence boundary
+
+- Nothing about play changed: the removed code path was unreachable, so no match outcome, state
+  hash, projection, or script behaves differently. `docs/COMPATIBILITY.md` notes that no stored
+  artifact, replay, or protocol payload ever carried the variant, which is what makes the removal
+  a cleanup rather than a breaking artifact change.
+
 ## Unreleased — 2026-09-04 (a match you can start, `0.1.244`)
 
 ### Added

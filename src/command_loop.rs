@@ -2009,6 +2009,38 @@ mod tests {
     assert!(CLI_APPLICATION_HELP.contains("m9-match-onboarding-v1"));
   }
 
+  /// `"5v5"` is accepted input for continuity with older scripts and notes. It is not a
+  /// roster claim, and nothing a player reads may imply one: the catalog entry a player
+  /// chooses from has to state the sizes the scenario actually fields.
+  #[test]
+  fn the_legacy_five_v_five_alias_is_input_only_and_the_menu_states_real_sizes() {
+    assert_eq!(
+      parse_scenario_selection("5v5"),
+      Some(CliApplicationScenario::M9InteractiveMatch),
+      "the legacy alias keeps resolving"
+    );
+
+    let entry = CLI_SCENARIO_CATALOG
+      .iter()
+      .find(|entry| entry.id == crate::host::CLI_INTERACTIVE_MATCH_SCENARIO_ID)
+      .expect("the interactive match is cataloged");
+    let display = entry.display_name.to_lowercase();
+    let description = entry.description.to_lowercase();
+    assert!(
+      !display.contains("5v5") && !description.contains("5v5"),
+      "a player-visible label must not imply a team size the scenario does not field: {display}"
+    );
+    assert!(
+      description.contains("3 allied actors vs 1 opposing actor"),
+      "the menu states the roster the match actually fields: {description}"
+    );
+    // The alias is invisible to a reader: it appears in selection, never in the menu.
+    assert!(
+      !CLI_APPLICATION_HELP.contains("5v5"),
+      "usage text does not advertise a label that implies a team size"
+    );
+  }
+
   #[test]
   fn scenario_catalog_format_and_metadata_are_complete() {
     assert_eq!(CLI_SCENARIO_CATALOG.len(), 17);

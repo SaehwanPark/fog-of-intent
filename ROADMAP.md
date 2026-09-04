@@ -1049,8 +1049,11 @@ the complete M3 reference client or human accessibility evidence.
   establish reproducible protocol behavior and software defects only; human
   enjoyment, accessibility, trust, and research claims remain open.
 - [x] Project M9 opponent locations through `MatchMapState::observe`, retaining
-  `Observed`, `LastKnown`, and payload-free `Unknown` certainty in the host
-  report instead of exposing authoritative coordinates.
+  `Observed` (current location, in-transit flag) and payload-free `Unknown`
+  certainty in the host report instead of exposing authoritative coordinates.
+  The ladder is two-valued: the projection never reports a stale position, and
+  the `LastKnown` variant it once declared but never emitted has been removed
+  rather than left for a later writer to fill in.
 - [x] Gate M9 debriefs on terminal evaluation, describe siege actions by target
   team and attacker, and reject silent replacement of a staged action without
   an explicit undo. Focused host, terminal, and executable regressions cover

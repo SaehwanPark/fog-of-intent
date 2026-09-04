@@ -54,11 +54,12 @@ pub const CLI_INTERACTIVE_MATCH_ONBOARDING_SCENARIO_ID: &str = "m9-match-onboard
 ///
 /// Allied actors are always reported as currently observed. Opponents use the
 /// map's fog-of-war projection, so an unseen opponent is represented without a
-/// location rather than exposing authoritative state.
+/// location rather than exposing authoritative state. There is deliberately no
+/// stale-position case: the projection reports a current sighting or nothing,
+/// and a player never has to work out how old a location is.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum MatchActorLocation {
   Observed(MapLocation),
-  LastKnown(MapLocation),
   Unknown,
 }
 
@@ -353,9 +354,6 @@ impl CliMatchHost {
             |(_, sighting)| match sighting {
               OpponentSighting::Observed { location, .. } => {
                 MatchActorLocation::Observed(*location)
-              }
-              OpponentSighting::LastKnown { location, .. } => {
-                MatchActorLocation::LastKnown(*location)
               }
               OpponentSighting::Unknown => MatchActorLocation::Unknown,
             },
