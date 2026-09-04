@@ -6,6 +6,15 @@ schema or replay bundle becomes an external artifact. The repository has a
 strict dependency-free `1.0.0` M1 text codec; it does not provide migrations or
 external backward-compatibility support.
 
+M9 complete match `m9-complete-match-v1` is retired the same way. Its transition changed
+meaning when actor presence became a resolution input, so its catalog
+(`m9-complete-match-catalog-v1`) and both scenario ids moved to `-v2` and the interactive host
+contract moved to `m9-interactive-match-host-v3`. The retired identities have no release, tag,
+external codec, or stored artifact, so there is no migration path and no v1 plan remains
+executable; a reader must reject `v1`-labeled match input rather than resolving it as `v2`.
+The map ruleset identifier is deliberately unchanged, because the presence test reuses the map
+layer's existing beat distances and alters none of them.
+
 M2 v1 is retired internal history. It has no release, tag, external codec, or
 supported artifact, so there is no migration path. The current M2 contract uses
 ruleset `4`, v3 observation/profile/replay/strategy/scenario/debrief/branch

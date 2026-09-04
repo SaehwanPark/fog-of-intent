@@ -1,5 +1,6 @@
 //! Match map state, FNV-1a state hashing, and actor-visible observation projections.
 
+use crate::graph::distance_in_beats;
 use crate::kernel::{ActorId, StateHash, hash_bytes};
 
 pub(crate) const FNV_OFFSET_BASIS: u64 = 0xcbf29ce484222325;
@@ -222,6 +223,27 @@ impl MatchMapState {
       }
     }
     sight
+  }
+
+  /// Count `team`'s actors that can apply force at `target` this turn.
+  ///
+  /// An actor is present when it stands in the target sector or in a sector at most
+  /// `reach_beats` of travel away. Presence is *where force reaches*, which is a
+  /// different question from [`Self::sector_sight`], which is what a team can learn: an
+  /// actor can hit an objective it cannot see, and can see one it is too far away to
+  /// support. Actors still in transit count from the sector they currently occupy.
+  pub fn presence_within(&self, team: TeamSide, target: MapLocation, reach_beats: u8) -> usize {
+    self
+      .actor_locations
+      .iter()
+      .filter(|(id, loc)| {
+        let is_team_member = match team {
+          TeamSide::Allied => self.is_allied(*id),
+          TeamSide::Opposing => self.is_opposing(*id),
+        };
+        is_team_member && distance_in_beats(loc.current_location(), target) <= reach_beats
+      })
+      .count()
   }
 
   /// Compute deterministic FNV-1a state hash over authoritative map state.

@@ -196,7 +196,7 @@ pub fn mcp_tools_catalog() -> Vec<McpTool> {
           ])),
           ("damage".into(), JsonValue::Object(vec![
             ("type".into(), JsonValue::String("integer".into())),
-            ("description".into(), JsonValue::String("Raw damage amount for contest or siege.".into())),
+            ("description".into(), JsonValue::String("Raw force to declare for contest or siege. Only actors standing in the target sector, or one beat away, deliver it: an unbacked declaration is refused before it is staged, and an over-declared one lands less than it names.".into())),
           ])),
         ])),
         ("required".into(), JsonValue::Array(vec![

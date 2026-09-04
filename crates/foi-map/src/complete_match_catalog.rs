@@ -17,18 +17,35 @@ use super::travel::ActorLocation;
 use super::vision::DEFAULT_WARD_DURATION_TURNS;
 use crate::kernel::ActorId;
 
+/// Current identity of the canonical complete-match catalog.
+///
+/// `v2` re-plans both scenarios so their declared force stands where it lands: under
+/// presence-gated resolution (`m9-complete-match-v2`) a plan that declares force nobody
+/// can apply now delivers nothing instead of winning anyway.
+pub const M9_COMPLETE_MATCH_CATALOG_SCHEMA_V2: &str = "m9-complete-match-catalog-v2";
+
+/// Retired identity of the catalog, whose scenarios applied full force from anywhere on
+/// the map.
 pub const M9_COMPLETE_MATCH_CATALOG_SCHEMA_V1: &str = "m9-complete-match-catalog-v1";
 
 /// Catalog of registered canonical complete-match scenarios for M9.
 pub struct CompleteMatchCatalog;
 
 impl CompleteMatchCatalog {
-  pub const SCENARIO_ALLIED_SNOWBALL_VICTORY: &'static str = "scenario-complete-allied-snowball-v1";
-  pub const SCENARIO_COMEBACK_CONCESSION: &'static str = "scenario-complete-comeback-concession-v1";
+  /// `v2` ids: each scenario's action script changed, so its identity changed with it.
+  pub const SCENARIO_ALLIED_SNOWBALL_VICTORY: &'static str = "scenario-complete-allied-snowball-v2";
+  pub const SCENARIO_COMEBACK_CONCESSION: &'static str = "scenario-complete-comeback-concession-v2";
 
   /// Allied early pressure: rotations set up river vision, the Drake is
   /// secured, the Mid lane is sieged through to the Nexus, and the match
   /// concludes by `NexusDemolished`.
+  ///
+  /// Every siege here is backed by actors standing where the damage lands. The mid
+  /// laner holds the lane centre for the outer turret, then the jungler joins the far
+  /// side for the inner tier, and two allied actors stand at the enemy base for the
+  /// inhibitor tier and the Nexus — one actor delivers `FORCE_PER_PRESENT_ACTOR` per
+  /// turn, so the 4 500-health inhibitor turret and the 6 000-health Nexus need a roster
+  /// behind them rather than a bigger number.
   pub fn allied_snowball_victory() -> CompleteMatchPlan {
     let jungler = ActorId::new(1);
     let mid_laner = ActorId::new(2);
@@ -87,13 +104,20 @@ impl CompleteMatchCatalog {
         raw_damage: 4_000,
       },
       idle,
+      CompleteMatchAction::Rotate {
+        actor: jungler,
+        destination: MapLocation::MID_FAR_SIDE,
+      },
       CompleteMatchAction::SiegeStructure {
         side: TeamSide::Allied,
         tier: StructureTier::InnerTurret,
         lane: Some(LaneId::Mid),
         raw_damage: 4_500,
       },
-      idle,
+      CompleteMatchAction::Rotate {
+        actor: mid_laner,
+        destination: MapLocation::OPPOSING_BASE,
+      },
       CompleteMatchAction::SiegeStructure {
         side: TeamSide::Allied,
         tier: StructureTier::InhibitorTurret,
@@ -105,10 +129,6 @@ impl CompleteMatchCatalog {
         tier: StructureTier::Inhibitor,
         lane: Some(LaneId::Mid),
         raw_damage: 3_500,
-      },
-      CompleteMatchAction::Rotate {
-        actor: mid_laner,
-        destination: MapLocation::OPPOSING_BASE,
       },
       CompleteMatchAction::SiegeStructure {
         side: TeamSide::Allied,
@@ -130,13 +150,21 @@ impl CompleteMatchCatalog {
   /// lead and Allied outer turrets, but Allied answers with objective
   /// control, tears down all three inhibitor lanes, and the match concludes
   /// by `MatchConceded`.
+  ///
+  /// The allied roster is three actors here rather than the two this scenario used
+  /// before presence-gated resolution, and that is the point of the change: one actor
+  /// delivers `FORCE_PER_PRESENT_ACTOR` per turn, so the 4 500-health inhibitor turret
+  /// and every 4 000-health inner turret need a second actor standing in the enemy base
+  /// sector, which is adjacent to all three lane far-sides. Two actors hold the base
+  /// while the third walks the rivers that touch the lane centres and the objectives.
   pub fn comeback_concession() -> CompleteMatchPlan {
     let jungler = ActorId::new(1);
     let top_laner = ActorId::new(2);
+    let mid_laner = ActorId::new(3);
     let opp_jungler = ActorId::new(4);
     let initial = CompleteMatchState::new(
       1,
-      vec![jungler, top_laner],
+      vec![jungler, top_laner, mid_laner],
       vec![opp_jungler],
       vec![
         (jungler, ActorLocation::Stationary(MapLocation::ALLIED_BASE)),
@@ -145,8 +173,12 @@ impl CompleteMatchCatalog {
           ActorLocation::Stationary(MapLocation::TOP_NEAR_TOWER),
         ),
         (
+          mid_laner,
+          ActorLocation::Stationary(MapLocation::MID_NEAR_TOWER),
+        ),
+        (
           opp_jungler,
-          ActorLocation::Stationary(MapLocation::TOP_RIVER),
+          ActorLocation::Stationary(MapLocation::BOT_RIVER),
         ),
       ],
     );
@@ -155,91 +187,142 @@ impl CompleteMatchCatalog {
       allied_intent: None,
       opposing_intent: None,
     };
+    let contest = |allied_intent, opposing_intent| CompleteMatchAction::ContestObjectives {
+      allied_intent,
+      opposing_intent,
+    };
+    let rotate = |actor, destination| CompleteMatchAction::Rotate { actor, destination };
+    let siege = |side, tier, lane, raw_damage| CompleteMatchAction::SiegeStructure {
+      side,
+      tier,
+      lane: Some(lane),
+      raw_damage,
+    };
     let mut actions = vec![
-      idle,
-      idle,
-      idle,
-      CompleteMatchAction::ContestObjectives {
-        allied_intent: None,
-        opposing_intent: Some(ObjectiveIntent::Engage {
+      // Turns 1-3: each team takes the positions it intends to fight from.
+      rotate(jungler, MapLocation::TOP_RIVER),
+      rotate(top_laner, MapLocation::TOP_FAR_SIDE),
+      rotate(mid_laner, MapLocation::BOT_RIVER),
+      // The opposing actor sits in bot river, where it can take the respawned
+      // Drake and reach the allied bot and mid outer turrets.
+      contest(
+        None,
+        Some(ObjectiveIntent::Engage {
           objective: ObjectiveKind::BotRiverObjective,
           damage: 4_000,
         }),
-      },
-      CompleteMatchAction::SiegeStructure {
-        side: TeamSide::Opposing,
-        tier: StructureTier::OuterTurret,
-        lane: Some(LaneId::Top),
-        raw_damage: 4_000,
-      },
-      CompleteMatchAction::SiegeStructure {
-        side: TeamSide::Opposing,
-        tier: StructureTier::OuterTurret,
-        lane: Some(LaneId::Mid),
-        raw_damage: 4_000,
-      },
+      ),
+      siege(
+        TeamSide::Opposing,
+        StructureTier::OuterTurret,
+        LaneId::Bot,
+        4_000,
+      ),
       idle,
+      siege(
+        TeamSide::Opposing,
+        StructureTier::OuterTurret,
+        LaneId::Mid,
+        4_000,
+      ),
+      contest(
+        None,
+        Some(ObjectiveIntent::Engage {
+          objective: ObjectiveKind::BotRiverObjective,
+          damage: 4_000,
+        }),
+      ),
       CompleteMatchAction::PlaceWard {
         team: TeamSide::Allied,
         placed_by: jungler,
         location: MapLocation::TOP_RIVER,
         duration_turns: DEFAULT_WARD_DURATION_TURNS,
       },
-      CompleteMatchAction::ContestObjectives {
-        allied_intent: Some(ObjectiveIntent::Engage {
-          objective: ObjectiveKind::TopRiverObjective,
-          damage: 5_500,
-        }),
-        opposing_intent: None,
-      },
-      idle,
-      idle,
-      idle,
-      CompleteMatchAction::ContestObjectives {
-        allied_intent: Some(ObjectiveIntent::Engage {
+      // The Drake spawns on its fourth contest tick and the opposing actor is the
+      // only actor standing in its sector, so it takes the lead.
+      contest(
+        None,
+        Some(ObjectiveIntent::Engage {
           objective: ObjectiveKind::BotRiverObjective,
           damage: 4_000,
         }),
-        opposing_intent: None,
-      },
+      ),
+      idle,
+      // Allied opens all three lanes while its actors still stand in the rivers that
+      // touch the lane centres: the outer tier is all a river actor can back up.
+      siege(
+        TeamSide::Allied,
+        StructureTier::OuterTurret,
+        LaneId::Top,
+        4_000,
+      ),
+      idle,
+      siege(
+        TeamSide::Allied,
+        StructureTier::OuterTurret,
+        LaneId::Mid,
+        4_000,
+      ),
+      siege(
+        TeamSide::Allied,
+        StructureTier::OuterTurret,
+        LaneId::Bot,
+        4_000,
+      ),
+      // Two allied actors stand at the Herald, so the declared burst lands.
+      contest(
+        Some(ObjectiveIntent::Engage {
+          objective: ObjectiveKind::TopRiverObjective,
+          damage: 5_500,
+        }),
+        None,
+      ),
+      idle,
+      // The bot-river actor takes the respawned Drake one tick after it returns.
+      idle,
+      contest(
+        Some(ObjectiveIntent::Engage {
+          objective: ObjectiveKind::BotRiverObjective,
+          damage: 4_000,
+        }),
+        None,
+      ),
       idle,
       idle,
-      CompleteMatchAction::ContestObjectives {
-        allied_intent: Some(ObjectiveIntent::SecureBurst {
+      contest(
+        Some(ObjectiveIntent::SecureBurst {
           objective: ObjectiveKind::TopRiverObjective,
           burst_damage: 5_500,
         }),
-        opposing_intent: None,
-      },
+        None,
+      ),
     ];
-    // Turns 17-28: Allied opens all three lanes through the defense
-    // hierarchy, then takes the three inhibitors back-to-back so none
-    // respawns (five-turn respawn) before the terminal evaluation.
+    // Turns 23-33: the two top-side actors move into the enemy base sector, which is
+    // adjacent to every lane far-side. Two present actors deliver 7 000 force per turn,
+    // which is what a 4 000-health inner turret, a 4 500-health inhibitor turret, and a
+    // 3 000-health inhibitor each cost. The three inhibitors go back-to-back so none
+    // respawns before the terminal evaluation.
+    actions.push(rotate(jungler, MapLocation::OPPOSING_BASE));
+    actions.push(rotate(top_laner, MapLocation::OPPOSING_BASE));
     let mut lane_sieges: Vec<CompleteMatchAction> = [LaneId::Top, LaneId::Mid, LaneId::Bot]
       .iter()
       .flat_map(|lane| {
         [
-          (StructureTier::OuterTurret, 4_000u32),
-          (StructureTier::InnerTurret, 4_500),
+          (StructureTier::InnerTurret, 4_500u32),
           (StructureTier::InhibitorTurret, 5_000),
         ]
         .iter()
-        .map(move |(tier, damage)| CompleteMatchAction::SiegeStructure {
-          side: TeamSide::Allied,
-          tier: *tier,
-          lane: Some(*lane),
-          raw_damage: *damage,
-        })
+        .map(move |(tier, damage)| siege(TeamSide::Allied, *tier, *lane, *damage))
         .collect::<Vec<_>>()
       })
       .collect();
     for lane in [LaneId::Top, LaneId::Mid, LaneId::Bot] {
-      lane_sieges.push(CompleteMatchAction::SiegeStructure {
-        side: TeamSide::Allied,
-        tier: StructureTier::Inhibitor,
-        lane: Some(lane),
-        raw_damage: 3_500,
-      });
+      lane_sieges.push(siege(
+        TeamSide::Allied,
+        StructureTier::Inhibitor,
+        lane,
+        3_500,
+      ));
     }
     actions.extend(lane_sieges);
     actions.push(CompleteMatchAction::EvaluateTerminal);

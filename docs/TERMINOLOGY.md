@@ -68,9 +68,17 @@ below.
   intent, coordination, execution, and luck using the information available at
   the relevant decision time.
 - **Turn note:** A host-derived explanation attached to a composed match turn that recorded
-  nothing, phrased only from facts the actor-visible observation already reports. It is not
-  an event, effect, or authoritative cause: event counts, history, replay, and state hashes
-  are unaffected, and a turn that did work carries no note.
+  nothing, or that delivered less force than it declared, phrased only from facts the
+  actor-visible observation already reports. It is not an event, effect, or authoritative
+  cause: event counts, history, replay, and state hashes are unaffected, and a turn that did
+  the work it declared carries no note.
+- **Presence:** Whether an actor stands where a turn's force would land — in the target
+  sector, or within one beat of it. Presence is a resolution input for contests and sieges;
+  it is not a sight rule, and it counts only the declaring team's own actors.
+- **Delivered force:** The force a committed contest or siege actually applies, bounded by
+  the declaring team's present actors. Declared force is the player's intent and can exceed
+  what the roster can carry; delivered force is the authoritative outcome, and the gap
+  between them is reported rather than hidden.
 
 ## Authority rules
 
@@ -82,6 +90,9 @@ below.
 - Exact structure health is latent host-authoritative data. A player projection
   reports only the observed structure state above, so an adapter or renderer must
   not print, summarize, or re-derive an exact health value.
+- A presence check reads only the declaring team's own actor positions and static map
+  knowledge. Refusing or capping a declaration must not report whether an unseen opponent
+  stands in the target sector.
 - An **ordinary actor** can submit only commands and messages permitted by its
   actor authority and actor-visible observation.
 - A **privileged controller** may inspect or generate experiment inputs only in

@@ -2192,6 +2192,62 @@ for a player to decide whether to commit a siege, that `not-visible` is understo
 than read as "no structure", or that the shared lane-centre sector is not experienced as a
 fog leak. No fun, learnability, or fairness claim is attached.
 
+### Current M9 interactive match presence-resolution evidence
+
+Presence-gated force delivery (`docs/decision_brief_20260830.md` decision D2) was
+**accepted and implemented** in this slice. It is an authority change, so it carries the
+version chain a behavior change must carry: `M9_COMPLETE_MATCH_SCHEMA_V2`,
+`M9_COMPLETE_MATCH_CATALOG_SCHEMA_V2`, both catalog scenario ids at `-v2`, and
+`CLI_MATCH_HOST_SCHEMA` at `m9-interactive-match-host-v3`. `M9_MAP_RULESET` is
+deliberately unchanged: the presence test reuses the map layer's existing beat distances
+and changes none of them (`crates/foi-map/src/lib.rs`).
+
+- [x] Resolve declared force against present actors. `complete_match.rs` defines
+  `FORCE_PER_PRESENT_ACTOR = 3_500` and `PRESENCE_REACH_BEATS = 1`, and both the objective
+  contest and the structure siege paths in `apply_action` clamp delivery to
+  `deliverable_force(present, declared)`, where `present` counts own actors in the target
+  sector or one beat away (`MatchMapState::presence_within`, built on
+  `graph::distance_in_beats`). A 0-presence declaration delivers nothing and records no
+  event; the phase record remains the evidence of the attempt.
+- [x] State the rule to the player where the player can act on it. The host refuses an
+  unbacked declaration at staging — `CliMatchError::ForceWithoutPresence`, rendered as
+  `error: no force in reach: …` — because both inputs are facts the player already holds
+  (own actor positions and the static map), and it never reports an unseen opponent. A
+  partially backed declaration commits and prints
+  `turn_note: code=force-capped detail=declared … but only N actor(s) stood within reach, so … landed`;
+  `siege` and `contest` help and the MCP `damage` parameter description say the same rule.
+- [x] Re-plan the canonical scenarios instead of relabeling them. The snowball script rotates
+  before each deeper tier and ends `NexusDemolished` at turn 14; the comeback script fields
+  **three** allied actors rather than two — two hold the enemy base sector, which reaches all
+  three lane far-sides, while the third walks the rivers — and ends `MatchConceded` at turn
+  34. Both scenarios were re-derived by simulating the presence rule, not by hand-patching
+  expected counters, and the old 2-actor comeback no longer terminates in a win under the new
+  rule, which is the point of the decision.
+- [x] Keep the change to one rule. No `min_present` legality token was invented; an `all-in`
+  declaration with one actor delivers 3 500 and is explained by the note rather than rejected,
+  so decision-token semantics (D5) stay decoupled from legality.
+- [ ] **Discovered coupling, deliberately untouched by this slice.** `transition_objective_contest`
+  is the only caller of `MatchObjectiveState::tick_turn` and `MapVisionState::tick_turn`
+  (`crates/foi-map/src/contest.rs`), so objective spawn/respawn timers and ward expiry advance
+  per **contest action**, not per turn: a plan of rotations and sieges never ages a ward and
+  never spawns a drake. Re-planning for presence had to embed contest actions for that reason,
+  and every scenario script in this catalog now reads its timers in contest ticks. Whether that
+  coupling is intended modeling or a defect is an open mechanics question, recorded here rather
+  than silently preserved or silently changed.
+
+**Audience and promotion evidence** (`crates/foi-map/src/complete_match.rs`,
+`crates/foi-map/src/tests/complete_match.rs`, `src/host/match_host.rs`): the audience is the
+human player of `--scenario m9-interactive-match-v1` and the agent driving `match_action`.
+The promoted claim is "where the roster stands decides how much force a turn delivers, and a
+declaration nobody can carry is refused instead of silently wasting a turn" — **technically
+verified** by 2 new `foi-map` authority tests, the re-planned replay-verified catalog, 2 new
+host tests, and the binary transcript test. It is not human validated: no playtest has shown
+that a player can compute a one-beat reach from `observe`, that 3 500 per actor is legible as
+a unit of force rather than an arbitrary constant, or that refusal-at-staging feels like help
+rather than like the game arguing with the player. Whether this feels like strategy or like
+bookkeeping is the question Priority 3 of `docs/audit_report_20260828.md` reserves for human
+play evidence. No fun, balance, or fairness claim is attached.
+
 ### Developer Action Items
 
 - [x] Implement interactive multi-lane CLI session runner (`--scenario m9-interactive-match-v1`), verified at the shipped 3v1 roster; five-a-side is not fielded by any shipped scenario.
@@ -2216,15 +2272,17 @@ fog leak. No fun, learnability, or fairness claim is attached.
 #### Roster and resolution limit (delivered surface versus exit evidence)
 
 Deterministic termination, replay-hash equality, and decision-density measurement
-are verified. Two exit conditions are **not** satisfied by the current match
+are verified. The exit conditions below are **not** satisfied by the current match
 surface, and the differences are structural rather than cosmetic:
 
 - **Team size is not five-a-side.** The canonical playable rosters are three
-  allied actors against one opposing actor
-  (`scenario-complete-allied-snowball-v1`) and two against one
-  (`scenario-complete-comeback-concession-v1`). `MatchMapState` accepts arbitrary
+  allied actors against one opposing actor in both catalog scenarios
+  (`scenario-complete-allied-snowball-v2`,
+  `scenario-complete-comeback-concession-v2`). `MatchMapState` accepts arbitrary
   `ActorId` rosters, so five-a-side is representable, but no shipped scenario
-  fields it, and no shipped evidence shows ten actors in play.
+  fields it, and no shipped evidence shows ten actors in play. Presence-gated
+  resolution makes the difference matter rather than cosmetic: an extra actor now
+  adds delivery, not only sight.
 - **Warded sight reaches the player.** `MatchMapState::observe_with_wards` resolves
   allied ward coverage inside the redacted projection, and the interactive host feeds
   it from match vision state, so warding a sector reveals an opposing actor standing
@@ -2237,16 +2295,16 @@ surface, and the differences are structural rather than cosmetic:
   `MapLocation` mapping that was deferred as new model work now exists and is stated
   explicitly, including the fact that the coarse map places both teams' outer tier in
   the same lane-centre sector.
-- **Actor presence does not resolve combat.** `transition_objective_contest` and
-  `transition_structure_siege` consume a `TeamSide`, a declared intent, and a
-  damage magnitude; neither reads actors or positions. Actor locations feed
-  shared **vision** only (an ally's current location becomes team-visible, and
-  wards add coverage). Team size therefore changes what a player can see, not
-  what wins an engagement. Adding five roster entries to obtain a "5v5" label
-  would add vision coverage and menu lines without changing any outcome, and is
-  deliberately not done; actor-presence-dependent resolution is a mechanics
-  decision that needs the human play evidence in Priority 3 of
-  `docs/audit_report_20260828.md` before it is designed.
+- **Actor presence resolves combat, and its balance is unverified.** Since decision
+  D2 was accepted, `transition_objective_contest` and the structure siege path read own
+  actor positions through `MatchMapState::presence_within` and clamp delivery to
+  `FORCE_PER_PRESENT_ACTOR` per actor in the target sector or one beat away. Actor
+  locations still feed shared **vision** on the same terms. What is verified is the
+  mechanism and its legibility in text; what is **not** verified is that the specific
+  constant, the one-beat reach, or refusal-at-staging is the *right* rule. That judgement
+  belongs to the human play evidence in Priority 3 of `docs/audit_report_20260828.md`,
+  which does not exist yet, so this slice is recorded as one coherent proposal rather
+  than a balanced ruleset.
 - **Role semantics live in the library, not the match loop.** `MatchRole`,
   role-specific observations, actions, and debriefs are implemented and tested in
   `crates/foi-map`, and the role scenario catalog exercises them. The interactive
@@ -2262,8 +2320,10 @@ documentation. `ROADMAP.md` item checkboxes below use the same wording.
 
 - No full fidelity to a proprietary game, roster, item system, or live metagame.
 - No networked multiplayer or production visual presentation.
-- No actor-presence-dependent combat resolution, unit/minion simulation, or
-  five-a-side canonical roster until the human match-play evidence above exists.
+- No unit/minion simulation and no five-a-side canonical roster until the human
+  match-play evidence above exists. Actor-presence-dependent resolution shipped as the
+  accepted D2 slice and is itself an unvalidated proposal awaiting that evidence; the
+  open question now concerns its values and feel, not whether positions count.
 
 ## Phase 10 — Human Usability and Accessibility Alpha
 

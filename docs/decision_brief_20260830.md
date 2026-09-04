@@ -118,6 +118,33 @@ slice carries a version bump.
 **What it unblocks:** team-scaled scenarios, role value, comeback pacing that responds to
 pick-offs, and an honest "multi-lane team tactics" claim.
 
+**Status (2026-09-03): accepted and landed** in the `0.1.242` package as one bound rule.
+Both the objective contest and the structure siege path clamp delivery to
+`FORCE_PER_PRESENT_ACTOR` (3 500) per own actor standing in the target sector or
+`PRESENCE_REACH_BEATS` (1) beat away, measured by `MatchMapState::presence_within` over the
+existing `graph::distance_in_beats`. Presence was implemented as a **clamp rather than a
+requirement**: an unbacked declaration delivers nothing and a partially backed one delivers
+partially, so no `min_present` legality token was invented and decision D5's vocabulary stays
+decoupled from legality. The player sees the rule where it can be acted on — an unbacked
+declaration is refused at staging from player-computable facts alone, and a capped turn prints
+`turn_note: code=force-capped` with the declared, present, and delivered figures.
+
+The bound held: one presence rule covering both objectives and sieges, no role matrix, no new
+subsystem, no new randomness. As the recommendation predicted, replay fixtures and every
+dependent expectation were regenerated rather than patched: `m9-complete-match-v2`,
+`m9-complete-match-catalog-v2`, both scenario ids at `-v2`, `m9-interactive-match-host-v3`, and
+both canonical plans re-derived by simulation. The comeback scenario now needs **three** allied
+actors where two used to win, which is the roster mattering rather than a fixture edit; the old
+two-actor plan loses under the new rule. The compatibility note is in `docs/COMPATIBILITY.md`.
+
+**Not settled by shipping.** The values are one coherent proposal, not a balanced ruleset: no
+play evidence says 3 500 reads as a unit of force, that a one-beat reach is intuitive from
+`observe`, or that refusing an unbacked declaration feels like help rather than as the game
+arguing with the player. D6 remains the gate for those questions.
+
+See `CHANGELOG.md`, `ROADMAP.md` Phase 9 "Current M9 interactive match presence-resolution
+evidence", `SPEC.md`, `HOW_TO_PLAY.md`, and `docs/TERMINOLOGY.md`.
+
 ## D3 — Should structures obey fog of war?
 
 **Problem.** In the interactive match, `observe` prints all 26 structures with exact

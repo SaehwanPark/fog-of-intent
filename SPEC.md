@@ -1989,6 +1989,34 @@ replays to an identical final hash at the library boundary.
   `CompleteMatchState::vision()`, so `ward` purchases information a player can see
   rather than only advancing the `active_wards` counter.
 
+#### Delivered in the interactive match presence-resolution slice — 2026-09-03
+
+- Actor presence is an input to resolution (`docs/decision_brief_20260830.md` D2, accepted).
+  `MatchMapState::presence_within(team, sector, PRESENCE_REACH_BEATS)` counts own actors in the
+  target sector or one beat away using the existing `graph::distance_in_beats`, and both the
+  objective contest and the structure siege path of `CompleteMatchState::apply_action` deliver
+  at most `deliverable_force(present, declared)` — `FORCE_PER_PRESENT_ACTOR` (3 500) per present
+  actor. An earlier ruleset applied the declared magnitude regardless of the roster's positions.
+- Presence clamps delivery rather than gating it. A declaration with nobody in reach delivers
+  nothing and records no event; the phase record stays as the evidence that the turn was spent.
+  No `min_present` legality token was introduced, so a declaration of intent stays decoupled
+  from execution legality (decision D5), and an over-declared turn is explained rather than refused.
+- The rule is stated where the player can act on it. The host refuses an unbacked declaration
+  before staging it (`CliMatchError::ForceWithoutPresence`, `error: no force in reach: …`) using
+  only the player's own actor positions and static map knowledge, so it never reports an unseen
+  opponent; a partially backed declaration commits and prints `turn_note: code=force-capped`
+  with declared, present, and delivered figures. `siege`/`contest` help text and the MCP `damage`
+  parameter description state the same one rule.
+- The version chain follows the authority change: `M9_COMPLETE_MATCH_SCHEMA_V2`,
+  `M9_COMPLETE_MATCH_CATALOG_SCHEMA_V2`, both canonical scenario ids at `-v2`, and
+  `CLI_MATCH_HOST_SCHEMA` at `m9-interactive-match-host-v3`. Both catalog plans were re-derived
+  by simulation; the comeback scenario now fields three allied actors because two are required
+  to hold the enemy base sector. `M9_MAP_RULESET` is unchanged by stated reason: the presence
+  test reuses the map layer's beat distances and alters none of them.
+- Not claimed: that the constant, the reach, or the refusal is the right rule. Balance, feel,
+  and legibility to a human player remain unevaluated, and five-a-side is still fielded by no
+  shipped scenario.
+
 #### Delivered in the interactive match structure-fog slice — 2026-09-03
 
 - Defensive structures obey fog of war on the player surface. `MatchMapState::sector_sight`

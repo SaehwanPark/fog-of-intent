@@ -41,7 +41,114 @@ use super::victory::{MatchStatus, MatchTerminalEvaluation, MatchVictoryCondition
 use super::vision::{MapVisionState, VisionError};
 use crate::kernel::{ActorId, StateHash, hash_bytes};
 
+/// Current identity of the composed complete-match transition.
+///
+/// `v2` makes actor presence an input to resolution (decision D2 in
+/// `docs/decision_brief_20260830.md`): a declared contest or siege now delivers at most
+/// [`FORCE_PER_PRESENT_ACTOR`] per actor standing at the target, so runs that declare
+/// force nobody can apply produce different state, different hashes, and sometimes a
+/// different ending than the same plan under `v1`.
+pub const M9_COMPLETE_MATCH_SCHEMA_V2: &str = "m9-complete-match-v2";
+
+/// Retired identity of the composed transition, where declared force was applied in
+/// full regardless of where actors stood.
 pub const M9_COMPLETE_MATCH_SCHEMA_V1: &str = "m9-complete-match-v1";
+
+/// Maximum force one present actor can deliver in a single turn.
+///
+/// Presence caps delivery instead of gating it on and off, so "how many actors do I
+/// commit" is a continuous question with one constant to reason about. The value is
+/// deliberately set to the outer-turret tier's full health: one present actor takes an
+/// outer turret in a turn, and deeper tiers need a roster behind them.
+pub const FORCE_PER_PRESENT_ACTOR: u32 = 3_500;
+
+/// How far from a target sector an actor may stand and still be counted present.
+///
+/// One beat means "the target sector, or somewhere I could already step to", which keeps
+/// a rotation from being simultaneously a positioning move and an untouchable strike.
+pub const PRESENCE_REACH_BEATS: u8 = 1;
+
+/// Force a declaration actually delivers: one actor's worth per actor standing within
+/// reach of the target, capped by what was declared.
+///
+/// This is the whole presence rule: declared force is clamped, never rejected, so an
+/// over-declaration is a legible partial result rather than a wasted action. It is public
+/// so an interactive surface can report the number the authority will apply instead of
+/// approximating it.
+pub fn deliverable_force(present: usize, declared: u32) -> u32 {
+  let capacity = u64::from(FORCE_PER_PRESENT_ACTOR)
+    .saturating_mul(u64::try_from(present).unwrap_or(u64::MAX))
+    .min(u64::from(u32::MAX));
+  u32::try_from(capacity).unwrap_or(u32::MAX).min(declared)
+}
+
+/// Objective a contest intent is aimed at, when the intent names one.
+///
+/// A cross-map trade has no single sector to stand in, so it reports none and stays
+/// outside the presence rule.
+/// Sector a siege declaration lands in: the defender's sector for that tier and lane.
+///
+/// The authority and the interactive pre-check must measure presence from the same place,
+/// so both call this instead of restating the mapping.
+fn siege_sector(side: TeamSide, tier: StructureTier, lane: Option<LaneId>) -> MapLocation {
+  tier.observed_sector(side.opposing(), lane)
+}
+
+fn contested_objective(intent: &ObjectiveIntent) -> Option<ObjectiveKind> {
+  match intent {
+    ObjectiveIntent::Engage { objective, .. }
+    | ObjectiveIntent::SecureBurst { objective, .. }
+    | ObjectiveIntent::ZoneOpponents { objective, .. } => Some(*objective),
+    ObjectiveIntent::ConcedeAndTrade { .. } => None,
+  }
+}
+
+/// Clamp a declared objective intent to the force `team` can apply at that objective.
+///
+/// Zero presence resolves to `None` — "this team committed no force this turn" — rather
+/// than skipping the contest transition, because that transition also ticks objective
+/// spawn, respawn, and ward-expiry timers that must keep their cadence. Concession with
+/// a cross-map trade is not presence-gated: giving up an objective needs nobody present,
+/// and the trade resolves through the structure ladder on the other side of the map.
+fn presence_capped_contest(
+  map: &MatchMapState,
+  team: TeamSide,
+  intent: Option<ObjectiveIntent>,
+) -> Option<ObjectiveIntent> {
+  let intent = intent?;
+  let (objective, declared) = match intent {
+    ObjectiveIntent::Engage { objective, damage } => (objective, damage),
+    ObjectiveIntent::SecureBurst {
+      objective,
+      burst_damage,
+    } => (objective, burst_damage),
+    ObjectiveIntent::ZoneOpponents {
+      objective,
+      zoning_power,
+    } => (objective, zoning_power),
+    ObjectiveIntent::ConcedeAndTrade { .. } => return Some(intent),
+  };
+  let present = map.presence_within(team, objective.location(), PRESENCE_REACH_BEATS);
+  let delivered = deliverable_force(present, declared);
+  if delivered == 0 {
+    return None;
+  }
+  match intent {
+    ObjectiveIntent::Engage { objective, .. } => Some(ObjectiveIntent::Engage {
+      objective,
+      damage: delivered,
+    }),
+    ObjectiveIntent::SecureBurst { objective, .. } => Some(ObjectiveIntent::SecureBurst {
+      objective,
+      burst_damage: delivered,
+    }),
+    ObjectiveIntent::ZoneOpponents { objective, .. } => Some(ObjectiveIntent::ZoneOpponents {
+      objective,
+      zoning_power: delivered,
+    }),
+    ObjectiveIntent::ConcedeAndTrade { .. } => Some(intent),
+  }
+}
 
 /// FNV-1a offset basis for the combined match hash.
 const FNV_OFFSET_BASIS: u64 = 0xcbf29ce484222325;
@@ -213,6 +320,32 @@ impl CompleteMatchState {
     }
   }
 
+  /// The sector a force declaration lands in, and the team that declared it.
+  ///
+  /// Presence is measured from this sector. It is the mapping the transitions apply,
+  /// exposed so an interactive surface can explain a declaration before it commits: a
+  /// team always knows its own actor positions and the map is static, so this reveals
+  /// nothing hidden. When both teams declare in the same turn, the observer-side
+  /// declaration is the one reported.
+  pub fn force_declaration(&self, plan: &CompleteMatchAction) -> Option<(MapLocation, TeamSide)> {
+    match plan {
+      CompleteMatchAction::SiegeStructure {
+        side, tier, lane, ..
+      } => Some((siege_sector(*side, *tier, *lane), *side)),
+      CompleteMatchAction::ContestObjectives {
+        allied_intent,
+        opposing_intent,
+      } => {
+        let (intent, team) = match (allied_intent, opposing_intent) {
+          (Some(intent), _) => (intent, TeamSide::Allied),
+          (None, Some(intent)) => (intent, TeamSide::Opposing),
+          (None, None) => return None,
+        };
+        Some((contested_objective(intent)?.location(), team))
+      }
+      _ => None,
+    }
+  }
   pub fn turn(&self) -> u32 {
     self.turn
   }
@@ -451,7 +584,7 @@ impl CompleteMatchPlan {
 
     Ok(CompleteMatchResult {
       scenario_id: self.scenario_id,
-      schema: M9_COMPLETE_MATCH_SCHEMA_V1,
+      schema: M9_COMPLETE_MATCH_SCHEMA_V2,
       initial_hash,
       final_hash,
       final_turn,
@@ -512,11 +645,14 @@ impl CompleteMatchState {
         allied_intent,
         opposing_intent,
       } => {
+        let allied_intent = presence_capped_contest(&self.map, TeamSide::Allied, *allied_intent);
+        let opposing_intent =
+          presence_capped_contest(&self.map, TeamSide::Opposing, *opposing_intent);
         let result = transition_objective_contest(
           &mut self.objectives,
           &mut self.vision,
-          *allied_intent,
-          *opposing_intent,
+          allied_intent,
+          opposing_intent,
           self.turn,
         );
         for event in &result.events {
@@ -544,22 +680,34 @@ impl CompleteMatchState {
         lane,
         raw_damage,
       } => {
-        let result = transition_structure_siege(
-          self.turn,
-          &mut self.structures,
-          *side,
-          SiegeIntent::AttackStructure {
-            tier: *tier,
-            lane: *lane,
-            raw_damage: *raw_damage,
-          },
-          None,
-        )?;
-        (
-          MatchPhaseKind::StructureSiege,
-          result.events.len(),
-          result.effects.len(),
-        )
+        // The structure ladder is presence-gated through the same sector mapping the
+        // observation surface uses, so an actor standing in front of a turret is what
+        // makes the siege land, and a siege called from the far side of the map lands
+        // nothing at all.
+        let sector = siege_sector(*side, *tier, *lane);
+        let present = self
+          .map
+          .presence_within(*side, sector, PRESENCE_REACH_BEATS);
+        let delivered = deliverable_force(present, *raw_damage);
+        let (events, effects) = if delivered == 0 {
+          // No damage and no event: the phase record this action produces is the
+          // evidence that a siege was called and applied nothing.
+          (0, 0)
+        } else {
+          let result = transition_structure_siege(
+            self.turn,
+            &mut self.structures,
+            *side,
+            SiegeIntent::AttackStructure {
+              tier: *tier,
+              lane: *lane,
+              raw_damage: delivered,
+            },
+            None,
+          )?;
+          (result.events.len(), result.effects.len())
+        };
+        (MatchPhaseKind::StructureSiege, events, effects)
       }
       CompleteMatchAction::EvaluateTerminal => (MatchPhaseKind::TerminalEvaluation, 0, 0),
     };

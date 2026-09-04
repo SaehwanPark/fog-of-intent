@@ -3,6 +3,59 @@
 All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 
+## Unreleased — 2026-09-03 (presence-resolved force, `0.1.242`)
+
+### Changed
+
+- **Where the roster stands now decides how much force lands**
+  (`docs/decision_brief_20260830.md` D2, accepted). A contest or a siege delivers at most
+  `FORCE_PER_PRESENT_ACTOR` (3 500) per own actor standing in the target sector or
+  `PRESENCE_REACH_BEATS` (1) beat away, measured by `MatchMapState::presence_within` over the
+  existing `graph::distance_in_beats` (`crates/foi-map/src/complete_match.rs`,
+  `crates/foi-map/src/state.rs`). Declared force is unchanged as an expression of intent;
+  presence clamps what it delivers rather than gating whether it is legal, so no
+  `min_present` legality token was introduced.
+- An unbacked declaration is refused before it is staged. `CliMatchHost::stage` rejects a
+  siege or contest that no own actor can carry — `CliMatchError::ForceWithoutPresence`,
+  rendered as `error: no force in reach: …` — so no turn is spent delivering nothing. The check
+  reads only the player's own actor positions and the static map, and so never reports an
+  unseen opponent. A partially backed declaration commits and prints
+  `turn_note: code=force-capped detail=declared … but only N actor(s) stood within reach, so … landed`;
+  `CompleteMatchState::force_declaration` names the sector a declaration targets so the host
+  never re-derives the rule.
+- `m9-complete-match-v1`, `m9-complete-match-catalog-v1`, and both scenario ids are retired for
+  the new resolution and replaced by `m9-complete-match-v2`,
+  `m9-complete-match-catalog-v2`, `scenario-complete-allied-snowball-v2`, and
+  `scenario-complete-comeback-concession-v2`; `CLI_MATCH_HOST_SCHEMA` moves to
+  `m9-interactive-match-host-v3`. `M9_MAP_RULESET` is unchanged by stated reason: the presence
+  test reuses the map layer's beat distances and alters none of them.
+- Both canonical scenarios were re-derived by simulating the new rule rather than by patching
+  expected counters. The snowball script rotates before each deeper tier and ends
+  `NexusDemolished` at turn 14; the comeback script now fields **three** allied actors — two
+  hold the enemy base sector, which reaches all three lane far-sides, while the third walks the
+  rivers — and ends `MatchConceded` at turn 34. The retired two-actor comeback no longer wins
+  under presence-gated resolution, which is the point of the decision.
+
+### Tests
+
+- Two `foi-map` authority tests pin that force without presence delivers nothing and that a
+  declaration is clamped to present actors; two host tests pin the staging refusal and the
+  `force-capped` note; the binary transcript test asserts the refusal line and that a refused
+  declaration consumed no turn.
+
+### Documentation
+
+- `HOW_TO_PLAY.md` replaces "Actor locations feed vision only" with the presence rule, tier
+  health, the refusal and cap-note text, and a winning line that rotates before it sieges.
+- `ROADMAP.md` Phase 9 records the presence-resolution evidence, and its "actor presence does
+  not resolve combat" limit becomes "presence resolves combat, and its balance is
+  unverified"; the deferral list keeps five-a-side and minion simulation deferred.
+  `SPEC.md` records the delivered slice and `docs/decision_brief_20260830.md` marks D2 landed.
+- `docs/TERMINOLOGY.md` defines **presence** and **delivered force**, widens **turn note** to
+  the capped case, and states that a presence check must not report unseen opponents.
+  `docs/COMPATIBILITY.md` records the retired v1 match identities and their lack of a migration
+  path. `ARCHITECTURE.md` describes the new resolution and catalog turns.
+
 ## Unreleased — 2026-09-03 (structure fog, `0.1.241`)
 
 ### Changed
