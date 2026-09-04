@@ -66,6 +66,36 @@ and versions rather than borrowing internal domain versions.
   own fixtures and before/after hash evidence. No implicit migration is allowed
   in the first M1 slice.
 
+## Published contract: reject on mismatch (decision D7)
+
+Reject-on-mismatch is not a missing feature; it is the contract this project publishes
+until a second artifact version exists to migrate from. A loader compares the recorded
+version and fails closed with an error that names the artifact, the expected version, and
+the actual version with its line — `SerializationError::UnsupportedVersion`, produced by
+`check_version` in `src/serialization/helpers.rs` for the `1.0.0` snapshot and history
+schemas. No loader guesses, defaults, or coerces.
+
+This is a deliberate choice, not a deferred one, and it carries a binding rule:
+
+- **A breaking change to an artifact that circulates must ship its migration in the same
+  slice.** Same pull request, same tests: the migration plus its fixtures and before/after
+  hash evidence. Splitting them means the first reader to meet a new artifact is a user with
+  an unreadable run directory and no path forward.
+- **Retiring an identity and re-identifying the content is the other legitimate response**, and
+  is what the M9 slices did (`m9-complete-match-v1` → `-v2`, host `v3` → `v4`). It is permitted
+  only while the retired identity has no release, no tag, no published codec, and no artifact
+  stored outside this repository — the condition each retirement above states explicitly. The
+  moment a run directory, replay, or transcript is shared outside the project, that escape hatch
+  closes for anything that artifact records, and only the rule above applies.
+- **Additive changes are named as additive.** Host `v3` → `v4` is additive: an integer in a
+  force slot means what it meant, and a new token is accepted beside it. An additive change must
+  be checkable as additive, so it is stated as such here rather than left to a reader.
+
+The release posture in `docs/decision_brief_20260830.md` is what makes the second rule honest:
+no tag and no release-ready language before the human-evidence gate, so nothing shipped yet
+obliges a migration. Revisit this contract when a second artifact version exists, or when run
+directories are shared outside the project — whichever comes first.
+
 ## Replay and fixture requirements
 
 An M1 replay fixture records the initial state, ordered validated commands,

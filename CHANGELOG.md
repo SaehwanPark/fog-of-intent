@@ -3,6 +3,50 @@
 All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 
+## Unreleased — 2026-09-03 (governance: claim precedence, promotion evidence, artifact contract; docs only)
+
+Documentation and policy only; the package version is unchanged, per the versioning policy in
+`README.md`.
+
+### Added
+
+- **Document precedence** (`docs/decision_brief_20260830.md` D9). `docs/harness/fog-of-intent/team-spec.md`
+  gained a "Claim Precedence and Promotion Evidence" section and `AGENTS.md` its short form:
+  executed code and printed output outrank every document, `docs/TERMINOLOGY.md` governs a domain
+  term, `docs/COMPATIBILITY.md` governs an artifact or migration claim, and dated artifacts —
+  audits, decision briefs, ADRs — describe their own date and never promote a claim. A document
+  contradicted by the tree is corrected in the same change instead of left to argue.
+- **Per-slice promotion evidence** (D9, option i). Every new or changed subsystem records its
+  primary audience, the specific evidence that would promote it one rung of the `README.md`
+  ladder, and what is explicitly not claimed, in the `ROADMAP.md` section for its slice.
+  `scripts/check_repository.py` enforcement (D9 option iii) stays deferred on purpose: a checker
+  can find a missing heading, not a note that says nothing.
+- **A published artifact contract** (D7, option ii). `docs/COMPATIBILITY.md` states that
+  reject-on-mismatch is the contract rather than an unfinished migration, names the fail-closed
+  error and the fields it reports, and binds any breaking change to a circulating artifact to
+  ship its migration in the same change. Retiring and re-identifying an identity — what `-v1` →
+  `-v2` and host `v3` → `v4` did — is now explicitly legitimate only while that identity has no
+  release, tag, or stored artifact.
+- **What `Active` means in `ROADMAP.md`.** The header explains that exactly one phase carries the
+  marker because the checker requires it, that `M3` holds it on human-evidence grounds, and that
+  accepted-decision slices are recorded in the phase whose behaviour they change — Phase 9 since
+  2026-08-30. `Active` is not a pointer to where the next commit lands.
+
+### Corrected
+
+- `SPEC.md` said actor presence resolving engagements was *deferred* — D2 shipped it — and named
+  rosters of "3v1 and 2v1" where both catalog scenarios field three allied actors against one
+  opposing actor.
+- D9's Problem text measured a `docs/` directory of about 5,500 lines across 21 files over 300
+  lines. As of this slice `docs/` holds under 5,000 lines across 14 files, five over 300, while
+  roughly 11,000 lines of prose sit in the root documents (`ROADMAP.md`, `SPEC.md`,
+  `CHANGELOG.md`, `LESSONS.md`). No consolidation was performed on the strength of the old
+  number.
+- The brief's smaller items now carry dispositions: the `"5v5"` alias stays for input continuity
+  but must stop implying a team size; `OpponentSighting::LastKnown` is to be removed, since D3
+  settled that the projection never reports a stale position; the lane/match verb sets do not
+  converge before D6; the release posture — no tag while D6 is shut — stands.
+
 ## Unreleased — 2026-09-03 (commit-strength vocabulary, `0.1.243`)
 
 ### Changed

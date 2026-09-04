@@ -46,6 +46,17 @@ Keep this file short and repo-wide. Detailed project workflows live in
   generic Rust, testing, UX, documentation, review, release, and git workflows.
 - Read [LESSONS.md](LESSONS.md) before coding and add only verified, reusable
   lessons after resolving a recurring project trap.
+- Every new or changed subsystem records its primary audience and the evidence that
+  would promote it one rung of the `README.md` ladder, in the `ROADMAP.md` section for
+  that slice, together with what is explicitly not claimed.
+- When documents disagree, code and printed output win and the losing document is
+  corrected in the same change. Dated artifacts (`docs/audit_report_*.md`,
+  `docs/decision_brief_*.md`, ADRs) describe their date and never promote a claim; the
+  full precedence order is in `docs/harness/fog-of-intent/team-spec.md`.
+- Artifact loading rejects a version mismatch instead of coercing it. A breaking change to an
+  artifact that circulates ships its migration in the same change; retiring and re-identifying
+  an identity is allowed only while it has no release, tag, or stored artifact.
+  `docs/COMPATIBILITY.md` states the contract.
 - Keep the authoritative transition synchronous and deterministic. Resolve
   randomness before transition evaluation; keep I/O, async work, persistence,
   presentation, MCP, and model-provider code at the edges.
