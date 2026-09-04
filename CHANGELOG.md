@@ -3,6 +3,67 @@
 All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 
+## Unreleased — 2026-09-04 (a match you can start, `0.1.244`)
+
+### Added
+
+- **A six-turn teaching match** (`docs/decision_brief_20260830.md` D8, the exception that
+  breadth freeze named in advance). `--scenario m9-match-onboarding-v1`, aliases `onboarding`
+  and `tutorial`, menu entry 17. Three allied actors against one opposing actor that never
+  receives an order, so no command can lose it and no verb is off-limits. The old menu numbers
+  are unchanged.
+- **The teaching plan `scenario-complete-onboarding-v1`** (`CompleteMatchCatalog::onboarding_v1`)
+  is data, not rules: an opening position with no scripted actions. Two allied actors reach the
+  mid outer tier, so turn one pays out; one actor reaches the enemy base, so the deep tiers
+  require walking the force there with `rotate`.
+- **`CompleteMatchCatalog::all()` and `find()` now name two roles.** `all()` is the benchmark set
+  the print-and-exit transcript executes — still the two `-v2` plans — and `find()` additionally
+  resolves interactive-only teaching plans. The teaching plan is excluded from `all()` on purpose:
+  a tutorial must not silently rewrite the replay transcript that the reproducibility evidence
+  quotes.
+- **Printed sector names type back in.** The host resolves every canonical `MapLocation` spelling
+  that `observe` prints — `rotate 1 lane:mid:far-side` as well as `rotate 1 mid_far_side`, dashes
+  normalised, case ignored — before consulting its alias table. Additive input acceptance, so
+  `m9-interactive-match-host-v4` did not move.
+- **An opening briefing** (`render_match_onboarding_banner`) that says what the session is, names
+  a command that works, and points at the one decision that matters. Advisory and presentation-side:
+  it restates no legality. It prints on the scripted path too, as the only exception to that path's
+  no-banner contract, so a first session is briefed whether the commands are typed or piped.
+
+### Verified
+
+- The scripted line in `HOW_TO_PLAY.md` concludes on turn six with
+  `condition=nexus-demolished`, and its killing blow reports `declared 10500 force at
+  base:opposing but only 2 actor(s) stood within reach, so 7000 landed` — the word declares the
+  roster, presence prices it, in the first session a player has.
+- Nine focused tests: 2 `foi-map` (reproducible opening position, geometry one rotation short of
+  the enemy base, benchmark set unmoved), 3 host (scripted conclusion addressed by session id or
+  plan id, refusal for the benchmark scenario, all fifteen sector names printing and parsing),
+  1 presentation (briefing content, plain style, narrow widths), 1 command loop (reachable by
+  session id, plan id, both aliases, and menu number; usage lists it), plus 2 host tests that the
+  widened and the legacy spellings both resolve and that no other spelling is accepted.
+- `cargo +1.96.0 fmt --all -- --check`, `cargo +1.96.0 clippy --locked --all-targets
+  --all-features -- -D warnings`, and `cargo +1.96.0 test --locked` pass, as do
+  `scripts/check_repository.py` and its unit tests. `docs/COMPATIBILITY.md`, `HOW_TO_PLAY.md`,
+  `SPEC.md`, and the Phase 9 evidence in `ROADMAP.md` are current.
+
+### Corrected
+
+- `--help` and `HOW_TO_PLAY.md` advertised `--run-dir` for "interactive scenarios"; the binary
+  has only ever accepted it for interactive **lane** scenarios and refuses it elsewhere with
+  `argument error: --run-dir is available only for interactive lane scenarios`. The help text and
+  the flag table now say lane. A match session — the teaching one included — still cannot persist
+  run artifacts, and making it able to is unstarted work, not a regression from this slice.
+
+### Evidence boundary
+
+- Nothing is claimed about learnability or clarity. Nobody unfamiliar with the game has been
+  watched reaching `debrief` from the briefing alone, and no time-to-first-understanding was
+  measured — that observation is part of D6, which remains the gate on every player-facing
+  surface.
+- The MCP server still constructs the default match session and cannot select the teaching plan:
+  new MCP surface is frozen by D8 until the informal usability pass reports no blocker.
+
 ## Unreleased — 2026-09-03 (governance: claim precedence, promotion evidence, artifact contract; docs only)
 
 Documentation and policy only; the package version is unchanged, per the versioning policy in

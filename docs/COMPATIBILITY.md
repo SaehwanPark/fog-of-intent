@@ -20,6 +20,18 @@ executable; a reader must reject `v1`-labeled match input rather than resolving 
 The map ruleset identifier is deliberately unchanged, because the presence test reuses the map
 layer's existing beat distances and alters none of them.
 
+Two identities were added, not moved. The interactive session `m9-match-onboarding-v1` and its
+teaching plan `scenario-complete-onboarding-v1` (a teaching plan has no scripted action list) run
+the same `v4` host, and a teaching plan is resolved only by `CompleteMatchCatalog::find`:
+`CompleteMatchCatalog::all()` remains the two `-v2` benchmark plans, so the print-and-exit
+transcript `m9-complete-match-replay-v1` and every hash quoted from it are unchanged. A reader
+that does not know the teaching id must reject it rather than substituting a benchmark.
+Separately, `rotate` now accepts every canonical sector spelling that `observe` prints
+(`lane:mid:far-side`, `base:opposing`, `river:bot`) in addition to the underscore aliases it
+already accepted. That is **additive input acceptance**: a wider set of inputs resolves to the
+same sectors it always named, no previously accepted input changes meaning, and no projection
+changed — so the host identifier stays `v4` and no replay identity moves.
+
 M2 v1 is retired internal history. It has no release, tag, external codec, or
 supported artifact, so there is no migration path. The current M2 contract uses
 ruleset `4`, v3 observation/profile/replay/strategy/scenario/debrief/branch

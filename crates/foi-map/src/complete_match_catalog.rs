@@ -35,6 +35,10 @@ impl CompleteMatchCatalog {
   /// `v2` ids: each scenario's action script changed, so its identity changed with it.
   pub const SCENARIO_ALLIED_SNOWBALL_VICTORY: &'static str = "scenario-complete-allied-snowball-v2";
   pub const SCENARIO_COMEBACK_CONCESSION: &'static str = "scenario-complete-comeback-concession-v2";
+  /// Interactive-only teaching scenario. It is resolved by [`Self::find`] and never
+  /// returned by [`Self::all`]: `all()` is the benchmark set that the print-and-exit
+  /// replay transcript executes, and a tutorial is not a benchmark.
+  pub const SCENARIO_ONBOARDING_V1: &'static str = "scenario-complete-onboarding-v1";
 
   /// Allied early pressure: rotations set up river vision, the Drake is
   /// secured, the Mid lane is sieged through to the Nexus, and the match
@@ -334,14 +338,65 @@ impl CompleteMatchCatalog {
     }
   }
 
+  /// First-contact teaching match, and the named exception to the M9 breadth freeze
+  /// (decision `D8`): a newcomer's opening session should not be a fourteen-turn
+  /// benchmark. Three allied actors stand already in position to take the mid outer
+  /// turret on turn one, and the deep tiers are deliberately one rotation short of
+  /// the force they need, so the second lesson is presence rather than an error: the
+  /// siege runs, delivers less than it declared, and says so in a `force-capped`
+  /// turn note. The opposing actor never acts — the interactive host executes the
+  /// player's commands, and no opposing policy runs — so nothing can be lost here.
+  ///
+  /// `actions` is empty by design. The scripted action list exists for the replay-
+  /// verified benchmarks; in a teaching scenario the player writes the script.
+  pub fn onboarding_v1() -> CompleteMatchPlan {
+    let mid_laner = ActorId::new(1);
+    let jungler = ActorId::new(2);
+    let support = ActorId::new(3);
+    let opp_mid = ActorId::new(4);
+    let initial = CompleteMatchState::new(
+      1,
+      vec![mid_laner, jungler, support],
+      vec![opp_mid],
+      vec![
+        (
+          mid_laner,
+          ActorLocation::Stationary(MapLocation::MID_CENTER),
+        ),
+        (
+          jungler,
+          ActorLocation::Stationary(MapLocation::MID_FAR_SIDE),
+        ),
+        (support, ActorLocation::Stationary(MapLocation::ALLIED_BASE)),
+        (
+          opp_mid,
+          ActorLocation::Stationary(MapLocation::OPPOSING_BASE),
+        ),
+      ],
+    );
+
+    CompleteMatchPlan {
+      scenario_id: Self::SCENARIO_ONBOARDING_V1,
+      initial,
+      actions: Vec::new(),
+    }
+  }
+
+  /// Resolve a scenario ID, including interactive-only plans such as the onboarding
+  /// match that [`Self::all`] deliberately excludes.
   pub fn find(scenario_id: &str) -> Option<CompleteMatchPlan> {
     match scenario_id {
       Self::SCENARIO_ALLIED_SNOWBALL_VICTORY => Some(Self::allied_snowball_victory()),
       Self::SCENARIO_COMEBACK_CONCESSION => Some(Self::comeback_concession()),
+      Self::SCENARIO_ONBOARDING_V1 => Some(Self::onboarding_v1()),
       _ => None,
     }
   }
 
+  /// The canonical benchmark plans: everything the print-and-exit replay transcript
+  /// executes, and every plan whose hashes are quoted as evidence. Teaching plans
+  /// resolved by [`Self::find`] are excluded, so adding one never changes that
+  /// transcript or the benchmark set.
   pub fn all() -> Vec<CompleteMatchPlan> {
     vec![Self::allied_snowball_victory(), Self::comeback_concession()]
   }

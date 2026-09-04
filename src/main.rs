@@ -290,6 +290,9 @@ fn main() -> ExitCode {
       None => CliCommandLoop::strategy(fog_of_intent::lane::StrategyFixtureId::Conservative),
     },
     CliApplicationScenario::M9InteractiveMatch => CliCommandLoop::match_session(),
+    CliApplicationScenario::M9MatchOnboarding => CliCommandLoop::match_session_from_id(
+      fog_of_intent::host::CLI_INTERACTIVE_MATCH_ONBOARDING_SCENARIO_ID,
+    ),
     _ => match options.run_dir() {
       Some(path) => CliCommandLoop::fixture_with_store(CliRunStore::new(path)),
       None => CliCommandLoop::fixture(),
