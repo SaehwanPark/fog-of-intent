@@ -4,7 +4,7 @@ This is a walkthrough of the **shipped runner**. It documents what the binary
 actually accepts and prints, and it states plainly which claims it does **not**
 support.
 
-The runner opens sixteen scenarios. Pick one from a menu with `--select`, name one
+The runner opens seventeen scenarios. Pick one from a menu with `--select`, name one
 with `--scenario <id>`, or list them with `--list-scenarios`.
 
 This guide is functional documentation. It does not prove enjoyment, accessibility,
@@ -17,14 +17,18 @@ Install a Rust toolchain with Rust 2024 edition support (this repository pins
 
 ```sh
 cargo run -- --select                 # interactive scenario menu
-cargo run -- --list-scenarios         # id, milestone, mode, description for all 16
+cargo run -- --list-scenarios         # id, milestone, mode, description for all 17
 cargo run -- --scenario <id>          # run one scenario directly
 cargo run -- --help                   # process flags
 ```
 
 On a TTY you get a `> ` prompt, a banner, and Tab completion. Piped input has no
 prompt and prints machine-checkable labelled plain text — that piped form is the
-script contract, and it is what the examples below show.
+script contract, and it is what the examples below show. The teaching match
+(`m9-match-onboarding-v1`) is the single exception: it prints its opening briefing on the
+piped path too, so a first session sees the same guidance whether the commands are typed
+or scripted. Match sessions that are not the teaching match print no banner when piped,
+and that is what existing scripts assert.
 
 | Flag | Effect |
 | --- | --- |
@@ -32,7 +36,7 @@ script contract, and it is what the examples below show.
 | `--select`, `-s` | Choose a scenario interactively |
 | `--list-scenarios`, `-l` | Print the catalog without starting a session |
 | `--mcp` | Start the MCP JSON-RPC stdio server in this binary |
-| `--run-dir <path>` | Store run artifacts here (interactive scenarios only, no default) |
+| `--run-dir <path>` | Store run artifacts here (interactive **lane** scenarios only, no default; a match session refuses it) |
 | `--color auto\|always\|never` | ANSI colouring; `auto` honours `NO_COLOR` |
 | `--width <cols>` | Line-wrap width (default 80) |
 | `--version`, `-V` | Package metadata without opening a session |
@@ -45,7 +49,7 @@ The MCP server also ships as its own binary:
 | Kind | Scenario ids | What it does |
 | --- | --- | --- |
 | Interactive lane | `m3-two-window-fixture-v1`, `m2-strategy-happy-path-v1`, `m2-strategy-risk-taking-v1`, `m2-strategy-conservative-v1` | Command one laner through two decision windows, then debrief |
-| Interactive match | `m9-interactive-match-v1` | Command a multi-lane team turn by turn to a victory condition (see [Presence decides what lands](#presence-decides-what-lands)) |
+| Interactive match | `m9-interactive-match-v1`, `m9-match-onboarding-v1` | Command a multi-lane team turn by turn to a victory condition (see [Presence decides what lands](#presence-decides-what-lands)); the onboarding id is the six-turn teaching match, and is the one to start on |
 | Print-and-exit report | `m9-complete-match-replay-v1`, `m6-behavioral-experiments-v1`, `m7-calibration-proof-v1`, `m8-team-scenarios-v1`, `m10-human-study-synthesis-v1`, `m10-empirical-cohort-study-v1`, `m11-gui-presentation-v1`, `m11-gui-browser-flow-v1`, `m12-alpha-release-checks-v1`, `m12-reproducibility-bundle-v1`, `m12-alpha-archive-v1` | Run a deterministic battery and print a report; no prompt |
 
 Interactive lanes share one verb set. The interactive match has its own verb set.
@@ -164,6 +168,61 @@ history, and `commit`/`advance` keep applying to the live run.
 ```sh
 cargo run -- --scenario m9-interactive-match-v1
 ```
+
+### Start with the short match
+
+The full match runs fourteen turns and expects you to already know the verbs. For a
+first session use the teaching match, which concludes on turn six and cannot be lost:
+
+```sh
+cargo run -- --scenario m9-match-onboarding-v1
+```
+
+It opens by telling you what it is and which command works first:
+
+```text
+Fog of Intent — onboarding match
+Three allied actors, one enemy that never acts. Nothing here is lost.
+Your mid actor already reaches the outer turret: try siege outer mid light
+The deeper tiers stand at the enemy base, so walk the force with rotate
+```
+
+Three actors stand against one opposing actor that never receives an order, so nothing
+you type can cost you the game. A verified run, printed turn by turn:
+
+```sh
+printf '%s\n' \
+  'siege outer mid light' advance \
+  'siege inner mid committed' advance \
+  'rotate 1 lane:mid:far-side' advance \
+  'siege inhibitor_turret mid committed' advance \
+  'siege inhibitor mid light' advance \
+  'siege nexus all-in' advance \
+  evaluate advance debrief quit \
+  | cargo run -- --scenario m9-match-onboarding-v1
+```
+
+The first siege lands on turn one because your mid actor already stands where the outer
+turret is. The second lands because the mid laner's far-side sector holds the inner
+tier. Then the deep tiers stop paying out — the enemy base is two beats from your mid
+actor — and the rotation is what carries the force there. The killing blow is the
+lesson in its own numbers:
+
+```text
+turn_note: code=force-capped detail=declared 10500 force at base:opposing but only 2 actor(s) stood within reach, so 7000 landed
+match_debrief: scenario=scenario-complete-onboarding-v1 winner=allied condition=nexus-demolished final_turn=6
+```
+
+`all-in` declared your whole roster and presence delivered two actors' worth. That is
+the whole point of the scenario: the word says what you intended, the sectors say what
+landed. Read `Presence decides what lands` and `How hard to commit` below once this one
+has concluded.
+
+Every sector name the observation prints is typeable straight back into `rotate`, so
+`rotate 1 lane:mid:far-side` and `rotate 1 mid_far_side` are the same order. Older
+scripts that spell the aliases keep working.
+
+### The verbs
 
 `help` lists the match verbs: `observe`, `rotate`, `ward`, `contest`, `siege`,
 `evaluate`, `idle`, `commit`, `advance`, `debrief`, `undo`, `quit`. Verbs work bare

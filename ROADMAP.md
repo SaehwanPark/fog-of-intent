@@ -51,7 +51,7 @@ slices keep landing in it because the player-facing loop is where the accepted d
 | --- | --- | --- |
 | Product direction | `docs/project-proposal.md`; [`docs/adr/0005-product-identity-hybrid.md`](docs/adr/0005-product-identity-hybrid.md) | Defined at proposal level; **primary-identity decision open** (ADR-0005 proposes an explicit hybrid, pending owner ratification) |
 | Technology direction | `docs/tech-stack-consideration.md` | Proposed, not adopted except Rust 2024 |
-| Executable & MCP | `src/main.rs`, `src/bin/fog-of-intent-mcp.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs`, `src/mcp/`, `src/cli/` | Full 16-scenario catalog (`--list-scenarios`, `--select`), dedicated standalone MCP binary (`cargo run --bin fog-of-intent-mcp`), 3 interactive strategy playthroughs, M6 behavioral experiments battery, M7 calibration proof battery, M8 team communication battery, M9 interactive match runner & replay transcript, M10 study synthesis & empirical trials battery, M11 HTML5 presentation exporter & browser flow battery, M12 release checks, reproducibility bundle & archive inventory runners |
+| Executable & MCP | `src/main.rs`, `src/bin/fog-of-intent-mcp.rs`, `src/command_loop.rs`, `src/presentation.rs`, `src/repl.rs`, `src/mcp/`, `src/cli/` | Full 17-scenario catalog (`--list-scenarios`, `--select`), dedicated standalone MCP binary (`cargo run --bin fog-of-intent-mcp`), 3 interactive strategy playthroughs, M6 behavioral experiments battery, M7 calibration proof battery, M8 team communication battery, M9 interactive match runner & replay transcript, M10 study synthesis & empirical trials battery, M11 HTML5 presentation exporter & browser flow battery, M12 release checks, reproducibility bundle & archive inventory runners |
 | Package | `Cargo.toml` | Version `0.1.239`, multi-crate Cargo workspace (`fog-of-intent`, `crates/foi-kernel`, `crates/foi-lane`, `crates/foi-map`, `crates/foi-agent`, `crates/foi-protocol`, `crates/foi-study`, `crates/foi-gui`, `crates/foi-alpha`), one deferred edge crate (`reedline`) |
 | Canonical execution plan | `ROADMAP.md` | Active |
 | Project-state docs | `SPEC.md`, `ARCHITECTURE.md`, `CHANGELOG.md` | Reconciled |
@@ -2312,6 +2312,65 @@ no playtest has shown that three words are the right granularity, that a learner
 quantity do not read as an inconsistent interface. Whether the vocabulary teaches the presence
 rule or merely decorates it is reserved for the human play evidence in Priority 3 of
 `docs/audit_report_20260828.md`. No fun, balance, or fairness claim is attached.
+
+### Current M9 onboarding scenario evidence (the `D8` exception)
+
+`D8` froze M9 breadth until `D6`'s informal pass reports no usability blocker, and named one
+exception in advance: a short onboarding match, because under the game-first identity a new
+player is the product's front door. That exception is now shipped, and it is a **session the
+player selects, not a second set of rules**.
+
+| Name | Id | Where |
+| --- | --- | --- |
+| CLI session | `m9-match-onboarding-v1` | `--scenario`, `--select` entry 17, aliases `onboarding` / `tutorial` |
+| Teaching plan | `scenario-complete-onboarding-v1` | `CompleteMatchCatalog::onboarding_v1` (`crates/foi-map/src/complete_match_catalog.rs`) |
+| Benchmark set | unchanged | `CompleteMatchCatalog::all()` still returns the two `-v2` plans |
+
+The opening position carries the design. Two allied actors reach the mid outer tier, so the
+first siege succeeds and the player sees a command pay out. One actor reaches the enemy base,
+so the inner-adjacent tiers are one rotation short, and the deep tiers require walking the
+force there. The scripted line in `HOW_TO_PLAY.md` concludes on turn six with
+`condition=nexus-demolished`, and its killing blow reports `declared 10500 force at
+base:opposing but only 2 actor(s) stood within reach, so 7000 landed`: the word declares the
+roster, presence prices it. The opposing actor never receives an order — the interactive host
+executes the player's staged commands, and no opposing policy runs — so nothing in the scenario
+can be lost, which is what makes it safe to try verbs in.
+
+Two decisions came out of building it.
+
+- **Printed sector names are typeable back.** `observe` printed `lane:mid:far-side` while
+  `rotate` accepted only `mid_far_side`, so a first session could read a sector it could not
+  name. The host parser now resolves every `MapLocation::as_str()` form (dashes normalised,
+  case-insensitive) before consulting its alias table, and a test asserts all fifteen sectors
+  round-trip from print to parse. Acceptance is additive — no token that resolved before
+  resolves elsewhere — so the host schema stays `m9-interactive-match-host-v4`.
+- **`CompleteMatchCatalog::find` is wider than `all()`.** `all()` is the benchmark set that the
+  print-and-exit transcript executes; `find()` additionally resolves interactive-only teaching
+  plans. The split is documented at both functions and tested. The alternative — teaching in
+  `all()` — would silently rewrite the `m9-complete-match-replay-v1` transcript that the M12
+  reproducibility evidence quotes, which is exactly how a tutorial could have cost the project
+  an established evidence artifact without anyone editing it.
+
+**Audience and promotion evidence**: primary audience is a first-time human player; the
+secondary audience is an AI test player used for functional verification. The promoted claim is
+"there is a scripted match a newcomer can conclude in six turns, whose briefing names a command
+that works, and whose printed sector names are accepted as written" — **technically verified** by
+2 `foi-map` tests (reproducible opening position, one-rotation-short geometry, benchmark set
+unmoved), 3 host tests (scripted conclusion by either accepted id, refusal for the benchmark
+scenario, fifteen-name round-trip), 1 presentation test (briefing content and narrow rendering),
+and 1 command-loop test (reachable by session id, plan id, both aliases, and menu number). It is
+not human validated, and this slice claims nothing about learnability: no person unfamiliar with
+the game has been observed reaching `debrief` from the briefing alone, no time-to-first-
+understanding was measured, and no comparison exists against starting from the full match. That
+observation is part of `D6`. The one thing this slice does remove from the open questions is
+mechanical: a first session can no longer be blocked by an untypeable sector name.
+
+**Two things this slice deliberately did not do.** The MCP server still constructs
+`CliMatchHost::default_session()` and offers no way to select the teaching plan: that would be
+new MCP surface, which `D8` freezes, and nothing yet asked for it. And no verbs, sectors,
+objectives, mechanics, or rules were added — the teaching scenario is data (an opening position
+with no scripted actions) consumed by the existing host, so there is exactly one ruleset, one
+legality path, and one set of projections.
 
 ### Developer Action Items
 

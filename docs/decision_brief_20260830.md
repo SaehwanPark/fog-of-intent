@@ -351,6 +351,21 @@ named exception.
 exception worth making early: a short onboarding scenario for the match, since the
 game-first identity means new players are the product's front door.
 
+**Status (2026-09-04): freeze in force; its named exception is shipped.** Nothing else in M9
+grew: no verb, sector, objective, mechanic, or rule was added, and no new MCP surface. The
+exception is a session the player selects — `m9-match-onboarding-v1`, a six-turn teaching plan
+against an opponent that never acts — so a newcomer's first contact is no longer a fourteen-turn
+benchmark. The freeze's own terms shaped how it was built. It is **data, not a second ruleset**:
+one host, one legality path, one set of projections, and a teaching plan that supplies an opening
+position rather than a script, so the player writes the actions. It does not touch the **benchmark
+set** — `CompleteMatchCatalog::all()` still returns the two `-v2` plans, so the print-and-exit
+transcript and the hashes quoted from it did not move; `find()` resolves the teaching plan, and
+that split is the only widening the catalog gained. And it claims **no usability result**: what
+came back from playing it is mechanical (a printed sector name is now typeable back, which had
+blocked a first session outright), not "easier". The freeze lifts on the same condition it was
+set on — D6's informal pass reporting no usability blocker — and D6 is still the thing this
+exception exists to serve. See the Phase 9 evidence section in `ROADMAP.md`.
+
 ## D9 — Who promotes a claim up the evidence ladder
 
 **Problem.** Most of the audit's Priority 1 findings were the same mistake repeated:

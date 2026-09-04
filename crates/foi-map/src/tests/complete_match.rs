@@ -17,7 +17,7 @@ use crate::kernel::ActorId;
 use crate::map::complete_match::{
   COMMIT_STRENGTH_TOKENS, CommitStrength, CompleteMatchAction, CompleteMatchError,
   CompleteMatchPlan, CompleteMatchState, FORCE_PER_PRESENT_ACTOR, M9_COMPLETE_MATCH_SCHEMA_V2,
-  MatchPhaseKind, deliverable_force,
+  MatchPhaseKind, PRESENCE_REACH_BEATS, deliverable_force,
 };
 use crate::map::complete_match_catalog::CompleteMatchCatalog;
 use crate::map::contest::ObjectiveIntent;
@@ -569,6 +569,73 @@ fn illegal_sieges_are_rejected_through_the_structure_transition() {
   let error = plan.execute().expect_err("hierarchy violation must fail");
   assert!(matches!(error, CompleteMatchError::Siege(_)));
   assert!(error.to_string().contains("siege failed"));
+}
+
+// --- Teaching scenario ---
+
+/// The teaching scenario is resolved by `find`, and is deliberately absent from the
+/// benchmark set `all()` returns: that set is what the print-and-exit replay
+/// transcript executes and what its hashes are quoted against, so adding a tutorial
+/// must never move it.
+#[test]
+fn the_teaching_scenario_is_resolved_but_never_benchmarked() {
+  let teaching = CompleteMatchCatalog::find(CompleteMatchCatalog::SCENARIO_ONBOARDING_V1)
+    .expect("the teaching scenario should resolve");
+  assert_eq!(
+    teaching.scenario_id,
+    CompleteMatchCatalog::SCENARIO_ONBOARDING_V1
+  );
+  assert!(
+    teaching.actions.is_empty(),
+    "the player writes the script in a teaching scenario"
+  );
+
+  let benchmark: Vec<&'static str> = CompleteMatchCatalog::all()
+    .iter()
+    .map(|plan| plan.scenario_id)
+    .collect();
+  assert_eq!(
+    benchmark,
+    vec![
+      CompleteMatchCatalog::SCENARIO_ALLIED_SNOWBALL_VICTORY,
+      CompleteMatchCatalog::SCENARIO_COMEBACK_CONCESSION,
+    ]
+  );
+
+  let same = CompleteMatchCatalog::onboarding_v1();
+  assert_eq!(
+    teaching.initial.combined_hash(),
+    same.initial.combined_hash(),
+    "the teaching scenario's opening position is reproducible"
+  );
+}
+
+/// The opening position is the lesson: the outer tier is already in reach so turn one
+/// succeeds, and the enemy base is one rotation short, so the first real decision is
+/// where the force stands rather than whether the command was typed correctly.
+#[test]
+fn the_teaching_scenario_starts_one_rotation_short_of_the_enemy_base() {
+  let teaching = CompleteMatchCatalog::onboarding_v1();
+  let map = teaching.initial.map();
+  assert_eq!(map.team_size(TeamSide::Allied), 3);
+  assert_eq!(
+    map.presence_within(
+      TeamSide::Allied,
+      MapLocation::MID_CENTER,
+      PRESENCE_REACH_BEATS
+    ),
+    2,
+    "turn one's siege stands in reach"
+  );
+  assert_eq!(
+    map.presence_within(
+      TeamSide::Allied,
+      MapLocation::OPPOSING_BASE,
+      PRESENCE_REACH_BEATS
+    ),
+    1,
+    "the deep tiers need a rotation before they can fall"
+  );
 }
 
 // --- Commit-strength vocabulary ---

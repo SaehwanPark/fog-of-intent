@@ -166,7 +166,7 @@ exists. Planned proposal or roadmap text is never implementation evidence.
 
 #### Delivered in the scenario catalog discovery follow-up — 2026-08-25
 
-- Added `CliScenarioCatalogEntry`, `ScenarioExecutionMode`, and `CLI_SCENARIO_CATALOG` in `src/command_loop.rs` registering all 16 canonical scenarios across M2 strategy playthroughs, M3 reference fixtures, M6-M8 benchmark batteries, M9 match runners, M10 study runners, M11 presentation/browser runners, and M12 alpha audits.
+- Added `CliScenarioCatalogEntry`, `ScenarioExecutionMode`, and `CLI_SCENARIO_CATALOG` in `src/command_loop.rs` registering every canonical scenario (16 at the time of that slice, 17 since the 2026-09-04 onboarding slice) across M2 strategy playthroughs, M3 reference fixtures, M6-M8 benchmark batteries, M9 match runners, M10 study runners, M11 presentation/browser runners, and M12 alpha audits.
 - Added `--list-scenarios` (`-l`) process-level CLI flag and `format_scenario_catalog()` generating aligned, deterministic plain-text table output without ANSI escapes.
 - Added comprehensive unit and binary tests in `src/command_loop.rs` and `tests/binary_run_dir.rs`.
 
@@ -2078,6 +2078,36 @@ replays to an identical final hash at the library boundary.
   the post-turn objective status, and the recorded event/effect counters, so events, effects,
   phase records, state hashes, and replay identities are unchanged
   (`docs/decision_brief_20260830.md` D4 option (i)).
+
+#### Delivered in the M9 onboarding scenario slice — 2026-09-03
+
+- A first session is its own scenario (`docs/decision_brief_20260830.md` D8, the named
+  exception to the breadth freeze). `m9-match-onboarding-v1` opens a six-turn teaching
+  match: three allied actors against one opposing actor that never receives an order, so
+  nothing typed can lose it. It is selectable by id, by the aliases `onboarding` and
+  `tutorial`, and as menu entry 17; the older menu numbers are unchanged.
+- The teaching plan `scenario-complete-onboarding-v1` is data, not rules: an opening
+  position with no scripted actions, consumed by the existing host. Two allied actors
+  reach the mid outer tier so turn one succeeds, and one actor reaches the enemy base so
+  the deep tiers require walking the force there with `rotate`.
+- The catalog has two roles now, and says so. `CompleteMatchCatalog::all()` is the
+  benchmark set the print-and-exit transcript executes and remains the two `-v2` plans,
+  so `m9-complete-match-replay-v1` and its quoted hashes did not move; `find()`
+  additionally resolves interactive-only teaching plans. Both facts are tested.
+- Printed sector names are typeable back. The host parser resolves every
+  `MapLocation::as_str()` spelling — dashes normalised, case-insensitive — before its
+  alias table, so `rotate 1 lane:mid:far-side` works alongside `rotate 1 mid_far_side`.
+  Acceptance is additive: no token that resolved before resolves elsewhere, and
+  `CLI_MATCH_HOST_SCHEMA` stays `m9-interactive-match-host-v4`.
+- The briefing is advisory and lives at the presentation edge: it names a first command
+  and where the lesson is, and reimplements no legality. On the scripted (piped) path,
+  which has never printed a banner, only the teaching session prints it, so existing
+  scripts assert unchanged output.
+- Not claimed: learnability or clarity. No person unfamiliar with the game has been
+  observed reaching `debrief` from the briefing alone, and no time-to-understanding was
+  measured — that observation belongs to `D6`. The MCP server still constructs the
+  default match session and cannot select the teaching plan; new MCP surface is frozen by
+  D8 until that pass reports no usability blocker.
 
 #### Delivered in the bounded human usability and accessibility study protocol follow-up
 

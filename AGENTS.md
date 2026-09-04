@@ -12,7 +12,7 @@ Keep this file short and repo-wide. Detailed project workflows live in
 - Canonical project state lives in `README.md`, `ROADMAP.md`, `SPEC.md`,
   `ARCHITECTURE.md`, and `CHANGELOG.md`. The longer proposal and stack analysis
   under `docs/` are design sources, not implementation evidence.
-- Shipped and reachable now: a 16-scenario catalog (`--list-scenarios`,
+- Shipped and reachable now: a 17-scenario catalog (`--list-scenarios`,
   `--select`), interactive lane scenarios including the two-window fixture
   (`--scenario m3-two-window-fixture-v1`), the interactive multi-lane match
   (`--scenario m9-interactive-match-v1`), a print-and-exit replay-verified match

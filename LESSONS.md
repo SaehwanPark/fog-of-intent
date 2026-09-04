@@ -1752,3 +1752,48 @@ canonical policy instead of duplicating it.
   implement the accepted *intent*, then correct the brief in the same change instead of silently
   reinterpreting it. Keep that correction out of player-facing strings, which should state rules,
   not the history of a design mistake.
+## Accept back every name the interface prints, and treat a benchmark set as an evidence surface
+
+- Context: Building the D8 onboarding match meant writing a scripted first session, which
+  meant typing sector names into `rotate` exactly as `observe` prints them.
+- Symptom: `observe` printed `actor: id=2 team=allied location=lane:mid:far-side`, and
+  `rotate 1 lane:mid:far-side` - that text, copied - failed with
+  `unknown map location 'lane:mid:far-side'`. The parser only accepted its own alias spellings
+  (`mid_far_side`, `mid-far-side`, `mid far side`), so the canonical form the projection emitted
+  was the one form the input rejected. A newcomer's very first rotation could fail on a name the
+  game had just handed over, and no test covered it because every existing script used the alias.
+- Cause: The projection and the parser were written against different spellings of one identity:
+  `MapLocation::as_str()` is canonical and dash-separated, while `parse_map_location` was built
+  from the friendly aliases in the help text. Nothing asserted the pair agree, and a dash is a
+  legal character in a printed name and an illegal one in the accepted token.
+- Resolution: Try canonical spellings first - `MapLocation::ALL_LOCATIONS` matched on `as_str()`,
+  dashes normalised to underscores, case ignored - and fall through to the alias table for
+  everything older. That is additive acceptance: every token that resolved before resolves to the
+  same sector, so `m9-interactive-match-host-v4` did not move and no recorded script changed
+  meaning. A test iterates all fifteen sectors and asserts each printed name parses back.
+- Prevention: Wherever one layer prints a name another layer accepts, add a round-trip test over
+  the whole enumeration, not a sample: print every id, parse every printed form. Review any new
+  projection for the sentence "and now type that name in" - if a player would have to retype it,
+  that spelling is part of the interface and needs a parser that accepts it. Widening acceptance
+  is additive and belongs to the same schema version; changing what an existing spelling resolves
+  to is not, and must move the identifier.
+
+## Read a catalog's `all()` before adding to it: it may be a published measurement
+
+- Context: The teaching scenario had to live in `CompleteMatchCatalog`, which exposes `all()` for
+  runners and `find()` for scenario selection.
+- Symptom: Registering the teaching plan and leaving `all()` alone was tempting; registering it
+  there instead would have appended a third entry to the transcript printed by
+  `m9-complete-match-replay-v1` and shifted the counters that document and release-audit text
+  quotes - a tutorial quietly rewriting a reproducibility artifact nobody edited.
+- Cause: `all()` served two roles at once, "everything the catalog knows" and "the benchmark set
+  the replay battery executes", and the second is an evidence surface: its output is quoted, so it
+  is only allowed to change when the evidence is deliberately re-derived.
+- Resolution: Keep `all()` the two benchmark plans, resolve teaching plans through `find()`, and
+  say so in both function docs. A test pins the exact benchmark ids, asserts the teaching plan is
+  absent from it, and asserts `find()` still resolves it - so the split fails loudly if someone
+  "tidies" the catalog later.
+- Prevention: Before adding a member to a collection named `all()`, list what consumes it. If a
+  runner, report, or published transcript iterates it, membership is a claim, not a detail: add an
+  explicit second accessor for the new role rather than widening the measured one, and pin
+  membership with a test that names the expected members.

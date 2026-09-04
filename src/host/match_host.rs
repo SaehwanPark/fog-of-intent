@@ -45,6 +45,11 @@ pub const LEGACY_DEFAULT_FORCE: u32 = 4_000;
 /// Default interactive match scenario ID.
 pub const CLI_INTERACTIVE_MATCH_SCENARIO_ID: &str = "m9-interactive-match-v1";
 
+/// Interactive onboarding session ID a player types. It resolves the teaching plan
+/// `scenario-complete-onboarding-v1`; the debrief prints the plan identity rather than
+/// this session ID, exactly as the benchmark session prints its plan identity.
+pub const CLI_INTERACTIVE_MATCH_ONBOARDING_SCENARIO_ID: &str = "m9-match-onboarding-v1";
+
 /// Actor-visible location certainty in a match observation.
 ///
 /// Allied actors are always reported as currently observed. Opponents use the
@@ -280,8 +285,24 @@ impl CliMatchHost {
     Self::new(CompleteMatchCatalog::allied_snowball_victory())
   }
 
-  /// Create an interactive match session from scenario ID.
+  /// Create the short first-contact session, the named exception to the M9 breadth
+  /// freeze (decision `D8`).
+  pub fn onboarding_session() -> Self {
+    Self::new(CompleteMatchCatalog::onboarding_v1())
+  }
+
+  /// Whether this session is the onboarding teaching match, which is what selects the
+  /// opening briefing. Scenario identity only: this decides which banner to print,
+  /// never which action is legal.
+  pub fn is_onboarding(&self) -> bool {
+    self.scenario_id == CompleteMatchCatalog::SCENARIO_ONBOARDING_V1
+  }
+
+  /// Create an interactive match session from a session ID or a registered plan ID.
   pub fn from_scenario_id(id: &str) -> Option<Self> {
+    if id == CLI_INTERACTIVE_MATCH_ONBOARDING_SCENARIO_ID {
+      return Some(Self::onboarding_session());
+    }
     CompleteMatchCatalog::find(id).map(Self::new)
   }
 
@@ -1046,8 +1067,23 @@ fn parse_team_side(token: &str) -> Result<TeamSide, CliMatchError> {
   }
 }
 
+/// Parse a sector name typed by a player.
+///
+/// Two spellings resolve: the canonical names the observation prints
+/// (`lane:mid:far-side`, `base:opposing`, `river:bot`, …) and the shorter underscore
+/// aliases this command loop has always accepted. Printed output has to be typeable
+/// back into the game — a player who reads `lane:mid:far-side` on screen should not
+/// have to guess that the verb wants `mid_far_side`. Acceptance is additive: no token
+/// that resolved before now resolves elsewhere.
 fn parse_map_location(token: &str) -> Result<MapLocation, CliMatchError> {
-  match token.to_ascii_lowercase().as_str() {
+  let spoken = token.to_ascii_lowercase();
+  if let Some(location) = MapLocation::ALL_LOCATIONS
+    .iter()
+    .find(|location| location.as_str() == spoken)
+  {
+    return Ok(*location);
+  }
+  match spoken.replace('-', "_").as_str() {
     "allied_base" | "base_allied" | "base" => Ok(MapLocation::ALLIED_BASE),
     "top_near_tower" => Ok(MapLocation::TOP_NEAR_TOWER),
     "top_center" | "top" => Ok(MapLocation::TOP_CENTER),
@@ -1355,6 +1391,102 @@ mod tests {
 
     let unknown_err = host.apply_line("invalid_verb").unwrap_err();
     assert!(matches!(unknown_err, CliMatchError::UnknownCommand { .. }));
+  }
+
+  /// The teaching scenario played the way its briefing suggests: two sieges land on
+  /// turns one and two because the mid actor already stands in reach, one rotation
+  /// walks the force to the enemy base, and the last three tiers fall in order. The
+  /// final blow carries the lesson in its own numbers - `all-in` declared 10 500 and
+  /// presence delivered 7 000 - and the match still concludes six turns in.
+  #[test]
+  fn the_onboarding_session_wins_in_six_turns_after_one_rotation() {
+    let mut host = CliMatchHost::onboarding_session();
+    assert!(host.is_onboarding());
+
+    let lines = [
+      "siege outer mid light",
+      "siege inner mid committed",
+      "rotate 1 lane:mid:far-side",
+      "siege inhibitor_turret mid committed",
+      "siege inhibitor mid light",
+      "siege nexus all-in",
+      "evaluate",
+    ];
+    let mut cap_note = None;
+    for (index, line) in lines.iter().enumerate() {
+      host
+        .apply_line(line)
+        .unwrap_or_else(|error| panic!("'{line}' should stage: {error:?}"));
+      let advanced = host.apply_line("advance").expect("advance should succeed");
+      let CliMatchOutput::Advanced {
+        turn,
+        concluded,
+        note,
+        ..
+      } = advanced
+      else {
+        panic!("expected an advance for '{line}'");
+      };
+      let expected_turn = u32::try_from(index).expect("the script is shorter than u32::MAX") + 1;
+      assert_eq!(turn, expected_turn);
+      assert_eq!(concluded, *line == "evaluate");
+      if *line == "siege nexus all-in" {
+        cap_note = note;
+      }
+    }
+
+    let expected = MatchTurnNote::ForceCapped {
+      sector: "base:opposing",
+      declared: 10_500,
+      present: 2,
+      delivered: 7_000,
+    };
+    assert_eq!(cap_note, Some(expected));
+
+    let debrief = host.apply_line("debrief").expect("debrief should succeed");
+    let CliMatchOutput::Debrief(result) = debrief else {
+      panic!("expected debrief output");
+    };
+    assert_eq!(result.scenario_id, "scenario-complete-onboarding-v1");
+    assert_eq!(result.winner, TeamSide::Allied);
+    assert_eq!(result.condition, MatchVictoryCondition::NexusDemolished);
+    assert_eq!(result.final_turn, 6);
+    assert_eq!(result.allied_objectives_secured, 0);
+  }
+
+  /// The teaching session is selected by its session ID or by its plan ID, and the
+  /// benchmark session is never mistaken for it.
+  #[test]
+  fn the_teaching_session_resolves_by_either_name_and_the_benchmark_does_not() {
+    let by_session = CliMatchHost::from_scenario_id(CLI_INTERACTIVE_MATCH_ONBOARDING_SCENARIO_ID)
+      .expect("the session id should resolve");
+    let by_plan = CliMatchHost::from_scenario_id("scenario-complete-onboarding-v1")
+      .expect("the plan id should resolve");
+    assert!(by_session.is_onboarding());
+    assert!(by_plan.is_onboarding());
+    assert!(!CliMatchHost::default_session().is_onboarding());
+  }
+
+  /// A sector the observation prints has to be typeable back into `rotate`. Before
+  /// this, `observe` showed `lane:mid:far-side` while the verb accepted only
+  /// `mid_far_side` - a first-session player reads one and types the other.
+  #[test]
+  fn every_sector_the_observation_prints_can_be_typed_back_into_a_rotation() {
+    for location in MapLocation::ALL_LOCATIONS {
+      let printed = location.as_str();
+      assert_eq!(parse_map_location(printed), Ok(location), "{printed}");
+    }
+    assert_eq!(
+      parse_map_location("mid_far_side"),
+      Ok(MapLocation::MID_FAR_SIDE),
+      "the underscore alias still resolves"
+    );
+    assert_eq!(
+      parse_map_location("Mid-Far-Side"),
+      Ok(MapLocation::MID_FAR_SIDE),
+      "dashes are normalised, case is not significant"
+    );
+    assert!(parse_map_location("lane:mid:nowhere").is_err());
   }
 
   /// Stage, commit, and advance one command, returning the turn's note.

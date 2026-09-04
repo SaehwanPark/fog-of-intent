@@ -85,6 +85,13 @@ below.
   same quantity and is the expert and automation spelling. A word is resolved before the
   authority sees the action, so a word and its integer produce identical state, events, and
   hashes.
+- **Benchmark plan:** A complete-match plan in `CompleteMatchCatalog::all()` — the set the
+  print-and-exit transcript executes and the set whose hashes are quoted as evidence.
+  Membership is evidence-bearing, not cosmetic: adding a plan to it rewrites a published
+  transcript.
+- **Teaching plan:** A complete-match plan that `CompleteMatchCatalog::find` resolves but the
+  benchmark set excludes, written for a player rather than a measurement. It carries an initial
+  position and no scripted action list — the player writes the actions.
 
 ## Authority rules
 
@@ -102,6 +109,12 @@ below.
 - A presence check reads only the declaring team's own actor positions and static map
   knowledge. Refusing or capping a declaration must not report whether an unseen opponent
   stands in the target sector.
+- A name a projection prints for a player to type back — a sector, a verb, a commit word —
+  must be accepted verbatim by the adapter that prompted it. Acceptance may widen additively;
+  a spelling that was accepted before must never resolve somewhere else.
+- A teaching plan is data the host consumes: it may supply an initial position, never a verb,
+  rule, or legality path. A teaching scenario must not enter the benchmark set, and its briefing
+  is advisory text at the presentation edge, not an authority on what is legal.
 - An **ordinary actor** can submit only commands and messages permitted by its
   actor authority and actor-visible observation.
 - A **privileged controller** may inspect or generate experiment inputs only in

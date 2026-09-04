@@ -197,6 +197,35 @@ pub fn render_match_banner(style: PresentationStyle) -> String {
   render_match_banner_with_dimensions(style, TerminalDimensions::standard())
 }
 
+/// Opening briefing for the onboarding session: what this match is, what cannot be
+/// lost, and the one command worth typing first. Advisory prose at the presentation
+/// edge — it repeats no legality rule, and the authority stays silent on hints.
+pub fn render_match_onboarding_banner_with_dimensions(
+  style: PresentationStyle,
+  dimensions: TerminalDimensions,
+) -> String {
+  let title = style.paint_bold("Fog of Intent");
+  let scenario = style.paint_dim("onboarding match");
+  let help = style.paint_cyan("?");
+  let intro = "Three allied actors, one enemy that never acts. Nothing here is lost.";
+  let first = "Your mid actor already reaches the outer turret: try siege outer mid light";
+  let next = "The deeper tiers stand at the enemy base, so walk the force with rotate";
+  let cmd =
+    "commands: observe  rotate  ward  contest  siege  evaluate  commit  advance  help  quit";
+  if dimensions.width < 50 {
+    format!("{title}\n{scenario}\n{intro}\n{first}\n{next}\n{cmd}\n")
+  } else {
+    format!(
+      "{title} — {scenario}\n{intro}\n{first}\n{next}\nType a command, or {help} for help.\n{cmd}\n"
+    )
+  }
+}
+
+/// Opening briefing for an onboarding match session with standard dimensions.
+pub fn render_match_onboarding_banner(style: PresentationStyle) -> String {
+  render_match_onboarding_banner_with_dimensions(style, TerminalDimensions::standard())
+}
+
 /// Friendlier copy plus canonical labeled match projection wrapped to given dimensions.
 pub fn render_presented_match_output_with_dimensions(
   output: &crate::host::CliMatchOutput,
@@ -426,6 +455,28 @@ mod tests {
     let rendered = render_presented_output(&CliHostOutput::Undone, PresentationStyle::Plain);
     assert!(!rendered.contains('\u{1b}'));
     assert!(rendered.contains("undo: status=cleared-uncommitted-draft"));
+  }
+
+  /// The onboarding briefing is the first text a new player reads in a match session,
+  /// so it has to name a command that actually works and the one decision the scenario
+  /// teaches. It stays advisory: no legality rule is restated here.
+  #[test]
+  fn onboarding_briefing_names_a_command_that_works_and_the_lesson() {
+    let rendered = render_match_onboarding_banner(PresentationStyle::Plain);
+    assert!(rendered.contains("onboarding match"));
+    assert!(rendered.contains("siege outer mid light"));
+    assert!(rendered.contains("walk the force with rotate"));
+    assert!(!rendered.contains('\u{1b}'), "plain style paints nothing");
+
+    let narrow = render_match_onboarding_banner_with_dimensions(
+      PresentationStyle::Plain,
+      TerminalDimensions::compact(),
+    );
+    assert!(
+      !narrow.contains('\u{2014}'),
+      "narrow widths do not join lines"
+    );
+    assert!(narrow.contains("siege outer mid light"));
   }
 
   #[test]

@@ -40,7 +40,7 @@ pub const CLI_APPLICATION_VERSION: &str =
   concat!("fog-of-intent ", env!("CARGO_PKG_VERSION"), "\n");
 
 /// Bounded process-level usage for the executable wrapper.
-pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m6-behavioral-experiments-v1, m7-calibration-proof-v1, m8-team-scenarios-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m10-human-study-synthesis-v1, m10-empirical-cohort-study-v1, m11-gui-presentation-v1, m11-gui-browser-flow-v1, m12-alpha-release-checks-v1, m12-reproducibility-bundle-v1, or m12-alpha-archive-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n";
+pub const CLI_APPLICATION_HELP: &str = "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m6-behavioral-experiments-v1, m7-calibration-proof-v1, m8-team-scenarios-v1, m9-interactive-match-v1, m9-match-onboarding-v1, m9-complete-match-replay-v1, m10-human-study-synthesis-v1, m10-empirical-cohort-study-v1, m11-gui-presentation-v1, m11-gui-browser-flow-v1, m12-alpha-release-checks-v1, m12-reproducibility-bundle-v1, or m12-alpha-archive-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive lane scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n";
 
 /// Execution mode for a scenario entry in the scenario catalog.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -218,6 +218,14 @@ pub const CLI_SCENARIO_CATALOG: &[CliScenarioCatalogEntry] = &[
     mode: ScenarioExecutionMode::ReleaseArchiveReport,
     description: "Evaluates 11 release archive categories, 16-hex FNV-1a content digests, and combined signature verification.",
   },
+  // Appended last so the menu numbers published for the scenarios above never move.
+  CliScenarioCatalogEntry {
+    id: crate::host::CLI_INTERACTIVE_MATCH_ONBOARDING_SCENARIO_ID,
+    display_name: "Onboarding Match (short first session)",
+    milestone: "M9",
+    mode: ScenarioExecutionMode::InteractiveMatch,
+    description: "Short teaching match that concludes on turn six: 3 allied actors against an opposing actor that never acts. Teaches the siege commit words, the structure tier order, and how position prices force. Nothing here can be lost.",
+  },
 ];
 
 /// Render the scenario catalog as an aligned, readable plain-text table without ANSI styling.
@@ -297,6 +305,9 @@ pub enum CliApplicationScenario {
   M8TeamScenarios,
   /// The interactive multi-lane tactical match playthrough.
   M9InteractiveMatch,
+  /// The short interactive onboarding match, the named exception to the M9 breadth
+  /// freeze (decision `D8`).
+  M9MatchOnboarding,
   /// The replay-verified complete-match transcript.
   M9CompleteMatchReplay,
   /// Milestone M10 human usability and accessibility study synthesis battery.
@@ -329,7 +340,7 @@ impl CliApplicationScenario {
 
   /// Whether the scenario supports interactive command loops (either lane or match).
   pub const fn is_interactive(self) -> bool {
-    self.is_interactive_lane() || matches!(self, Self::M9InteractiveMatch)
+    self.is_interactive_lane() || matches!(self, Self::M9InteractiveMatch | Self::M9MatchOnboarding)
   }
 }
 
@@ -578,6 +589,8 @@ pub fn parse_application_args(
           scenario = Some(CliApplicationScenario::M8TeamScenarios);
         } else if args[index] == crate::host::CLI_INTERACTIVE_MATCH_SCENARIO_ID {
           scenario = Some(CliApplicationScenario::M9InteractiveMatch);
+        } else if args[index] == crate::host::CLI_INTERACTIVE_MATCH_ONBOARDING_SCENARIO_ID {
+          scenario = Some(CliApplicationScenario::M9MatchOnboarding);
         } else if args[index] == crate::cli::CLI_MATCH_REPLAY_SCENARIO_ID {
           scenario = Some(CliApplicationScenario::M9CompleteMatchReplay);
         } else if args[index] == crate::cli::CLI_STUDY_SYNTHESIS_SCENARIO_ID {
@@ -833,6 +846,22 @@ impl CliCommandLoop {
     Self::new(CliScenarioHost::fixture_with_store(store))
   }
 
+  /// Print the opening banner for a match session: the onboarding briefing when the
+  /// session is the teaching scenario, the standard banner otherwise.
+  fn write_match_banner<W: Write>(
+    host: &crate::host::CliMatchHost,
+    output: &mut W,
+    style: PresentationStyle,
+    dimensions: TerminalDimensions,
+  ) -> io::Result<()> {
+    let banner = if host.is_onboarding() {
+      crate::presentation::render_match_onboarding_banner_with_dimensions(style, dimensions)
+    } else {
+      crate::presentation::render_match_banner_with_dimensions(style, dimensions)
+    };
+    output.write_all(banner.as_bytes())
+  }
+
   /// Build a loop for a specific strategy fixture.
   pub fn strategy(id: crate::lane::StrategyFixtureId) -> Self {
     Self::new(CliScenarioHost::strategy(id))
@@ -882,6 +911,19 @@ impl CliCommandLoop {
         Ok(CliLoopExit::EndOfInput)
       }
       CliCommandLoopHost::Match(host) => {
+        // This scripted path has never printed a banner, and existing playtest scripts
+        // assert its exact output. The teaching session is the one exception: someone
+        // piping commands into their first match should still meet the briefing an
+        // interactive player sees on screen.
+        if host.is_onboarding() {
+          output.write_all(
+            crate::presentation::render_match_onboarding_banner_with_dimensions(
+              PresentationStyle::Plain,
+              dimensions,
+            )
+            .as_bytes(),
+          )?;
+        }
         for line in input.lines() {
           let line = line?;
           match host.apply_line(&line) {
@@ -950,9 +992,7 @@ impl CliCommandLoop {
         Ok(CliLoopExit::EndOfInput)
       }
       CliCommandLoopHost::Match(host) => {
-        output.write_all(
-          crate::presentation::render_match_banner_with_dimensions(style, dimensions).as_bytes(),
-        )?;
+        Self::write_match_banner(host, &mut output, style, dimensions)?;
         for line in input.lines() {
           let line = line?;
           if apply_presented_match_with_dimensions(host, &line, &mut output, style, dimensions)? {
@@ -1006,9 +1046,7 @@ impl CliCommandLoop {
         }
       }
       CliCommandLoopHost::Match(host) => {
-        stdout.write_all(
-          crate::presentation::render_match_banner_with_dimensions(style, dimensions).as_bytes(),
-        )?;
+        Self::write_match_banner(host, &mut stdout, style, dimensions)?;
         stdout.flush()?;
         loop {
           match read_line(&mut editor)? {
@@ -1100,7 +1138,11 @@ pub(crate) fn scenario_selection_range() -> String {
   format!("1-{}", CLI_SCENARIO_CATALOG.len())
 }
 
-/// Parse a user selection input (number 1-16, scenario identifier, or short alias) into a scenario.
+/// Parse a scenario selection (menu number, scenario identifier, or short alias).
+///
+/// The onboarding scenario is menu entry 17 because it was appended last: the numbers
+/// here are cited by existing scripts and docs, so adding a scenario never renumbers
+/// the ones already published.
 pub fn parse_scenario_selection(input: &str) -> Option<CliApplicationScenario> {
   let trimmed = input.trim();
   if trimmed.is_empty() {
@@ -1124,6 +1166,7 @@ pub fn parse_scenario_selection(input: &str) -> Option<CliApplicationScenario> {
       14 => Some(CliApplicationScenario::M12AlphaReleaseChecks),
       15 => Some(CliApplicationScenario::M12ReproducibilityBundle),
       16 => Some(CliApplicationScenario::M12AlphaArchive),
+      17 => Some(CliApplicationScenario::M9MatchOnboarding),
       _ => None,
     };
   }
@@ -1161,6 +1204,11 @@ pub fn parse_scenario_selection(input: &str) -> Option<CliApplicationScenario> {
     | "comms"
     | "m8"
     | "shotcalling" => Some(CliApplicationScenario::M8TeamScenarios),
+    crate::host::CLI_INTERACTIVE_MATCH_ONBOARDING_SCENARIO_ID
+    | "onboarding"
+    | "tutorial"
+    | "m9-onboarding"
+    | "scenario-complete-onboarding-v1" => Some(CliApplicationScenario::M9MatchOnboarding),
     crate::host::CLI_INTERACTIVE_MATCH_SCENARIO_ID
     | "interactive-match"
     | "match-interactive"
@@ -1376,7 +1424,7 @@ mod tests {
     );
     assert_eq!(
       CLI_APPLICATION_HELP,
-      "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m6-behavioral-experiments-v1, m7-calibration-proof-v1, m8-team-scenarios-v1, m9-interactive-match-v1, m9-complete-match-replay-v1, m10-human-study-synthesis-v1, m10-empirical-cohort-study-v1, m11-gui-presentation-v1, m11-gui-browser-flow-v1, m12-alpha-release-checks-v1, m12-reproducibility-bundle-v1, or m12-alpha-archive-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n"
+      "usage: fog-of-intent [--scenario <id>] [--select] [--mcp] [--run-dir <path>] [--color auto|always|never] [--width <cols>]\n\noptions:\n  --scenario <id>    select m3-two-window-fixture-v1, m2-strategy-happy-path-v1, m2-strategy-risk-taking-v1, m2-strategy-conservative-v1, m6-behavioral-experiments-v1, m7-calibration-proof-v1, m8-team-scenarios-v1, m9-interactive-match-v1, m9-match-onboarding-v1, m9-complete-match-replay-v1, m10-human-study-synthesis-v1, m10-empirical-cohort-study-v1, m11-gui-presentation-v1, m11-gui-browser-flow-v1, m12-alpha-release-checks-v1, m12-reproducibility-bundle-v1, or m12-alpha-archive-v1\n  --select, -s       interactively choose a scenario from the catalog menu\n  --list-scenarios   list all available scenarios and descriptions\n  --mcp              start Model Context Protocol (MCP) JSON-RPC stdio server\n  --run-dir <path>   store bounded run artifacts in this directory (interactive lane scenarios only)\n  --color <mode>     auto, always, or never (default auto)\n  --width <cols>     override terminal column width for line wrapping (default 80)\n  --help             show this help\n  --version, -V      show package version\n"
     );
     assert_eq!(
       parse_application_args(&[OsString::from("--version")]),
@@ -1925,9 +1973,45 @@ mod tests {
     assert!(text.contains("scenario-gui-browser-network-recovery-v1"));
   }
 
+  /// The teaching scenario has to be reachable by the id printed in the usage text, by
+  /// its plan id, by two ordinary words, and by the menu number it was appended to.
+  #[test]
+  fn the_onboarding_scenario_is_selectable_by_every_name_it_offers() {
+    for input in [
+      "m9-match-onboarding-v1",
+      "scenario-complete-onboarding-v1",
+      "onboarding",
+      "tutorial",
+      "17",
+    ] {
+      assert_eq!(
+        parse_scenario_selection(input),
+        Some(CliApplicationScenario::M9MatchOnboarding),
+        "{input}"
+      );
+    }
+
+    let parsed = parse_application_args(&[
+      OsString::from("--scenario"),
+      OsString::from(crate::host::CLI_INTERACTIVE_MATCH_ONBOARDING_SCENARIO_ID),
+    ])
+    .expect("the onboarding session id should parse as a scenario argument");
+    assert!(matches!(
+      parsed,
+      CliApplicationCommand::Run(ref options)
+        if options.scenario() == CliApplicationScenario::M9MatchOnboarding
+    ));
+
+    // It is an interactive session like the match it teaches, and the usage text lists
+    // it so a player can find it without reading source.
+    assert!(CliApplicationScenario::M9MatchOnboarding.is_interactive());
+    assert!(!CliApplicationScenario::M9CompleteMatchReplay.is_interactive());
+    assert!(CLI_APPLICATION_HELP.contains("m9-match-onboarding-v1"));
+  }
+
   #[test]
   fn scenario_catalog_format_and_metadata_are_complete() {
-    assert_eq!(CLI_SCENARIO_CATALOG.len(), 16);
+    assert_eq!(CLI_SCENARIO_CATALOG.len(), 17);
     for entry in CLI_SCENARIO_CATALOG {
       assert!(!entry.id.is_empty());
       assert!(!entry.display_name.is_empty());
@@ -2480,7 +2564,7 @@ mod tests {
     assert_eq!(parse_scenario_selection(""), None);
     assert_eq!(parse_scenario_selection("   "), None);
     assert_eq!(parse_scenario_selection("0"), None);
-    assert_eq!(parse_scenario_selection("17"), None);
+    assert_eq!(parse_scenario_selection("18"), None);
     assert_eq!(parse_scenario_selection("99"), None);
     assert_eq!(parse_scenario_selection("unknown-scenario"), None);
   }
@@ -2554,12 +2638,14 @@ mod tests {
     assert_eq!(result, Some(CliApplicationScenario::M2StrategyRiskTaking));
     let out_str = String::from_utf8(output).expect("UTF-8 output");
     assert!(out_str.contains("unknown scenario selection: 'invalid'"));
-    assert!(out_str.contains("Please enter 1-16, scenario ID, alias, or 'q' to cancel."));
+    assert!(out_str.contains("Please enter 1-17, scenario ID, alias, or 'q' to cancel."));
   }
 
   #[test]
   fn scenario_selection_range_tracks_catalog_size() {
-    assert_eq!(scenario_selection_range(), "1-16");
+    // Appending the onboarding scenario extended the range; the numbers published
+    // before it (1-16) still resolve to the scenarios they always did.
+    assert_eq!(scenario_selection_range(), "1-17");
   }
 
   #[test]
