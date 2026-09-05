@@ -187,7 +187,9 @@ Your mid actor already reaches the outer turret: try siege outer mid light
 The deeper tiers stand at the enemy base, so walk the force with rotate
 ```
 
-Three actors stand against one opposing actor that never receives an order, so nothing
+Three actors stand against one opposing actor that never receives an order — the session
+enforces it, refusing any order that names an actor outside your roster or asks the enemy
+side to act (`error: not your order to give: ...`, before anything is staged) — so nothing
 you type can cost you the game. A verified run, printed turn by turn:
 
 ```sh
@@ -446,9 +448,9 @@ Lane scenarios: `help`, `?`, `help <command>`, `observe`, `inspect
 `replay [id]`, `branch [id]`, `save <id>`, `load <id>`, `quit`.
 
 Match scenario: `help`, `help <verb>`, `observe`, `rotate <actor> <destination>`,
-`ward [team] <actor> <location> [turns]`,
+`ward [allied] <actor> <location> [turns]`,
 `contest <top|bot> [light|committed|all-in|damage] [burst]`,
-`siege [side] <tier> [lane] [light|committed|all-in|damage]`, `evaluate`, `idle`, `undo`,
+`siege [allied] <tier> [lane] [light|committed|all-in|damage]`, `evaluate`, `idle`, `undo`,
 `commit`,
 `advance`, `debrief`, `quit`.
 

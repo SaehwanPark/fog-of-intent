@@ -817,6 +817,7 @@ pub fn render_match_error(error: &crate::host::CliMatchError) -> String {
     crate::host::CliMatchError::ForceWithoutPresence { message } => {
       format!("no force in reach: {message}")
     }
+    crate::host::CliMatchError::NotCommandable { message } => format!("not your order to give: {message}"),
     crate::host::CliMatchError::DebriefUnavailable => {
       "match debrief is unavailable until terminal evaluation".to_owned()
     }

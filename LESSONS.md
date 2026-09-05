@@ -1820,3 +1820,30 @@ canonical policy instead of duplicating it.
 - Prevention: Keep the sweep out of CI. A permanent checker needs an allowlist for the absent names
   above, and that allowlist becomes the drift it was meant to prevent; `D9` deferred checker
   enforcement of claim precedence for the same reason.
+
+## Enforce a session's command authority at the shared staging gate, not in prose
+
+- Context: The interactive match grammar derives verb arguments from free tokens, while the
+  session's own briefing promises a single commander ("one opposing actor that never receives
+  an order") and `SPEC.md` claims fail-closed "roster bounds".
+- Symptom: Reproduced on the shipped binary: `rotate 4 <dest>` staged, committed, and moved
+  the opposing actor; rotating an `observe`-hidden actor to its true sector failed at
+  execution with "actor is already at destination <sector>", leaking the fogged position;
+  `ward 99 <loc>` placed a real ward attributed to an actor no roster contains; `ward
+  opposing` bought the enemy vision; `siege opposing` spent the player's turns on an enemy
+  attack.
+- Cause: Presence refusals moved validation into `stage()`, but actor/team/side slots were
+  still accepted verbatim; execution-time errors were written for scripted callers, so they
+  reported authoritative facts (a true position) to a player the fog was withholding them
+  from.
+- Resolution: Refuse outside-command orders in the one `stage()` choke point the CLI grammar
+  and MCP already share, before staging. The refusal may quote only facts the player can
+  read back from `observe` — the allied roster ids — and never a sector, which closes the
+  probe channel at the surface a player reaches. The structured kernel authority stays
+  untouched, so no transition, scenario id, or replay hash moves; because accepted input was
+  removed, the published host identity moves per `docs/COMPATIBILITY.md`.
+- Prevention: When an interface states who or what a session may command, make that
+  invariant a check at the choke point, not a sentence, and first build the probe that
+  breaks it on the live binary (opposing actor, phantom id, enemy-side team, enemy-side
+  attack slot). Any error text reachable from player-typed input is player-facing: audit it
+  for authoritative facts the projection deliberately withholds.
