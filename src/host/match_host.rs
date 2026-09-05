@@ -37,7 +37,7 @@ use crate::map::vision::DEFAULT_WARD_DURATION_TURNS;
 /// being accepted. Removing accepted input is breaking, so the identity moves; the
 /// scripted benchmark plans use structured actions, never this grammar, so no recorded
 /// plan is affected and the map ruleset and both `-v2` scenario ids are unchanged.
-pub const CLI_MATCH_HOST_SCHEMA: &str = "m9-interactive-match-host-v6";
+pub const CLI_MATCH_HOST_SCHEMA: &str = "m9-interactive-match-host-v7";
 
 /// Force a `contest` or `siege` declares when the player names no amount.
 ///

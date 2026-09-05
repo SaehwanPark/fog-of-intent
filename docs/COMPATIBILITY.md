@@ -32,6 +32,16 @@ already accepted. That is **additive input acceptance**: a wider set of inputs r
 same sectors it always named, no previously accepted input changes meaning, and no projection
 changed — so the host identifier stays `v4` and no replay identity moves.
 
+`m9-interactive-match-host-v7` narrows accepted input and is therefore breaking: MCP
+`match_plan_action` no longer fills decisive slots the caller omitted. `v6` and earlier
+silently chose them — a bare `rotate` moved actor 1 to `mid_center`, a bare `ward` placed a
+ward through actor 3 at `bot_river`, a bare `contest` chose `bot`, a bare `siege` chose
+`outer mid`. `v7` refuses each omission by naming the missing parameter. Slots the typed
+grammar also makes optional — siege `lane` (defaults to `mid`), force (`commit`/`damage`),
+and ward turns — keep their documented defaults, so a call that declared every decisive slot
+means exactly what it meant before. As with `v4`–`v6`, no release, tag, codec, or stored
+artifact exists for the refused sparse calls, and no migration is owed.
+
 `m9-interactive-match-host-v6` narrows accepted input and is therefore breaking: a verb now
 refuses trailing tokens past its slots instead of silently dropping them, so contradictory
 intensities (`siege outer mid light committed`, `contest top committed light`) and stray

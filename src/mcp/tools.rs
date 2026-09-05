@@ -160,11 +160,11 @@ pub fn mcp_tools_catalog() -> Vec<McpTool> {
           ])),
           ("actor_id".into(), JsonValue::Object(vec![
             ("type".into(), JsonValue::String("integer".into())),
-            ("description".into(), JsonValue::String("Actor ID for rotate/ward (e.g. 1=Jungler, 2=Mid, 3=Support).".into())),
+            ("description".into(), JsonValue::String("Actor ID for rotate/ward (e.g. 1=Jungler, 2=Mid, 3=Support). Required for rotate and ward; match_observe prints the roster.".into())),
           ])),
           ("location".into(), JsonValue::Object(vec![
             ("type".into(), JsonValue::String("string".into())),
-            ("description".into(), JsonValue::String("Destination or ward map location (e.g. 'bot_river', 'mid_center', 'opposing_base').".into())),
+            ("description".into(), JsonValue::String("Destination or ward map location (e.g. 'bot_river', 'mid_center', 'opposing_base'). Required for rotate and ward; nothing is moved to a guessed sector.".into())),
           ])),
           ("objective".into(), JsonValue::Object(vec![
             ("type".into(), JsonValue::String("string".into())),
@@ -172,7 +172,7 @@ pub fn mcp_tools_catalog() -> Vec<McpTool> {
               JsonValue::String("top".into()),
               JsonValue::String("bot".into()),
             ])),
-            ("description".into(), JsonValue::String("Neutral objective target for contest ('top' for Baron/Herald, 'bot' for Dragon).".into())),
+            ("description".into(), JsonValue::String("Neutral objective target for contest ('top' for Baron/Herald, 'bot' for Dragon). Required for contest.".into())),
           ])),
           ("tier".into(), JsonValue::Object(vec![
             ("type".into(), JsonValue::String("string".into())),
@@ -183,7 +183,7 @@ pub fn mcp_tools_catalog() -> Vec<McpTool> {
               JsonValue::String("inhibitor".into()),
               JsonValue::String("nexus".into()),
             ])),
-            ("description".into(), JsonValue::String("Structure tier for siege.".into())),
+            ("description".into(), JsonValue::String("Structure tier for siege. Required for siege.".into())),
           ])),
           ("lane".into(), JsonValue::Object(vec![
             ("type".into(), JsonValue::String("string".into())),
@@ -192,7 +192,7 @@ pub fn mcp_tools_catalog() -> Vec<McpTool> {
               JsonValue::String("mid".into()),
               JsonValue::String("bot".into()),
             ])),
-            ("description".into(), JsonValue::String("Lane for structure siege (optional for Nexus).".into())),
+            ("description".into(), JsonValue::String("Lane for structure siege (defaults to mid; ignored for Nexus).".into())),
           ])),
           ("damage".into(), JsonValue::Object(vec![
             ("type".into(), JsonValue::String("integer".into())),

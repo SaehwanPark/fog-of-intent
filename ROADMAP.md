@@ -2376,6 +2376,20 @@ objectives, mechanics, or rules were added — the teaching scenario is data (an
 with no scripted actions) consumed by the existing host, so there is exactly one ruleset, one
 legality path, and one set of projections.
 
+### Current M9 MCP match-plan decisive-slot evidence
+
+`match_plan_action` refuses to choose what the caller did not declare. Reproduced on the
+shipped server: a bare `rotate` silently moved actor 1 to `mid_center`, a bare `ward` placed
+a 3-turn ward through actor 3 at `bot_river`, a bare `contest` chose `bot`, and a bare
+`siege` chose `outer mid` — the agent-facing boundary, where the project's delegation thesis
+is tested, picked the actor, the destination, the objective, and the tier. Omitting a
+decisive slot now returns a refusal naming the missing parameter; slots the typed grammar
+also makes optional (siege lane, force, ward turns) keep their documented defaults, so MCP
+and CLI agree on what is optional. `CLI_MATCH_HOST_SCHEMA` moves to
+`m9-interactive-match-host-v7` (`docs/COMPATIBILITY.md` records the move); fully-declared
+calls are unaffected, verified live and by host tests. Not claimed: that sparse calls were
+made by real agents — probes made them; no agent-session telemetry exists.
+
 ### Current M9 interactive match strict-grammar evidence
 
 A verb refuses trailing tokens past its slots by name instead of silently dropping them.

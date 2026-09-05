@@ -1871,3 +1871,7 @@ canonical policy instead of duplicating it.
   different values for the same slot before claiming the syntax is what the docs print;
   assert in tests that leftovers name the token, never pass silently. Keep doc spellings
   mechanically true — every bracket shown must really be optional.
+  Apply the same discipline to structured API surfaces: an optional parameter that silently
+  fills a decisive slot (which actor, which destination, which objective) is the same defect
+  behind a friendlier envelope — refuse the omission and name the parameter, and keep
+  defaults only where the sibling grammar really documents the slot as optional.

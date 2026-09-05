@@ -3,6 +3,34 @@
 All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 
+## Unreleased — 2026-09-05 (MCP match-plan fills no decisive slot, `0.1.248`)
+
+### Fixed
+
+- **MCP `match_plan_action` chose for the caller.** Reproduced on the shipped server: a bare
+  `rotate` silently moved actor 1 to `mid_center`; a bare `ward` placed a 3-turn ward through
+  actor 3 at `bot_river`; a bare `contest` picked `bot`; a bare `siege` picked `outer mid`.
+  The agent-facing boundary — the surface this project's delegation thesis is actually tested
+  on — executed plans no agent had declared. Omitting a decisive slot now returns a refusal
+  naming the missing parameter, and the refusal stages nothing.
+- Slots the typed grammar also makes optional keep their documented defaults — siege `lane`
+  (`mid`), force (`commit`/`damage`), ward turns — so MCP and CLI now agree on what is
+  optional, and a fully-declared call means what it meant before.
+
+### Changed
+
+- `CLI_MATCH_HOST_SCHEMA` moves to `m9-interactive-match-host-v7`; `docs/COMPATIBILITY.md`
+  records the narrowing next to `v4`–`v6`. Tool count and shapes are unchanged (25 tools);
+  only parameter descriptions state the now-enforced requirements. The
+  `m9-complete-match-replay-v1` transcript is untouched (both plans replay
+  `initial-hash-match=yes final-hash-match=yes`).
+
+### Evidence boundary
+
+- Technically verified only (host tests + live server probes). Not claimed: that sparse calls
+  occurred in real agent sessions — probes made them; no telemetry exists. `D6` remains the
+  project's stop gate.
+
 ## Unreleased — 2026-09-05 (exact arity at the verb boundary, `0.1.247`)
 
 ### Fixed

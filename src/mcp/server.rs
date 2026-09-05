@@ -303,33 +303,37 @@ impl McpServer {
           None => return format_tool_error("action parameter is required"),
         };
         let line = match action {
+          // Decisive slots carry no defaults: an omitted actor, destination, objective,
+          // or tier is refused, never guessed. Only slots the typed grammar also makes
+          // optional (lane, force, ward turns) keep their documented defaults.
           "rotate" => {
-            let actor = args
-              .get("actor_id")
-              .and_then(JsonValue::as_i64)
-              .unwrap_or(1);
-            let loc = args
-              .get("location")
-              .and_then(JsonValue::as_str)
-              .unwrap_or("mid_center");
+            let Some(actor) = args.get("actor_id").and_then(JsonValue::as_i64) else {
+              return format_tool_error(
+                "rotate requires actor_id; match_observe prints the roster",
+              );
+            };
+            let Some(loc) = args.get("location").and_then(JsonValue::as_str) else {
+              return format_tool_error(
+                "rotate requires location; match_observe prints sector names",
+              );
+            };
             format!("rotate {actor} {loc}")
           }
           "ward" => {
-            let actor = args
-              .get("actor_id")
-              .and_then(JsonValue::as_i64)
-              .unwrap_or(3);
-            let loc = args
-              .get("location")
-              .and_then(JsonValue::as_str)
-              .unwrap_or("bot_river");
+            let Some(actor) = args.get("actor_id").and_then(JsonValue::as_i64) else {
+              return format_tool_error("ward requires actor_id; match_observe prints the roster");
+            };
+            let Some(loc) = args.get("location").and_then(JsonValue::as_str) else {
+              return format_tool_error(
+                "ward requires location; match_observe prints sector names",
+              );
+            };
             format!("ward allied {actor} {loc} 3")
           }
           "contest" => {
-            let obj = args
-              .get("objective")
-              .and_then(JsonValue::as_str)
-              .unwrap_or("bot");
+            let Some(obj) = args.get("objective").and_then(JsonValue::as_str) else {
+              return format_tool_error("contest requires objective ('top' or 'bot')");
+            };
             let force = match force_argument(args) {
               Ok(force) => force,
               Err(message) => return format_tool_error(message),
@@ -337,10 +341,11 @@ impl McpServer {
             format!("contest {obj} {force}")
           }
           "siege" => {
-            let tier = args
-              .get("tier")
-              .and_then(JsonValue::as_str)
-              .unwrap_or("outer");
+            let Some(tier) = args.get("tier").and_then(JsonValue::as_str) else {
+              return format_tool_error(
+                "siege requires tier (outer, inner, inhibitor_turret, inhibitor, or nexus)",
+              );
+            };
             let lane = args
               .get("lane")
               .and_then(JsonValue::as_str)
