@@ -2111,6 +2111,27 @@ replays to an identical final hash at the library boundary.
   default match session and cannot select the teaching plan; new MCP surface is frozen by
   D8 until that pass reports no usability blocker.
 
+#### Delivered in the interactive match strict-grammar slice — 2026-09-05
+
+- Trailing tokens past a verb's slots are refused by name instead of dropped: the shipped
+  binary silently resolved contradictory input (`siege outer mid light committed` staged
+  `strength=light`; the reversed spelling staged `committed`; `rotate 1 bot_river extra`
+  staged the rotation). Exact arity now holds for `rotate`, `contest`, `siege`, and the
+  team-first `ward` shape, and the refusal quotes the unexpected token.
+- The additive half: `ward <actor> <location> <turns>` — the spelling `HOW_TO_PLAY.md`
+  documents — stages; before this slice the explicit-turns form required spelling the
+  optional team token, and the refusal (`unknown team side '1'`) could not be acted on.
+- `undo` rewinds any plan, staged or committed, until `advance` runs it; nothing reaches the
+  simulation before `advance`. The verb-list summary said "uncommitted staged" while the
+  detail help and behavior allowed committed too; the list now says what the session does.
+- `CLI_MATCH_HOST_SCHEMA` moves to `m9-interactive-match-host-v6` because accepted input was
+  removed; `docs/COMPATIBILITY.md` records the move. Structured scripted plans, scenario ids,
+  and the `m9-complete-match-replay-v1` transcript are unchanged, re-verified with both
+  plans replaying `initial-hash-match=yes final-hash-match=yes`.
+- Not claimed: that exact arity is the friendliest parser (prefix-free or two-word verb
+  designs are `D6`-gated questions), or that the refused spellings were common player input —
+  they were reproduced by probes, not observed from players.
+
 #### Delivered in the interactive match one-commander slice — 2026-09-05
 
 - The interactive session has one commander: the allied team. The staged-order choke point

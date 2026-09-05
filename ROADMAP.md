@@ -2376,6 +2376,25 @@ objectives, mechanics, or rules were added — the teaching scenario is data (an
 with no scripted actions) consumed by the existing host, so there is exactly one ruleset, one
 legality path, and one set of projections.
 
+### Current M9 interactive match strict-grammar evidence
+
+A verb refuses trailing tokens past its slots by name instead of silently dropping them.
+Reproduced on the shipped binary first: `siege outer mid light committed` staged
+`strength=light` and the reversed spelling staged `committed` — two declared intensities,
+one silent choice — and `rotate 1 bot_river extra` staged the rotation. `rotate`, `contest`,
+`siege`, and the team-first `ward` shape now hold exact arity and quote the unexpected token.
+Additive half: `ward <actor> <location> <turns>`, the spelling `HOW_TO_PLAY.md` documents,
+now stages; before this slice the explicit-turns form demanded the optional team token and
+answered with `unknown team side '1'`. The verb-list summary of `undo` now says what the
+session does — a plan, staged or committed, rewinds until `advance` runs it, and nothing
+reaches the simulation before `advance`. `CLI_MATCH_HOST_SCHEMA` moves to
+`m9-interactive-match-host-v6` because accepted input was removed (`docs/COMPATIBILITY.md`
+records the move); structured scripted plans, scenario ids, and the
+`m9-complete-match-replay-v1` transcript are unchanged, re-verified with both plans replaying
+`initial-hash-match=yes final-hash-match=yes`. Not claimed: that exact arity is the
+friendliest parser, or that the refused spellings were observed from players — they were
+reproduced by probes; friendlier verb designs are `D6`-gated questions.
+
 ### Current M9 interactive match one-commander evidence
 
 The interactive session has one commander — the allied team — and the grammar now enforces
