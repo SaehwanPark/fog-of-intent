@@ -3,6 +3,21 @@
 All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 
+## Unreleased — 2026-09-05 (defect-continuation decision report, docs only)
+
+### Added
+
+- **`docs/decision_report_20260905.md`** closes the defect-driven continuation that ran after the
+  09-04 report: three merges, `0.1.245` → `0.1.248`, one branch and pull request each — the
+  one-commander staging gate (`#266`), exact arity at the verb boundary (`#267`), and MCP
+  `match_plan_action` filling no decisive slot (`#268`). It states why resuming after a stop report
+  was legitimate (probe-reproduced defects, not breadth), names the single defect class all three
+  slices closed — the engine making a silent choice at the moment of delegation — across the typed
+  grammar, the MCP parameter surface, and the lane host probed and found already correct, records
+  that three breaking narrowings moved the host identity with `docs/COMPATIBILITY.md` justification
+  while the benchmark transcript stayed byte-identical, and repeats that `D6` — run the playtest —
+  is the only productive resume path. Dated artifact; promotes no current-state claim.
+
 ## Unreleased — 2026-09-05 (MCP match-plan fills no decisive slot, `0.1.248`)
 
 ### Fixed
