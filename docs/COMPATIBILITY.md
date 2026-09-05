@@ -32,6 +32,20 @@ already accepted. That is **additive input acceptance**: a wider set of inputs r
 same sectors it always named, no previously accepted input changes meaning, and no projection
 changed — so the host identifier stays `v4` and no replay identity moves.
 
+`m9-interactive-match-host-v5` narrows accepted input and is therefore breaking: the
+interactive grammar (CLI and MCP alike) now refuses, before staging, orders that name an
+actor outside the allied roster, a ward for the opposing team, or an opposing attacking side.
+`v4` accepted those inputs and acted on them — a player could move the opposing actor, place
+a ward through an actor the roster does not contain, buy the enemy team vision, or stage an
+enemy attack, and rotating a fogged actor to its true sector leaked that sector through an
+execution error. A `v4` script that only commanded allied actors means exactly what it meant
+before. The retired inputs have no release, no tag, no published codec, and no stored
+artifact — match sessions have never been persisted to a run directory — so re-identification
+is legitimate under the contract below and no migration is owed. The map ruleset, both `-v2`
+scenario ids, `m9-match-onboarding-v1`, `scenario-complete-onboarding-v1`, and the
+`m9-complete-match-replay-v1` transcript are unchanged, because scripted plans carry
+structured actions and never pass through the interactive grammar.
+
 One removal, recorded for completeness. `OpponentSighting::LastKnown` and the host report's
 matching certainty case were deleted: declared, never constructed, and never written to a stored
 artifact, replay, or protocol payload — an in-process projection type only. No identifier moves

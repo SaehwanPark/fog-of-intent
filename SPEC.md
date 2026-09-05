@@ -2099,7 +2099,8 @@ replays to an identical final hash at the library boundary.
   `MapLocation::as_str()` spelling — dashes normalised, case-insensitive — before its
   alias table, so `rotate 1 lane:mid:far-side` works alongside `rotate 1 mid_far_side`.
   Acceptance is additive: no token that resolved before resolves elsewhere, and
-  `CLI_MATCH_HOST_SCHEMA` stays `m9-interactive-match-host-v4`.
+  `CLI_MATCH_HOST_SCHEMA` stays `m9-interactive-match-host-v4` (it moves to `v5` with the
+  one-commander slice below).
 - The briefing is advisory and lives at the presentation edge: it names a first command
   and where the lesson is, and reimplements no legality. On the scripted (piped) path,
   which has never printed a banner, only the teaching session prints it, so existing
@@ -2109,6 +2110,29 @@ replays to an identical final hash at the library boundary.
   measured — that observation belongs to `D6`. The MCP server still constructs the
   default match session and cannot select the teaching plan; new MCP surface is frozen by
   D8 until that pass reports no usability blocker.
+
+#### Delivered in the interactive match one-commander slice — 2026-09-05
+
+- The interactive session has one commander: the allied team. The staged-order choke point
+  (`stage` in `src/host/match_host.rs`, shared by the CLI grammar and MCP `match_plan_action`)
+  now refuses, before staging, any action that names an actor outside the allied roster, a
+  ward for the opposing team, or a siege attacked by `opposing`. Refusals render as
+  `error: not your order to give: <hint>` and name the roster ids `observe` prints.
+- What the un-enforced promise allowed, each reproduced on the shipped binary first: a typed
+  `rotate 4` moved the opposing actor in the session whose briefing says the enemy never
+  receives an order; rotating an `observe`-hidden actor to its true sector failed with
+  "already at destination <sector>", leaking the fogged position; `ward 99` committed and
+  placed a real ward attributed to a non-existent actor; `ward opposing` bought the enemy
+  vision, and `siege opposing` spent the player's turns on an enemy attack.
+- The refusal is scoped to the interactive grammar. Structured `CompleteMatchAction` authority
+  — scripted benchmark plans, replay, and hash paths — is unchanged, so the map ruleset, both
+  `-v2` scenario ids, and `m9-complete-match-replay-v1` did not move. Because accepted input
+  was removed, `CLI_MATCH_HOST_SCHEMA` moves to `m9-interactive-match-host-v5`; `v4` scripts
+  that only commanded allied actors are unaffected, and no stored artifact records a `v4`
+  interactive session (see `docs/COMPATIBILITY.md`).
+- Not claimed: that the refusal wording is self-explanatory to a first-time player, or that
+  one allied commander is the right long-term interface for team play — five-a-side and
+  per-role command authority remain `D6`/M10 questions.
 
 #### Delivered in the bounded human usability and accessibility study protocol follow-up
 

@@ -3,6 +3,47 @@
 All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 
+## Unreleased — 2026-09-05 (one commander at the staging gate, `0.1.246`)
+
+### Fixed
+
+- **The interactive match could be made to command the enemy, and the enemy could be read
+  through it.** Reproduced on the shipped binary before the fix: `rotate 4 <destination>`
+  staged, committed, and moved the opposing actor in the session whose own briefing says the
+  enemy never receives an order; rotating that actor to its true sector failed at execution
+  with "actor is already at destination <sector>", leaking a position `observe` printed as
+  `location=unknown`; `ward 99 <loc>` committed and placed a real 3-turn ward attributed to
+  an actor no roster contains; `ward opposing` bought vision for the enemy team; and
+  `siege opposing <tier> <lane>` spent the player's turns on an enemy attack.
+- **One refusal, before staging, on one fact the player can read back.** `uncommandable_order`
+  in `src/host/match_host.rs` refuses at the same shared `stage()` choke point that already
+  refuses unbacked force: an actor outside the allied roster, a ward for the opposing team,
+  or a siege attacked by `opposing`. CLI and MCP share the decision — `match_plan_action`
+  rotate `actor_id=4` now refuses. Refusals render as `error: not your order to give: ...`,
+  name the allied roster ids as `observe` prints them, and quote no sector, closing the
+  position-probe channel at the surface a player reaches. Three host tests cover the
+  refusals, the absence of position in any refusal, and that every commandable order still
+  stages; the 25 MCP tools and their schemas are unchanged.
+
+### Changed
+
+- `CLI_MATCH_HOST_SCHEMA` moves to `m9-interactive-match-host-v5`. Removing accepted input is
+  breaking under `docs/COMPATIBILITY.md`, which records the move: the retired inputs have no
+  release, tag, codec, or stored artifact (match sessions were never persisted), so
+  re-identification is legitimate and no migration is owed. The kernel and every scripted
+  authority are untouched — structured `CompleteMatchAction` plans still accept what they
+  accepted — so the map ruleset, both `-v2` scenario ids, `m9-match-onboarding-v1`, and the
+  `m9-complete-match-replay-v1` transcript are unchanged, re-verified with both plans
+  replaying `initial-hash-match=yes final-hash-match=yes`.
+- `HOW_TO_PLAY.md` states the enforced promise at the teaching match and spells the cheat-
+  sheet slots as `[allied]`, the only side this session commands.
+
+### Evidence boundary
+
+- Technically verified only. Not claimed: that the refusal wording is self-explanatory to a
+  first-time player, or that a single allied commander is the right long-term command surface
+  — both are `D6`/M10 questions. `D6` remains the project's stop gate.
+
 ## Unreleased — 2026-09-04 (stop-gate decision report, docs only)
 
 ### Added

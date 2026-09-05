@@ -2346,7 +2346,8 @@ Two decisions came out of building it.
   name. The host parser now resolves every `MapLocation::as_str()` form (dashes normalised,
   case-insensitive) before consulting its alias table, and a test asserts all fifteen sectors
   round-trip from print to parse. Acceptance is additive — no token that resolved before
-  resolves elsewhere — so the host schema stays `m9-interactive-match-host-v4`.
+  resolves elsewhere — so the host schema stays `m9-interactive-match-host-v4` at that slice;
+  the one-commander evidence section below moves it to `v5`.
 - **`CompleteMatchCatalog::find` is wider than `all()`.** `all()` is the benchmark set that the
   print-and-exit transcript executes; `find()` additionally resolves interactive-only teaching
   plans. The split is documented at both functions and tested. The alternative — teaching in
@@ -2374,6 +2375,47 @@ new MCP surface, which `D8` freezes, and nothing yet asked for it. And no verbs,
 objectives, mechanics, or rules were added — the teaching scenario is data (an opening position
 with no scripted actions) consumed by the existing host, so there is exactly one ruleset, one
 legality path, and one set of projections.
+
+### Current M9 interactive match one-commander evidence
+
+The interactive session has one commander — the allied team — and the grammar now enforces
+it at the shared staging choke point instead of only promising it. `CLI_MATCH_HOST_SCHEMA`
+moves to `m9-interactive-match-host-v5`: this slice **removes accepted input**, which is
+breaking by this contract, so the identity moves; no recorded benchmark plan is affected
+because scripted plans carry structured actions and never pass through the interactive
+grammar, and the map ruleset, both `-v2` scenario ids, `m9-match-onboarding-v1`, and the
+re-verified `m9-complete-match-replay-v1` transcript (both plans, `initial-hash-match=yes
+final-hash-match=yes`) are unchanged.
+
+- **What the un-enforced promise allowed, reproduced on the shipped binary before the fix.**
+  `rotate 4 <destination>` staged, committed, and **moved the opposing actor** — the enemy
+  received the player's order in the session whose briefing says it never receives one. The
+  rotation path also leaked: for an actor `observe` printed as `location=unknown`, a rotation
+  to its true sector failed at execution with "actor is already at destination
+  <sector>", so probing sectors read out the fogged actor's position for free. `ward 99 <loc>`
+  staged, committed, and placed a real 3-turn ward attributed to an actor the roster does not
+  contain; `ward opposing ...` bought vision for the enemy team; `siege opposing <tier> <lane>`
+  put the player's own turns on an enemy attack.
+- **One refusal, before staging, on a fact the player can read back.** `uncommandable_order`
+  in `src/host/match_host.rs` refuses actions that name an actor outside the allied roster,
+  a ward for the opposing team, or an opposing attacking side — beside the existing presence
+  refusal in the same `stage()` choke point, so CLI and MCP share one decision. The refusal
+  renders as `error: not your order to give: <repair hint>` and names the allied roster ids
+  as `observe` prints them; no refusal quotes a sector, so the position-probe channel is
+  closed at the surface a player reaches.
+- **The kernel is deliberately untouched.** Structured `CompleteMatchAction` authority — the
+  scripted benchmark plans and every replay path — still accepts what it always accepted, so
+  the map ruleset identity does not move and no transition changed. The execution-time
+  "already at destination" message remains true for actors the commander can order, whose
+  positions the projection already reports.
+- **Audience and promotion evidence.** Primary audience: the interactive CLI and MCP player.
+  The promoted claim is "a staged interactive order can only be given by the session's single
+  commander, and no interactive input can move, feed, or reveal an opposing actor's hidden
+  position through the staging surface" — **technically verified** by 3 host tests (refusals
+  with no staging side effect, no position in any refusal message, every commandable order
+  still staging) and an MCP probe (`match_plan_action` rotate `actor_id=4` refuses; the 25
+  tools and their schemas are unchanged). Not claimed: that the refusal wording is intuitive
+  to a first-time player — that is `D6` evidence like every other legibility question here.
 
 ### Developer Action Items
 

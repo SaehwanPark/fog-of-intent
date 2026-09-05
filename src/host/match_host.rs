@@ -15,7 +15,7 @@ use crate::map::complete_match::{
 use crate::map::complete_match_catalog::CompleteMatchCatalog;
 use crate::map::contest::ObjectiveIntent;
 use crate::map::objective::{ObjectiveKind, ObjectiveStatus};
-use crate::map::state::OpponentSighting;
+use crate::map::state::{MatchMapState, OpponentSighting};
 use crate::map::structures::{ObservedStructure, StructureTier};
 use crate::map::topology::{LaneId, MapLocation, TeamSide};
 use crate::map::victory::{MatchStatus, MatchTerminalEvaluation, MatchVictoryCondition};
@@ -30,8 +30,14 @@ use crate::map::vision::DEFAULT_WARD_DURATION_TURNS;
 /// an unbacked declaration is refused at staging, and the turn note reports the cap. `v4`
 /// adds the commit-strength token vocabulary to the force slot of `contest` and `siege`
 /// (decision D5); raw integers keep working unchanged, so a `v3` script is still a `v4`
-/// script.
-pub const CLI_MATCH_HOST_SCHEMA: &str = "m9-interactive-match-host-v4";
+/// script. `v5` narrows the grammar to the one commander this session has always had:
+/// a staged line may only order an allied actor that exists in the scenario roster, so
+/// `rotate` of an opposing or unknown actor, a ward placed by either or for the opposing
+/// team, and a siege attacked by `opposing` are now refused before staging instead of
+/// being accepted. Removing accepted input is breaking, so the identity moves; the
+/// scripted benchmark plans use structured actions, never this grammar, so no recorded
+/// plan is affected and the map ruleset and both `-v2` scenario ids are unchanged.
+pub const CLI_MATCH_HOST_SCHEMA: &str = "m9-interactive-match-host-v5";
 
 /// Force a `contest` or `siege` declares when the player names no amount.
 ///
@@ -233,6 +239,12 @@ pub enum CliMatchError {
   ExecutionFailed(CompleteMatchError),
   /// A force declaration no own actor can back up was refused before staging.
   ForceWithoutPresence {
+    message: String,
+  },
+  /// An order the single commander of this session cannot give was refused before
+  /// staging: it named an actor outside the allied roster, a ward for the opposing
+  /// team, or an opposing attack.
+  NotCommandable {
     message: String,
   },
   DebriefUnavailable,
@@ -707,7 +719,8 @@ impl CliMatchHost {
     }
   }
 
-  /// Stage a parsed action, refusing force that no own actor can back up.
+  /// Stage a parsed action, refusing orders this session's single commander cannot
+  /// give before refusing force that no own actor can back up.
   ///
   /// The authority would apply such a declaration as zero damage. Committing a turn to
   /// deliver nothing is never what a player means, and both inputs to this check - the
@@ -718,6 +731,9 @@ impl CliMatchHost {
     action: CompleteMatchAction,
     desc: String,
   ) -> Result<CliMatchOutput, CliMatchError> {
+    if let Some(message) = uncommandable_order(&action, self.state.map()) {
+      return Err(CliMatchError::NotCommandable { message });
+    }
     if let Some((sector, team)) = self.state.force_declaration(&action) {
       let present = self
         .state
@@ -1011,6 +1027,65 @@ fn intent_objective(intent: &ObjectiveIntent) -> ObjectiveKind {
     | ObjectiveIntent::SecureBurst { objective, .. }
     | ObjectiveIntent::ZoneOpponents { objective, .. } => *objective,
     ObjectiveIntent::ConcedeAndTrade { conceded, .. } => *conceded,
+  }
+}
+
+/// Name the allied roster an observation prints, so a refusal points at the ids the
+/// player can read back rather than at a range they cannot derive.
+fn allied_roster_names(map: &MatchMapState) -> String {
+  let mut ids: Vec<u8> = map
+    .actor_locations()
+    .iter()
+    .filter(|(actor, _)| map.is_allied(*actor))
+    .map(|(actor, _)| actor.value())
+    .collect();
+  ids.sort_unstable();
+  ids.iter().map(u8::to_string).collect::<Vec<_>>().join(", ")
+}
+
+/// Explain why this staged line orders a team or actor the session does not command.
+///
+/// The interactive session has one commander: the allied team. The scripted benchmark
+/// authority is untouched - recorded plans carry structured actions and never pass
+/// through this grammar - but a typed line could order an opposing actor, name a ward
+/// placer outside the roster, buy vision for the opposing team, or price an enemy
+/// attack in the player's own turns. The enemy "never acts" is the session's own
+/// promise, and an execution-time failure also reported the true position the fog was
+/// withholding (`rotate 4` answered "already at destination" for an actor `observe`
+/// printed as `location=unknown`). So the refusal happens here, before staging, on one
+/// fact the player can read back from `observe`: the allied roster.
+fn uncommandable_order(action: &CompleteMatchAction, map: &MatchMapState) -> Option<String> {
+  let outside_roster = |actor: ActorId| {
+    format!(
+      "actor {} is not one of your actors; this session commands only the allied roster ({})",
+      actor.value(),
+      allied_roster_names(map),
+    )
+  };
+  match action {
+    CompleteMatchAction::Rotate { actor, .. } if !map.is_allied(*actor) => {
+      Some(outside_roster(*actor))
+    }
+    CompleteMatchAction::PlaceWard {
+      team: TeamSide::Opposing,
+      ..
+    } => Some(
+      "a ward can only be placed for the team this session commands (allied); the opposing \
+       side never acts here"
+        .to_owned(),
+    ),
+    CompleteMatchAction::PlaceWard { placed_by, .. } if !map.is_allied(*placed_by) => {
+      Some(outside_roster(*placed_by))
+    }
+    CompleteMatchAction::SiegeStructure {
+      side: TeamSide::Opposing,
+      ..
+    } => Some(
+      "siege names the attacking side, and this session commands only the allied team; the \
+       opposing side never acts here"
+        .to_owned(),
+    ),
+    _ => None,
   }
 }
 
@@ -1738,5 +1813,79 @@ mod tests {
       ),
       ObservedStructureStatus::Destroyed
     );
+  }
+
+  #[test]
+  fn the_session_refuses_orders_it_does_not_command() {
+    let mut host = CliMatchHost::default_session();
+    // An opposing actor, a phantom actor, a ward for the enemy team, and an enemy
+    // attack are all refused before staging: the session has one commander.
+    for line in [
+      "rotate 4 lane:mid:center",
+      "rotate 99 base:allied",
+      "rotate 0 base:allied",
+      "ward 99 base:allied",
+      "ward allied 99 base:allied 3",
+      "ward opposing 1 bot_river 3",
+      "siege opposing outer mid",
+    ] {
+      let err = host
+        .apply_line(line)
+        .expect_err("orders outside the commander must be refused");
+      assert!(
+        matches!(err, CliMatchError::NotCommandable { .. }),
+        "line {line} produced {err:?}"
+      );
+      // Refused before staging, so nothing lingers for the next probe.
+      assert!(
+        matches!(host.apply_line("undo"), Err(CliMatchError::NothingToUndo)),
+        "line {line} must not have staged anything"
+      );
+    }
+  }
+
+  #[test]
+  fn an_opposing_rotation_cannot_probe_a_fogged_position() {
+    let mut host = CliMatchHost::default_session();
+    // The canonical scenario parks opposing actor 4 at mid_far_side, printed as
+    // `location=unknown`. A rotation to its true sector must refuse exactly like any
+    // other rotation: no message may report where the fog withholds the actor.
+    let err = host
+      .apply_line("rotate 4 mid_far_side")
+      .expect_err("an opposing actor is not the player's to rotate");
+    let CliMatchError::NotCommandable { message } = err else {
+      panic!("expected a not-commandable refusal, got {err:?}");
+    };
+    assert!(
+      message.contains("not one of your actors"),
+      "message: {message}"
+    );
+    assert!(
+      !message.contains("mid_far_side"),
+      "message leaked: {message}"
+    );
+    assert!(!message.contains("far-side"), "message leaked: {message}");
+  }
+
+  #[test]
+  fn every_order_the_commander_can_give_still_stages() {
+    let mut host = CliMatchHost::default_session();
+    for line in [
+      "rotate 1 bot_river",
+      "rotate 2 opposing_base",
+      "rotate 3 bot_river",
+      "ward bot_river",
+      "ward allied 3 bot_river 3",
+      "siege outer mid committed",
+      "contest bot all-in",
+      "idle",
+    ] {
+      host.apply_line(line).unwrap_or_else(|err| {
+        panic!("line {line} should still stage, got {err:?}");
+      });
+      host
+        .apply_line("undo")
+        .expect("undo should clear the staged line");
+    }
   }
 }
