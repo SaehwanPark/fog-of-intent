@@ -32,6 +32,16 @@ already accepted. That is **additive input acceptance**: a wider set of inputs r
 same sectors it always named, no previously accepted input changes meaning, and no projection
 changed — so the host identifier stays `v4` and no replay identity moves.
 
+`m9-interactive-match-host-v6` narrows accepted input and is therefore breaking: a verb now
+refuses trailing tokens past its slots instead of silently dropping them, so contradictory
+intensities (`siege outer mid light committed`, `contest top committed light`) and stray
+arguments (`rotate 1 bot_river extra`) are named refusals rather than a silent choice of one
+of them. The same move is additive where the shipped docs already promised a spelling:
+`ward <actor> <location> <turns>` without the optional team token now stages. A `v5` line
+that filled each slot at most once means exactly what it meant before. As with `v4`, the
+refused spellings have no release, tag, codec, or stored artifact — match sessions were never
+persisted — so re-identification is legitimate and no migration is owed.
+
 `m9-interactive-match-host-v5` narrows accepted input and is therefore breaking: the
 interactive grammar (CLI and MCP alike) now refuses, before staging, orders that name an
 actor outside the allied roster, a ward for the opposing team, or an opposing attacking side.

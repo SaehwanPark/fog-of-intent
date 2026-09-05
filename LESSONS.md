@@ -1847,3 +1847,27 @@ canonical policy instead of duplicating it.
   breaks it on the live binary (opposing actor, phantom id, enemy-side team, enemy-side
   attack slot). Any error text reachable from player-typed input is player-facing: audit it
   for authoritative facts the projection deliberately withholds.
+
+## A parser that drops trailing tokens silently resolves contradictory player intent
+
+- Context: Token-sliced CLI grammars with optional slots (`siege [side] <tier> [lane] \
+  [intensity]`, `contest <lane> [intensity] [burst]`) were written to read slots by index
+  and stop, ignoring whatever tokens remained.
+- Symptom: `siege outer mid light committed` staged `strength=light` while the reversed
+  spelling staged `committed` — the player declared two intensities and the parser chose one
+  by token order with no signal; `rotate 1 bot_river extra` staged the rotation. Separately,
+  the documented `ward <actor> <location> [turns]` shape was unreachable without the optional
+  team token, and its refusal (`unknown team side '1'`) named a slot the player never typed.
+- Cause: Optional-slot parsing without an arity check treats "consumed my slots" as "parsed
+  the line", so contradictory values in the same slot collapse silently; and an optional
+  leading token that changes the whole token shape (team-first `ward`) is a different
+  grammar, not an option.
+- Resolution: Enforce exact arity per shape, refuse by quoting the unexpected token
+  (`unexpected argument 'committed'; ...`), and branch on the shape-deciding token rather
+  than on token count alone; make the documented spelling an accepted shape instead of
+  documenting the refusal away. Removing accepted input moves the published host identity
+  per `docs/COMPATIBILITY.md`.
+- Prevention: For every optional-slot grammar, probe with one token too many and with two
+  different values for the same slot before claiming the syntax is what the docs print;
+  assert in tests that leftovers name the token, never pass silently. Keep doc spellings
+  mechanically true — every bracket shown must really be optional.

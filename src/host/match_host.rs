@@ -37,7 +37,7 @@ use crate::map::vision::DEFAULT_WARD_DURATION_TURNS;
 /// being accepted. Removing accepted input is breaking, so the identity moves; the
 /// scripted benchmark plans use structured actions, never this grammar, so no recorded
 /// plan is affected and the map ruleset and both `-v2` scenario ids are unchanged.
-pub const CLI_MATCH_HOST_SCHEMA: &str = "m9-interactive-match-host-v5";
+pub const CLI_MATCH_HOST_SCHEMA: &str = "m9-interactive-match-host-v6";
 
 /// Force a `contest` or `siege` declares when the player names no amount.
 ///
@@ -537,7 +537,7 @@ impl CliMatchHost {
     match action_verb.as_str() {
       "rotate" => {
         // syntax: rotate <actor_id> <destination>
-        if tokens.len() < 3 {
+        if tokens.len() != 3 {
           return Err(CliMatchError::InvalidSyntax {
             message: "usage: plan rotate <actor_id> <destination> (e.g. rotate 1 bot_river)".into(),
           });
@@ -549,8 +549,10 @@ impl CliMatchHost {
         self.stage(action, desc)
       }
       "ward" => {
-        // syntax: ward [team] <actor_id> <location> [duration]
-        // or: ward <location> (defaults to Allied, actor 1, 3 turns)
+        // syntax: ward <location>
+        // or: ward <actor_id> <location> [turns]
+        // or: ward <team> <actor_id> <location> [turns]
+        // A leading team token decides the shape; anything else is actor-first.
         let (team, placed_by, location, duration_turns) = if tokens.len() == 2 {
           (
             TeamSide::Allied,
@@ -558,17 +560,26 @@ impl CliMatchHost {
             parse_map_location(tokens[1])?,
             DEFAULT_WARD_DURATION_TURNS,
           )
-        } else if tokens.len() >= 4 {
+        } else if tokens.len() >= 4 && is_team_side_token(tokens[1]) {
           let team = parse_team_side(tokens[1])?;
           let actor = parse_actor_id(tokens[2])?;
           let location = parse_map_location(tokens[3])?;
-          let duration = if tokens.len() >= 5 {
+          let duration = if tokens.len() == 5 {
             tokens[4]
               .parse::<u32>()
               .map_err(|_| CliMatchError::InvalidSyntax {
                 message: "invalid ward duration; expected integer turns".into(),
               })?
           } else {
+            if tokens.len() > 5 {
+              return Err(CliMatchError::InvalidSyntax {
+                message: format!(
+                  "unexpected argument '{}'; usage: plan ward <team> <actor_id> <location> \
+                   [turns]",
+                  tokens[5]
+                ),
+              });
+            }
             DEFAULT_WARD_DURATION_TURNS
           };
           (team, actor, location, duration)
@@ -581,10 +592,21 @@ impl CliMatchHost {
             location,
             DEFAULT_WARD_DURATION_TURNS,
           )
+        } else if tokens.len() == 4 {
+          // Actor-first with an explicit duration, the spelling HOW_TO_PLAY.md documents.
+          let actor = parse_actor_id(tokens[1])?;
+          let location = parse_map_location(tokens[2])?;
+          let duration = tokens[3]
+            .parse::<u32>()
+            .map_err(|_| CliMatchError::InvalidSyntax {
+              message: "invalid ward duration; expected integer turns".into(),
+            })?;
+          (TeamSide::Allied, actor, location, duration)
         } else {
           return Err(CliMatchError::InvalidSyntax {
             message:
-              "usage: plan ward <location> or plan ward <team> <actor_id> <location> [duration]"
+              "usage: plan ward <location> or plan ward <actor_id> <location> [turns] or plan \
+               ward <team> <actor_id> <location> [turns]"
                 .into(),
           });
         };
@@ -610,13 +632,34 @@ impl CliMatchHost {
             message: "usage: plan contest <top|bot> [light|committed|all-in|damage] [burst]".into(),
           });
         }
+        if tokens.len() > 4 {
+          return Err(CliMatchError::InvalidSyntax {
+            message: format!(
+              "unexpected argument '{}'; usage: plan contest <top|bot> \
+               [light|committed|all-in|damage] [burst]",
+              tokens[4]
+            ),
+          });
+        }
         let objective = parse_objective_kind(tokens[1])?;
         let (damage, strength) = if tokens.len() >= 3 {
           parse_force(tokens[2], self.state.map().team_size(TeamSide::Allied))?
         } else {
           (LEGACY_DEFAULT_FORCE, None)
         };
-        let is_burst = tokens.len() >= 4 && tokens[3].eq_ignore_ascii_case("burst");
+        let is_burst = if tokens.len() == 4 {
+          if !tokens[3].eq_ignore_ascii_case("burst") {
+            return Err(CliMatchError::InvalidSyntax {
+              message: format!(
+                "unexpected argument '{}'; after the force only 'burst' is accepted",
+                tokens[3]
+              ),
+            });
+          }
+          true
+        } else {
+          false
+        };
         let intent = if is_burst {
           ObjectiveIntent::SecureBurst {
             objective,
@@ -676,7 +719,18 @@ impl CliMatchHost {
         };
 
         let (raw_damage, strength) = if idx < tokens.len() {
-          parse_force(tokens[idx], self.state.map().team_size(side))?
+          let (raw_damage, strength) = parse_force(tokens[idx], self.state.map().team_size(side))?;
+          idx += 1;
+          if idx < tokens.len() {
+            return Err(CliMatchError::InvalidSyntax {
+              message: format!(
+                "unexpected argument '{}'; usage: plan siege [side] <tier> [lane] \
+                 [light|committed|all-in|damage]",
+                tokens[idx]
+              ),
+            });
+          }
+          (raw_damage, strength)
         } else {
           (LEGACY_DEFAULT_FORCE, None)
         };
@@ -1128,6 +1182,16 @@ fn parse_actor_id(token: &str) -> Result<ActorId, CliMatchError> {
         message: format!("unknown actor id '{token}'; expected 1..=10 or role name"),
       }),
   }
+}
+
+/// True when a token is one the ward grammar would read as a leading team side.
+/// Must mirror the vocabulary `parse_team_side` accepts, so the ward shape choice
+/// never disagrees with the parser that follows it.
+fn is_team_side_token(token: &str) -> bool {
+  matches!(
+    token.to_ascii_lowercase().as_str(),
+    "allied" | "blue" | "team_a" | "opposing" | "red" | "team_b"
+  )
 }
 
 fn parse_team_side(token: &str) -> Result<TeamSide, CliMatchError> {
@@ -1813,6 +1877,123 @@ mod tests {
       ),
       ObservedStructureStatus::Destroyed
     );
+  }
+
+  /// Trailing tokens past a verb's slots must not be silently dropped, and the two
+  /// intensity slots disagreeing is a question the parser cannot answer for the player.
+  #[test]
+  fn no_verb_accepts_arguments_past_its_slots() {
+    let mut host = CliMatchHost::default_session();
+    let rejected = [
+      "rotate 1 bot_river extra",
+      "contest top light committed",
+      "contest top committed light",
+      "contest top light burst extra",
+      "siege outer mid light committed",
+      "siege outer mid light extra",
+      "siege allied outer mid 4000 committed",
+      "siege nexus all-in extra",
+      "ward allied 1 bot 5 extra",
+    ];
+    for line in rejected {
+      let err = host
+        .apply_line(line)
+        .expect_err("line should be refused, not silently truncated");
+      assert!(
+        matches!(err, CliMatchError::InvalidSyntax { .. }),
+        "'{line}' gave {err:?}"
+      );
+    }
+    // The shapes the strict grammar still accepts. Siege lines may reach the presence
+    // check instead of staging, which is past the grammar and still proves the point:
+    // only refusals named InvalidSyntax would mean the parser dropped or misread a token.
+    for line in [
+      "rotate 1 bot_river",
+      "undo",
+      "contest top light burst",
+      "undo",
+      "ward allied 1 bot 5",
+      "undo",
+    ] {
+      host
+        .apply_line(line)
+        .unwrap_or_else(|err| panic!("'{line}' should parse, got {err:?}"));
+    }
+    for line in [
+      "siege outer mid light",
+      "siege allied outer mid 4000",
+      "siege nexus all-in",
+    ] {
+      match host.apply_line(line) {
+        Ok(_) => {
+          host
+            .apply_line("undo")
+            .expect("undo should clear the draft");
+        }
+        Err(CliMatchError::ForceWithoutPresence { .. }) => {}
+        Err(err) => panic!("'{line}' should parse, got {err:?}"),
+      }
+    }
+  }
+
+  /// HOW_TO_PLAY.md documents `ward [allied] <actor> <location> [turns]`; the actor-first
+  /// spelling with an explicit turns value is part of that documented grammar.
+  #[test]
+  fn the_documented_ward_shape_with_turns_stages() {
+    let mut host = CliMatchHost::default_session();
+    let staged = host
+      .apply_line("ward 1 bot 5")
+      .expect("documented ward shape should stage");
+    let CliMatchOutput::DraftStaged { description } = staged else {
+      panic!("expected a staged ward");
+    };
+    assert!(
+      description.contains("5 turns"),
+      "description: {description}"
+    );
+    assert!(
+      description.contains("actor 1"),
+      "description: {description}"
+    );
+    host
+      .apply_line("undo")
+      .expect("undo should clear the draft");
+
+    let err = host
+      .apply_line("ward 1 bot five")
+      .expect_err("non-integer turns must be refused");
+    assert!(
+      matches!(err, CliMatchError::InvalidSyntax { .. }),
+      "got {err:?}"
+    );
+    // Team aliases keep working in the team-first shape.
+    host
+      .apply_line("ward blue 1 bot 5")
+      .expect("team alias shape should still stage");
+    host
+      .apply_line("undo")
+      .expect("undo should clear the draft");
+  }
+
+  /// Nothing reaches the simulation before `advance`, so a committed plan that has not
+  /// advanced is still rewound by `undo`; the verb list says exactly that.
+  #[test]
+  fn undo_rewinds_a_committed_plan_only_until_advance() {
+    let mut host = CliMatchHost::default_session();
+    host
+      .apply_line("rotate 1 bot_river")
+      .expect("rotate should stage");
+    host
+      .apply_line("commit")
+      .expect("commit should lock the plan");
+    let undone = host
+      .apply_line("undo")
+      .expect("undo should rewind pre-advance");
+    assert!(matches!(undone, CliMatchOutput::Undone));
+    let err = host
+      .apply_line("undo")
+      .expect_err("a second undo has nothing left to rewind");
+    assert!(matches!(err, CliMatchError::NothingToUndo));
   }
 
   #[test]

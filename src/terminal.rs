@@ -539,7 +539,7 @@ pub fn render_match_output(output: &crate::host::CliMatchOutput) -> String {
       );
       line(
         &mut text,
-        "command: name=undo usage=undo summary=clear uncommitted staged tactical plan",
+        "command: name=undo usage=undo summary=clear a staged or committed plan not yet advanced",
       );
       line(
         &mut text,

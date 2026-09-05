@@ -3,6 +3,43 @@
 All meaningful contributor- and user-visible changes are recorded here. The
 project uses the versioning policy in `README.md`; documentation-only changes do
 
+## Unreleased — 2026-09-05 (exact arity at the verb boundary, `0.1.247`)
+
+### Fixed
+
+- **The interactive grammar silently resolved contradictory input.** Reproduced on the
+  shipped binary: `siege outer mid light committed` staged `strength=light`, and the reversed
+  spelling staged `committed` — two declared intensities, one silent choice by token order;
+  `rotate 1 bot_river extra` and `contest top light <anything>` dropped the trailing token
+  without a word. Verbs now hold exact arity — `rotate`, `contest`, `siege`, and the
+  team-first `ward` shape — and the refusal quotes the unexpected token.
+- **A documented input was refused with an underivable error.** `HOW_TO_PLAY.md` spells
+  `ward [allied] <actor> <location> [turns]`, but the explicit-turns form silently demanded
+  the optional team token: `ward 1 bot 5` answered `unknown team side '1'`, and `ward 1 bot
+  five` was unparseable at all. The actor-first spelling with a turns value now stages;
+  non-integer turns still refuse with the duration message.
+- **The verb list misdescribed `undo`.** The list summary said "clear uncommitted staged
+  tactical plan" while the `help undo` detail and the behavior both rewound a committed plan
+  too — accurate to the session, since nothing reaches the simulation before `advance`. The
+  list now says "clear a staged or committed plan not yet advanced"; behavior unchanged, and a
+  test pins the pre-advance rewind.
+
+### Changed
+
+- `CLI_MATCH_HOST_SCHEMA` moves to `m9-interactive-match-host-v6`: removing accepted input is
+  breaking under `docs/COMPATIBILITY.md`, which records the move alongside the additive
+  ward-form fix; as with `v4` and `v5`, the refused spellings have no release, tag, codec, or
+  stored artifact, so no migration is owed. A line that filled each slot at most once means
+  what it meant before. The `m9-complete-match-replay-v1` transcript is unchanged (both plans
+  replay `initial-hash-match=yes final-hash-match=yes`), and the onboarding scripted line
+  still prints its teaching `force-capped` note.
+
+### Evidence boundary
+
+- Technically verified only. Not claimed: that exact arity is the friendliest parser, or that
+  the refused spellings were observed from players — probes reproduced them; no player was
+  watched. `D6` remains the project's stop gate.
+
 ## Unreleased — 2026-09-05 (one commander at the staging gate, `0.1.246`)
 
 ### Fixed
