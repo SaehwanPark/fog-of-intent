@@ -865,3 +865,43 @@ fn mcp_agents_commit_with_the_same_tokens_the_player_types() {
   assert!(integer.contains("damage=4000"), "{integer}");
   assert!(!integer.contains("strength="), "{integer}");
 }
+
+/// An omitted decisive slot is refused, never guessed. The shipped tool filled them:
+/// a bare rotate moved actor 1 to mid_center, a bare ward actor 3 to bot_river. Only the
+/// slots the typed grammar also makes optional (lane, force, ward turns) keep defaults.
+#[test]
+fn mcp_match_plan_refuses_to_choose_what_the_caller_did_not_declare() {
+  let mut server = McpServer::new();
+
+  for (id, arguments, expected) in [
+    (60, r#""action":"rotate""#, "rotate requires actor_id"),
+    (
+      61,
+      r#""action":"rotate","actor_id":1"#,
+      "rotate requires location",
+    ),
+    (62, r#""action":"ward""#, "ward requires actor_id"),
+    (
+      63,
+      r#""action":"ward","actor_id":1"#,
+      "ward requires location",
+    ),
+    (64, r#""action":"contest""#, "contest requires objective"),
+    (65, r#""action":"siege""#, "siege requires tier"),
+  ] {
+    let (text, is_error) = plan(&mut server, id, arguments);
+    assert!(is_error, "{arguments} should be refused, got: {text}");
+    assert!(text.contains(expected), "{text}");
+  }
+
+  // Nothing was staged by the refused requests: the next fully-declared call stages
+  // cleanly, which an already-staged action would have prevented, and the documented
+  // lane default (mid) is intact.
+  let (draft, is_error) = plan(
+    &mut server,
+    67,
+    r#""action":"siege","tier":"outer","commit":"light""#,
+  );
+  assert!(!is_error, "{draft}");
+  assert!(draft.contains("Mid"), "{draft}");
+}

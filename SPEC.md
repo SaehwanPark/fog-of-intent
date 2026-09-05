@@ -2111,6 +2111,18 @@ replays to an identical final hash at the library boundary.
   default match session and cannot select the teaching plan; new MCP surface is frozen by
   D8 until that pass reports no usability blocker.
 
+#### Delivered in the MCP match-plan decisive-slot slice — 2026-09-05
+
+- MCP `match_plan_action` no longer silently fills decisive slots: a bare `rotate` had moved
+  actor 1 to `mid_center`, a bare `ward` had placed a ward through actor 3 at `bot_river`, a
+  bare `contest` chose `bot`, and a bare `siege` chose `outer mid`. Omissions are now refused
+  by naming the missing parameter; lane, force, and ward-turn defaults stay, matching what
+  the typed grammar documents as optional. Tool count and structure are unchanged (25 tools).
+- `CLI_MATCH_HOST_SCHEMA` moves to `m9-interactive-match-host-v7`; `docs/COMPATIBILITY.md`
+  records the narrowing alongside `v4`–`v6`.
+- Not claimed: that sparse calls occurred in real agent sessions — probes made them; no
+  telemetry exists.
+
 #### Delivered in the interactive match strict-grammar slice — 2026-09-05
 
 - Trailing tokens past a verb's slots are refused by name instead of dropped: the shipped
